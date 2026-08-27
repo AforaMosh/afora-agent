@@ -1,0 +1,29 @@
+# REBRAND-ALLOWLIST: intentional openclaw survivors.
+# Consumed by scripts/afora/rebrand.mjs and scripts/afora/census.sh.
+# Line format, one entry per line, reason after " # ":
+#   path:<glob>      whole file or tree is exempt from the codemod and subtracted from census
+#   pattern:<regex>  matched spans are exempt in every file (JS regex, case sensitive)
+# Additionally, any line of any file containing the marker string "afora-compat"
+# is exempt. That marker tags hand-written compatibility shim code that must keep
+# saying openclaw on purpose.
+#
+# --- whole-path survivors ---
+path:LICENSE # upstream MIT attribution must keep original OpenClaw authorship
+path:THIRD_PARTY_NOTICES.md # attribution of upstream and third-party code
+path:CHANGELOG.md # historical entries describe what upstream OpenClaw shipped
+path:docs/releases/** # historical upstream release notes, same rationale as CHANGELOG.md
+path:pnpm-lock.yaml # lockfile: registry package names and integrity hashes, never hand-edit
+path:patches/** # pnpm patch files are content-hashed in the lockfile
+path:appcast.xml # historical Sparkle release feed entries for upstream versions
+path:docs/afora/** # the rebrand working docs quote openclaw deliberately
+path:scripts/afora/** # the codemod, census and allowlist must name openclaw
+path:src/infra/afora-env-alias.ts # env var compat shim, maps OPENCLAW_* to AFORA_*
+#
+# --- span survivors (compat shims and external published packages) ---
+pattern:@openclaw/crabline # external published npm package, not ours to rename
+pattern:@openclaw/fs-safe # external published npm package, not ours to rename
+pattern:@openclaw/libterminal # external published npm package, not ours to rename
+pattern:@openclaw/proxyline # external published npm package, not ours to rename
+pattern:@openclaw/uirouter # external published npm package, not ours to rename
+pattern:"openclaw": "afora\.mjs" # undocumented legacy bin alias, tenants have openclaw on PATH
+pattern:- "openclaw" # the published openclaw registry package name in pnpm-workspace.yaml release-age excludes
