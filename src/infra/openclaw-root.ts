@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { openClawRootFs, openClawRootFsSync } from "./openclaw-root.fs.runtime.js";
 
-const CORE_PACKAGE_NAMES = new Set(["openclaw"]);
+const CORE_PACKAGE_NAMES = new Set(["afora-agent", "openclaw"]); // afora-compat: legacy npm package name still resolves as the core root
 const packageNameCache = new Map<string, string | null>();
 const packageRootCache = new Map<string, string | null>();
 const packageRootsCache = new Map<string, string[]>();

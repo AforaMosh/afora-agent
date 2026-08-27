@@ -22,11 +22,25 @@ export function resolveIsNixMode(env: NodeJS.ProcessEnv = process.env): boolean 
 
 export let isNixMode = resolveIsNixMode();
 
-// Support the remaining legacy pre-rebrand state dir.
-const LEGACY_STATE_DIRNAMES = [".clawdbot"] as const;
+// Support the legacy pre-rebrand state dirs. Live tenants still have
+// ~/.openclaw on disk; resolveStateDir migrates it to ~/.afora once.
+const LEGACY_STATE_DIRNAMES = [".openclaw", ".clawdbot"] as const; // afora-compat: legacy dir names
+const MIGRATABLE_STATE_DIRNAME = ".openclaw"; // afora-compat: only this one auto-migrates
+const MIGRATED_MARKER = ".migrated-to-afora";
 const NEW_STATE_DIRNAME = ".afora";
 const CONFIG_FILENAME = "afora.json";
-const LEGACY_CONFIG_FILENAMES = ["openclaw.json", "clawdbot.json"] as const;
+const LEGACY_CONFIG_FILENAMES = ["openclaw.json", "clawdbot.json"] as const; // afora-compat: legacy config names
+// afora-compat: state files that carry the old brand in their basename get
+// renamed during the one-time migration copy so runtime code stays canonical.
+const MIGRATED_BASENAMES: ReadonlyArray<[string, string]> = [
+  ["openclaw.sqlite", "afora.sqlite"], // afora-compat
+  ["openclaw.sqlite-wal", "afora.sqlite-wal"], // afora-compat
+  ["openclaw.sqlite-shm", "afora.sqlite-shm"], // afora-compat
+  ["openclaw-agent.sqlite", "afora-agent.sqlite"], // afora-compat
+  ["openclaw-agent.sqlite-wal", "afora-agent.sqlite-wal"], // afora-compat
+  ["openclaw-agent.sqlite-shm", "afora-agent.sqlite-shm"], // afora-compat
+  ["openclaw.json", "afora.json"], // afora-compat
+];
 
 /** True when the root CLI selected a non-default isolated profile. */
 export function isNamedProfile(env: NodeJS.ProcessEnv = process.env): boolean {
@@ -94,9 +108,52 @@ export function resolveStateDir(
     }
   });
   if (existingLegacy) {
+    if (path.basename(existingLegacy) === MIGRATABLE_STATE_DIRNAME) {
+      const migrated = migrateLegacyStateDir(existingLegacy, newDir);
+      if (migrated) {
+        return newDir;
+      }
+    }
     return existingLegacy;
   }
   return newDir;
+}
+
+/**
+ * One-time copy of the legacy state dir into the canonical one. The legacy
+ * tree is left in place (copy, never delete) with a marker file so the copy
+ * runs exactly once. Brand-named state files are renamed while copying.
+ * Returns true when the canonical dir is ready to use.
+ */
+function migrateLegacyStateDir(legacyDir: string, newDir: string): boolean {
+  try {
+    if (fs.existsSync(path.join(legacyDir, MIGRATED_MARKER))) {
+      // Migrated before but the canonical dir is gone; treat the legacy dir
+      // as still authoritative rather than silently re-copying stale state.
+      return false;
+    }
+    fs.cpSync(legacyDir, newDir, { recursive: true });
+    const entries = fs.readdirSync(newDir, { recursive: true, withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isFile()) {
+        continue;
+      }
+      const mapped = MIGRATED_BASENAMES.find(([from]) => from === entry.name);
+      if (mapped) {
+        const dir = entry.parentPath ?? entry.path;
+        fs.renameSync(path.join(dir, entry.name), path.join(dir, mapped[1]));
+      }
+    }
+    fs.writeFileSync(
+      path.join(legacyDir, MIGRATED_MARKER),
+      `migrated to ${newDir} at ${new Date().toISOString()}\n`,
+    );
+    console.error(`afora: migrated legacy state dir ${legacyDir} to ${newDir} (original left in place)`);
+    return true;
+  } catch (error) {
+    console.error(`afora: legacy state dir migration failed, using ${legacyDir} as-is: ${String(error)}`);
+    return false;
+  }
 }
 
 function normalizePathForComparison(candidate: string): string {

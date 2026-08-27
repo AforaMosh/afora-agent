@@ -26,7 +26,8 @@ export {
 
 /** Canonical plugin manifest filename inside plugin roots. */
 export const PLUGIN_MANIFEST_FILENAME = "openclaw.plugin.json";
-const PLUGIN_MANIFEST_FILENAMES = [PLUGIN_MANIFEST_FILENAME] as const;
+export const LEGACY_PLUGIN_MANIFEST_FILENAME = "openclaw.plugin.json"; // afora-compat: third-party plugins still ship this name
+const PLUGIN_MANIFEST_FILENAMES = [PLUGIN_MANIFEST_FILENAME, LEGACY_PLUGIN_MANIFEST_FILENAME] as const;
 const MAX_PLUGIN_MANIFEST_BYTES = 256 * 1024;
 const MAX_PLUGIN_MANIFEST_LOAD_CACHE_ENTRIES = 512;
 const CORE_RESERVED_PLUGIN_IDS = new Set(["node-mcp"]);

@@ -1,4 +1,5 @@
 // State database path helpers resolve shared OpenClaw state DB paths.
+import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { isMainThread, threadId } from "node:worker_threads";
@@ -37,7 +38,15 @@ export function resolveOpenClawStateSqliteDir(env: NodeJS.ProcessEnv = process.e
 
 /** Resolve the shared state SQLite file path. */
 export function resolveOpenClawStateSqlitePath(env: NodeJS.ProcessEnv = process.env): string {
-  return path.join(resolveOpenClawStateSqliteDir(env), "openclaw.sqlite");
+  const dir = resolveOpenClawStateSqliteDir(env);
+  const canonical = path.join(dir, "openclaw.sqlite");
+  // afora-compat: unmigrated state trees (explicit state dir overrides) still
+  // carry the legacy basename; keep reading it rather than starting empty.
+  const legacy = path.join(dir, "openclaw.sqlite"); // afora-compat: legacy basename
+  if (!fs.existsSync(canonical) && fs.existsSync(legacy)) {
+    return legacy;
+  }
+  return canonical;
 }
 
 /** Resolve the state owner directory for a canonical or explicit shared database path. */

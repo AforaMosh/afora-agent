@@ -4,6 +4,7 @@
  * Selects models, wires built-in/custom tools, loads resources, and creates AgentSession instances.
  */
 import { randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { clampThinkingLevel } from "@openclaw/ai/internal/runtime";
 import {
@@ -590,11 +591,17 @@ async function createDefaultSdkSessionManager(
   agentDir: string,
 ): Promise<SessionManager> {
   const sessionId = randomUUID();
+  // afora-compat: unmigrated agent dirs still carry the legacy basename.
+  const resolveAgentStorePath = (dir: string): string => {
+    const canonical = join(dir, "openclaw-agent.sqlite");
+    const legacy = join(dir, "openclaw-agent.sqlite"); // afora-compat: legacy basename
+    return !existsSync(canonical) && existsSync(legacy) ? legacy : canonical;
+  };
   const target = {
     agentId: "main",
     sessionId,
     sessionKey: `agent:main:sdk:${sessionId}`,
-    storePath: join(agentDir, "openclaw-agent.sqlite"),
+    storePath: resolveAgentStorePath(agentDir),
   };
   const created = await createSessionEntryWithTranscript(
     target,

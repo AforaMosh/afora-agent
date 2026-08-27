@@ -89,7 +89,10 @@ function readJsonObject(filePath: string): Record<string, unknown> | undefined {
 }
 
 function readManifestObject(pluginDir: string): Record<string, unknown> | undefined {
-  return readJsonObject(path.join(pluginDir, PLUGIN_MANIFEST_FILENAME));
+  return (
+    readJsonObject(path.join(pluginDir, PLUGIN_MANIFEST_FILENAME)) ??
+    readJsonObject(path.join(pluginDir, "openclaw.plugin.json")) // afora-compat: third-party plugins still ship the legacy manifest name
+  );
 }
 
 function listPersistedIndexPluginDirs(env: NodeJS.ProcessEnv, startOrder: number): CandidateDir[] {
