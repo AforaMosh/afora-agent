@@ -122,3 +122,49 @@ When you converge, print `CONVERGED census 0 build green` on its own line.
 
 No em dashes and no en dashes, anywhere, including in code comments, docs and commit
 messages. Use a period, a comma, a colon, or parentheses.
+
+## ADDENDUM — the real scale, read this before you plan
+
+Baseline census taken 2026-08-27 on branch `afora`:
+
+- **21,474 files** contain a hit
+- **251,744 total occurrences**
+- Heaviest: `src/agents` 1887 files, `ui/src` 1308, `src/gateway` 1154, `src/infra` 823,
+  `src/commands` 785, `src/plugins` 631, `apps/android` 565, `src/auto-reply` 499,
+  `src/cli` 464, `extensions/discord` 445, `src/config` 442, `extensions/telegram` 390,
+  `apps/macos` 389, `extensions/codex` 385, `test/scripts` 373
+
+You cannot hand-edit 21k files. **Do not try.** The job is to build a codemod and drive it,
+not to open files one at a time. Concretely:
+
+1. **Classify first.** Write `scripts/afora/census.sh` that emits every hit bucketed by
+   kind: bare identifier, camelCase/PascalCase compound, SCREAMING_CASE, string literal,
+   comment, doc prose, URL, npm package specifier, filesystem path, env var name, config
+   key, i18n locale value, test fixture, generated file. Commit the bucket counts.
+2. **Codemod the safe buckets** with `scripts/afora/rebrand.mjs`: identifiers, compounds,
+   comments, doc prose, log and error strings. Case-preserving (openclaw to afora,
+   OpenClaw to Afora, OPENCLAW to AFORA, Openclaw to Afora). Idempotent. Re-runnable.
+   Give it `--dry-run` and a per-bucket allow/deny list. That single script should retire
+   the large majority of the 251k.
+3. **Hand-handle the risky buckets** with real judgment: npm specifiers, upstream URLs,
+   `~/.openclaw` paths, `OPENCLAW_*` env vars, config keys, wire-protocol and on-disk
+   schema strings, and anything a running tenant's existing state depends on. These are
+   where the compat shims live. Getting one of these wrong bricks a tenant.
+4. **Generated and vendored files**: find what regenerates them and rebrand the generator,
+   then regenerate. Never edit generated output by hand.
+5. **i18n locale files**: `apps/android` and `apps/macos` and any `locales/` tree carry
+   translated product-name strings. Rebrand the product name in every locale.
+
+Report `ITER <n> census <before> -> <after> build <green|red>` after each pass. The number
+must move a lot in the first two passes; if it does not, your codemod is too timid.
+
+## Where you are working, and pushing
+
+You are NOT on Reilly's Mac. You are in the Afora container. The clone is at
+`/data/friday/u/u-a3e76c605e/home/work/afora-rebrand`, branch `afora-rebrand`, already
+checked out with this brief committed.
+
+**This container has NO push access** (403 from GitHub for `drjpaglialunga-sys`). So:
+commit locally, often, with real messages. Do not waste time retrying `git push`. The
+orchestrator will push the branch the moment Reilly's laptop is back online. Keep the
+history clean and bisectable, because that history IS the deliverable.
