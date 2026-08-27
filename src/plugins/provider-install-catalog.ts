@@ -1,9 +1,9 @@
 // Builds provider install catalog entries from plugin metadata.
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
-  loadOpenClawProviderIndex,
-  type OpenClawProviderIndexProvider,
+  loadAforaProviderIndex,
+  type AforaProviderIndexProvider,
 } from "../model-catalog/index.js";
 import { normalizePluginsConfig, resolveEffectiveEnableState } from "./config-state.js";
 import {
@@ -35,7 +35,7 @@ export type ProviderInstallCatalogEntry = ProviderAuthChoiceMetadata & {
 };
 
 type ProviderInstallCatalogParams = {
-  config?: import("../config/types.openclaw.js").OpenClawConfig;
+  config?: import("../config/types.afora.js").AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   includeUntrustedWorkspacePlugins?: boolean;
@@ -161,7 +161,7 @@ function resolveInstallInfoFromRegistryRecord(params: {
 }
 
 function resolveInstallInfoFromProviderIndex(
-  provider: OpenClawProviderIndexProvider,
+  provider: AforaProviderIndexProvider,
 ): PluginPackageInstall | null {
   const install = provider.plugin.install;
   if (!install) {
@@ -232,7 +232,7 @@ function resolveProviderIndexInstallCatalogEntries(params: {
   seenChoiceIds: ReadonlySet<string>;
 }): ProviderInstallCatalogEntry[] {
   const entries: ProviderInstallCatalogEntry[] = [];
-  const index = loadOpenClawProviderIndex();
+  const index = loadAforaProviderIndex();
   for (const provider of Object.values(index.providers)) {
     if (params.installedPluginIds.has(provider.plugin.id)) {
       continue;

@@ -1,17 +1,17 @@
 // Telegram account helpers resolve Telegram plugin account config and display metadata.
-import type { OpenClawConfig } from "./config-contracts.js";
+import type { AforaConfig } from "./config-contracts.js";
 import { loadBundledPluginPublicSurfaceModuleSyncCore } from "./facade-loader.js";
 
 /**
- * @deprecated Compatibility type for the `openclaw/plugin-sdk/telegram-account` facade.
+ * @deprecated Compatibility type for the `afora/plugin-sdk/telegram-account` facade.
  * New channel plugins should prefer injected runtime helpers and generic SDK subpaths.
  */
 export type TelegramAccountConfig = NonNullable<
-  NonNullable<OpenClawConfig["channels"]>["telegram"]
+  NonNullable<AforaConfig["channels"]>["telegram"]
 >;
 
 /**
- * @deprecated Compatibility type for the `openclaw/plugin-sdk/telegram-account` facade.
+ * @deprecated Compatibility type for the `afora/plugin-sdk/telegram-account` facade.
  * New channel plugins should prefer injected runtime helpers and generic SDK subpaths.
  */
 export type ResolvedTelegramAccount = {
@@ -25,7 +25,7 @@ export type ResolvedTelegramAccount = {
 
 type TelegramAccountFacadeModule = {
   resolveTelegramAccount: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string | null;
   }) => ResolvedTelegramAccount;
 };
@@ -42,7 +42,7 @@ function loadTelegramAccountFacadeModule(): TelegramAccountFacadeModule {
  * New channel plugins should prefer injected runtime helpers and generic SDK subpaths.
  */
 export function resolveTelegramAccount(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
 }): ResolvedTelegramAccount {
   return loadTelegramAccountFacadeModule().resolveTelegramAccount(params);

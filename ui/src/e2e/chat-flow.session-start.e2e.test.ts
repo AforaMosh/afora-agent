@@ -20,7 +20,7 @@ suite.define(() => {
 
     try {
       await page.goto(`${suite.server.baseUrl}chat`);
-      const newSessionButton = page.locator("openclaw-app-sidebar .sidebar-brand__new-thread");
+      const newSessionButton = page.locator("afora-app-sidebar .sidebar-brand__new-thread");
       await newSessionButton.waitFor({ state: "visible", timeout: 10_000 });
       await newSessionButton.click();
 
@@ -75,7 +75,7 @@ suite.define(() => {
             {
               id: "ops",
               model: { primary: "openai/startup-model" },
-              name: "OpenClaw",
+              name: "Afora",
             },
           ],
           defaultId: "ops",

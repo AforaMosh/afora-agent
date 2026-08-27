@@ -1,12 +1,12 @@
-# OpenClaw Parallel Plugin
+# Afora Parallel Plugin
 
-Official OpenClaw plugin for Parallel.
+Official Afora plugin for Parallel.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/parallel-plugin
-openclaw gateway restart
+afora plugins install @afora/parallel-plugin
+afora gateway restart
 ```
 
-See <https://docs.openclaw.ai/tools/parallel-search> for setup and configuration.
+See <https://docs.afora.ai/tools/parallel-search> for setup and configuration.

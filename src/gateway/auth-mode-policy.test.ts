@@ -1,7 +1,7 @@
 // Covers gateway auth mode validation when token and password inputs are both
 // configured directly or via secret defaults.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import {
   assertExplicitGatewayAuthModeWhenBothConfigured,
   hasAmbiguousGatewayAuthModeConfig,
@@ -9,7 +9,7 @@ import {
 
 describe("gateway auth mode policy", () => {
   it("does not flag config when auth mode is explicit", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       gateway: {
         auth: {
           mode: "token",
@@ -22,7 +22,7 @@ describe("gateway auth mode policy", () => {
   });
 
   it("does not flag config when only one auth credential is configured", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       gateway: {
         auth: {
           token: "token-value",
@@ -33,7 +33,7 @@ describe("gateway auth mode policy", () => {
   });
 
   it("flags config when both token and password are configured and mode is unset", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       gateway: {
         auth: {
           token: "token-value",
@@ -45,7 +45,7 @@ describe("gateway auth mode policy", () => {
   });
 
   it("flags config when both token/password SecretRefs are configured and mode is unset", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       gateway: {
         auth: {
           token: { source: "env", provider: "default", id: "GW_TOKEN" },
@@ -62,7 +62,7 @@ describe("gateway auth mode policy", () => {
   });
 
   it("throws the shared explicit-mode error for ambiguous dual auth config", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       gateway: {
         auth: {
           token: "token-value",

@@ -53,7 +53,7 @@ describe("recordInboundSession", () => {
 
   it("does not pass ctx when updating a different session key", async () => {
     await recordInboundSession({
-      storePath: "/tmp/openclaw-session-store.json",
+      storePath: "/tmp/afora-session-store.json",
       sessionKey: "agent:main:demo-channel:1234:thread:42",
       ctx,
       updateLastRoute: {
@@ -73,7 +73,7 @@ describe("recordInboundSession", () => {
 
   it("passes ctx when updating the same session key", async () => {
     await recordInboundSession({
-      storePath: "/tmp/openclaw-session-store.json",
+      storePath: "/tmp/afora-session-store.json",
       sessionKey: "agent:main:demo-channel:1234:thread:42",
       ctx,
       updateLastRoute: {
@@ -93,7 +93,7 @@ describe("recordInboundSession", () => {
 
   it("normalizes mixed-case session keys before recording and route updates", async () => {
     await recordInboundSession({
-      storePath: "/tmp/openclaw-session-store.json",
+      storePath: "/tmp/afora-session-store.json",
       sessionKey: "Agent:Main:Demo-Channel:1234:Thread:42",
       ctx,
       updateLastRoute: {
@@ -124,7 +124,7 @@ describe("recordInboundSession", () => {
     };
 
     await recordInboundSession({
-      storePath: "/tmp/openclaw-session-store.json",
+      storePath: "/tmp/afora-session-store.json",
       sessionKey: `Agent:Main:Signal:Group:${mixedGroupId}`,
       ctx: signalCtx,
       updateLastRoute: {
@@ -147,7 +147,7 @@ describe("recordInboundSession", () => {
     const onSkip = vi.fn();
 
     await recordInboundSession({
-      storePath: "/tmp/openclaw-session-store.json",
+      storePath: "/tmp/afora-session-store.json",
       sessionKey: "agent:main:demo-channel:1234:thread:42",
       ctx,
       updateLastRoute: {
@@ -172,7 +172,7 @@ describe("recordInboundSession", () => {
 
   it("forwards session creation policy to last-route updates", async () => {
     await recordInboundSession({
-      storePath: "/tmp/openclaw-session-store.json",
+      storePath: "/tmp/afora-session-store.json",
       sessionKey: "agent:main:demo-channel:1234:thread:42",
       ctx,
       createIfMissing: false,
@@ -210,7 +210,7 @@ describe("recordInboundSession", () => {
     let trackedMetaTask: Promise<unknown> | undefined;
 
     await recordInboundSession({
-      storePath: "/tmp/openclaw-session-store.json",
+      storePath: "/tmp/afora-session-store.json",
       sessionKey: "agent:main:demo-channel:1234:thread:42",
       ctx,
       onRecordError,

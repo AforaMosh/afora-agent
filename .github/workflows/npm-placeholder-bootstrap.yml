@@ -9,7 +9,7 @@ on:
         required: true
         type: string
       packages:
-        description: Ordered comma-separated @openclaw package names to reserve at 0.0.0
+        description: Ordered comma-separated @afora package names to reserve at 0.0.0
         required: true
         type: string
       dry_run:
@@ -333,7 +333,7 @@ jobs:
                 echo "- \`${package_name}\`"
               done <<< "$created"
               echo
-              echo "Configure each package's trusted publisher for repository \`openclaw/openclaw\`, workflow \`plugin-npm-release.yml\`, and environment \`npm-release\`."
+              echo "Configure each package's trusted publisher for repository \`AforaMosh/afora-agent\`, workflow \`plugin-npm-release.yml\`, and environment \`npm-release\`."
             else
               echo "- None."
             fi

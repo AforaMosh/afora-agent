@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import {
   resolveFreshSessionTotalTokens,
   type InternalSessionEntry as SessionEntry,
@@ -14,7 +14,7 @@ import {
   loadSessionEntry,
   replaceSessionEntry,
 } from "../../config/sessions/session-accessor.js";
-import { closeOpenClawAgentDatabasesForTest } from "../../state/openclaw-agent-db.js";
+import { closeAforaAgentDatabasesForTest } from "../../state/afora-agent-db.js";
 import type { EmbeddedAgentRunResult } from "../embedded-agent.js";
 import {
   clearCliSessionInStore,
@@ -27,7 +27,7 @@ import {
 import { resolveSession } from "./session.js";
 
 vi.mock("../model-selection.js", () => ({
-  isCliProvider: (provider: string, _cfg?: OpenClawConfig) =>
+  isCliProvider: (provider: string, _cfg?: AforaConfig) =>
     ["claude-cli", "codex-cli", "google-gemini-cli"].includes(provider.trim().toLowerCase()),
   normalizeProviderId: (provider: string) => provider.trim().toLowerCase(),
 }));
@@ -69,7 +69,7 @@ vi.mock("../../utils/usage-format.js", () => ({
     config?: unknown;
     agentDir?: string;
   }) => {
-    const agents = (params.config as OpenClawConfig | undefined)?.agents?.list ?? [];
+    const agents = (params.config as AforaConfig | undefined)?.agents?.list ?? [];
     if (agents.length > 1 && !params.agentDir) {
       throw new Error("multi-agent cost resolution requires an explicit agent directory");
     }
@@ -101,11 +101,11 @@ function acpMeta() {
 async function withTempSessionStore<T>(
   run: (params: { dir: string; storePath: string }) => Promise<T>,
 ): Promise<T> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-session-store-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-session-store-"));
   try {
     return await run({ dir, storePath: path.join(dir, "sessions.json") });
   } finally {
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
     // SQLite teardown can race fixture removal on loaded CI hosts. Keep the
     // retries bounded so persistent cleanup failures still surface.
     await fs.rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 25 });
@@ -135,7 +135,7 @@ function loadPersistedSessionEntry(
 }
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
 });
 
 type SessionStoreUpdateParams = Parameters<typeof updateSessionStoreAfterAgentRunBase>[0];
@@ -145,7 +145,7 @@ async function updateSessionStoreAfterAgentRun(
 ) {
   await updateSessionStoreAfterAgentRunBase({
     ...params,
-    agentDir: params.agentDir ?? "/tmp/openclaw-session-store-test-agent",
+    agentDir: params.agentDir ?? "/tmp/afora-session-store-test-agent",
   });
 }
 
@@ -177,7 +177,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
               },
             },
           },
-        } satisfies OpenClawConfig,
+        } satisfies AforaConfig,
         agentDir: path.join(dir, "agents", "marie", "agent"),
         sessionId,
         sessionKey,
@@ -216,7 +216,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
       await seedSessionStore(storePath, sessionStore);
 
       await updateSessionStoreAfterAgentRun({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         sessionId,
         sessionKey,
         storePath,
@@ -253,7 +253,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
       await seedSessionStore(storePath, sessionStore);
 
       await updateSessionStoreAfterAgentRun({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         sessionId,
         sessionKey,
         storePath,
@@ -305,7 +305,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
       await seedSessionStore(storePath, { [sessionKey]: concurrentEntry });
 
       await updateSessionStoreAfterAgentRun({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         sessionId,
         sessionKey,
         storePath,
@@ -342,7 +342,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
             maxEntries: 42,
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const sessionKey = "agent:main:explicit:test-maintenance-config";
       const sessionId = "test-maintenance-config-session";
       const now = Date.now();
@@ -393,7 +393,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("persists the selected embedded harness id on the session", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:test-harness-pin";
       const sessionId = "test-harness-pin-session";
       const sessionStore: Record<string, SessionEntry> = {
@@ -434,7 +434,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("persists rotated compaction session identity and transcript file", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:test-rotated-session";
       const sessionId = "test-rotated-session-old";
       const rotatedSessionId = "test-rotated-session-new";
@@ -483,7 +483,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("uses the runtime context budget from agent metadata instead of cold fallback", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:test-runtime-context";
       const sessionId = "test-runtime-context-session";
       const sessionStore: Record<string, SessionEntry> = {
@@ -532,7 +532,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
       const sessionKey = "agent:main:explicit:test-capped-context-override";
       const sessionId = "test-capped-context-override-session";
       const sessionStore: Record<string, SessionEntry> = {
@@ -576,7 +576,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
         agents: {
           defaults: {},
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
       const sessionKey = "agent:main:explicit:test-claude-cli-configured-context";
       const sessionId = "test-claude-cli-configured-context-session";
       const sessionStore: Record<string, SessionEntry> = {
@@ -621,7 +621,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
         agents: {
           defaults: {},
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const sessionKey = "agent:main:explicit:test-harness-pin-cli";
       const sessionId = "test-harness-pin-cli-session";
       const sessionStore: Record<string, SessionEntry> = {
@@ -667,9 +667,9 @@ describe("updateSessionStoreAfterAgentRun", () => {
         agents: {
           defaults: {},
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const sessionKey = "agent:main:explicit:test-claude-cli";
-      const sessionId = "test-openclaw-session";
+      const sessionId = "test-afora-session";
       const sessionStore: Record<string, SessionEntry> = {
         [sessionKey]: {
           sessionId,
@@ -726,9 +726,9 @@ describe("updateSessionStoreAfterAgentRun", () => {
         agents: {
           defaults: {},
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const sessionKey = "agent:main:explicit:test-clear-unflushed-cli";
-      const sessionId = "test-openclaw-session";
+      const sessionId = "test-afora-session";
       const sessionStore: Record<string, SessionEntry> = {
         [sessionKey]: {
           sessionId,
@@ -840,7 +840,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("preserves terminal lifecycle state when caller has a stale running snapshot", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:test-lifecycle-preserve";
       const sessionId = "test-lifecycle-preserve-session";
       const terminalEntry: SessionEntry = {
@@ -1038,7 +1038,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
             store: storePath,
             mainKey: "main",
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         sessionKey,
       });
 
@@ -1052,7 +1052,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("preserves previous totalTokens when provider returns no usage data (#67667)", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:test-no-usage";
       const sessionId = "test-session";
 
@@ -1099,7 +1099,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("persists estimated context budget status without marking stale usage fresh", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:test-context-budget-status";
       const sessionId = "test-context-budget-status-session";
       const sessionStore: Record<string, SessionEntry> = {
@@ -1168,7 +1168,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("clears stale estimated context budget status when a runtime refresh has no current estimate", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:test-clear-context-budget-status";
       const sessionId = "test-clear-context-budget-status-session";
       const sessionStore: Record<string, SessionEntry> = {
@@ -1237,7 +1237,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
         agents: {
           defaults: {},
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const sessionKey = "agent:main:explicit:test-cli-cumulative-usage";
       const sessionId = "test-cli-cumulative-usage-session";
       const sessionStore: Record<string, SessionEntry> = {
@@ -1296,7 +1296,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
       await seedSessionStore(storePath, sessionStore);
 
       await updateSessionStoreAfterAgentRun({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         sessionId,
         sessionKey,
         storePath,
@@ -1350,7 +1350,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
       await replaceSessionEntry({ storePath, sessionKey }, sessionStore[sessionKey]!);
 
       await updateSessionStoreAfterAgentRun({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         sessionId,
         sessionKey,
         storePath,
@@ -1397,7 +1397,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
         agents: {
           defaults: {},
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const sessionKey = "agent:main:explicit:test-cli-last-call-usage";
       const sessionId = "test-cli-last-call-usage-session";
       const sessionStore: Record<string, SessionEntry> = {
@@ -1450,7 +1450,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("persists compaction tokensAfter when provider usage is unavailable", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:test-compaction-tokens-after";
       const sessionId = "test-compaction-tokens-after-session";
       const sessionStore: Record<string, SessionEntry> = {
@@ -1497,7 +1497,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("prefers fresh CLI usage over zero compaction tokensAfter", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:test-zero-compaction-with-usage";
       const sessionId = "test-zero-compaction-with-usage-session";
       const sessionStore: Record<string, SessionEntry> = {
@@ -1559,7 +1559,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("prefers fresh last-call usage over positive compaction tokensAfter", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:test-positive-compaction-with-usage";
       const sessionId = "test-positive-compaction-with-usage-session";
       const sessionStore: Record<string, SessionEntry> = {
@@ -1614,7 +1614,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("accepts zero compaction tokensAfter when provider usage is unavailable", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:test-zero-compaction-tokens-after";
       const sessionId = "test-zero-compaction-tokens-after-session";
       const sessionStore: Record<string, SessionEntry> = {
@@ -1685,7 +1685,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("ignores non-finite compaction tokensAfter values", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:test-compaction-tokens-after-invalid";
       const sessionId = "test-compaction-tokens-after-invalid-session";
       const sessionStore: Record<string, SessionEntry> = {
@@ -1745,7 +1745,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
       const sessionKey = "agent:main:explicit:test-cost-snapshot";
       const sessionId = "test-cost-snapshot-session";
 
@@ -1812,7 +1812,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("preserves lastInteractionAt for non-interactive system runs", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:test-system-run";
       const sessionId = "test-system-run-session";
       const lastInteractionAt = Date.now() - 60 * 60_000;
@@ -1858,7 +1858,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("preserves lastActivityAt for heartbeat-style runs", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:test-heartbeat-run";
       const sessionId = "test-heartbeat-run-session";
       const lastActivityAt = Date.now() - 60 * 60_000;
@@ -1900,7 +1900,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("advances lastInteractionAt for interactive runs", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:test-user-run";
       const sessionId = "test-user-run-session";
       const lastInteractionAt = Date.now() - 60 * 60_000;
@@ -1939,7 +1939,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("clears main recovery markers after settled background progress", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:test-clear-recovery-state";
       const sessionId = "test-clear-recovery-state-session";
       const sessionStore: Record<string, SessionEntry> = {
@@ -2043,7 +2043,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
       await seedSessionStore(storePath, { [sessionKey]: replacementEntry });
 
       await updateSessionStoreAfterAgentRun({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         sessionId,
         sessionKey,
         storePath,
@@ -2109,7 +2109,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
       await seedSessionStore(storePath, { [sessionKey]: concurrentEntry });
 
       await updateSessionStoreAfterAgentRun({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         sessionId,
         sessionKey,
         storePath,
@@ -2138,7 +2138,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("preserves runtime model and contextTokens when preserveRuntimeModel is true (heartbeat bleed fix)", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:test-heartbeat-bleed";
       const sessionId = "test-heartbeat-bleed-session";
       const sessionStore: Record<string, SessionEntry> = {
@@ -2147,7 +2147,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
           updatedAt: 1,
           modelProvider: "anthropic",
           model: "claude-opus-4-6",
-          agentHarnessId: "openclaw",
+          agentHarnessId: "afora",
           contextTokens: 1_000_000,
           cliSessionBindings: {
             "claude-cli": { sessionId: "existing-cli-session" },
@@ -2228,7 +2228,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
       // Runtime model and contextTokens should be preserved from the original entry
       expect(sessionStore[sessionKey]?.model).toBe("claude-opus-4-6");
       expect(sessionStore[sessionKey]?.modelProvider).toBe("anthropic");
-      expect(sessionStore[sessionKey]?.agentHarnessId).toBe("openclaw");
+      expect(sessionStore[sessionKey]?.agentHarnessId).toBe("afora");
       expect(sessionStore[sessionKey]?.contextTokens).toBe(1_000_000);
       expect(sessionStore[sessionKey]?.contextBudgetStatus?.provider).toBe("anthropic");
       expect(sessionStore[sessionKey]?.contextBudgetStatus?.estimatedPromptTokens).toBe(640_000);
@@ -2239,7 +2239,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
       const persisted = loadPersistedSessionStore(storePath);
       expect(persisted[sessionKey]?.model).toBe("claude-opus-4-6");
       expect(persisted[sessionKey]?.modelProvider).toBe("anthropic");
-      expect(persisted[sessionKey]?.agentHarnessId).toBe("openclaw");
+      expect(persisted[sessionKey]?.agentHarnessId).toBe("afora");
       expect(persisted[sessionKey]?.contextTokens).toBe(1_000_000);
       expect(persisted[sessionKey]?.contextBudgetStatus?.provider).toBe("anthropic");
       expect(persisted[sessionKey]?.contextBudgetStatus?.estimatedPromptTokens).toBe(640_000);
@@ -2255,7 +2255,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
         agents: {
           defaults: {},
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const sessionKey = "agent:main:explicit:test-preserve-user-facing-run-state";
       const sessionId = "test-preserve-user-facing-run-state-session";
       const sessionStore: Record<string, SessionEntry> = {
@@ -2364,7 +2364,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("does not recreate a missing persisted row while preserving user-facing state", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:missing-visible-row";
       const sessionId = "missing-visible-row-session";
       const sessionStore: Record<string, SessionEntry> = {
@@ -2409,7 +2409,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("creates a missing persisted row for a new normal run", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:new-normal-row";
       const sessionId = "new-normal-row-session";
       const sessionStore: Record<string, SessionEntry> = {};
@@ -2443,7 +2443,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("does not recreate a missing persisted row after a normal run with a preloaded entry", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:deleted-normal-row";
       const sessionId = "deleted-normal-row-session";
       const sessionStore: Record<string, SessionEntry> = {
@@ -2488,7 +2488,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("does not overwrite a replacement persisted row after a normal run", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:rebound-visible-row";
       const sessionId = "run-session-id";
       const replacementEntry: SessionEntry = {
@@ -2534,7 +2534,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("leaves contextTokens unset when entry has prior model but no contextTokens (heartbeat bleed guard)", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:test-heartbeat-no-context-tokens";
       const sessionId = "test-heartbeat-no-context-tokens-session";
       const sessionStore: Record<string, SessionEntry> = {
@@ -2583,7 +2583,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("does not set runtime model when preserveRuntimeModel is true and entry has no prior runtime model", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:test-heartbeat-new-session";
       const sessionId = "test-heartbeat-new-session-id";
       const sessionStore: Record<string, SessionEntry> = {
@@ -2627,7 +2627,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("preserves model without borrowing heartbeat provider when entry has model but no modelProvider", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:test-heartbeat-model-no-provider";
       const sessionId = "test-heartbeat-model-no-provider-session";
       const sessionStore: Record<string, SessionEntry> = {
@@ -2677,7 +2677,7 @@ describe("updateSessionStoreAfterAgentRun", () => {
 
   it("overwrites runtime model when preserveRuntimeModel is false (default behavior)", async () => {
     await withTempSessionStore(async ({ storePath }) => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:main:explicit:test-normal-overwrite";
       const sessionId = "test-normal-overwrite-session";
       const sessionStore: Record<string, SessionEntry> = {
@@ -2986,7 +2986,7 @@ describe("consumeCliSessionForkInStore", () => {
     await withTempSessionStore(async ({ storePath }) => {
       const sessionKey = "agent:main:catalog-adopt:claude:test";
       const entry: SessionEntry = {
-        sessionId: "openclaw-session-1",
+        sessionId: "afora-session-1",
         updatedAt: 1,
         cliSessionBindings: {
           "claude-cli": {
@@ -3039,7 +3039,7 @@ describe("consumeCliSessionForkInStore", () => {
     await withTempSessionStore(async ({ storePath }) => {
       const sessionKey = "agent:main:plugin:anthropic:catalog-adopt:claude:test";
       const entry: SessionEntry = {
-        sessionId: "openclaw-session-1",
+        sessionId: "afora-session-1",
         updatedAt: 1,
         cliSessionBindings: {
           "claude-cli": { sessionId: "claude-source-session", forceReuse: true },
@@ -3068,7 +3068,7 @@ describe("consumeCliSessionForkInStore", () => {
     await withTempSessionStore(async ({ storePath }) => {
       const sessionKey = "agent:main:plugin:anthropic:catalog-adopt:claude:test";
       const entry: SessionEntry = {
-        sessionId: "openclaw-session-1",
+        sessionId: "afora-session-1",
         updatedAt: 1,
         cliSessionBindings: {
           "claude-cli": {
@@ -3120,7 +3120,7 @@ describe("clearCliSessionInStore", () => {
     await withTempSessionStore(async ({ storePath }) => {
       const sessionKey = "agent:main:explicit:test-clear-claude-cli";
       const entry: SessionEntry = {
-        sessionId: "openclaw-session-1",
+        sessionId: "afora-session-1",
         updatedAt: 1,
         cliSessionBindings: {
           "claude-cli": {
@@ -3172,7 +3172,7 @@ describe("clearCliSessionInStore", () => {
       const existingKey = "agent:main:explicit:existing";
       const sessionStore: Record<string, SessionEntry> = {
         [existingKey]: {
-          sessionId: "openclaw-session-1",
+          sessionId: "afora-session-1",
           updatedAt: 1,
           claudeCliSessionId: "claude-session-1",
         },
@@ -3198,7 +3198,7 @@ describe("clearCliSessionInStore", () => {
     await withTempSessionStore(async ({ storePath }) => {
       const sessionKey = "agent:main:explicit:test-clear-cli-missing-row";
       const entry: SessionEntry = {
-        sessionId: "openclaw-session-1",
+        sessionId: "afora-session-1",
         updatedAt: 1,
         modelProvider: "anthropic",
         model: "claude-opus-4-6",
@@ -3227,7 +3227,7 @@ describe("clearCliSessionInStore", () => {
       });
 
       const persisted = loadPersistedSessionEntry(storePath, sessionKey);
-      expect(cleared?.sessionId).toBe("openclaw-session-1");
+      expect(cleared?.sessionId).toBe("afora-session-1");
       expect(cleared?.modelProvider).toBe("anthropic");
       expect(cleared?.model).toBe("claude-opus-4-6");
       expect(cleared?.cliSessionBindings?.["claude-cli"]).toBeUndefined();
@@ -3236,7 +3236,7 @@ describe("clearCliSessionInStore", () => {
       });
       expect(cleared?.claudeCliSessionId).toBeUndefined();
       expect(sessionStore[sessionKey]).toEqual(cleared);
-      expect(persisted?.sessionId).toBe("openclaw-session-1");
+      expect(persisted?.sessionId).toBe("afora-session-1");
       expect(persisted?.modelProvider).toBe("anthropic");
       expect(persisted?.model).toBe("claude-opus-4-6");
       expect(persisted?.cliSessionBindings?.["claude-cli"]).toBeUndefined();
@@ -3250,7 +3250,7 @@ describe("clearCliSessionInStore", () => {
   it("does not recreate a missing row when a post-run binding clear has an expected session id", async () => {
     await withTempSessionStore(async ({ storePath }) => {
       const sessionKey = "agent:main:explicit:test-clear-cli-deleted-row";
-      const sessionId = "openclaw-session-1";
+      const sessionId = "afora-session-1";
       const sessionStore: Record<string, SessionEntry> = {
         [sessionKey]: {
           sessionId,

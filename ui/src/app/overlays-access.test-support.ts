@@ -9,7 +9,7 @@ export type RequestFn = (
   options?: { timeoutMs?: number | null },
 ) => Promise<unknown>;
 
-const SYSTEM_APPROVAL_TITLE = "OpenClaw change";
+const SYSTEM_APPROVAL_TITLE = "Afora change";
 const SYSTEM_APPROVAL_COMMAND = "Set gateway.port to 19001";
 
 export function deferred<T = unknown>() {
@@ -100,7 +100,7 @@ export function createGatewayHarness(
     },
     emitSystemApproval(id: string, createdAtMs: number) {
       const event: GatewayEventFrame = {
-        event: "openclaw.approval.requested",
+        event: "afora.approval.requested",
         payload: {
           id,
           createdAtMs,

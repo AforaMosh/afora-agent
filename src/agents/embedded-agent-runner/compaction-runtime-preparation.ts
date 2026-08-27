@@ -1,5 +1,5 @@
 /** Shared model, harness, and auth preparation for embedded compaction. */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { ProviderRuntimeModel } from "../../plugins/provider-runtime-model.types.js";
 import { parseAgentSessionKey } from "../../routing/session-key.js";
 import { isDefaultAgentRuntimeId, normalizeOptionalAgentRuntimeId } from "../agent-runtime-id.js";
@@ -37,7 +37,7 @@ import {
 
 /** Resolves the shared policy, target, and harness ownership for either compaction entry point. */
 export function resolveCompactionRuntimeSelection(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   provider?: string | null;
   modelId?: string | null;
   authProfileId?: string | null;
@@ -144,7 +144,7 @@ function buildCompactionHarnessModelProvider(params: {
 
 /** Prepares one ordered auth-attempt set and converges it on a single compaction harness. */
 export async function prepareCompactionHarnessAuth(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   provider: string;
   metadataProvider?: string;
   modelId: string;

@@ -1,1 +1,1 @@
-openclaw,ai-assistent,lokal ai,iphone ai,röstassistent,automatisering,gateway,chatt,agent
+afora,ai-assistent,lokal ai,iphone ai,röstassistent,automatisering,gateway,chatt,agent

@@ -1,8 +1,8 @@
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import type { AforaConfig } from "../config/types.afora.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { applyClawMcpUpdate as applyClawMcpUpdateRaw } from "./mcp-update.js";
 import {
   CLAW_MCP_REF_SCHEMA_VERSION,
@@ -27,9 +27,9 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 let leaseEnv: NodeJS.ProcessEnv;
 
 beforeEach(() => {
-  leaseEnv = { OPENCLAW_STATE_DIR: join(tempDirs.make("openclaw-mcp-update-"), "state") };
+  leaseEnv = { AFORA_STATE_DIR: join(tempDirs.make("afora-mcp-update-"), "state") };
 });
-afterEach(() => closeOpenClawStateDatabaseForTest());
+afterEach(() => closeAforaStateDatabaseForTest());
 
 function applyClawMcpUpdate(...args: Parameters<typeof applyClawMcpUpdateRaw>) {
   const [updatePlan, targetManifest, options] = args;
@@ -142,7 +142,7 @@ describe("applyClawMcpUpdate", () => {
       {
         config: {
           mcp: { servers: { docs: { command: "uvx", args: ["docs-resolved"] }, legacy } },
-        } as OpenClawConfig,
+        } as AforaConfig,
         sourceMcpServers: { docs: oldDocs, legacy },
         nowMs: 20,
         readRefs: () => currentRefs,
@@ -264,8 +264,8 @@ describe("applyClawMcpUpdate", () => {
   });
 
   it("restores complete MCP ownership through a real release rollback", async () => {
-    const root = tempDirs.make("openclaw-mcp-release-");
-    const stateOptions = { env: { OPENCLAW_STATE_DIR: join(root, "state") } };
+    const root = tempDirs.make("afora-mcp-release-");
+    const stateOptions = { env: { AFORA_STATE_DIR: join(root, "state") } };
     const independent = {
       ...ref("legacy", legacy),
       relationship: "referenced" as const,
@@ -299,8 +299,8 @@ describe("applyClawMcpUpdate", () => {
   });
 
   it("does not compensate a config write rejected before mutation", async () => {
-    const root = tempDirs.make("openclaw-mcp-update-rejected-");
-    const stateOptions = { env: { OPENCLAW_STATE_DIR: join(root, "state") } };
+    const root = tempDirs.make("afora-mcp-update-rejected-");
+    const stateOptions = { env: { AFORA_STATE_DIR: join(root, "state") } };
     const previous = ref("docs", oldDocs);
     upsertClawMcpServerRef(previous, stateOptions);
     const setServer = vi.fn(async () => ({ ok: false as const, path: "config", error: "changed" }));
@@ -334,8 +334,8 @@ describe("applyClawMcpUpdate", () => {
   });
 
   it("deletes pending ownership when an added server write is rejected", async () => {
-    const root = tempDirs.make("openclaw-mcp-add-rejected-");
-    const stateOptions = { env: { OPENCLAW_STATE_DIR: join(root, "state") } };
+    const root = tempDirs.make("afora-mcp-add-rejected-");
+    const stateOptions = { env: { AFORA_STATE_DIR: join(root, "state") } };
 
     await expect(
       applyClawMcpUpdate(
@@ -366,8 +366,8 @@ describe("applyClawMcpUpdate", () => {
   });
 
   it("restores complete ownership when a removal write is rejected", async () => {
-    const root = tempDirs.make("openclaw-mcp-remove-rejected-");
-    const stateOptions = { env: { OPENCLAW_STATE_DIR: join(root, "state") } };
+    const root = tempDirs.make("afora-mcp-remove-rejected-");
+    const stateOptions = { env: { AFORA_STATE_DIR: join(root, "state") } };
     const previous = ref("legacy", legacy);
     upsertClawMcpServerRef(previous, stateOptions);
 

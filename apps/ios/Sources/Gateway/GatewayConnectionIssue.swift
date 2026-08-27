@@ -1,5 +1,5 @@
 import Foundation
-import OpenClawKit
+import AforaKit
 
 enum GatewayConnectionIssue: Equatable {
     case none

@@ -14,7 +14,7 @@ import {
 
 const chromiumExecutablePath = resolvePlaywrightChromiumExecutablePath(chromium.executablePath());
 const chromiumAvailable = canRunPlaywrightChromium(chromiumExecutablePath);
-const allowMissingChromium = process.env.OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
+const allowMissingChromium = process.env.AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
 const describeControlUiE2e = chromiumAvailable || !allowMissingChromium ? describe : describe.skip;
 const artifactDir = path.resolve(".artifacts/control-ui-e2e/control-ui-shell-routing");
 const basePath = "/control";
@@ -95,7 +95,7 @@ async function startBasePathProxy(upstreamBaseUrl: string): Promise<BasePathProx
         body = Buffer.from(
           body
             .toString("utf8")
-            .replace("<html", `<html data-openclaw-control-ui-base-path="${basePath}"`),
+            .replace("<html", `<html data-afora-control-ui-base-path="${basePath}"`),
         );
       }
       response.end(body);
@@ -150,19 +150,19 @@ describeControlUiE2e("Control UI shell routing E2E", () => {
       const response = await page.goto(url.href, { waitUntil: "domcontentloaded" });
       expect(response?.status()).toBe(200);
 
-      const confirmation = page.locator("openclaw-gateway-url-confirmation");
+      const confirmation = page.locator("afora-gateway-url-confirmation");
       await confirmation.waitFor();
       expect(await confirmation.getByText(explicitGatewayUrl, { exact: true }).count()).toBe(1);
       await confirmation.getByRole("button", { name: "Confirm", exact: true }).click();
 
       await gateway.waitForRequest("connect");
-      await page.locator("openclaw-app-shell").waitFor();
-      await page.locator("openclaw-chat-page").waitFor();
+      await page.locator("afora-app-shell").waitFor();
+      await page.locator("afora-chat-page").waitFor();
 
       expect(new URL(page.url()).pathname).toBe(`${basePath}/chat/main`);
       expect(new URL(page.url()).hash).toBe("");
       expect((await gateway.getSocketUrls()).at(-1)).toBe(explicitGatewayUrl);
-      expect(await page.locator("html").getAttribute("data-openclaw-control-ui-base-path")).toBe(
+      expect(await page.locator("html").getAttribute("data-afora-control-ui-base-path")).toBe(
         basePath,
       );
 

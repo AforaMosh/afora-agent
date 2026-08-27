@@ -1,6 +1,6 @@
 // Provides shared replay-policy helpers for provider plugins.
-import { resolveClaudeModelIdentity, resolveClaudeOpus5ModelIdentity } from "@openclaw/llm-core";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { resolveClaudeModelIdentity, resolveClaudeOpus5ModelIdentity } from "@afora/llm-core";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import type { AgentMessage } from "../agents/runtime/index.js";
 import { sanitizeGoogleAssistantFirstOrdering } from "../shared/google-turn-ordering.js";
 import type { ProviderRuntimeModel } from "./provider-runtime-model.types.js";

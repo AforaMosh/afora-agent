@@ -172,7 +172,7 @@ describe("resolveCodexWebSearchPlan", () => {
     });
   });
 
-  it("disables both native and managed search when OpenClaw web search is disabled", () => {
+  it("disables both native and managed search when Afora web search is disabled", () => {
     expect(
       resolveCodexWebSearchPlan({
         config: {

@@ -1,14 +1,14 @@
-# @openclaw/mxc-sandbox
+# @afora/mxc-sandbox
 
-Official MXC sandbox execution plugin for OpenClaw.
+Official MXC sandbox execution plugin for Afora.
 
-This plugin lets OpenClaw run tool execution through MXC on Windows hosts with
+This plugin lets Afora run tool execution through MXC on Windows hosts with
 ProcessContainer support.
 
 ## Install
 
 ```bash
-openclaw plugins install @openclaw/mxc-sandbox
+afora plugins install @afora/mxc-sandbox
 ```
 
 Restart the Gateway after installing or updating the plugin.
@@ -37,8 +37,8 @@ readiness behavior to change as MXC host support matures.
 ## Package
 
 - Plugin id: `mxc`
-- Package: `@openclaw/mxc-sandbox`
-- Minimum OpenClaw host: `2026.6.11`
+- Package: `@afora/mxc-sandbox`
+- Minimum Afora host: `2026.6.11`
 
 ## Plugin config
 
@@ -55,8 +55,8 @@ and out-of-range values fail plugin activation with an actionable error
 | `debug`          | `boolean`                         | `false`                                | Forwards debug output from the MXC SDK launcher.                                                                                                              |
 | `mxcPolicyPaths` | `string[]`                        | unset (built-in baseline only)         | Every entry must be a non-empty absolute path. See [Sandbox policy files](#sandbox-policy-files).                                                             |
 
-Any other key is rejected. `openclaw.plugin.json` publishes the same schema
-(enums, `minimum`/`maximum` bounds) so `openclaw config` validation and CLI
+Any other key is rejected. `afora.plugin.json` publishes the same schema
+(enums, `minimum`/`maximum` bounds) so `afora config` validation and CLI
 help stay in sync with plugin runtime validation.
 
 ## Supported
@@ -71,7 +71,7 @@ help stay in sync with plugin runtime validation.
     read-only mount of the real agent workspace whenever it differs from the
     sandbox workdir.
   - `rw`: the active agent workspace is mounted read-write. If protected
-    OpenClaw skill roots (`skills`, `.agents/skills`, or the materialized
+    Afora skill roots (`skills`, `.agents/skills`, or the materialized
     sandbox skills workspace) exist beneath it, MXC fails the command before
     launch because ProcessContainer cannot enforce a nested read-only grant
     beneath a writable parent. The filesystem bridge also rejects writes to
@@ -79,11 +79,11 @@ help stay in sync with plugin runtime validation.
   - Use policy `filesystem.additionalReadwritePaths` for additional explicit
     writable host paths shared by every MXC sandbox.
 - `scope` workspace selection:
-  - `session`, `agent`, and `shared` choose the OpenClaw workspace directory
+  - `session`, `agent`, and `shared` choose the Afora workspace directory
     passed to MXC.
 - SDK-only executor discovery from `@microsoft/mxc-sdk/bin/<arch>` or
   `@microsoft/mxc-sdk/bin`; use `mxcBinaryPath` only for an explicit override.
-- OpenClaw passes per-run command, environment, and filesystem config to the
+- Afora passes per-run command, environment, and filesystem config to the
   plugin's Node launcher through a short-lived local payload file, and deletes
   that file and its temp directory when the launcher or run finishes.
 - `@microsoft/mxc-sdk@0.7.0` then carries the full base64 request envelope on
@@ -101,11 +101,11 @@ help stay in sync with plugin runtime validation.
 - Windows filesystem-deny and host-list network policy knobs are not exposed by
   this plugin until MXC can enforce them on ProcessContainer.
 
-## Test setup with `openclaw config`
+## Test setup with `afora config`
 
 This patch creates a default `main` agent, then adds a dedicated `mxc-test`
 agent so MXC testing does not change the default agent. It uses
-[`openclaw config patch --stdin`](https://docs.openclaw.ai/cli/config#config-patch)
+[`afora config patch --stdin`](https://docs.afora.ai/cli/config#config-patch)
 so setup is one validated config write instead of several path-based
 `config set` commands.
 
@@ -113,7 +113,7 @@ If you already have `agents.list` entries, copy them into the patch before
 `mxc-test` instead of replacing the list.
 
 ```powershell
-$mxcPolicyPath = Join-Path $env:TEMP "openclaw-mxc-policy.json"
+$mxcPolicyPath = Join-Path $env:TEMP "afora-mxc-policy.json"
 @'
 {
   "filesystem": {
@@ -134,11 +134,11 @@ $mxcConfigPatch = @"
     list: [
       {
         id: "main",
-        workspace: "~/.openclaw/workspace",
+        workspace: "~/.afora/workspace",
       },
       {
         id: "mxc-test",
-        workspace: "~/.openclaw/workspace-mxc-test",
+        workspace: "~/.afora/workspace-mxc-test",
         sandbox: {
           mode: "all",
           backend: "mxc",
@@ -163,8 +163,8 @@ $mxcConfigPatch = @"
 }
 "@
 
-$mxcConfigPatch | openclaw config patch --stdin --dry-run
-$mxcConfigPatch | openclaw config patch --stdin
+$mxcConfigPatch | afora config patch --stdin --dry-run
+$mxcConfigPatch | afora config patch --stdin
 ```
 
 Resulting config shape:
@@ -175,11 +175,11 @@ Resulting config shape:
     "list": [
       {
         "id": "main",
-        "workspace": "~/.openclaw/workspace",
+        "workspace": "~/.afora/workspace",
       },
       {
         "id": "mxc-test",
-        "workspace": "~/.openclaw/workspace-mxc-test",
+        "workspace": "~/.afora/workspace-mxc-test",
         "sandbox": {
           "mode": "all",
           "backend": "mxc",
@@ -196,7 +196,7 @@ Resulting config shape:
         "config": {
           "containment": "process",
           "network": "none",
-          "mxcPolicyPaths": ["C:\\Users\\you\\AppData\\Local\\Temp\\openclaw-mxc-policy.json"],
+          "mxcPolicyPaths": ["C:\\Users\\you\\AppData\\Local\\Temp\\afora-mxc-policy.json"],
         },
       },
     },
@@ -238,8 +238,8 @@ Example policy:
 {
   "filesystem": {
     "restrictToProjectDir": true,
-    "additionalReadonlyPaths": ["C:\\Tools\\OpenClaw\\shared-readonly"],
-    "additionalReadwritePaths": ["D:\\OpenClawScratch"]
+    "additionalReadonlyPaths": ["C:\\Tools\\Afora\\shared-readonly"],
+    "additionalReadwritePaths": ["D:\\AforaScratch"]
   },
   "process": {
     "timeoutSeconds": 120
@@ -266,7 +266,7 @@ Only the `filesystem` and `process` sections are supported. Unknown sections or
 unknown fields are rejected so policy files fail closed when they drift from the
 implemented MXC ProcessContainer surface.
 
-When multiple configured policy files exist, OpenClaw layers them
+When multiple configured policy files exist, Afora layers them
 deterministically in `mxcPolicyPaths` array order:
 
 - readonly and read-write path arrays are appended and de-duplicated while
@@ -275,7 +275,7 @@ deterministically in `mxcPolicyPaths` array order:
   policy files.
 - `restrictToProjectDir` remains enabled because the field is hardening-only.
 
-The filesystem bridge keeps protected OpenClaw skill overlays read-only. For
+The filesystem bridge keeps protected Afora skill overlays read-only. For
 command execution, MXC fails closed before launch when `workspaceAccess: "rw"`
 or a configured read-write path overlaps a protected skill root, because
 ProcessContainer cannot safely enforce the nested read-only grant.
@@ -283,13 +283,13 @@ ProcessContainer cannot safely enforce the nested read-only grant.
 Run the TUI as that agent:
 
 ```powershell
-openclaw tui --session agent:mxc-test:main
+afora tui --session agent:mxc-test:main
 ```
 
 For local embedded testing without a Gateway:
 
 ```powershell
-openclaw tui --local --session agent:mxc-test:main
+afora tui --local --session agent:mxc-test:main
 ```
 
 ## Cleanup
@@ -304,7 +304,7 @@ $mxcCleanupPatch = @'
     list: [
       {
         id: "main",
-        workspace: "~/.openclaw/workspace",
+        workspace: "~/.afora/workspace",
       },
     ],
   },
@@ -316,8 +316,8 @@ $mxcCleanupPatch = @'
 }
 '@
 
-$mxcCleanupPatch | openclaw config patch --stdin --dry-run
-$mxcCleanupPatch | openclaw config patch --stdin
+$mxcCleanupPatch | afora config patch --stdin --dry-run
+$mxcCleanupPatch | afora config patch --stdin
 Remove-Item -Path $mxcPolicyPath -ErrorAction SilentlyContinue
 ```
 

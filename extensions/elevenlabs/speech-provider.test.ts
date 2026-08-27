@@ -9,7 +9,7 @@ vi.mock("./config-api.js", () => ({
   resolveElevenLabsApiKeyWithProfileFallback: () => null,
 }));
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", () => ({
   fetchWithSsrFGuard: async (params: {
     url: string;
     init?: RequestInit;
@@ -39,7 +39,7 @@ describe("elevenlabs speech provider", () => {
   const originalFetch = globalThis.fetch;
 
   afterAll(() => {
-    vi.doUnmock("openclaw/plugin-sdk/ssrf-runtime");
+    vi.doUnmock("afora-agent/plugin-sdk/ssrf-runtime");
     vi.resetModules();
   });
 

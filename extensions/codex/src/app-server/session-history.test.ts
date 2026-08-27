@@ -2,9 +2,9 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { CURRENT_SESSION_VERSION } from "openclaw/plugin-sdk/agent-sessions";
-import { upsertSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
-import { appendSessionTranscriptMessageByIdentity } from "openclaw/plugin-sdk/session-transcript-runtime";
+import { CURRENT_SESSION_VERSION } from "afora-agent/plugin-sdk/agent-sessions";
+import { upsertSessionEntry } from "afora-agent/plugin-sdk/session-store-runtime";
+import { appendSessionTranscriptMessageByIdentity } from "afora-agent/plugin-sdk/session-transcript-runtime";
 import { afterEach, describe, expect, it } from "vitest";
 import { readCodexMirroredSessionHistoryMessages } from "./session-history.js";
 
@@ -17,7 +17,7 @@ afterEach(async () => {
 });
 
 async function writeSession(records: unknown[]): Promise<string> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-session-history-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-codex-session-history-"));
   tempDirs.push(dir);
   const sessionFile = path.join(dir, "session.jsonl");
   const header = {
@@ -98,9 +98,9 @@ async function writeSqliteSession(params: { storedSessionFile?: string } = {}): 
     storePath: string;
   };
 }> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-session-history-sqlite-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-codex-session-history-sqlite-"));
   tempDirs.push(dir);
-  const storePath = path.join(dir, "openclaw-agent.sqlite");
+  const storePath = path.join(dir, "afora-agent.sqlite");
   const sessionId = "codex-sqlite-session";
   const sessionKey = "agent:main:codex-sqlite";
   const marker = `sqlite:main:${sessionId}:${storePath}`;
@@ -131,7 +131,7 @@ async function writeSqliteSession(params: { storedSessionFile?: string } = {}): 
 
 describe("readCodexMirroredSessionHistoryMessages", () => {
   it("treats a missing mirrored session file as empty history", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-session-history-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-codex-session-history-"));
     tempDirs.push(dir);
     const sessionFile = path.join(dir, "session.jsonl");
 
@@ -141,10 +141,10 @@ describe("readCodexMirroredSessionHistoryMessages", () => {
   });
 
   it("does not create a database for a missing explicit SQLite session key", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-session-history-missing-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-codex-session-history-missing-"));
     tempDirs.push(dir);
     const sessionId = "missing-codex-session";
-    const storePath = path.join(dir, "openclaw-agent.sqlite");
+    const storePath = path.join(dir, "afora-agent.sqlite");
 
     await expect(
       readCodexMirroredSessionHistoryMessages({
@@ -160,7 +160,7 @@ describe("readCodexMirroredSessionHistoryMessages", () => {
   it("returns [] for transcripts that do not open with a Codex session marker", async () => {
     // A non-Codex-shaped transcript (e.g. a non-Codex model run reusing this
     // hook) is an empty mirror, not a read failure, so callers must not warn.
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-session-history-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-codex-session-history-"));
     tempDirs.push(dir);
     const sessionFile = path.join(dir, "session.jsonl");
     await fs.writeFile(sessionFile, JSON.stringify({ type: "message", id: "orphan" }) + "\n");
@@ -173,7 +173,7 @@ describe("readCodexMirroredSessionHistoryMessages", () => {
   it("returns undefined for a session header without a string id", async () => {
     // A `session` header with corrupt metadata is a Codex transcript gone bad,
     // not a foreign transcript — it must stay on the warn path.
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-session-history-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-codex-session-history-"));
     tempDirs.push(dir);
     const sessionFile = path.join(dir, "session.jsonl");
     await fs.writeFile(sessionFile, JSON.stringify({ type: "session", id: 42 }) + "\n");

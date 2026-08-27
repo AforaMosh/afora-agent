@@ -10,7 +10,7 @@ import { closePlaywrightBrowserConnection, getPageForTargetId } from "./pw-sessi
 import { downloadViaPlaywright, waitForDownloadViaPlaywright } from "./pw-tools-core.downloads.js";
 import { getFreePort } from "./test-port.js";
 
-const runChromiumProof = process.env.OPENCLAW_BROWSER_DOWNLOAD_E2E === "1";
+const runChromiumProof = process.env.AFORA_BROWSER_DOWNLOAD_E2E === "1";
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 function listen(server: Server): Promise<number> {
@@ -48,7 +48,7 @@ describe.runIf(runChromiumProof)("managed Chromium download cancellation", () =>
   });
 
   it("does not let a cancelled waiter capture and write a later download", async () => {
-    const rootDir = tempDirs.make("openclaw-download-cancel-");
+    const rootDir = tempDirs.make("afora-download-cancel-");
     cleanup.push(async () => await fs.rm(rootDir, { recursive: true, force: true }));
 
     const abandonedPayload = Buffer.from("abandoned-click-download\n");

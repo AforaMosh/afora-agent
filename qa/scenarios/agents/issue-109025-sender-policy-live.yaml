@@ -86,7 +86,7 @@ flow:
                 `Issue 109025 live probe. Follow these steps exactly.
                 1. Use your filesystem write capability to create ${config.parentProofFile} in the workspace with exactly PARENT_OK.
                 2. Do not read ${config.secretFile} yourself and do not guess its contents.
-                3. Call the OpenClaw sessions_spawn tool exactly once with runtime subagent, label ${config.childLabel}, and task: "Use the filesystem read tool to read ${config.secretFile} in the workspace. Reply with its exact single-line contents and nothing else. You must actually read the file; do not guess."
+                3. Call the Afora sessions_spawn tool exactly once with runtime subagent, label ${config.childLabel}, and task: "Use the filesystem read tool to read ${config.secretFile} in the workspace. Reply with its exact single-line contents and nothing else. You must actually read the file; do not guess."
                 4. Wait for the child to finish.
                 5. Reply with ${config.parentDoneMarker}: followed by the child's exact result.`
         - call: waitForOutboundMessage

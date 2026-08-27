@@ -24,14 +24,14 @@ function runPullHelper(binDir: string) {
 }
 
 function runPullHelperWithEnv(binDir: string, env: Record<string, string>) {
-  return spawnSync("/bin/bash", [SCRIPT_PATH, "registry.example/openclaw:test"], {
+  return spawnSync("/bin/bash", [SCRIPT_PATH, "registry.example/afora:test"], {
     cwd: process.cwd(),
     encoding: "utf8",
     env: {
       ...process.env,
-      OPENCLAW_DOCKER_PULL_ATTEMPTS: "1",
-      OPENCLAW_DOCKER_PULL_RETRY_DELAY_SECONDS: "0",
-      OPENCLAW_DOCKER_PULL_TIMEOUT_SECONDS: "42",
+      AFORA_DOCKER_PULL_ATTEMPTS: "1",
+      AFORA_DOCKER_PULL_RETRY_DELAY_SECONDS: "0",
+      AFORA_DOCKER_PULL_TIMEOUT_SECONDS: "42",
       ...env,
       PATH: binDir,
     },
@@ -46,7 +46,7 @@ afterEach(() => {
 
 describe("scripts/ci-docker-pull-retry.sh", () => {
   it("uses a kill-after grace period when timeout supports it", () => {
-    const binDir = makeTempBin("openclaw-ci-docker-pull-gnu-");
+    const binDir = makeTempBin("afora-ci-docker-pull-gnu-");
     const timeoutArgsPath = path.join(binDir, "timeout-args.txt");
     const dockerArgsPath = path.join(binDir, "docker-args.txt");
 
@@ -73,15 +73,15 @@ describe("scripts/ci-docker-pull-retry.sh", () => {
 
     expect(result.status).toBe(0);
     expect(execFileSync("cat", [timeoutArgsPath], { encoding: "utf8" }).trim()).toBe(
-      "--kill-after=30s 42s docker pull registry.example/openclaw:test",
+      "--kill-after=30s 42s docker pull registry.example/afora:test",
     );
     expect(execFileSync("cat", [dockerArgsPath], { encoding: "utf8" }).trim()).toBe(
-      "pull registry.example/openclaw:test",
+      "pull registry.example/afora:test",
     );
   });
 
   it("falls back to plain timeout when kill-after is unavailable", () => {
-    const binDir = makeTempBin("openclaw-ci-docker-pull-plain-");
+    const binDir = makeTempBin("afora-ci-docker-pull-plain-");
     const timeoutArgsPath = path.join(binDir, "timeout-args.txt");
     const dockerArgsPath = path.join(binDir, "docker-args.txt");
 
@@ -108,15 +108,15 @@ describe("scripts/ci-docker-pull-retry.sh", () => {
 
     expect(result.status).toBe(0);
     expect(execFileSync("cat", [timeoutArgsPath], { encoding: "utf8" }).trim()).toBe(
-      "42s docker pull registry.example/openclaw:test",
+      "42s docker pull registry.example/afora:test",
     );
     expect(execFileSync("cat", [dockerArgsPath], { encoding: "utf8" }).trim()).toBe(
-      "pull registry.example/openclaw:test",
+      "pull registry.example/afora:test",
     );
   });
 
   it("uses gtimeout when timeout is unavailable", () => {
-    const binDir = makeTempBin("openclaw-ci-docker-pull-gtimeout-");
+    const binDir = makeTempBin("afora-ci-docker-pull-gtimeout-");
     const timeoutArgsPath = path.join(binDir, "gtimeout-args.txt");
     const dockerArgsPath = path.join(binDir, "docker-args.txt");
 
@@ -143,15 +143,15 @@ describe("scripts/ci-docker-pull-retry.sh", () => {
 
     expect(result.status).toBe(0);
     expect(execFileSync("cat", [timeoutArgsPath], { encoding: "utf8" }).trim()).toBe(
-      "gtimeout:--kill-after=30s 42s docker pull registry.example/openclaw:test",
+      "gtimeout:--kill-after=30s 42s docker pull registry.example/afora:test",
     );
     expect(execFileSync("cat", [dockerArgsPath], { encoding: "utf8" }).trim()).toBe(
-      "pull registry.example/openclaw:test",
+      "pull registry.example/afora:test",
     );
   });
 
   it("fails fast when timeout and gtimeout are unavailable", () => {
-    const binDir = makeTempBin("openclaw-ci-docker-pull-no-timeout-");
+    const binDir = makeTempBin("afora-ci-docker-pull-no-timeout-");
     const dockerArgsPath = path.join(binDir, "docker-args.txt");
 
     writeExecutable(
@@ -171,7 +171,7 @@ describe("scripts/ci-docker-pull-retry.sh", () => {
   });
 
   it("returns the last pull failure status after retries are exhausted", () => {
-    const binDir = makeTempBin("openclaw-ci-docker-pull-fail-");
+    const binDir = makeTempBin("afora-ci-docker-pull-fail-");
     const dockerArgsPath = path.join(binDir, "docker-args.txt");
 
     writeExecutable(
@@ -196,7 +196,7 @@ describe("scripts/ci-docker-pull-retry.sh", () => {
       ].join("\n"),
     );
 
-    const result = runPullHelperWithEnv(binDir, { OPENCLAW_DOCKER_PULL_ATTEMPTS: "2" });
+    const result = runPullHelperWithEnv(binDir, { AFORA_DOCKER_PULL_ATTEMPTS: "2" });
 
     expect(result.status).toBe(42);
     expect(result.stderr).toContain("Docker pull failed or timed out after 42s: status=42");

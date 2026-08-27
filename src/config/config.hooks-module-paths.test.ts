@@ -15,7 +15,7 @@ describe("config hooks module paths", () => {
   it("rejects absolute hooks.mappings[].transform.module", () => {
     expectRejectedIssuePath(
       {
-        agents: { entries: { openclaw: {} } },
+        agents: { entries: { afora: {} } },
         hooks: {
           mappings: [
             {
@@ -33,7 +33,7 @@ describe("config hooks module paths", () => {
   it("rejects escaping hooks.mappings[].transform.module", () => {
     expectRejectedIssuePath(
       {
-        agents: { entries: { openclaw: {} } },
+        agents: { entries: { afora: {} } },
         hooks: {
           mappings: [
             {
@@ -55,7 +55,7 @@ describe("config hooks module paths", () => {
   ])("rejects retired hooks.internal.handlers for %s", (_label, handlers) => {
     expectRejectedIssuePath(
       {
-        agents: { entries: { openclaw: {} } },
+        agents: { entries: { afora: {} } },
         hooks: {
           internal: {
             enabled: true,
@@ -69,7 +69,7 @@ describe("config hooks module paths", () => {
 
   it("accepts hooks.mappings[].channel runtime plugin ids", () => {
     const res = validateConfigObjectWithPlugins({
-      agents: { entries: { openclaw: {} } },
+      agents: { entries: { afora: {} } },
       hooks: {
         mappings: [
           {
@@ -87,7 +87,7 @@ describe("config hooks module paths", () => {
   it("rejects blank hooks.mappings[].channel values", () => {
     expectRejectedIssuePath(
       {
-        agents: { entries: { openclaw: {} } },
+        agents: { entries: { afora: {} } },
         hooks: {
           mappings: [
             {

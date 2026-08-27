@@ -8,7 +8,7 @@ Read `principles.md` first, then apply this checklist.
 - Confirm brownfield vs evergreen intent.
 - Confirm expected outcome for the reader.
 - For full-repo reviews, explicitly include both governance surfaces and product-doc surfaces (`docs/`, README trees, `.md/.mdx/.mdc`, `.rst/.rsc`, framework docs configs).
-- For OpenClaw docs reviews, apply `references/openclaw.md` for page type, docs IA, preservation, examples, and validation checks.
+- For Afora docs reviews, apply `references/afora.md` for page type, docs IA, preservation, examples, and validation checks.
 
 ## 2. Investigation behavior
 
@@ -59,8 +59,8 @@ For agent-platform awareness:
 - Check `.md/.mdx/.mdc/.rst/.rsc` for stale commands, missing prerequisites, and broken cross-links.
 - Confirm referenced doc paths and anchors exist.
 - Flag docs that should be split/merged to improve discoverability and maintenance.
-- For OpenClaw docs, check `docs/docs.json`, docs-list routing hints, main path versus `Reference` placement, and generated-reference visibility.
-- For OpenClaw rewrites or page splits, require source-backed keep/drop/move/destination coverage for important claims, warnings, examples, commands, fields, and troubleshooting facts.
+- For Afora docs, check `docs/docs.json`, docs-list routing hints, main path versus `Reference` placement, and generated-reference visibility.
+- For Afora rewrites or page splits, require source-backed keep/drop/move/destination coverage for important claims, warnings, examples, commands, fields, and troubleshooting facts.
 
 ## 5. Framework config and path mapping checks
 
@@ -75,7 +75,7 @@ For agent-platform awareness:
 - Validate heading flow and navigation discoverability.
 - Flag critical content trapped in images or buried sections.
 - Check Diataxis alignment and split mixed-purpose sections.
-- For OpenClaw docs, confirm the content matches an explicit page type from `references/openclaw.md`.
+- For Afora docs, confirm the content matches an explicit page type from `references/afora.md`.
 
 ## 7. Writing quality review
 

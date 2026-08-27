@@ -1,4 +1,4 @@
-import { embeddedAgentLog } from "openclaw/plugin-sdk/agent-harness-runtime";
+import { embeddedAgentLog } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import type { CodexAttemptConnection } from "./run-attempt-connection.js";
 import {
   getLeasedSharedCodexAppServerClient,

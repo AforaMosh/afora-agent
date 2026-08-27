@@ -1,5 +1,5 @@
 // Telegram tests cover approval callback data plugin behavior.
-import { buildApprovalResolutionRef } from "openclaw/plugin-sdk/approval-reference-runtime";
+import { buildApprovalResolutionRef } from "afora-agent/plugin-sdk/approval-reference-runtime";
 import { describe, expect, it } from "vitest";
 import {
   buildTelegramApprovalCallbackData,

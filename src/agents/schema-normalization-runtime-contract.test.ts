@@ -1,12 +1,12 @@
 // Verifies OpenAI tool schema normalization remains stable across runtime paths.
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
 import {
   createNativeOpenAIResponsesModel,
   createParameterFreeTool,
   createPermissiveTool,
   createStrictCompatibleTool,
   normalizedParameterFreeSchema,
-} from "openclaw/plugin-sdk/agent-runtime-test-contracts";
+} from "afora-agent/plugin-sdk/agent-runtime-test-contracts";
 import { describe, expect, it } from "vitest";
 import { createOpenAIResponsesContextManagementWrapper } from "../llm/providers/stream-wrappers/openai.js";
 import { buildProviderToolCompatFamilyHooks } from "../plugin-sdk/provider-tools.js";

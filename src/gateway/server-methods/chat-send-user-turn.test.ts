@@ -451,7 +451,7 @@ describe("prepareChatSendUserTurn", () => {
     ]);
     const persisted = buildPersistedUserTurnMessage({ ...input, text: "play this" });
     expect(
-      ((persisted as unknown as Record<string, unknown>)["__openclaw"] as { media?: unknown })
+      ((persisted as unknown as Record<string, unknown>)["__afora"] as { media?: unknown })
         .media,
     ).toEqual(input.media);
   });
@@ -525,7 +525,7 @@ describe("prepareChatSendUserTurn", () => {
     expect(first?.content).toBe(
       "read this\n[media reference removed - already processed by model]",
     );
-    expect((first?.["__openclaw"] as Record<string, unknown> | undefined)?.media).toBeUndefined();
+    expect((first?.["__afora"] as Record<string, unknown> | undefined)?.media).toBeUndefined();
   });
 
   it("hydrates and prunes a staged image claim-check alias as structured ownership", async () => {
@@ -590,7 +590,7 @@ describe("prepareChatSendUserTurn", () => {
       const persisted = buildPersistedUserTurnMessage({ ...input, text });
       expect(
         (
-          (persisted as unknown as Record<string, unknown>)["__openclaw"] as {
+          (persisted as unknown as Record<string, unknown>)["__afora"] as {
             media?: unknown;
           }
         ).media,
@@ -629,7 +629,7 @@ describe("prepareChatSendUserTurn", () => {
       expect(first?.content).toBe(
         `inspect\n[media reference removed - already processed by model]\n[media attached: ${unownedRef}]`,
       );
-      expect((first?.["__openclaw"] as Record<string, unknown> | undefined)?.media).toBeUndefined();
+      expect((first?.["__afora"] as Record<string, unknown> | undefined)?.media).toBeUndefined();
     } finally {
       await fs.rm(imagePath, { force: true });
     }

@@ -7,13 +7,13 @@ import os from "node:os";
 import path from "node:path";
 import { PassThrough } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
-import { claimOpenClawStateOwnership } from "../state/openclaw-state-ownership-operations.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
+import { claimAforaStateOwnership } from "../state/afora-state-ownership-operations.js";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "./kysely-sync.js";
 
 const { spawnMock } = vi.hoisted(() => ({ spawnMock: vi.fn() }));
@@ -37,21 +37,21 @@ vi.mock("node:child_process", async () => {
 });
 
 const tempDirs = new Set<string>();
-type GatewayRestartSentinelDatabase = Pick<OpenClawStateKyselyDatabase, "gateway_restart_sentinel">;
+type GatewayRestartSentinelDatabase = Pick<AforaStateKyselyDatabase, "gateway_restart_sentinel">;
 
 beforeEach(() => {
   spawnMock.mockReset();
   spawnMock.mockImplementation(() => {
     const child = createSpawnMock();
     process.nextTick(() => {
-      child.stdout.write("OPENCLAW_UPDATE_HANDOFF_READY\n");
+      child.stdout.write("AFORA_UPDATE_HANDOFF_READY\n");
     });
     return child;
   });
 });
 
 afterEach(async () => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   await Promise.all([...tempDirs].map((dir) => fs.rm(dir, { recursive: true, force: true })));
   tempDirs.clear();
   vi.resetModules();
@@ -70,7 +70,7 @@ function writeRestartSentinelRow(
     };
   },
 ): void {
-  const { db } = openOpenClawStateDatabase({ env });
+  const { db } = openAforaStateDatabase({ env });
   const stateDb = getNodeSqliteKysely<GatewayRestartSentinelDatabase>(db);
   executeSqliteQuerySync(
     db,
@@ -104,9 +104,9 @@ async function runOwnershipHelper(params: {
   const { execFile } =
     await vi.importActual<typeof import("node:child_process")>("node:child_process");
   const { startManagedServiceUpdateHandoff } = await import("./update-managed-service-handoff.js");
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-handoff-ownership-test-"));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-handoff-ownership-test-"));
   tempDirs.add(tmpDir);
-  const env = { OPENCLAW_STATE_DIR: tmpDir } as NodeJS.ProcessEnv;
+  const env = { AFORA_STATE_DIR: tmpDir } as NodeJS.ProcessEnv;
 
   await startManagedServiceUpdateHandoff({
     root: tmpDir,
@@ -115,7 +115,7 @@ async function runOwnershipHelper(params: {
     restartDelayMs: 500,
     parentPid: process.pid,
     execPath: "/usr/local/bin/node",
-    argv1: "/opt/openclaw/openclaw.mjs",
+    argv1: "/opt/AforaMosh/afora-agent.mjs",
     ...(params.handoffId ? { handoffId: params.handoffId } : {}),
     env,
     meta: {
@@ -188,10 +188,10 @@ describe("managed service update handoff external ownership", () => {
       | undefined;
     const { result, env, logPath } = await runOwnershipHelper({
       prepareStateDatabase: async (stateEnv) => {
-        const externalEnv = { ...stateEnv, OPENCLAW_SUPERVISOR_MODE: "external" };
-        claimOpenClawStateOwnership("gateway-supervisor", { env: externalEnv });
-        closeOpenClawStateDatabaseForTest();
-        const databasePath = resolveOpenClawStateSqlitePath(stateEnv);
+        const externalEnv = { ...stateEnv, AFORA_SUPERVISOR_MODE: "external" };
+        claimAforaStateOwnership("gateway-supervisor", { env: externalEnv });
+        closeAforaStateDatabaseForTest();
+        const databasePath = resolveAforaStateSqlitePath(stateEnv);
         const stat = await fs.stat(databasePath);
         before = {
           bytes: await fs.readFile(databasePath),
@@ -205,7 +205,7 @@ describe("managed service update handoff external ownership", () => {
     });
 
     expect(result).toEqual({ code: 1, signal: null });
-    const databasePath = resolveOpenClawStateSqlitePath(env);
+    const databasePath = resolveAforaStateSqlitePath(env);
     const stat = await fs.stat(databasePath);
     expect({
       bytes: await fs.readFile(databasePath),
@@ -216,7 +216,7 @@ describe("managed service update handoff external ownership", () => {
       mtimeMs: stat.mtimeMs,
     }).toEqual(before);
     await expect(fs.readFile(logPath, "utf8")).resolves.toMatch(
-      /gateway-supervisor.*OPENCLAW_SUPERVISOR_MODE=external/u,
+      /gateway-supervisor.*AFORA_SUPERVISOR_MODE=external/u,
     );
   });
 
@@ -250,9 +250,9 @@ describe("managed service update handoff external ownership", () => {
         metaHandoffId: "handoff-ownership-race",
         prepareStateDatabase: async (stateEnv) => {
           writeRestartSentinelRow(stateEnv, pendingSentinel);
-          closeOpenClawStateDatabaseForTest();
+          closeAforaStateDatabaseForTest();
           const sqlite = await import("node:sqlite");
-          claimant = new sqlite.DatabaseSync(resolveOpenClawStateSqlitePath(stateEnv));
+          claimant = new sqlite.DatabaseSync(resolveAforaStateSqlitePath(stateEnv));
           claimant.exec("BEGIN IMMEDIATE;");
           claimantTransactionOpen = true;
           claimant
@@ -300,7 +300,7 @@ describe("managed service update handoff external ownership", () => {
       throw new Error("expected the detached helper to return a result");
     }
     expect(helperResult.result).toEqual({ code: 1, signal: null });
-    const databasePath = resolveOpenClawStateSqlitePath(helperResult.env);
+    const databasePath = resolveAforaStateSqlitePath(helperResult.env);
     const sqlite = await import("node:sqlite");
     const verifyDb = new sqlite.DatabaseSync(databasePath, { readOnly: true });
     try {
@@ -317,7 +317,7 @@ describe("managed service update handoff external ownership", () => {
       verifyDb.close();
     }
     await expect(fs.readFile(helperResult.logPath, "utf8")).resolves.toMatch(
-      /race-supervisor.*OPENCLAW_SUPERVISOR_MODE=external/u,
+      /race-supervisor.*AFORA_SUPERVISOR_MODE=external/u,
     );
   });
 });

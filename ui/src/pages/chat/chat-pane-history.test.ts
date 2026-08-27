@@ -62,7 +62,7 @@ function createSessionContext(
 }
 
 function createTestChatPane(params: { client: GatewayBrowserClient; sessions: SessionCapability }) {
-  const pane = document.createElement("openclaw-chat-pane") as unknown as TestChatPane;
+  const pane = document.createElement("afora-chat-pane") as unknown as TestChatPane;
   Object.defineProperty(pane, "isConnected", {
     configurable: true,
     value: true,
@@ -119,12 +119,12 @@ function nativeHistoryMessage(seq: number, text = `message ${seq}`) {
   return {
     role: seq % 2 === 0 ? "assistant" : "user",
     content: [{ type: "text", text }],
-    __openclaw: { seq },
+    __afora: { seq },
   };
 }
 
 function nativeHistorySeq(message: unknown): number | undefined {
-  const metadata = (message as Record<string, unknown>)["__openclaw"] as
+  const metadata = (message as Record<string, unknown>)["__afora"] as
     | Record<string, unknown>
     | undefined;
   return typeof metadata?.seq === "number" ? metadata.seq : undefined;
@@ -159,7 +159,7 @@ describe("chat pane native history pagination", () => {
     const message = {
       role: "assistant",
       content: "Original answer",
-      __openclaw: { id: "source-message" },
+      __afora: { id: "source-message" },
     };
     const request = vi.fn().mockResolvedValue({ ok: true, message });
     const client = { request } as unknown as GatewayBrowserClient;
@@ -179,7 +179,7 @@ describe("chat pane native history pagination", () => {
   it("pages backward until a clicked reply target is loaded, then reveals it", async () => {
     const target = {
       ...nativeHistoryMessage(1, "Original answer"),
-      __openclaw: { id: "source-message", seq: 1 },
+      __afora: { id: "source-message", seq: 1 },
     };
     const request = vi
       .fn()

@@ -7,7 +7,7 @@ import {
   type ConversationRecord,
   type ConversationRegistryScope,
 } from "../config/sessions/conversation-registry.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveOutboundChannelPlugin } from "../infra/outbound/channel-resolution.js";
 import {
   ConversationDeliveryRejectedError,
@@ -129,7 +129,7 @@ function resultForCompletedOperation(params: {
 
 function prepareConversationMessageId(params: {
   plugin: ReturnType<typeof resolveOutboundChannelPlugin>;
-  config: OpenClawConfig;
+  config: AforaConfig;
   conversation: ConversationRecord;
   message: string;
 }): string {
@@ -162,7 +162,7 @@ function prepareConversationMessageId(params: {
 async function ensureConversationContextBinding(params: {
   deps: ConversationTurnDeps;
   scope: ConversationRegistryScope;
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentId: string;
   conversation: ConversationRecord;
   plugin: ReturnType<typeof resolveOutboundChannelPlugin>;
@@ -203,7 +203,7 @@ async function ensureConversationContextBinding(params: {
 /** Owns correlation, delivery, and waiting inside the Gateway process that receives ingress. */
 export async function runGatewayConversationTurn(
   params: {
-    config: OpenClawConfig;
+    config: AforaConfig;
     agentId: string;
     senderIsOwner: boolean;
     sourceSessionKey?: string;

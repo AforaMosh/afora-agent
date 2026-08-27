@@ -1,7 +1,7 @@
 // Covers installed plugin index record parsing and normalization.
 import fs from "node:fs";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createTempDirTracker } from "../../test/helpers/temp-dir.js";
 import {
@@ -11,9 +11,9 @@ import {
 } from "../config/plugin-install-record-map.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  runOpenClawStateWriteTransaction,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  runAforaStateWriteTransaction,
+} from "../state/afora-state-db.js";
 import { withMockedWindowsPlatform } from "../test-utils/vitest-spies.js";
 import { recordPluginCandidateInstallOwner } from "./candidate-install-owner.js";
 import type { PluginCandidate } from "./discovery.js";
@@ -44,7 +44,7 @@ function createPluginCandidate(stateDir: string, pluginId: string): PluginCandid
   const source = path.join(rootDir, "index.ts");
   fs.writeFileSync(source, "export function register() {}\n", "utf8");
   fs.writeFileSync(
-    path.join(rootDir, "openclaw.plugin.json"),
+    path.join(rootDir, "afora.plugin.json"),
     JSON.stringify({
       id: pluginId,
       configSchema: { type: "object" },
@@ -77,7 +77,7 @@ function updatePersistedInstallRecordsWithoutClearingCache(
   stateDir: string,
   records: Record<string, PluginInstallRecord>,
 ) {
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       db.prepare(
         `
@@ -88,12 +88,12 @@ function updatePersistedInstallRecordsWithoutClearingCache(
         `,
       ).run(JSON.stringify(records), Date.now());
     },
-    { env: { ...process.env, OPENCLAW_STATE_DIR: stateDir } },
+    { env: { ...process.env, AFORA_STATE_DIR: stateDir } },
   );
 }
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   vi.doUnmock("./installed-plugin-index-store.js");
   clearLoadInstalledPluginIndexInstallRecordsCache();
   tempDirs.cleanup();
@@ -101,15 +101,15 @@ afterEach(() => {
 
 describe("plugin index install records store", () => {
   it("writes machine-managed install records outside config", async () => {
-    const stateDir = tempDirs.make("openclaw-plugin-index-records-");
+    const stateDir = tempDirs.make("afora-plugin-index-records-");
     const candidate = createPluginCandidate(stateDir, "twitch");
 
     await writePersistedInstalledPluginIndexInstallRecords(
       {
         twitch: {
           source: "npm",
-          spec: "@openclaw/plugin-twitch@1.0.0",
-          installPath: "plugins/npm/@openclaw/plugin-twitch",
+          spec: "@afora/plugin-twitch@1.0.0",
+          installPath: "plugins/npm/@afora/plugin-twitch",
         },
       },
       {
@@ -120,7 +120,7 @@ describe("plugin index install records store", () => {
     );
 
     const indexPath = resolveInstalledPluginIndexRecordsStorePath({ stateDir });
-    expect(indexPath).toBe(path.join(stateDir, "state", "openclaw.sqlite"));
+    expect(indexPath).toBe(path.join(stateDir, "state", "afora.sqlite"));
     const persisted = await readPersistedInstalledPluginIndex({ stateDir });
     if (!persisted) {
       throw new Error("Expected persisted plugin index");
@@ -129,8 +129,8 @@ describe("plugin index install records store", () => {
     expect(persisted.generatedAtMs).toBe(1777118400000);
     expectRecordFields(persisted.installRecords?.twitch, {
       source: "npm",
-      spec: "@openclaw/plugin-twitch@1.0.0",
-      installPath: "plugins/npm/@openclaw/plugin-twitch",
+      spec: "@afora/plugin-twitch@1.0.0",
+      installPath: "plugins/npm/@afora/plugin-twitch",
     });
     expect(persisted.plugins).toHaveLength(1);
     expect(persisted.plugins?.[0]?.pluginId).toBe("twitch");
@@ -138,14 +138,14 @@ describe("plugin index install records store", () => {
     await expect(readPersistedInstalledPluginIndexInstallRecords({ stateDir })).resolves.toEqual({
       twitch: {
         source: "npm",
-        spec: "@openclaw/plugin-twitch@1.0.0",
-        installPath: "plugins/npm/@openclaw/plugin-twitch",
+        spec: "@afora/plugin-twitch@1.0.0",
+        installPath: "plugins/npm/@afora/plugin-twitch",
       },
     });
   });
 
   it("preserves install records for plugins without a discovered manifest", async () => {
-    const stateDir = tempDirs.make("openclaw-plugin-index-records-");
+    const stateDir = tempDirs.make("afora-plugin-index-records-");
 
     await writePersistedInstalledPluginIndexInstallRecords(
       {
@@ -182,7 +182,7 @@ describe("plugin index install records store", () => {
   });
 
   it("reads persisted records from the plugin index", async () => {
-    const stateDir = tempDirs.make("openclaw-plugin-index-records-");
+    const stateDir = tempDirs.make("afora-plugin-index-records-");
     const candidate = createPluginCandidate(stateDir, "persisted");
     await writePersistedInstalledPluginIndexInstallRecords(
       {
@@ -207,7 +207,7 @@ describe("plugin index install records store", () => {
   });
 
   it("returns prototype-safe map copies without cloning cached records", async () => {
-    const stateDir = tempDirs.make("openclaw-plugin-index-records-");
+    const stateDir = tempDirs.make("afora-plugin-index-records-");
     const candidate = createPluginCandidate(stateDir, "cached");
     await writePersistedInstalledPluginIndexInstallRecords(
       {
@@ -231,7 +231,7 @@ describe("plugin index install records store", () => {
   });
 
   it("invalidates cached records when the persisted index is rewritten", () => {
-    const stateDir = tempDirs.make("openclaw-plugin-index-records-");
+    const stateDir = tempDirs.make("afora-plugin-index-records-");
     const first = createPluginCandidate(stateDir, "first");
     writePersistedInstalledPluginIndexInstallRecordsSync(
       {
@@ -269,7 +269,7 @@ describe("plugin index install records store", () => {
   });
 
   it("keeps cached records until cache clear after an external index write", () => {
-    const stateDir = tempDirs.make("openclaw-plugin-index-records-");
+    const stateDir = tempDirs.make("afora-plugin-index-records-");
     const candidate = createPluginCandidate(stateDir, "external");
     writePersistedInstalledPluginIndexInstallRecordsSync(
       {
@@ -312,7 +312,7 @@ describe("plugin index install records store", () => {
   });
 
   it("reads persisted records when the plugin index has no plugin list", async () => {
-    const stateDir = tempDirs.make("openclaw-plugin-index-records-");
+    const stateDir = tempDirs.make("afora-plugin-index-records-");
     await writePersistedInstalledPluginIndexInstallRecords(
       {
         legacy: {
@@ -334,37 +334,37 @@ describe("plugin index install records store", () => {
   });
 
   it("recovers managed npm plugin records when the persisted ledger is empty", async () => {
-    const stateDir = tempDirs.make("openclaw-plugin-index-records-");
+    const stateDir = tempDirs.make("afora-plugin-index-records-");
     const discordDir = writeManagedNpmPlugin({
       stateDir,
-      packageName: "@openclaw/discord",
+      packageName: "@afora/discord",
       pluginId: "discord",
       version: "2026.5.2",
     });
     const codexDir = writeManagedNpmPlugin({
       stateDir,
-      packageName: "@openclaw/codex",
+      packageName: "@afora/codex",
       pluginId: "codex",
       version: "2026.5.2",
     });
     const loaded = await loadInstalledPluginIndexInstallRecords({ stateDir });
     expectRecordFields(loaded.codex, {
       source: "npm",
-      spec: "@openclaw/codex@2026.5.2",
+      spec: "@afora/codex@2026.5.2",
       installPath: codexDir,
       version: "2026.5.2",
-      resolvedName: "@openclaw/codex",
+      resolvedName: "@afora/codex",
       resolvedVersion: "2026.5.2",
-      resolvedSpec: "@openclaw/codex@2026.5.2",
+      resolvedSpec: "@afora/codex@2026.5.2",
     });
     expectRecordFields(loaded.discord, {
       source: "npm",
-      spec: "@openclaw/discord@2026.5.2",
+      spec: "@afora/discord@2026.5.2",
       installPath: discordDir,
       version: "2026.5.2",
-      resolvedName: "@openclaw/discord",
+      resolvedName: "@afora/discord",
       resolvedVersion: "2026.5.2",
-      resolvedSpec: "@openclaw/discord@2026.5.2",
+      resolvedSpec: "@afora/discord@2026.5.2",
     });
     const loadedSync = loadInstalledPluginIndexInstallRecordsSync({ stateDir });
     expectRecordFields(loadedSync.codex, { source: "npm", installPath: codexDir });
@@ -372,10 +372,10 @@ describe("plugin index install records store", () => {
   });
 
   it("still recovers legacy flat managed npm plugin records", async () => {
-    const stateDir = tempDirs.make("openclaw-plugin-index-records-");
+    const stateDir = tempDirs.make("afora-plugin-index-records-");
     const discordDir = writeManagedNpmPlugin({
       stateDir,
-      packageName: "@openclaw/discord",
+      packageName: "@afora/discord",
       pluginId: "discord",
       version: "2026.5.2",
       layout: "legacy",
@@ -383,18 +383,18 @@ describe("plugin index install records store", () => {
     const loaded = await loadInstalledPluginIndexInstallRecords({ stateDir });
     expectRecordFields(loaded.discord, {
       source: "npm",
-      spec: "@openclaw/discord@2026.5.2",
+      spec: "@afora/discord@2026.5.2",
       installPath: discordDir,
       version: "2026.5.2",
     });
   });
 
   it("keeps persisted install record metadata over recovered npm records", async () => {
-    const stateDir = tempDirs.make("openclaw-plugin-index-records-");
-    const customInstallPath = path.join(stateDir, "custom", "node_modules", "@openclaw", "discord");
+    const stateDir = tempDirs.make("afora-plugin-index-records-");
+    const customInstallPath = path.join(stateDir, "custom", "node_modules", "@afora", "discord");
     writeManagedNpmPlugin({
       stateDir,
-      packageName: "@openclaw/discord",
+      packageName: "@afora/discord",
       pluginId: "discord",
       version: "2026.5.2",
     });
@@ -403,7 +403,7 @@ describe("plugin index install records store", () => {
       {
         discord: {
           source: "npm",
-          spec: "@openclaw/discord@beta",
+          spec: "@afora/discord@beta",
           installPath: customInstallPath,
           integrity: "sha512-persisted",
         },
@@ -414,7 +414,7 @@ describe("plugin index install records store", () => {
     const loaded = await loadInstalledPluginIndexInstallRecords({ stateDir });
     expectRecordFields(loaded.discord, {
       source: "npm",
-      spec: "@openclaw/discord@beta",
+      spec: "@afora/discord@beta",
       installPath: customInstallPath,
       integrity: "sha512-persisted",
     });
@@ -422,66 +422,66 @@ describe("plugin index install records store", () => {
 
   it.each([
     {
-      expectedSpec: "@openclaw/discord",
+      expectedSpec: "@afora/discord",
       label: "bare",
       persistedVersion: "2026.7.1",
       recoveredVersion: "2026.7.1",
-      spec: "@openclaw/discord",
+      spec: "@afora/discord",
     },
     {
-      expectedSpec: "@openclaw/discord@latest",
+      expectedSpec: "@afora/discord@latest",
       label: "latest",
       persistedVersion: "2026.7.1",
       recoveredVersion: "2026.7.1",
-      spec: "@openclaw/discord@latest",
+      spec: "@afora/discord@latest",
     },
     {
-      expectedSpec: "@openclaw/discord@beta",
+      expectedSpec: "@afora/discord@beta",
       label: "dist-tag",
       persistedVersion: "2026.7.1",
       recoveredVersion: "2026.7.1",
-      spec: "@openclaw/discord@beta",
+      spec: "@afora/discord@beta",
     },
     {
-      expectedSpec: "@openclaw/discord@2026.7.1",
+      expectedSpec: "@afora/discord@2026.7.1",
       label: "obsolete exact-version",
       persistedVersion: "2026.6.4",
       recoveredVersion: "2026.7.1",
-      spec: "@openclaw/discord@2026.6.4",
+      spec: "@afora/discord@2026.6.4",
     },
     {
-      expectedSpec: "@openclaw/discord@2027.1.0",
+      expectedSpec: "@afora/discord@2027.1.0",
       label: "unsupported legacy range",
       persistedVersion: "2026.6.4",
       recoveredVersion: "2027.1.0",
-      spec: "@openclaw/discord@^2026.6.0",
+      spec: "@afora/discord@^2026.6.0",
     },
     {
-      expectedSpec: "@openclaw/discord@2026.7.2-beta.1",
+      expectedSpec: "@afora/discord@2026.7.2-beta.1",
       label: "bare prerelease",
       persistedVersion: "2026.7.1",
       recoveredVersion: "2026.7.2-beta.1",
-      spec: "@openclaw/discord",
+      spec: "@afora/discord",
     },
     {
-      expectedSpec: "@openclaw/discord@2026.7.2-beta.1",
+      expectedSpec: "@afora/discord@2026.7.2-beta.1",
       label: "latest prerelease",
       persistedVersion: "2026.7.1",
       recoveredVersion: "2026.7.2-beta.1",
-      spec: "@openclaw/discord@latest",
+      spec: "@afora/discord@latest",
     },
     {
-      expectedSpec: "@openclaw/discord@beta",
+      expectedSpec: "@afora/discord@beta",
       label: "opted-in prerelease",
       persistedVersion: "2026.7.1",
       recoveredVersion: "2026.7.2-beta.1",
-      spec: "@openclaw/discord@beta",
+      spec: "@afora/discord@beta",
     },
   ])(
     "recovers a valid managed generation with a compatible $label selector",
     async ({ expectedSpec, persistedVersion, recoveredVersion, spec }) => {
-      const stateDir = tempDirs.make("openclaw-plugin-index-records-");
-      const packageName = "@openclaw/discord";
+      const stateDir = tempDirs.make("afora-plugin-index-records-");
+      const packageName = "@afora/discord";
       const fixtureProjectRoot = resolvePluginNpmProjectDir({
         npmDir: path.join(stateDir, "npm"),
         packageName,
@@ -551,8 +551,8 @@ describe("plugin index install records store", () => {
   );
 
   it("recovers when an ENOTDIR ancestor blocks the stale managed generation", async () => {
-    const stateDir = tempDirs.make("openclaw-plugin-index-records-");
-    const packageName = "@openclaw/discord";
+    const stateDir = tempDirs.make("afora-plugin-index-records-");
+    const packageName = "@afora/discord";
     const npmDir = path.join(stateDir, "npm");
     const fixtureProjectRoot = resolvePluginNpmProjectDir({ npmDir, packageName });
     writeManagedNpmPlugin({
@@ -584,7 +584,7 @@ describe("plugin index install records store", () => {
       {
         discord: {
           source: "npm",
-          spec: "@openclaw/discord@latest",
+          spec: "@afora/discord@latest",
           installPath: stalePackageDir,
           resolvedName: packageName,
           resolvedVersion: "2026.6.4",
@@ -596,7 +596,7 @@ describe("plugin index install records store", () => {
 
     const loaded = await loadInstalledPluginIndexInstallRecords({ stateDir });
     const record = expectRecordFields(loaded.discord, {
-      spec: "@openclaw/discord@latest",
+      spec: "@afora/discord@latest",
       installPath: activePackageDir,
       resolvedVersion: "2026.7.1",
     });
@@ -604,8 +604,8 @@ describe("plugin index install records store", () => {
   });
 
   it("recovers a Windows managed generation when the persisted root casing differs", async () => {
-    const stateDir = tempDirs.make("openclaw-plugin-index-records-");
-    const packageName = "@openclaw/discord";
+    const stateDir = tempDirs.make("afora-plugin-index-records-");
+    const packageName = "@afora/discord";
     const npmDir = path.join(stateDir, "npm");
     const fixtureProjectRoot = resolvePluginNpmProjectDir({ npmDir, packageName });
     writeManagedNpmPlugin({
@@ -638,7 +638,7 @@ describe("plugin index install records store", () => {
       {
         discord: {
           source: "npm",
-          spec: "@openclaw/discord@latest",
+          spec: "@afora/discord@latest",
           installPath: stalePackageDir,
           resolvedName: packageName,
           resolvedVersion: "2026.6.4",
@@ -657,10 +657,10 @@ describe("plugin index install records store", () => {
   });
 
   it("recovers managed npm metadata when the persisted record points at an older package version", async () => {
-    const stateDir = tempDirs.make("openclaw-plugin-index-records-");
+    const stateDir = tempDirs.make("afora-plugin-index-records-");
     const codexDir = writeManagedNpmPlugin({
       stateDir,
-      packageName: "@openclaw/codex",
+      packageName: "@afora/codex",
       pluginId: "codex",
       version: "2026.5.18-beta.1",
     });
@@ -669,12 +669,12 @@ describe("plugin index install records store", () => {
       {
         codex: {
           source: "npm",
-          spec: "@openclaw/codex@2026.5.16-beta.1",
+          spec: "@afora/codex@2026.5.16-beta.1",
           installPath: codexDir,
           version: "2026.5.16-beta.1",
-          resolvedName: "@openclaw/codex",
+          resolvedName: "@afora/codex",
           resolvedVersion: "2026.5.16-beta.1",
-          resolvedSpec: "@openclaw/codex@2026.5.16-beta.1",
+          resolvedSpec: "@afora/codex@2026.5.16-beta.1",
           integrity: "sha512-stale",
           shasum: "stale",
           installedAt: "2026-05-16T01:42:54.609Z",
@@ -687,12 +687,12 @@ describe("plugin index install records store", () => {
     const loaded = await loadInstalledPluginIndexInstallRecords({ stateDir });
     const record = expectRecordFields(loaded.codex, {
       source: "npm",
-      spec: "@openclaw/codex@2026.5.18-beta.1",
+      spec: "@afora/codex@2026.5.18-beta.1",
       installPath: codexDir,
       version: "2026.5.18-beta.1",
-      resolvedName: "@openclaw/codex",
+      resolvedName: "@afora/codex",
       resolvedVersion: "2026.5.18-beta.1",
-      resolvedSpec: "@openclaw/codex@2026.5.18-beta.1",
+      resolvedSpec: "@afora/codex@2026.5.18-beta.1",
     });
     expect(record.integrity).toBeUndefined();
     expect(record.shasum).toBeUndefined();
@@ -707,16 +707,16 @@ describe("plugin index install records store", () => {
   });
 
   it("keeps recovered managed npm records cached until cache clear after package changes", () => {
-    const stateDir = tempDirs.make("openclaw-plugin-index-records-");
+    const stateDir = tempDirs.make("afora-plugin-index-records-");
     const codexDir = writeManagedNpmPlugin({
       stateDir,
-      packageName: "@openclaw/codex",
+      packageName: "@afora/codex",
       pluginId: "codex",
       version: "2026.5.18-beta.1",
     });
     expectRecordFields(loadInstalledPluginIndexInstallRecordsSync({ stateDir }).codex, {
       source: "npm",
-      spec: "@openclaw/codex@2026.5.18-beta.1",
+      spec: "@afora/codex@2026.5.18-beta.1",
       installPath: codexDir,
       version: "2026.5.18-beta.1",
     });
@@ -737,27 +737,27 @@ describe("plugin index install records store", () => {
 
     expectRecordFields(loadInstalledPluginIndexInstallRecordsSync({ stateDir }).codex, {
       source: "npm",
-      spec: "@openclaw/codex@2026.5.18-beta.1",
+      spec: "@afora/codex@2026.5.18-beta.1",
       installPath: codexDir,
       version: "2026.5.18-beta.1",
       resolvedVersion: "2026.5.18-beta.1",
-      resolvedSpec: "@openclaw/codex@2026.5.18-beta.1",
+      resolvedSpec: "@afora/codex@2026.5.18-beta.1",
     });
 
     clearLoadInstalledPluginIndexInstallRecordsCache();
 
     expectRecordFields(loadInstalledPluginIndexInstallRecordsSync({ stateDir }).codex, {
       source: "npm",
-      spec: "@openclaw/codex@2026.5.18-beta.1",
+      spec: "@afora/codex@2026.5.18-beta.1",
       installPath: codexDir,
       version: "2026.5.19-beta.1",
       resolvedVersion: "2026.5.19-beta.1",
-      resolvedSpec: "@openclaw/codex@2026.5.19-beta.1",
+      resolvedSpec: "@afora/codex@2026.5.19-beta.1",
     });
   });
 
   it("does not probe install record files again on hot cache hits", () => {
-    const stateDir = tempDirs.make("openclaw-plugin-index-records-");
+    const stateDir = tempDirs.make("afora-plugin-index-records-");
     const candidate = createPluginCandidate(stateDir, "hot-cache");
     writePersistedInstalledPluginIndexInstallRecordsSync(
       {
@@ -789,7 +789,7 @@ describe("plugin index install records store", () => {
   });
 
   it("preserves git install resolution fields in persisted records", async () => {
-    const stateDir = tempDirs.make("openclaw-plugin-index-records-");
+    const stateDir = tempDirs.make("afora-plugin-index-records-");
     const candidate = createPluginCandidate(stateDir, "git-demo");
     await writePersistedInstalledPluginIndexInstallRecords(
       {
@@ -816,7 +816,7 @@ describe("plugin index install records store", () => {
   });
 
   it("preserves ClawHub ClawPack install metadata in persisted records", async () => {
-    const stateDir = tempDirs.make("openclaw-plugin-index-records-");
+    const stateDir = tempDirs.make("afora-plugin-index-records-");
     const candidate = createPluginCandidate(stateDir, "clawpack-demo");
     await writePersistedInstalledPluginIndexInstallRecords(
       {
@@ -872,7 +872,7 @@ describe("plugin index install records store", () => {
   });
 
   it("returns an empty record map when no plugin index exists", () => {
-    const stateDir = tempDirs.make("openclaw-plugin-index-records-");
+    const stateDir = tempDirs.make("afora-plugin-index-records-");
 
     const records = loadInstalledPluginIndexInstallRecordsSync({ stateDir });
     expect(Object.keys(records)).toEqual([]);
@@ -957,7 +957,7 @@ describe("plugin index install records store", () => {
   });
 
   it("returns empty records when the persisted plugin index is missing", async () => {
-    const stateDir = tempDirs.make("openclaw-plugin-index-records-");
+    const stateDir = tempDirs.make("afora-plugin-index-records-");
 
     await expect(readPersistedInstalledPluginIndexInstallRecords({ stateDir })).resolves.toBeNull();
     const records = await loadInstalledPluginIndexInstallRecords({ stateDir });

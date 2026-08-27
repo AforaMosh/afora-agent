@@ -1,5 +1,5 @@
 /** Parsing for the /send override command embedded in inbound auto-reply text. */
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import { normalizeCommandBody } from "./commands-registry.js";
 import { stripInboundMetadata } from "./reply/strip-inbound-meta.js";
 

@@ -1,6 +1,6 @@
 export function isLocalAssistantAttachmentSource(source: string): boolean {
   const trimmed = source.trim();
-  if (/^\/(?:__openclaw__|media|api\/chat\/media\/outgoing)\//.test(trimmed)) {
+  if (/^\/(?:__afora__|media|api\/chat\/media\/outgoing)\//.test(trimmed)) {
     return false;
   }
   return (
@@ -127,7 +127,7 @@ export function buildAssistantAttachmentUrl(
   if (normalizedMediaTicket) {
     params.set("mediaTicket", normalizedMediaTicket);
   }
-  return `${normalizedBasePath}/__openclaw__/assistant-media?${params.toString()}`;
+  return `${normalizedBasePath}/__afora__/assistant-media?${params.toString()}`;
 }
 
 export function appendAttachmentUrlSearchParam(

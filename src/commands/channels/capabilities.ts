@@ -1,8 +1,8 @@
-// Implements `openclaw channels capabilities` account capability/probe reporting.
+// Implements `afora channels capabilities` account capability/probe reporting.
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { theme } from "../../../packages/terminal-core/src/theme.js";
 import { resolveChannelDefaultAccountId } from "../../channels/plugins/helpers.js";
 import {
@@ -20,7 +20,7 @@ import { formatCliCommand } from "../../cli/command-format.js";
 import { formatUnknownChannelMessage } from "../../cli/error-format.js";
 import { parseTimeoutMsWithFallback } from "../../cli/parse-timeout.js";
 import { readConfigFileSnapshot } from "../../config/config.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { danger } from "../../globals.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { defaultRuntime, type RuntimeEnv, writeRuntimeJson } from "../../runtime.js";
@@ -214,7 +214,7 @@ function renderDisplayLine(line: ChannelCapabilitiesDisplayLine) {
 
 async function resolveChannelReports(params: {
   plugin: ChannelPlugin;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   timeoutMs: number;
   accountOverride?: string;
   target?: string;
@@ -317,7 +317,7 @@ export async function channelsCapabilitiesCommand(
   if (opts.account && (!rawChannel || rawChannel === "all")) {
     runtime.error(
       danger(
-        `--account requires a specific --channel. Run ${formatCliCommand("openclaw channels list")} to choose one.`,
+        `--account requires a specific --channel. Run ${formatCliCommand("afora channels list")} to choose one.`,
       ),
     );
     runtime.exit(1);
@@ -326,7 +326,7 @@ export async function channelsCapabilitiesCommand(
   if (rawTarget && (!rawChannel || rawChannel === "all")) {
     runtime.error(
       danger(
-        `--target requires a specific --channel. Run ${formatCliCommand("openclaw channels list")} to choose one.`,
+        `--target requires a specific --channel. Run ${formatCliCommand("afora channels list")} to choose one.`,
       ),
     );
     runtime.exit(1);
@@ -365,7 +365,7 @@ export async function channelsCapabilitiesCommand(
       runtime.log(
         theme.muted(
           `No configured channel capabilities found. Run ${formatCliCommand(
-            "openclaw channels list --all",
+            "afora channels list --all",
           )} to see available channels.`,
         ),
       );

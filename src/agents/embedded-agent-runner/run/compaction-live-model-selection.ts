@@ -1,4 +1,4 @@
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import type { LiveSessionModelSelection } from "../../live-model-switch.js";
 
 type AuthProfileSource = "auto" | "user";

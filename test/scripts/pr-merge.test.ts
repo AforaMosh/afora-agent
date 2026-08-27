@@ -25,7 +25,7 @@ type MergeScenario = {
 };
 
 function runMerge(scenario: MergeScenario = {}) {
-  const root = tempDirs.make("openclaw-pr-merge-");
+  const root = tempDirs.make("afora-pr-merge-");
   const localDir = join(root, ".local");
   const calls = join(root, "gh-calls.log");
   const autoCalled = join(root, "auto-called");
@@ -42,7 +42,7 @@ function runMerge(scenario: MergeScenario = {}) {
     `#!/usr/bin/env node
 const { appendFileSync, readFileSync } = require("node:fs");
 const args = process.argv.slice(2);
-appendFileSync(process.env.OPENCLAW_TEST_RG_CALLS, JSON.stringify(args) + "\\n");
+appendFileSync(process.env.AFORA_TEST_RG_CALLS, JSON.stringify(args) + "\\n");
 const pattern = args.at(-2);
 const file = args.at(-1);
 const flags = args.includes("-i") ? "i" : "";
@@ -89,18 +89,18 @@ process.exit(new RegExp(pattern, flags).test(readFileSync(file, "utf8")) ? 0 : 1
 
   const shell = `
 set -euo pipefail
-source "$OPENCLAW_TEST_MERGE_SCRIPT"
-script_parent_dir="$OPENCLAW_TEST_SCRIPTS_DIR"
+source "$AFORA_TEST_MERGE_SCRIPT"
+script_parent_dir="$AFORA_TEST_SCRIPTS_DIR"
 enter_worktree() { :; }
 require_artifact() { :; }
 validate_review_artifact_data() {
-  if [ "$OPENCLAW_TEST_REVIEW_ARTIFACTS" != "valid" ]; then
+  if [ "$AFORA_TEST_REVIEW_ARTIFACTS" != "valid" ]; then
     echo 'review artifact validation failed' >&2
     return 1
   fi
 }
 require_ready_review_recommendation() {
-  if [ "$OPENCLAW_TEST_REVIEW_RECOMMENDATION" != "ready" ]; then
+  if [ "$AFORA_TEST_REVIEW_RECOMMENDATION" != "ready" ]; then
     echo 'review recommendation is not ready' >&2
     return 1
   fi
@@ -109,16 +109,16 @@ verify_prep_branch_matches_prepared_head() { :; }
 mark_pr_operation_side_effects_started() { :; }
 mainline_drift_requires_sync() { return 1; }
 print_relevant_log_excerpt() { cat "$1"; }
-repo_root() { printf '%s\\n' "$OPENCLAW_TEST_ROOT"; }
-remove_worktree_if_present() { printf 'worktree-cleanup %s\\n' "$*" >> "$OPENCLAW_TEST_LIFECYCLE"; }
-delete_local_branch_if_safe() { printf 'branch-cleanup %s\\n' "$*" >> "$OPENCLAW_TEST_LIFECYCLE"; }
+repo_root() { printf '%s\\n' "$AFORA_TEST_ROOT"; }
+remove_worktree_if_present() { printf 'worktree-cleanup %s\\n' "$*" >> "$AFORA_TEST_LIFECYCLE"; }
+delete_local_branch_if_safe() { printf 'branch-cleanup %s\\n' "$*" >> "$AFORA_TEST_LIFECYCLE"; }
 sleep() { :; }
 pr_meta_json() {
   printf '%s\\n' '{"state":"OPEN","isDraft":false,"headRefOid":"${headSha}"}'
 }
 git() {
   if [ "\${1-}" = "merge-base" ]; then
-    if [ "$OPENCLAW_TEST_MERGE_STATE_STATUS" = "BEHIND" ]; then
+    if [ "$AFORA_TEST_MERGE_STATE_STATUS" = "BEHIND" ]; then
       return 1
     fi
     return 0
@@ -127,7 +127,7 @@ git() {
 }
 node() {
   if [[ "\${1-}" = */scripts/watch-pr-ci.mjs ]]; then
-    printf 'watch %s\\n' "$*" >> "$OPENCLAW_TEST_GH_CALLS"
+    printf 'watch %s\\n' "$*" >> "$AFORA_TEST_GH_CALLS"
     return 0
   fi
   command node "$@"
@@ -135,13 +135,13 @@ node() {
 gh_route() {
   local route="$1"
   shift
-  printf '%s %s\\n' "$route" "$*" >> "$OPENCLAW_TEST_GH_CALLS"
+  printf '%s %s\\n' "$route" "$*" >> "$AFORA_TEST_GH_CALLS"
   case "$1 $2" in
     "pr checks")
       case " $* " in
         *" --json "*)
-          printf '%s\\n' "$OPENCLAW_TEST_CHECKS_JSON"
-          return "$OPENCLAW_TEST_CHECKS_EXIT_STATUS"
+          printf '%s\\n' "$AFORA_TEST_CHECKS_JSON"
+          return "$AFORA_TEST_CHECKS_EXIT_STATUS"
           ;;
       esac
       ;;
@@ -151,51 +151,51 @@ gh_route() {
           printf '%s\\n' '{"state":"OPEN","isDraft":false}'
           ;;
         *"--json state,headRefOid,mergeable,mergeStateStatus,autoMergeRequest"*)
-          if [ -e "$OPENCLAW_TEST_AUTO_STATE" ] && [ "$(cat "$OPENCLAW_TEST_AUTO_STATE")" = "enabled" ]; then
-            printf '%s\\n' "$OPENCLAW_TEST_POST_AUTO_META"
-          elif [ -e "$OPENCLAW_TEST_AUTO_STATE" ]; then
-            printf '%s\\n' "$OPENCLAW_TEST_DISABLED_AUTO_META"
+          if [ -e "$AFORA_TEST_AUTO_STATE" ] && [ "$(cat "$AFORA_TEST_AUTO_STATE")" = "enabled" ]; then
+            printf '%s\\n' "$AFORA_TEST_POST_AUTO_META"
+          elif [ -e "$AFORA_TEST_AUTO_STATE" ]; then
+            printf '%s\\n' "$AFORA_TEST_DISABLED_AUTO_META"
           else
-            printf '%s\\n' "$OPENCLAW_TEST_PRE_AUTO_META"
+            printf '%s\\n' "$AFORA_TEST_PRE_AUTO_META"
           fi
           ;;
         *"--json state,headRefOid,autoMergeRequest"*)
-          if [ -e "$OPENCLAW_TEST_AUTO_STATE" ] && [ "$(cat "$OPENCLAW_TEST_AUTO_STATE")" = "disabled" ]; then
-            printf '%s\\n' "$OPENCLAW_TEST_DISABLED_AUTO_META"
+          if [ -e "$AFORA_TEST_AUTO_STATE" ] && [ "$(cat "$AFORA_TEST_AUTO_STATE")" = "disabled" ]; then
+            printf '%s\\n' "$AFORA_TEST_DISABLED_AUTO_META"
           else
-            printf '%s\\n' "$OPENCLAW_TEST_POST_AUTO_META"
+            printf '%s\\n' "$AFORA_TEST_POST_AUTO_META"
           fi
           ;;
         *"--json state --jq .state"*) printf 'MERGED\\n' ;;
-        *"--json mergeCommit"*) printf '%s\\n' "$OPENCLAW_TEST_LANDED_SHA" ;;
+        *"--json mergeCommit"*) printf '%s\\n' "$AFORA_TEST_LANDED_SHA" ;;
         *"--json commits"*) printf '1\\n' ;;
         *"--json headRefName,headRepository"*)
-          printf '%s\\n' '{"headRefName":"feature","headRepository":{"name":"openclaw"},"headRepositoryOwner":{"login":"openclaw"},"isCrossRepository":false,"maintainerCanModify":true}'
+          printf '%s\\n' '{"headRefName":"feature","headRepository":{"name":"afora"},"headRepositoryOwner":{"login":"afora"},"isCrossRepository":false,"maintainerCanModify":true}'
           ;;
-        *"--json url"*) printf 'https://github.com/openclaw/openclaw/pull/123\\n' ;;
+        *"--json url"*) printf 'https://github.com/AforaMosh/afora-agent/pull/123\\n' ;;
         *) printf '%s\\n' '{"state":"OPEN"}' ;;
       esac
       ;;
     "pr merge")
       case " $* " in
         *" --disable-auto "*)
-          printf 'disabled\\n' > "$OPENCLAW_TEST_AUTO_STATE"
+          printf 'disabled\\n' > "$AFORA_TEST_AUTO_STATE"
           ;;
         *" --auto "*)
-          : > "$OPENCLAW_TEST_AUTO_CALLED"
-          printf 'enabled\\n' > "$OPENCLAW_TEST_AUTO_STATE"
-          if [ "$OPENCLAW_TEST_AUTO_RESULT" = "unavailable" ]; then
-            echo "$OPENCLAW_TEST_AUTO_ERROR" >&2
+          : > "$AFORA_TEST_AUTO_CALLED"
+          printf 'enabled\\n' > "$AFORA_TEST_AUTO_STATE"
+          if [ "$AFORA_TEST_AUTO_RESULT" = "unavailable" ]; then
+            echo "$AFORA_TEST_AUTO_ERROR" >&2
             return 1
           fi
-          if [ "$OPENCLAW_TEST_AUTO_RESULT" = "inconclusive" ]; then
+          if [ "$AFORA_TEST_AUTO_RESULT" = "inconclusive" ]; then
             echo 'transport closed after mutation' >&2
             return 1
           fi
           ;;
       esac
       ;;
-    "repo view") printf 'openclaw/openclaw\\n' ;;
+    "repo view") printf 'AforaMosh/afora-agent\\n' ;;
     "api "*)
       local api_arg
       for api_arg in "$@"; do
@@ -211,26 +211,26 @@ gh_route() {
           local arg
           for arg in "$@"; do
             case "$arg" in
-              body=*) printf '%s' "\${arg#body=}" > "$OPENCLAW_TEST_COMMENT_BODY" ;;
+              body=*) printf '%s' "\${arg#body=}" > "$AFORA_TEST_COMMENT_BODY" ;;
             esac
           done
           local attempts=0
-          if [ -e "$OPENCLAW_TEST_COMMENT_ATTEMPTS" ]; then
-            attempts=$(cat "$OPENCLAW_TEST_COMMENT_ATTEMPTS")
+          if [ -e "$AFORA_TEST_COMMENT_ATTEMPTS" ]; then
+            attempts=$(cat "$AFORA_TEST_COMMENT_ATTEMPTS")
           fi
           attempts=$((attempts + 1))
-          printf '%s\\n' "$attempts" > "$OPENCLAW_TEST_COMMENT_ATTEMPTS"
-          printf 'comment\\n' >> "$OPENCLAW_TEST_LIFECYCLE"
-          if [ "$attempts" -le "$OPENCLAW_TEST_COMMENT_FAILURES" ]; then
+          printf '%s\\n' "$attempts" > "$AFORA_TEST_COMMENT_ATTEMPTS"
+          printf 'comment\\n' >> "$AFORA_TEST_LIFECYCLE"
+          if [ "$attempts" -le "$AFORA_TEST_COMMENT_FAILURES" ]; then
             echo 'transient comment failure' >&2
             return 1
           fi
-          if [ "$OPENCLAW_TEST_COMMENT_EMPTY" = "true" ]; then
+          if [ "$AFORA_TEST_COMMENT_EMPTY" = "true" ]; then
             return 0
           fi
-          printf 'https://github.com/openclaw/openclaw/pull/123#issuecomment-1\\n'
+          printf 'https://github.com/AforaMosh/afora-agent/pull/123#issuecomment-1\\n'
           ;;
-        *"git/refs/"*) printf 'remote-cleanup\\n' >> "$OPENCLAW_TEST_LIFECYCLE" ;;
+        *"git/refs/"*) printf 'remote-cleanup\\n' >> "$AFORA_TEST_LIFECYCLE" ;;
         *) : ;;
       esac
       ;;
@@ -239,7 +239,7 @@ gh_route() {
 }
 gh() { gh_route path "$@"; }
 gh_plain() { gh_route plain "$@"; }
-merge_run 123 "$OPENCLAW_TEST_AUTO_REQUESTED"
+merge_run 123 "$AFORA_TEST_AUTO_REQUESTED"
 `;
 
   const result = spawnSync("bash", ["-c", shell], {
@@ -247,31 +247,31 @@ merge_run 123 "$OPENCLAW_TEST_AUTO_REQUESTED"
     encoding: "utf8",
     env: {
       ...process.env,
-      OPENCLAW_TEST_AUTO_CALLED: autoCalled,
-      OPENCLAW_TEST_AUTO_ERROR:
+      AFORA_TEST_AUTO_CALLED: autoCalled,
+      AFORA_TEST_AUTO_ERROR:
         scenario.autoError ?? "GraphQL: Pull request auto merge is not allowed for this repository",
-      OPENCLAW_TEST_AUTO_REQUESTED: scenario.auto ? "true" : "false",
-      OPENCLAW_TEST_AUTO_RESULT: scenario.autoResult ?? "enabled",
-      OPENCLAW_TEST_AUTO_STATE: autoState,
-      OPENCLAW_TEST_CHECKS_EXIT_STATUS: scenario.checks === "pending" ? "8" : "0",
-      OPENCLAW_TEST_CHECKS_JSON: JSON.stringify(checks),
-      OPENCLAW_TEST_COMMENT_ATTEMPTS: commentAttempts,
-      OPENCLAW_TEST_COMMENT_BODY: commentBody,
-      OPENCLAW_TEST_COMMENT_EMPTY: scenario.commentEmpty ? "true" : "false",
-      OPENCLAW_TEST_COMMENT_FAILURES: String(scenario.commentFailures ?? 0),
-      OPENCLAW_TEST_DISABLED_AUTO_META: disabledAutoMeta,
-      OPENCLAW_TEST_GH_CALLS: calls,
-      OPENCLAW_TEST_LANDED_SHA: landedSha,
-      OPENCLAW_TEST_LIFECYCLE: lifecycle,
-      OPENCLAW_TEST_MERGE_SCRIPT: mergeScript,
-      OPENCLAW_TEST_MERGE_STATE_STATUS: scenario.mergeStateStatus ?? "BEHIND",
-      OPENCLAW_TEST_POST_AUTO_META: postAutoMeta,
-      OPENCLAW_TEST_PRE_AUTO_META: preAutoMeta,
-      OPENCLAW_TEST_REVIEW_ARTIFACTS: scenario.reviewArtifacts ?? "valid",
-      OPENCLAW_TEST_REVIEW_RECOMMENDATION: scenario.recommendation ?? "ready",
-      OPENCLAW_TEST_RG_CALLS: rgCalls,
-      OPENCLAW_TEST_ROOT: root,
-      OPENCLAW_TEST_SCRIPTS_DIR: join(process.cwd(), "scripts"),
+      AFORA_TEST_AUTO_REQUESTED: scenario.auto ? "true" : "false",
+      AFORA_TEST_AUTO_RESULT: scenario.autoResult ?? "enabled",
+      AFORA_TEST_AUTO_STATE: autoState,
+      AFORA_TEST_CHECKS_EXIT_STATUS: scenario.checks === "pending" ? "8" : "0",
+      AFORA_TEST_CHECKS_JSON: JSON.stringify(checks),
+      AFORA_TEST_COMMENT_ATTEMPTS: commentAttempts,
+      AFORA_TEST_COMMENT_BODY: commentBody,
+      AFORA_TEST_COMMENT_EMPTY: scenario.commentEmpty ? "true" : "false",
+      AFORA_TEST_COMMENT_FAILURES: String(scenario.commentFailures ?? 0),
+      AFORA_TEST_DISABLED_AUTO_META: disabledAutoMeta,
+      AFORA_TEST_GH_CALLS: calls,
+      AFORA_TEST_LANDED_SHA: landedSha,
+      AFORA_TEST_LIFECYCLE: lifecycle,
+      AFORA_TEST_MERGE_SCRIPT: mergeScript,
+      AFORA_TEST_MERGE_STATE_STATUS: scenario.mergeStateStatus ?? "BEHIND",
+      AFORA_TEST_POST_AUTO_META: postAutoMeta,
+      AFORA_TEST_PRE_AUTO_META: preAutoMeta,
+      AFORA_TEST_REVIEW_ARTIFACTS: scenario.reviewArtifacts ?? "valid",
+      AFORA_TEST_REVIEW_RECOMMENDATION: scenario.recommendation ?? "ready",
+      AFORA_TEST_RG_CALLS: rgCalls,
+      AFORA_TEST_ROOT: root,
+      AFORA_TEST_SCRIPTS_DIR: join(process.cwd(), "scripts"),
       PATH: `${bin}${delimiter}${process.env.PATH ?? ""}`,
     },
   });
@@ -347,10 +347,10 @@ describePosix("scripts/pr merge-run", () => {
     expect(result.calls).not.toContain("--json commits");
     expect(result.stdout).toContain("merge-run complete for PR #123");
     expect(result.stdout).toContain(
-      "completion comment: https://github.com/openclaw/openclaw/pull/123#issuecomment-1",
+      "completion comment: https://github.com/AforaMosh/afora-agent/pull/123#issuecomment-1",
     );
     expect(result.commentBody).toBe(
-      `Merged via squash.\n\n- Prepared head SHA: [${headSha}](https://github.com/openclaw/openclaw/pull/123/commits/${headSha})\n- Landed commit: [${landedSha}](https://github.com/openclaw/openclaw/commit/${landedSha})`,
+      `Merged via squash.\n\n- Prepared head SHA: [${headSha}](https://github.com/AforaMosh/afora-agent/pull/123/commits/${headSha})\n- Landed commit: [${landedSha}](https://github.com/AforaMosh/afora-agent/commit/${landedSha})`,
     );
     expect(result.rgCalls).toBe("");
     expect(result.lifecycle).toBe(

@@ -1,7 +1,7 @@
 import {
   assertCodeModeResponsesToolSurface,
   enforceCodeModeResponsesToolSurface,
-} from "@openclaw/ai/transports";
+} from "@afora/ai/transports";
 import { describe, expect, it } from "vitest";
 
 describe("OpenAI Code Mode direct tools", () => {
@@ -26,7 +26,7 @@ describe("OpenAI Code Mode direct tools", () => {
     expect(() => assertCodeModeResponsesToolSurface(payload, visibleToolNames)).not.toThrow();
   });
 
-  it.each(["sessions_yield", "structured_output", "heartbeat_respond", "openclaw"])(
+  it.each(["sessions_yield", "structured_output", "heartbeat_respond", "afora"])(
     "preserves the request-visible direct-only %s tool and rejects undeclared tools",
     (directToolName) => {
       const visibleToolNames = new Set(["exec", "wait", directToolName]);

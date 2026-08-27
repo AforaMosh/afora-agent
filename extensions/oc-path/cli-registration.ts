@@ -1,5 +1,5 @@
 // OC Path module implements cli registration behavior.
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
 
 function hasCliFlag(argv: readonly string[], flag: "--human" | "--json"): boolean {
   for (const arg of argv.slice(2)) {
@@ -20,7 +20,7 @@ function isPathMachineOutput(params: { argv: readonly string[]; stdoutIsTTY: boo
   return !hasCliFlag(params.argv, "--human") && !params.stdoutIsTTY;
 }
 
-export function registerOcPathCli(api: OpenClawPluginApi): void {
+export function registerOcPathCli(api: AforaPluginApi): void {
   api.registerCli(
     async ({ program }) => {
       const { registerPathCli } = await import("./src/cli.js");

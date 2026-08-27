@@ -1,9 +1,9 @@
-import { findStructuredAuthParamRanges, redactStructuredAuthHeaders } from "@openclaw/acp-core";
-import { isSensitiveUrlQueryParamName } from "@openclaw/net-policy/redact-sensitive-url";
-import { expectDefined } from "@openclaw/normalization-core";
+import { findStructuredAuthParamRanges, redactStructuredAuthHeaders } from "@afora/acp-core";
+import { isSensitiveUrlQueryParamName } from "@afora/net-policy/redact-sensitive-url";
+import { expectDefined } from "@afora/normalization-core";
 // Redaction helpers scrub secrets and sensitive identifiers from log output.
-import { sliceUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { sliceUtf16Safe } from "@afora/normalization-core/utf16-slice";
+import type { AforaConfig } from "../config/types.afora.js";
 import { compileConfigRegex } from "../security/config-regex.js";
 import { readLoggingConfig } from "./config.js";
 import { replacePatternBounded } from "./redact-bounded.js";
@@ -27,7 +27,7 @@ import { redactRegisteredSecretValues } from "./secret-redaction-registry.js";
 
 type RedactSensitiveMode = "off" | "tools";
 type RedactPattern = string | RegExp;
-type LoggingConfig = OpenClawConfig["logging"];
+type LoggingConfig = AforaConfig["logging"];
 
 const DEFAULT_REDACT_MODE: RedactSensitiveMode = "tools";
 const DEFAULT_REDACT_MIN_LENGTH = 18;

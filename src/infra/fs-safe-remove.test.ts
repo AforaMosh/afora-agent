@@ -28,7 +28,7 @@ async function expectRejectCode(promise: Promise<unknown>, expected: string | Re
 
 describe("removePathWithinRoot", () => {
   it("removes a file within root", async () => {
-    const root = await tempDirs.make("openclaw-fs-safe-root-");
+    const root = await tempDirs.make("afora-fs-safe-root-");
     const targetPath = path.join(root, "nested", "shared.txt");
     await fs.mkdir(path.dirname(targetPath), { recursive: true });
     await fs.writeFile(targetPath, "hello");
@@ -43,7 +43,7 @@ describe("removePathWithinRoot", () => {
   });
 
   it("removes an empty directory within root", async () => {
-    const root = await tempDirs.make("openclaw-fs-safe-root-");
+    const root = await tempDirs.make("afora-fs-safe-root-");
     const targetPath = path.join(root, "nested", "empty");
     await fs.mkdir(targetPath, { recursive: true });
 
@@ -57,7 +57,7 @@ describe("removePathWithinRoot", () => {
   });
 
   it("rejects non-recursive removal of non-empty directories", async () => {
-    const root = await tempDirs.make("openclaw-fs-safe-root-");
+    const root = await tempDirs.make("afora-fs-safe-root-");
     const targetDir = path.join(root, "nested");
     const childPath = path.join(targetDir, "child.txt");
     await fs.mkdir(targetDir, { recursive: true });
@@ -76,7 +76,7 @@ describe("removePathWithinRoot", () => {
   });
 
   it("removes directory trees recursively", async () => {
-    const root = await tempDirs.make("openclaw-fs-safe-root-");
+    const root = await tempDirs.make("afora-fs-safe-root-");
     await fs.mkdir(path.join(root, "tree", "b-dir"), { recursive: true });
     await fs.mkdir(path.join(root, "tree", "a-dir", "nested"), { recursive: true });
     await fs.writeFile(path.join(root, "tree", "b-dir", "b.txt"), "b");
@@ -93,7 +93,7 @@ describe("removePathWithinRoot", () => {
   });
 
   it("suppresses only not-found errors when force is enabled", async () => {
-    const root = await tempDirs.make("openclaw-fs-safe-root-");
+    const root = await tempDirs.make("afora-fs-safe-root-");
 
     await expect(
       removePathWithinRoot({
@@ -112,7 +112,7 @@ describe("removePathWithinRoot", () => {
   });
 
   it("rejects symlink and junction targets", async () => {
-    const root = await tempDirs.make("openclaw-fs-safe-root-");
+    const root = await tempDirs.make("afora-fs-safe-root-");
     const realDir = path.join(root, "real");
     const aliasDir = path.join(root, "alias");
     await fs.mkdir(realDir, { recursive: true });
@@ -137,10 +137,10 @@ describe("removePathWithinRoot", () => {
   it.runIf(process.platform === "win32")(
     "does not delete through a rebound junction during recursive removal",
     async () => {
-      const root = await tempDirs.make("openclaw-fs-safe-root-");
+      const root = await tempDirs.make("afora-fs-safe-root-");
       const nestedDir = path.join(root, "tree", "nested");
       const leafPath = path.join(nestedDir, "leaf.txt");
-      const outside = await tempDirs.make("openclaw-fs-safe-outside-");
+      const outside = await tempDirs.make("afora-fs-safe-outside-");
       const outsideFile = path.join(outside, "leaf.txt");
       await fs.mkdir(nestedDir, { recursive: true });
       await fs.writeFile(leafPath, "leaf");

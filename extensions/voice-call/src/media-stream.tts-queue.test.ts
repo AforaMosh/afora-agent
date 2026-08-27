@@ -1,8 +1,8 @@
-import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
+import { createDeferred } from "afora-agent/plugin-sdk/extension-shared";
 import type {
   RealtimeTranscriptionProviderPlugin,
   RealtimeTranscriptionSession,
-} from "openclaw/plugin-sdk/realtime-transcription";
+} from "afora-agent/plugin-sdk/realtime-transcription";
 import { describe, expect, it } from "vitest";
 import { MediaStreamHandler } from "./media-stream.js";
 import { withTimeout } from "./websocket-test-support.js";

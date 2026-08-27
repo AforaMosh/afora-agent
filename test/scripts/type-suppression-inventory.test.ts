@@ -9,7 +9,7 @@ const repoRoot = path.resolve(import.meta.dirname, "../..");
 const temporaryDirectories: string[] = [];
 
 function createFixture(files: Record<string, string>): string {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-type-suppressions-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-type-suppressions-"));
   temporaryDirectories.push(root);
   for (const [relativePath, source] of Object.entries(files)) {
     const absolutePath = path.join(root, relativePath);

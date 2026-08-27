@@ -1,5 +1,5 @@
 ---
-summary: "OpenClaw LongCat provider plugin."
+summary: "Afora LongCat provider plugin."
 read_when:
   - You are installing, configuring, or auditing the longcat plugin
 title: "LongCat plugin"
@@ -7,12 +7,12 @@ title: "LongCat plugin"
 
 # LongCat plugin
 
-OpenClaw LongCat provider plugin.
+Afora LongCat provider plugin.
 
 ## Distribution
 
-- Package: `@openclaw/longcat-provider`
-- Install route: npm; ClawHub: `clawhub:@openclaw/longcat-provider`
+- Package: `@afora/longcat-provider`
+- Install route: npm; ClawHub: `clawhub:@afora/longcat-provider`
 
 ## Surface
 

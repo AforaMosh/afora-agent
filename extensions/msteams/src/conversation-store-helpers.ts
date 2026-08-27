@@ -1,6 +1,6 @@
 // Msteams helper module supports conversation store helpers behavior.
-import { parseDateStringTimestampMs } from "openclaw/plugin-sdk/number-runtime";
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { parseDateStringTimestampMs } from "afora-agent/plugin-sdk/number-runtime";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type {
   MSTeamsConversationStoreEntry,
   StoredConversationReference,

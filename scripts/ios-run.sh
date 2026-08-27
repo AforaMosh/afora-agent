@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 IOS_DIR="${ROOT_DIR}/apps/ios"
 
-APP_NAME="${IOS_APP_NAME:-OpenClaw}"
+APP_NAME="${IOS_APP_NAME:-Afora}"
 CONFIGURATION="${IOS_CONFIGURATION:-Debug}"
 DERIVED_DATA_DIR="${IOS_DERIVED_DATA_DIR:-${IOS_DIR}/build/DerivedData}"
 IOS_DESTINATION="${IOS_DEST:-platform=iOS Simulator,name=iPhone 17}"
@@ -25,10 +25,10 @@ Options:
       internal simulator proof secret.
   --push-relay-base-url <url>
       Override the sandbox relay URL used with --push-sandbox-simulator.
-      Defaults to https://ios-push-relay-sandbox.openclaw.ai.
+      Defaults to https://ios-push-relay-sandbox.afora.ai.
   --simulator-proof-secret-env <name>
       Environment variable that contains the simulator proof secret.
-      Defaults to OPENCLAW_SIMULATOR_PUSH_PROOF_SECRET.
+      Defaults to AFORA_SIMULATOR_PUSH_PROOF_SECRET.
   -h, --help
       Show this help.
 EOF
@@ -40,8 +40,8 @@ run_simctl() {
 }
 
 push_sandbox_simulator=0
-push_relay_base_url="${OPENCLAW_PUSH_SANDBOX_RELAY_BASE_URL:-https://ios-push-relay-sandbox.openclaw.ai}"
-simulator_proof_secret_env="${OPENCLAW_SIMULATOR_PUSH_PROOF_SECRET_ENV:-OPENCLAW_SIMULATOR_PUSH_PROOF_SECRET}"
+push_relay_base_url="${AFORA_PUSH_SANDBOX_RELAY_BASE_URL:-https://ios-push-relay-sandbox.afora.ai}"
+simulator_proof_secret_env="${AFORA_SIMULATOR_PUSH_PROOF_SECRET_ENV:-AFORA_SIMULATOR_PUSH_PROOF_SECRET}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -97,15 +97,15 @@ if [[ "${push_sandbox_simulator}" == "1" ]]; then
   fi
 
   xcodebuild_overrides+=(
-    "OPENCLAW_PUSH_MODE=simulatorSandbox"
-    "OPENCLAW_PUSH_RELAY_BASE_URL=${push_relay_base_url}"
-    "OPENCLAW_APNS_ENTITLEMENT_ENVIRONMENT=development"
+    "AFORA_PUSH_MODE=simulatorSandbox"
+    "AFORA_PUSH_RELAY_BASE_URL=${push_relay_base_url}"
+    "AFORA_APNS_ENTITLEMENT_ENVIRONMENT=development"
   )
 fi
 
 unset "${simulator_proof_secret_env}"
-if [[ "${simulator_proof_secret_env}" != "OPENCLAW_SIMULATOR_PUSH_PROOF_SECRET" ]]; then
-  unset OPENCLAW_SIMULATOR_PUSH_PROOF_SECRET
+if [[ "${simulator_proof_secret_env}" != "AFORA_SIMULATOR_PUSH_PROOF_SECRET" ]]; then
+  unset AFORA_SIMULATOR_PUSH_PROOF_SECRET
 fi
 
 "${ROOT_DIR}/scripts/ios-configure-signing.sh"
@@ -116,8 +116,8 @@ cd "${IOS_DIR}"
 "${XCODEGEN_BIN}" generate
 if [[ "${push_sandbox_simulator}" == "1" ]]; then
   "${XCODEBUILD_BIN}" \
-    -project OpenClaw.xcodeproj \
-    -scheme OpenClaw \
+    -project Afora.xcodeproj \
+    -scheme Afora \
     -destination "${IOS_DESTINATION}" \
     -configuration "${CONFIGURATION}" \
     -derivedDataPath "${DERIVED_DATA_DIR}" \
@@ -125,8 +125,8 @@ if [[ "${push_sandbox_simulator}" == "1" ]]; then
     "${xcodebuild_overrides[@]}"
 else
   "${XCODEBUILD_BIN}" \
-    -project OpenClaw.xcodeproj \
-    -scheme OpenClaw \
+    -project Afora.xcodeproj \
+    -scheme Afora \
     -destination "${IOS_DESTINATION}" \
     -configuration "${CONFIGURATION}" \
     -derivedDataPath "${DERIVED_DATA_DIR}" \
@@ -156,7 +156,7 @@ fi
 run_simctl install "${SIMULATOR_TARGET}" "${app_path}"
 if [[ "${push_sandbox_simulator}" == "1" ]]; then
   # shellcheck disable=SC2086
-  SIMCTL_CHILD_OPENCLAW_SIMULATOR_PUSH_PROOF_SECRET="${simulator_proof_secret}" \
+  SIMCTL_CHILD_AFORA_SIMULATOR_PUSH_PROOF_SECRET="${simulator_proof_secret}" \
     ${SIMCTL_BIN} launch "${SIMULATOR_TARGET}" "${bundle_id}"
 else
   run_simctl launch "${SIMULATOR_TARGET}" "${bundle_id}"

@@ -1,6 +1,6 @@
 export const REMOTE_WORKSPACE_MUTATION_LOCK_JS = String.raw`const lockRoot = path.join(
   transactionRoot,
-  ".openclaw-accepted-lock-" + workspaceKey,
+  ".afora-accepted-lock-" + workspaceKey,
 );
 const lockToken = crypto.randomBytes(16).toString("hex");
 const lockOwner = {

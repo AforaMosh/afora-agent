@@ -4,13 +4,13 @@
  * Captures camera/photos/screen media from paired nodes and formats media-safe tool results.
  */
 import crypto from "node:crypto";
-import { extnameFromAnyPath } from "@openclaw/media-core/file-name";
-import { imageMimeFromFormat } from "@openclaw/media-core/mime";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { extnameFromAnyPath } from "@afora/media-core/file-name";
+import { imageMimeFromFormat } from "@afora/media-core/mime";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import {
   cameraTempPath,
   parseCameraClipPayload,

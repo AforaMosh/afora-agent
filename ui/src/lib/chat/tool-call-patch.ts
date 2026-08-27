@@ -1,5 +1,5 @@
-import { asNullableRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
-import { readNonBlankString } from "@openclaw/normalization-core/string-coerce";
+import { asNullableRecord as asRecord } from "@afora/normalization-core/record-coerce";
+import { readNonBlankString } from "@afora/normalization-core/string-coerce";
 import {
   MAX_DIFF_RENDER_LINES,
   type DiffLine,

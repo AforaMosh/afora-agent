@@ -3,8 +3,8 @@
  * The resolvers return env/profile/config marker values so discovery can prove
  * auth availability without writing secret material into generated config.
  */
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveSecretInputRef } from "../config/types.secrets.js";
 import { resolveProviderSyntheticAuthWithPlugin } from "../plugins/provider-runtime.js";
 import type { ProviderAuthEvidence } from "../secrets/provider-env-vars.js";
@@ -56,7 +56,7 @@ function resolveAuthProfileStoreInput(input: AuthProfileStoreInput) {
 export function createProviderApiKeyResolverFromPreparedCredentials(
   env: NodeJS.ProcessEnv,
   credentials: Readonly<AuthStorageData>,
-  config?: OpenClawConfig,
+  config?: AforaConfig,
 ): ProviderApiKeyResolver {
   const resolveConfiguredOrEnvironment = createProviderApiKeyResolver(
     env,
@@ -102,7 +102,7 @@ export function createProviderApiKeyResolverFromPreparedCredentials(
 
 function createProviderAuthLookupCaches(
   env: NodeJS.ProcessEnv,
-  config?: OpenClawConfig,
+  config?: AforaConfig,
 ): () => ProviderAuthLookupCaches {
   let caches: ProviderAuthLookupCaches | undefined;
   return () => {
@@ -135,7 +135,7 @@ function resolveProviderIdForAuthFromCaches(
 export function createProviderApiKeyResolver(
   env: NodeJS.ProcessEnv,
   authStoreInput: AuthProfileStoreInput,
-  config?: OpenClawConfig,
+  config?: AforaConfig,
 ): ProviderApiKeyResolver {
   const getLookupCaches = createProviderAuthLookupCaches(env, config);
   return (provider: string): { apiKey: string | undefined; discoveryApiKey?: string } => {
@@ -184,7 +184,7 @@ export function createProviderApiKeyResolver(
 export function createProviderAuthResolver(
   env: NodeJS.ProcessEnv,
   authStoreInput: AuthProfileStoreInput,
-  config?: OpenClawConfig,
+  config?: AforaConfig,
 ): ProviderAuthResolver {
   const getLookupCaches = createProviderAuthLookupCaches(env, config);
   return (provider: string, options?: { oauthMarker?: string }) => {
@@ -274,7 +274,7 @@ export function createProviderAuthResolver(
 
 function resolveConfigBackedProviderAuth(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   authProvider?: string;
 }):

@@ -1,12 +1,12 @@
 import { resolveProviderIdForAuth } from "../../agents/provider-auth-aliases.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { PluginMetadataSnapshot } from "../../plugins/plugin-metadata-snapshot.types.js";
 import { resolveManifestProviderAuthChoices } from "../../plugins/provider-auth-choices.js";
 import { supportsSetupManualSecret } from "../../system-agent/setup-inference-auth-options.js";
 import type { ModelProviderCapability } from "./models-auth-status.types.js";
 
 export function resolveModelProviderCapabilities(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env?: NodeJS.ProcessEnv;
   metadataSnapshot: PluginMetadataSnapshot;
   workspaceDir: string;

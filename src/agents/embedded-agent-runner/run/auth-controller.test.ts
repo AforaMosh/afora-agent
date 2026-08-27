@@ -1,5 +1,5 @@
 // Coverage for embedded run auth initialization and runtime credential refresh.
-import type { Model } from "openclaw/plugin-sdk/llm";
+import type { Model } from "afora-agent/plugin-sdk/llm";
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import { createDeferred } from "../../../../test/helpers/promise.js";
 import { isSecretValueRegisteredForRedaction } from "../../../logging/secret-redaction-registry.js";
@@ -462,7 +462,7 @@ describe("createEmbeddedRunAuthController", () => {
   });
 
   it("registers exchanged credentials when sentinels are disabled", async () => {
-    vi.stubEnv("OPENCLAW_SECRET_SENTINELS", "off");
+    vi.stubEnv("AFORA_SECRET_SENTINELS", "off");
     const harness = createMutableAuthControllerHarness();
     const setRuntimeApiKey = vi.fn<(provider: string, apiKey: string) => void>();
     const source = mintSecretSentinel("kill-switch-source-secret", {

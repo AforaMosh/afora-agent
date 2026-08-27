@@ -1,13 +1,13 @@
 import { normalizeRouteBasePath, normalizeRoutePath } from "@openclaw/uirouter";
 import type { RouteLocation } from "@openclaw/uirouter";
-import { isValidWorkboardBoardId } from "@openclaw/workboard-contract";
+import { isValidWorkboardBoardId } from "@afora/workboard-contract";
 import { DEFAULT_AGENT_PANEL, isAgentsPanel, type AgentsPanel } from "./lib/agents/panels.ts";
 import type { BoardFace } from "./lib/board/settings.ts";
-export const INTERNAL_AGENT_PATH_PARAM = "__openclawAgentPath";
-export const INTERNAL_SESSION_PATH_PARAM = "__openclawSessionPath";
-export const INTERNAL_MEMORY_PATH_PARAM = "__openclawMemoryPath";
-export const INTERNAL_PLUGINS_PATH_PARAM = "__openclawPluginsPath";
-export const INTERNAL_WORKBOARD_PATH_PARAM = "__openclawWorkboardPath";
+export const INTERNAL_AGENT_PATH_PARAM = "__aforaAgentPath";
+export const INTERNAL_SESSION_PATH_PARAM = "__aforaSessionPath";
+export const INTERNAL_MEMORY_PATH_PARAM = "__aforaMemoryPath";
+export const INTERNAL_PLUGINS_PATH_PARAM = "__aforaPluginsPath";
+export const INTERNAL_WORKBOARD_PATH_PARAM = "__aforaWorkboardPath";
 
 export type MemoryRouteTab = "overview" | "memories" | "dreams" | "settings";
 export type PluginsHubRouteTab = "installed" | "discover";
@@ -290,7 +290,7 @@ function collectRoutePaths(): string[] {
 // sits at or below a multi-segment route namespace ("/settings", including
 // "/settings/other"), is really a root-mounted deep link whose suffix happens
 // to match a route path or alias. Descendants of leaf routes stay valid mount
-// directories so "/apps/openclaw" keeps working. Inference is a last-resort
+// directories so "/apps/afora" keeps working. Inference is a last-resort
 // fallback for pages served without the injected base path (vite dev, static
 // hosting); accepted tradeoff: namespaces nested under a real mount prefix
 // ("/ui/settings/other/config") are not rescued here.

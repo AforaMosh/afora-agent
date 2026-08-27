@@ -1,5 +1,5 @@
 // Matrix plugin module implements idb persistence lock behavior.
-import type { FileLockOptions } from "openclaw/plugin-sdk/file-lock";
+import type { FileLockOptions } from "afora-agent/plugin-sdk/file-lock";
 
 export const MATRIX_IDB_PERSIST_INTERVAL_MS = 60_000;
 

@@ -14,7 +14,7 @@ const NODE_ENGINE_CLAUSE_RE = /^\s*>=\s*v?(\d+\.\d+\.\d+)(?:\s+<\s*v?(\d+(?:\.\d
 const NODE_RUNTIME_PROBE_SOURCE =
   "process.stdout.write(JSON.stringify({version:process.versions.node??null,bunVersion:process.versions.bun??null,execPath:process.execPath??null}))";
 const PACKAGE_CLI_NODE_PROBE_TIMEOUT_MS = 10_000;
-export const PACKAGE_INSTALL_GUARD_RELATIVE_PATH = "dist/openclaw-install-guard";
+export const PACKAGE_INSTALL_GUARD_RELATIVE_PATH = "dist/afora-install-guard";
 
 /**
  * @typedef {{
@@ -274,14 +274,14 @@ export function enforceSupportedNodeRuntime(
   }
 
   const requirement = engine
-    ? `this OpenClaw release requires Node ${engine}.`
-    : "could not read this OpenClaw release's Node requirement.";
+    ? `this Afora release requires Node ${engine}.`
+    : "could not read this Afora release's Node requirement.";
   reportError(
     [
-      `[openclaw] error: ${requirement}`,
-      `[openclaw] detected Node ${detectedRuntime?.version ?? "missing"} (exec: ${detectedRuntime?.execPath || "unknown"}).`,
-      "[openclaw] install Node: https://nodejs.org/en/download",
-      "[openclaw] upgrade Node, then retry the OpenClaw update.",
+      `[afora] error: ${requirement}`,
+      `[afora] detected Node ${detectedRuntime?.version ?? "missing"} (exec: ${detectedRuntime?.execPath || "unknown"}).`,
+      "[afora] install Node: https://nodejs.org/en/download",
+      "[afora] upgrade Node, then retry the Afora update.",
     ].join("\n"),
   );
   return false;
@@ -308,7 +308,7 @@ export function completePackageInstallGuard(
     return true;
   } catch (error) {
     reportError(
-      `[openclaw] error: could not complete package preinstall: ${
+      `[afora] error: could not complete package preinstall: ${
         error instanceof Error ? error.message : String(error)
       }`,
     );
@@ -376,9 +376,9 @@ export function createPackageManagerWarningMessage(packageManager) {
   }
 
   return [
-    `[openclaw] warning: detected ${normalizedPackageManager} for install lifecycle.`,
-    "[openclaw] this repo works best with pnpm; npm-compatible installs are slower and much larger here.",
-    "[openclaw] prefer: corepack pnpm install",
+    `[afora] warning: detected ${normalizedPackageManager} for install lifecycle.`,
+    "[afora] this repo works best with pnpm; npm-compatible installs are slower and much larger here.",
+    "[afora] prefer: corepack pnpm install",
   ].join("\n");
 }
 

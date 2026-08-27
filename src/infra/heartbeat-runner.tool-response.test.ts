@@ -16,7 +16,7 @@ import {
 import { recordReplyOperationAgentTurn } from "../auto-reply/reply/reply-operation-agent-turn-state.js";
 import { resolveReplyOperationRunState } from "../auto-reply/reply/reply-operation-run-state.js";
 import { SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { patchSessionEntryCore } from "../config/sessions/session-accessor.js";
 import type { SessionEntry } from "../config/sessions/types.js";
 import {
@@ -25,8 +25,8 @@ import {
   readHeartbeatMonitorScratch,
 } from "../cron/scratch-store.js";
 import { resolveCronJobsStorePath, saveCronJobsStore } from "../cron/store.js";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { getLastHeartbeatEvent, resetHeartbeatEventsForTest } from "./heartbeat-events.js";
 import { claimHeartbeatOutcomeForRun } from "./heartbeat-outcome-store.js";
 import { truncateHeartbeatPreview } from "./heartbeat-runner-prompt.js";
@@ -73,7 +73,7 @@ describe("runHeartbeatOnce heartbeat response tool", () => {
     isolatedSession?: boolean;
     target?: "telegram" | "last" | "none";
     showOk?: boolean;
-  }): OpenClawConfig {
+  }): AforaConfig {
     return {
       agents: {
         defaults: {
@@ -108,7 +108,7 @@ describe("runHeartbeatOnce heartbeat response tool", () => {
         },
       },
       session: { store: params.storePath },
-    } as OpenClawConfig;
+    } as AforaConfig;
   }
 
   function createDeps(params: {
@@ -125,7 +125,7 @@ describe("runHeartbeatOnce heartbeat response tool", () => {
 
   function seedTelegramSession(
     storePath: string,
-    cfg: OpenClawConfig,
+    cfg: AforaConfig,
     entry: Partial<Parameters<typeof seedMainSessionStore>[2]> = {},
   ) {
     return seedMainSessionStore(storePath, cfg, {
@@ -137,7 +137,7 @@ describe("runHeartbeatOnce heartbeat response tool", () => {
   }
 
   function runHeartbeat(
-    cfg: OpenClawConfig,
+    cfg: AforaConfig,
     replySpy: HeartbeatDeps["getReplyFromConfig"],
     sendTelegram: ReturnType<typeof vi.fn>,
     overrides: Omit<Parameters<typeof runHeartbeatOnce>[0], "cfg" | "deps"> = {},
@@ -151,7 +151,7 @@ describe("runHeartbeatOnce heartbeat response tool", () => {
 
   function expectTelegramSend(
     sendTelegram: ReturnType<typeof vi.fn>,
-    params: { text: string; cfg: OpenClawConfig; silent?: boolean },
+    params: { text: string; cfg: AforaConfig; silent?: boolean },
   ) {
     expect(sendTelegram).toHaveBeenCalledTimes(1);
     expect(sendTelegram.mock.calls).toEqual([
@@ -257,7 +257,7 @@ describe("runHeartbeatOnce heartbeat response tool", () => {
       beforeSeed?: (params: {
         tmpDir: string;
         storePath: string;
-        cfg: OpenClawConfig;
+        cfg: AforaConfig;
       }) => Promise<void>;
       tasks?: Parameters<typeof runHeartbeatOnce>[0]["tasks"];
     } = {},
@@ -398,7 +398,7 @@ describe("runHeartbeatOnce heartbeat response tool", () => {
 
   it("persists a meaningful quiet outcome for the base session", async () => {
     await withTempTelegramHeartbeatSandbox(async ({ tmpDir, storePath, replySpy }) => {
-      vi.stubEnv("OPENCLAW_STATE_DIR", tmpDir);
+      vi.stubEnv("AFORA_STATE_DIR", tmpDir);
       const cfg = createConfig({ tmpDir, storePath });
       const sessionKey = await seedTelegramSession(storePath, cfg);
       replySpy.mockResolvedValue(
@@ -428,8 +428,8 @@ describe("runHeartbeatOnce heartbeat response tool", () => {
         wakeSource: "manual",
         wakeReason: "operator check",
       });
-      closeOpenClawAgentDatabasesForTest();
-      closeOpenClawStateDatabaseForTest();
+      closeAforaAgentDatabasesForTest();
+      closeAforaStateDatabaseForTest();
     });
   });
 
@@ -819,7 +819,7 @@ describe("runHeartbeatOnce heartbeat response tool", () => {
     expectHeartbeatToolPrompt(result);
   });
 
-  it("uses the isolated Codex runtime instead of the base OpenClaw runtime", async () => {
+  it("uses the isolated Codex runtime instead of the base Afora runtime", async () => {
     // One direction proves prompt recalculation after isolation. Reciprocal
     // runtime precedence is covered directly by thinking-runtime.test.ts.
     const result = await runPromptScenario({
@@ -827,7 +827,7 @@ describe("runHeartbeatOnce heartbeat response tool", () => {
       session: {
         modelProvider: "anthropic",
         model: "claude-sonnet-4-6",
-        agentRuntimeOverride: "openclaw",
+        agentRuntimeOverride: "afora",
       },
     });
 
@@ -1064,7 +1064,7 @@ describe("runHeartbeatOnce heartbeat response tool", () => {
   });
 
   it("uses the heartbeat response tool prompt when the Codex runtime is env-forced", async () => {
-    vi.stubEnv("OPENCLAW_AGENT_RUNTIME", "codex");
+    vi.stubEnv("AFORA_AGENT_RUNTIME", "codex");
     const result = await runPromptScenario({
       config: { model: "openai/gpt-5.5" },
     });

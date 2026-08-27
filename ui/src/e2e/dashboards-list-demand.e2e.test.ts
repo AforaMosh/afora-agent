@@ -94,13 +94,13 @@ suite.define(() => {
           const canonical = await gateway.waitForRequest("sessions.list");
           expect(isDashboardRequest(canonical)).toBe(false);
           await page.waitForFunction(() => {
-            const app = document.querySelector("openclaw-app") as HTMLElement & {
+            const app = document.querySelector("afora-app") as HTMLElement & {
               runtime?: { context: { agents: { state: { agentsList: unknown } } } };
             };
             return app.runtime?.context.agents.state.agentsList != null;
           });
           await page.evaluate(() => {
-            const app = document.querySelector("openclaw-app") as HTMLElement & {
+            const app = document.querySelector("afora-app") as HTMLElement & {
               runtime?: {
                 context: {
                   navigate: (routeId: string) => void;
@@ -112,7 +112,7 @@ suite.define(() => {
               };
             };
             if (!app.runtime) {
-              throw new Error("OpenClaw application runtime is unavailable");
+              throw new Error("Afora application runtime is unavailable");
             }
             app.runtime.context.agentSelection.setScope(null);
             if (app.runtime.context.agentSelection.state.scopeId !== null) {

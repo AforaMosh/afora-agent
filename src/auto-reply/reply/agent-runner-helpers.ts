@@ -1,9 +1,9 @@
 /** Helper predicates and gates used while streaming agent-runner payloads. */
-import { isAudioFileName } from "@openclaw/media-core/mime";
+import { isAudioFileName } from "@afora/media-core/mime";
 import {
   hasOutboundReplyContent,
   resolveSendableOutboundReplyParts,
-} from "openclaw/plugin-sdk/reply-payload";
+} from "afora-agent/plugin-sdk/reply-payload";
 import { loadSessionEntryReadOnly } from "../../config/sessions/session-accessor.js";
 import { normalizeVerboseLevel, type VerboseLevel } from "../thinking.js";
 import type { ReplyPayload } from "../types.js";

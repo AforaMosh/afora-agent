@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { pipeline } from "node:stream/promises";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { NODE_WORKER_BUNDLE_TRANSFER_PATH } from "../../worker/node-bundle-install-protocol.js";
 import { AUTH_RATE_LIMIT_SCOPE_WORKER_TRANSFER, type AuthRateLimiter } from "../auth-rate-limit.js";
 import { classifyNodeWorkerBundleTransferPath } from "../gateway-http-route-contracts.js";
@@ -131,7 +131,7 @@ export function createNodeWorkerBundleTransferHttpCallback(
           res.writeHead(200, {
             "content-type": "application/octet-stream",
             "content-length": String(file.bytes),
-            "x-openclaw-content-sha256": file.sha256,
+            "x-afora-content-sha256": file.sha256,
           });
           await pipeline(fs.createReadStream(file.path), res, { signal });
         } catch (error) {

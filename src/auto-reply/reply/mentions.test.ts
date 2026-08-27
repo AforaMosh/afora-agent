@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 // Tests mention detection and command trigger matching.
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { MsgContext } from "../templating.js";
 import {
   buildMentionRegexes,
@@ -121,7 +121,7 @@ describe("derived Unicode mention matching", () => {
 
   it("keeps explicit configured patterns on their existing regex flags", () => {
     const regexes = buildMentionRegexes({
-      messages: { groupChat: { mentionPatterns: [String.raw`\bopenclaw\b`] } },
+      messages: { groupChat: { mentionPatterns: [String.raw`\bafora\b`] } },
     });
 
     expect(regexes[0]?.flags).toBe("i");
@@ -129,7 +129,7 @@ describe("derived Unicode mention matching", () => {
 });
 
 describe("derived mention matching with decorated identity names", () => {
-  function configForName(name: string): OpenClawConfig {
+  function configForName(name: string): AforaConfig {
     return {
       agents: {
         list: [{ id: "decorated-agent", identity: { name } }],
@@ -350,7 +350,7 @@ describe("derived mention matching with decorated identity names", () => {
       agents: {
         list: [{ id: "decorated-agent", identity: { name: "Clawd", emoji: "👩‍👧" } }],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const regexes = buildMentionRegexes(cfg, "decorated-agent");
 
     expect(matchesMentionPatterns("👩‍👧 status", regexes)).toBe(true);
@@ -558,7 +558,7 @@ describe("derived mention matching with decorated identity names", () => {
       agents: {
         list: [{ id: "decorated-agent", identity: { name: "Clawd", emoji: "\u200D" } }],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const regexes = buildMentionRegexes(cfg, "decorated-agent");
 
     expect(regexes).toHaveLength(1);

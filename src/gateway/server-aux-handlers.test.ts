@@ -28,7 +28,7 @@ import {
   getRuntimeAuthProfileStoreSnapshotCore,
   setRuntimeAuthProfileStoreSnapshot,
 } from "../agents/auth-profiles/runtime-snapshots.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   claimAgentRunDelegatedAuthority,
   releaseAgentRunDelegatedAuthority,
@@ -41,9 +41,9 @@ import {
   type PreparedSecretsRuntimeSnapshot,
 } from "../secrets/runtime.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { createAgentRuntimeApprovalAuthorityValidator } from "./agent-runtime-identity-token.js";
 import type { GatewayReloadPlan } from "./config-reload.js";
 import { createGatewayAuxHandlers } from "./server-aux-handlers.js";
@@ -62,8 +62,8 @@ function publishSharedGatewayGeneration(
   });
 }
 
-function asConfig(value: unknown): OpenClawConfig {
-  return value as OpenClawConfig;
+function asConfig(value: unknown): AforaConfig {
+  return value as AforaConfig;
 }
 
 function createReloadPlan(overrides?: Partial<GatewayReloadPlan>): GatewayReloadPlan {
@@ -85,7 +85,7 @@ function createReloadPlan(overrides?: Partial<GatewayReloadPlan>): GatewayReload
   };
 }
 
-function createSnapshot(config: OpenClawConfig): PreparedSecretsRuntimeSnapshot {
+function createSnapshot(config: AforaConfig): PreparedSecretsRuntimeSnapshot {
   return {
     sourceConfig: asConfig({}),
     config,
@@ -100,7 +100,7 @@ function createSnapshot(config: OpenClawConfig): PreparedSecretsRuntimeSnapshot 
   };
 }
 
-function createSourceSnapshot(config: OpenClawConfig): PreparedSecretsRuntimeSnapshot {
+function createSourceSnapshot(config: AforaConfig): PreparedSecretsRuntimeSnapshot {
   return { ...createSnapshot(config), sourceConfig: config };
 }
 
@@ -144,11 +144,11 @@ function gatewayTokenSlackConfig(token: string, signingSecret: string) {
   });
 }
 
-function activateSnapshot(config: OpenClawConfig) {
+function activateSnapshot(config: AforaConfig) {
   activateSecretsRuntimeSnapshot(createSnapshot(config));
 }
 
-function mockResolvedSecrets(config: OpenClawConfig) {
+function mockResolvedSecrets(config: AforaConfig) {
   return vi.fn().mockResolvedValue(createSnapshot(config));
 }
 
@@ -268,14 +268,14 @@ function createSecretsReloadHarnessWithChannelMocks(
 }
 
 // Other gateway test helpers (e.g. test-helpers.mocks.ts, test-helpers.server.ts)
-// set OPENCLAW_SKIP_CHANNELS / OPENCLAW_SKIP_PROVIDERS at module load. When a
+// set AFORA_SKIP_CHANNELS / AFORA_SKIP_PROVIDERS at module load. When a
 // shared vitest worker imports those helpers before this file's tests run,
 // the leaked env vars route the secrets.reload skip-mode branch and prevent
 // the channel restart loop from firing. Reset them before every test so this
 // suite is independent of worker import order.
 beforeEach(() => {
-  delete process.env.OPENCLAW_SKIP_CHANNELS;
-  delete process.env.OPENCLAW_SKIP_PROVIDERS;
+  delete process.env.AFORA_SKIP_CHANNELS;
+  delete process.env.AFORA_SKIP_PROVIDERS;
   secretStoreMocks.deleteEntry.mockReset();
   secretStoreMocks.listEntries.mockReset().mockReturnValue([]);
   secretStoreMocks.purgeEntries.mockReset().mockReturnValue(0);
@@ -284,8 +284,8 @@ beforeEach(() => {
 
 afterEach(() => {
   clearSecretsRuntimeSnapshot();
-  delete process.env.OPENCLAW_SKIP_CHANNELS;
-  delete process.env.OPENCLAW_SKIP_PROVIDERS;
+  delete process.env.AFORA_SKIP_CHANNELS;
+  delete process.env.AFORA_SKIP_PROVIDERS;
 });
 
 describe("gateway aux handlers", () => {
@@ -364,9 +364,9 @@ describe("gateway aux handlers", () => {
   });
 
   it("settles and publishes both approval kinds from the production worker-claim observer", async () => {
-    const root = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), "openclaw-aux-worker-"));
-    closeOpenClawStateDatabaseForTest();
-    const database = openOpenClawStateDatabase({ env: { OPENCLAW_STATE_DIR: root } });
+    const root = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), "afora-aux-worker-"));
+    closeAforaStateDatabaseForTest();
+    const database = openAforaStateDatabase({ env: { AFORA_STATE_DIR: root } });
     const placements = createWorkerSessionPlacementStore({ database });
     const identity = {
       sessionId: "session-worker-close",
@@ -487,7 +487,7 @@ describe("gateway aux handlers", () => {
     );
     gatewayAux.unregisterApprovalAuthorityObserver();
     releaseAgentRunDelegatedAuthority(runAuthority);
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     fs.rmSync(root, { recursive: true, force: true });
   });
 
@@ -693,7 +693,7 @@ describe("gateway aux handlers", () => {
     const activateRuntimeSecrets = Object.assign(
       vi.fn(
         async (
-          config: OpenClawConfig,
+          config: AforaConfig,
           _activationParams: Parameters<GatewayAuxHandlerParams["activateRuntimeSecrets"]>[1],
         ) => {
           if (activateRuntimeSecrets.mock.calls.length === 1) {
@@ -732,7 +732,7 @@ describe("gateway aux handlers", () => {
   });
 
   it("rolls back stopped channels when a later restart fails", async () => {
-    const authAgentDir = "/tmp/openclaw-secrets-reload-concurrent-oauth";
+    const authAgentDir = "/tmp/afora-secrets-reload-concurrent-oauth";
     const buildReloadPlan = buildRestartChannelsPlan("slack", "zalo");
     activateSnapshot(slackZaloConfig("old-slack-secret", "old-zalo-secret"));
     const activateRuntimeSecrets = mockResolvedSecrets(
@@ -822,7 +822,7 @@ describe("gateway aux handlers", () => {
     const concurrent = createSnapshot(slackConfig("concurrent-secret"));
     const activateRuntimeSecrets = vi.fn(
       async (
-        _config: OpenClawConfig,
+        _config: AforaConfig,
         _activationParams: Parameters<GatewayAuxHandlerParams["activateRuntimeSecrets"]>[1],
       ) => {
         return prepared;
@@ -974,7 +974,7 @@ describe("gateway aux handlers", () => {
 
   it("fails reload when channel restarts are required but skip flags block them", async () => {
     const buildReloadPlan = buildRestartChannelsPlan("slack");
-    process.env.OPENCLAW_SKIP_CHANNELS = "1";
+    process.env.AFORA_SKIP_CHANNELS = "1";
     activateSnapshot(slackConfig("old-slack-secret"));
     const activateRuntimeSecrets = mockResolvedSecrets(slackConfig("new-slack-secret"));
 

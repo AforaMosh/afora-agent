@@ -129,12 +129,12 @@ describe("gateway auth", () => {
     expect(res.user).toBe(params.expected.user);
   }
 
-  it("resolves token/password from OPENCLAW gateway env vars", () => {
+  it("resolves token/password from AFORA gateway env vars", () => {
     const auth = resolveGatewayAuth({
       authConfig: {},
       env: {
-        OPENCLAW_GATEWAY_TOKEN: "env-token",
-        OPENCLAW_GATEWAY_PASSWORD: "env-password",
+        AFORA_GATEWAY_TOKEN: "env-token",
+        AFORA_GATEWAY_PASSWORD: "env-password",
       } as NodeJS.ProcessEnv,
     });
 
@@ -230,8 +230,8 @@ describe("gateway auth", () => {
         password: "config-password", // pragma: allowlist secret
       },
       env: {
-        OPENCLAW_GATEWAY_TOKEN: "env-token",
-        OPENCLAW_GATEWAY_PASSWORD: "env-password",
+        AFORA_GATEWAY_TOKEN: "env-token",
+        AFORA_GATEWAY_PASSWORD: "env-password",
       } as NodeJS.ProcessEnv,
     });
 
@@ -242,12 +242,12 @@ describe("gateway auth", () => {
   it("treats env-template auth secrets as SecretRefs instead of plaintext", () => {
     const auth = resolveGatewayAuth({
       authConfig: {
-        token: "${OPENCLAW_GATEWAY_TOKEN}",
-        password: "${OPENCLAW_GATEWAY_PASSWORD}",
+        token: "${AFORA_GATEWAY_TOKEN}",
+        password: "${AFORA_GATEWAY_PASSWORD}",
       },
       env: {
-        OPENCLAW_GATEWAY_TOKEN: "env-token",
-        OPENCLAW_GATEWAY_PASSWORD: "env-password",
+        AFORA_GATEWAY_TOKEN: "env-token",
+        AFORA_GATEWAY_PASSWORD: "env-password",
       } as NodeJS.ProcessEnv,
     });
 
@@ -1159,7 +1159,7 @@ describe("gateway auth", () => {
     ).toThrow(/provider reference object/);
   });
 
-  it("accepts password mode when env provides OPENCLAW_GATEWAY_PASSWORD", () => {
+  it("accepts password mode when env provides AFORA_GATEWAY_PASSWORD", () => {
     const rawPasswordRef = { source: "exec", provider: "op", id: "pw" } as never;
     const auth = resolveGatewayAuth({
       authConfig: {
@@ -1167,7 +1167,7 @@ describe("gateway auth", () => {
         password: rawPasswordRef,
       },
       env: {
-        OPENCLAW_GATEWAY_PASSWORD: "env-password",
+        AFORA_GATEWAY_PASSWORD: "env-password",
       } as NodeJS.ProcessEnv,
     });
 
@@ -1263,7 +1263,7 @@ describe("trusted-proxy auth", () => {
       headers: {
         "x-forwarded-user": "nick@example.com",
         "x-forwarded-proto": "https",
-        "x-openclaw-proxy-auth": "present",
+        "x-afora-proxy-auth": "present",
       },
     });
 
@@ -1519,7 +1519,7 @@ describe("trusted-proxy auth", () => {
         },
       },
       env: {
-        OPENCLAW_GATEWAY_TOKEN: "shared-secret",
+        AFORA_GATEWAY_TOKEN: "shared-secret",
       } as NodeJS.ProcessEnv,
     },
   ])("rejects trusted-proxy mode when shared token comes from $name", ({ authConfig, env }) => {

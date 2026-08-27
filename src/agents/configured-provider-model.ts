@@ -1,18 +1,18 @@
 /** Configured provider rows own exact model ids before plugin normalization. */
-import { findNormalizedProviderValue } from "@openclaw/model-catalog-core/provider-id";
+import { findNormalizedProviderValue } from "@afora/model-catalog-core/provider-id";
 import type { ModelProviderConfig } from "../config/types.models.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { normalizePluginsConfig } from "../plugins/config-state.js";
 
 type ConfiguredProviderModelParams = {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   provider: string;
   model: string;
 };
 
 /** Find the first configured provider without rediscovering its normalized key. */
 export function findConfiguredModelProvider(
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
   provider: string,
 ): ModelProviderConfig | undefined {
   return provider.trim()

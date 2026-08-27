@@ -1,12 +1,12 @@
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import { normalizeOptionalString as readStringParam } from "@openclaw/normalization-core/string-coerce";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
+import { normalizeOptionalString as readStringParam } from "@afora/normalization-core/string-coerce";
 import {
   resolveMergedModelProviderConfig,
   resolveMergedModelProviderModels,
   resolveModelProviderRouteOverridePresence,
 } from "../../config/model-provider-config.js";
 import type { ModelApi } from "../../config/types.models.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type {
   ProviderModelRouteRuntimePolicy,
   ProviderRouteOverridePresence,
@@ -77,7 +77,7 @@ export function buildAgentHarnessSupportContext(params: {
   /** Prepared provider facts take precedence over config rediscovery. */
   modelProvider?: AgentHarnessSupportContext["modelProvider"];
   requestedRuntime: AgentHarnessSupportContext["requestedRuntime"];
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string;
   sessionKey?: string;
   /** Finalized route/auth selection; missing runtimePolicy stays undeclared. */
@@ -181,7 +181,7 @@ function resolveHarnessRouteRuntimePolicy(params: {
   provider: string;
   modelId?: string;
   modelProvider?: AgentHarnessSupportContext["modelProvider"];
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): { owned: boolean; policy?: ProviderModelRouteRuntimePolicy } {
   const resolution = resolveProviderModelRoutes({
     provider: params.provider,
@@ -218,7 +218,7 @@ function resolveHarnessRouteRuntimePolicy(params: {
 export function resolveAutoAgentHarnessId(params: {
   provider: string;
   modelId?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string;
   sessionKey?: string;
 }): string | undefined {

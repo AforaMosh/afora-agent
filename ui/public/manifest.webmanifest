@@ -1,6 +1,6 @@
 {
-  "name": "OpenClaw Control",
-  "short_name": "OpenClaw",
+  "name": "Afora Control",
+  "short_name": "Afora",
   "description": "Multi-channel AI gateway control panel",
   "start_url": "./",
   "display": "standalone",

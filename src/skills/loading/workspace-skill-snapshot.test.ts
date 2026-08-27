@@ -17,14 +17,14 @@ vi.mock("./plugin-skills.js", () => ({
   resolvePluginSkillDirs: () => [],
 }));
 
-const fixtureSuite = createFixtureSuite("openclaw-skills-snapshot-suite-");
+const fixtureSuite = createFixtureSuite("afora-skills-snapshot-suite-");
 let truncationWorkspaceTemplateDir = "";
 let tempHome: TempHomeEnv | null = null;
 let skillsHomeEnv: SkillsHomeEnvSnapshot | null = null;
 
 beforeAll(async () => {
   await fixtureSuite.setup();
-  tempHome = await createTempHomeEnv("openclaw-skills-snapshot-home-");
+  tempHome = await createTempHomeEnv("afora-skills-snapshot-home-");
   skillsHomeEnv = setMockSkillsHomeEnv(tempHome.home);
   truncationWorkspaceTemplateDir = await fixtureSuite.createCaseDir(
     "template-truncation-workspace",
@@ -117,7 +117,7 @@ describe("buildSkillSnapshot", () => {
       });
     try {
       const defaultSnapshot = withEnv(
-        { HOME: home, OPENCLAW_STATE_DIR: path.join(home, ".openclaw") },
+        { HOME: home, AFORA_STATE_DIR: path.join(home, ".afora") },
         buildHomeSnapshot,
       );
       expectSnapshotNamesAndPrompt(defaultSnapshot, { contains: ["personal-compat"] });
@@ -126,7 +126,7 @@ describe("buildSkillSnapshot", () => {
       );
 
       const isolatedSnapshot = withEnv(
-        { HOME: home, OPENCLAW_STATE_DIR: path.join(home, "scratch-state") },
+        { HOME: home, AFORA_STATE_DIR: path.join(home, "scratch-state") },
         buildHomeSnapshot,
       );
       expectSnapshotNamesAndPrompt(isolatedSnapshot, { omits: ["personal-compat"] });

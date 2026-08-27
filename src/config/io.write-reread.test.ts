@@ -3,7 +3,7 @@ import fsNode from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { writeConfigFile } from "./io.runtime.js";
 import {
@@ -16,13 +16,13 @@ describe("writeConfigFile canonical reread", () => {
   afterEach(() => {
     setRuntimeConfigSnapshotRefreshHandler(null);
     clearRuntimeConfigSnapshot();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     vi.restoreAllMocks();
   });
 
   it("records when the post-write reread is invalid instead of silently keeping runtime state", async () => {
     await withTempHome(async (home) => {
-      const configPath = path.join(home, ".openclaw", "openclaw.json");
+      const configPath = path.join(home, ".afora", "afora.json");
       await fs.mkdir(path.dirname(configPath), { recursive: true });
       await fs.writeFile(
         configPath,
@@ -54,7 +54,7 @@ describe("writeConfigFile canonical reread", () => {
       setRuntimeConfigSnapshotRefreshHandler({ refresh: async () => true });
 
       await withEnvAsync(
-        { OPENCLAW_CONFIG_PATH: configPath, OPENCLAW_TEST_FAST: "1" },
+        { AFORA_CONFIG_PATH: configPath, AFORA_TEST_FAST: "1" },
         async () => {
           await writeConfigFile({ gateway: { mode: "local", port: 19001 } });
         },

@@ -1,6 +1,6 @@
 /** Resolves SecretRef assignments atomically by owning runtime surface. */
 import { isDeepStrictEqual } from "node:util";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { SecretRef } from "../config/types.secrets.js";
 import { toErrorObject } from "../infra/errors.js";
 import { registerSecretValueForRedaction } from "../logging/secret-redaction-registry.js";
@@ -42,7 +42,7 @@ export function classifySecretOwnerDegradationState(params: {
   ownerKind: DegradedSecretOwner["ownerKind"];
   ownerId: string;
   refs: SecretRef[];
-  config: OpenClawConfig;
+  config: AforaConfig;
   contractDigest?: string;
   forceColdRefKeys?: ReadonlySet<string>;
 }): "cold" | "stale" {
@@ -188,7 +188,7 @@ function createDegradedOwner(
 function associateAssignmentFailureOwners(params: {
   assignments: SecretAssignment[];
   error: unknown;
-  config: OpenClawConfig;
+  config: AforaConfig;
   forceColdRefKeys?: ReadonlySet<string>;
 }): void {
   const validationFailures = getSecretAssignmentValidationFailures(params.error);

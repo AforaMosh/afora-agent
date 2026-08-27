@@ -4,7 +4,7 @@
 // first replaced and then trimmed is not double-counted). These run the real
 // production helpers and capture the real diagnostic event bus output.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it, vi } from "vitest";
 import { onDiagnosticEvent } from "../../infra/diagnostic-events.js";
 import type { DiagnosticPayloadLargeEvent } from "../../infra/diagnostic-events.js";

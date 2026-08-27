@@ -55,7 +55,7 @@ describe("renderAgents agent selector", () => {
         ),
         container,
       );
-      const select = container.querySelector("openclaw-agent-select") as
+      const select = container.querySelector("afora-agent-select") as
         | (HTMLElement & {
             options: Array<{
               value: string;

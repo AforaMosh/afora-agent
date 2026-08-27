@@ -1,10 +1,10 @@
-import { withTempHome as withBaseTempHome } from "openclaw/plugin-sdk/test-env";
+import { withTempHome as withBaseTempHome } from "afora-agent/plugin-sdk/test-env";
 import { describe, expect, it } from "vitest";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-  OPENCLAW_STATE_SCHEMA_VERSION,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+  AFORA_STATE_SCHEMA_VERSION,
+} from "../state/afora-state-db.js";
 import { operatorMcpOAuthIdentity } from "./mcp-oauth-identity.js";
 import {
   clearMcpOAuthStore,
@@ -19,7 +19,7 @@ async function withTempHome(run: () => Promise<void>): Promise<void> {
     try {
       await run();
     } finally {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
     }
   });
 }
@@ -27,7 +27,7 @@ async function withTempHome(run: () => Promise<void>): Promise<void> {
 describe("MCP OAuth pending authorization store", () => {
   it("lazily creates durable exact-state correlation without changing schema version", async () => {
     await withTempHome(async () => {
-      const database = openOpenClawStateDatabase().db;
+      const database = openAforaStateDatabase().db;
       expect(
         database
           .prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name = ?")
@@ -51,7 +51,7 @@ describe("MCP OAuth pending authorization store", () => {
           .get("mcp_oauth_pending_authorizations"),
       ).toEqual({ strict: 1 });
       expect(database.prepare("PRAGMA user_version").get()).toEqual({
-        user_version: OPENCLAW_STATE_SCHEMA_VERSION,
+        user_version: AFORA_STATE_SCHEMA_VERSION,
       });
       expect(readMcpOAuthPendingAuthorization("first-state")).toBe(store.storeKey);
 
@@ -69,7 +69,7 @@ describe("MCP OAuth pending authorization store", () => {
 
   it("uses exact state lookup and clears one requester prefix", async () => {
     await withTempHome(async () => {
-      const database = openOpenClawStateDatabase().db;
+      const database = openAforaStateDatabase().db;
       writeMcpOAuthPendingAuthorization("schema-install", "schema-install-state");
       expect(consumeOAuthState("schema-install", "schema-install-state")).toBe(true);
       const insertPending = database.prepare(

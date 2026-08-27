@@ -1,6 +1,6 @@
 // Handshake coverage for the additive chat-attachment limits on `hello-ok`, so
 // clients can validate a file before sending instead of hardcoding guesses.
-import { MAX_IMAGE_BYTES } from "@openclaw/media-core/constants";
+import { MAX_IMAGE_BYTES } from "@afora/media-core/constants";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { clearConfigCache, clearRuntimeConfigSnapshot } from "../config/config.js";
 import {

@@ -1,6 +1,6 @@
 // Memory Core plugin module implements manager fts state behavior.
 import type { DatabaseSync } from "node:sqlite";
-import type { MemorySource } from "openclaw/plugin-sdk/memory-core-host-engine-storage";
+import type { MemorySource } from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
 
 export function deleteMemoryFtsRows(params: {
   db: DatabaseSync;

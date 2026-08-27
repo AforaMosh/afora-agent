@@ -3,8 +3,8 @@
  *
  * Handles provider config, credential normalization, guarded endpoint calls, caching, and filters.
  */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { normalizeResolvedSecretInputString } from "../../config/types.secrets.js";
 import { createLazyImportLoader } from "../../shared/lazy-promise.js";
 import { normalizeSecretInput } from "../../utils/normalize-secret-input.js";
@@ -41,7 +41,7 @@ async function loadSelfHostedWebToolsEndpoint(): Promise<
   return (await webGuardedFetchLoader.load()).withSelfHostedWebToolsEndpoint;
 }
 
-export type SearchConfigRecord = (NonNullable<OpenClawConfig["tools"]>["web"] extends infer Web
+export type SearchConfigRecord = (NonNullable<AforaConfig["tools"]>["web"] extends infer Web
   ? Web extends { search?: infer Search }
     ? Search
     : never
@@ -275,7 +275,7 @@ export function parseIsoDateRange(params: {
       message: string;
       docs: string;
     } {
-  const docs = params.docs ?? "https://docs.openclaw.ai/tools/web";
+  const docs = params.docs ?? "https://docs.afora.ai/tools/web";
   const dateAfter = params.rawDateAfter ? normalizeToIsoDate(params.rawDateAfter) : undefined;
   if (params.rawDateAfter && !dateAfter) {
     return {
@@ -368,7 +368,7 @@ export function parseWebSearchTimeFilters<Provider extends WebSearchFreshnessPro
       message: string;
       docs: string;
     } {
-  const docs = params.docs ?? "https://docs.openclaw.ai/tools/web";
+  const docs = params.docs ?? "https://docs.afora.ai/tools/web";
   const freshness = params.rawFreshness
     ? normalizeFreshness(params.rawFreshness, params.freshnessProvider)
     : undefined;
@@ -463,7 +463,7 @@ function describeUnsupportedSearchFilter(name: UnsupportedWebSearchFilterName): 
 export function buildUnsupportedSearchFilterResponse(
   params: Record<string, unknown>,
   provider: string,
-  docs = "https://docs.openclaw.ai/tools/web",
+  docs = "https://docs.afora.ai/tools/web",
 ):
   | {
       error: string;

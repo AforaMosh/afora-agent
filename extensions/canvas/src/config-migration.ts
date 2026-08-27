@@ -1,8 +1,8 @@
 /**
  * Canvas config migration from legacy root canvasHost config to plugin config.
  */
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { asOptionalRecord as readRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { asOptionalRecord as readRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 type MutableRecord = Record<string, unknown>;
 
@@ -14,8 +14,8 @@ function mergeHostConfig(params: {
 }
 
 /** Migrates root canvasHost config into plugins.entries.canvas.config.host. */
-export function migrateLegacyCanvasHostConfig(config: OpenClawConfig): {
-  config: OpenClawConfig;
+export function migrateLegacyCanvasHostConfig(config: AforaConfig): {
+  config: AforaConfig;
   changes: string[];
 } | null {
   const legacyHost = readRecord((config as { canvasHost?: unknown }).canvasHost);
@@ -41,7 +41,7 @@ export function migrateLegacyCanvasHostConfig(config: OpenClawConfig): {
   };
   plugins.entries = entries;
 
-  const next = { ...config, plugins } as OpenClawConfig & { canvasHost?: unknown };
+  const next = { ...config, plugins } as AforaConfig & { canvasHost?: unknown };
   delete next.canvasHost;
 
   return {

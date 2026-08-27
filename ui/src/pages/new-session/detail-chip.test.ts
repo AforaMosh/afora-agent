@@ -43,7 +43,7 @@ describe("Detail chip state", () => {
     render(
       renderDetailChip({
         state: { mode: "cloud", label: "Worktree", worktreeLocked: true },
-        syncLabel: "OpenClaw",
+        syncLabel: "Afora",
         folder: "/repo",
         execNode: "",
         worktree: true,
@@ -71,6 +71,6 @@ describe("Detail chip state", () => {
     const worktree = container.querySelector<HTMLButtonElement>('[data-value="worktree"]');
     expect(worktree?.disabled).toBe(true);
     expect(container.textContent).toContain("Cloud workers require a managed worktree");
-    expect(container.textContent).toContain("Syncs OpenClaw to the cloud worker");
+    expect(container.textContent).toContain("Syncs Afora to the cloud worker");
   });
 });

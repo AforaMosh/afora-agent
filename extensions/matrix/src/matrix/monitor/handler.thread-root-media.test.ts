@@ -1,5 +1,5 @@
 // Matrix tests cover handler.thread root media plugin behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { describe, expect, it, vi } from "vitest";
 import { installMatrixMonitorTestRuntime } from "../../test-runtime.js";
 import {
@@ -46,7 +46,7 @@ describe("createMatrixRoomMessageHandler thread root media", () => {
         channel: "matrix",
         matchedBy: "binding.account",
       }),
-      resolveStorePath: () => "/tmp/openclaw-test-session.json",
+      resolveStorePath: () => "/tmp/afora-test-session.json",
       getRoomInfo: async () => ({
         name: "Media Room",
         canonicalAlias: "#media:example.org",

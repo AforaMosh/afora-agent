@@ -4,11 +4,11 @@ import path from "node:path";
 import {
   estimateStringChars,
   estimateTokensFromChars,
-} from "@openclaw/normalization-core/cjk-chars";
-import { SessionManager } from "openclaw/plugin-sdk/agent-sessions";
+} from "@afora/normalization-core/cjk-chars";
+import { SessionManager } from "afora-agent/plugin-sdk/agent-sessions";
 // Session filesystem utility tests cover transcript reading, usage extraction,
 // preview rows, message counts, title fields, and archive candidate resolution.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 import { createNoisyPngBuffer } from "../../test/helpers/image-fixtures.js";
 import {
@@ -210,7 +210,7 @@ function appendBlockedUserMessage(
     content: [{ type: "text", text: params.redactedText }],
     timestamp: Date.now(),
     ...(params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : {}),
-    __openclaw: {
+    __afora: {
       beforeAgentRunBlocked: {
         blockedBy: params.pluginId,
         blockedAt: Date.now(),
@@ -233,7 +233,7 @@ function expectMessageContents(messages: unknown[], expected: unknown[]) {
 
 function expectMessageFields(
   message: unknown,
-  fields: { role?: string; content?: unknown; openclaw?: Record<string, unknown> },
+  fields: { role?: string; content?: unknown; afora?: Record<string, unknown> },
 ) {
   const record = requireRecord(message, "message");
   if ("role" in fields) {
@@ -242,9 +242,9 @@ function expectMessageFields(
   if ("content" in fields) {
     expect(record.content).toEqual(fields.content);
   }
-  if (fields.openclaw) {
-    const metadata = requireRecord(record["__openclaw"], "message metadata");
-    for (const [key, value] of Object.entries(fields.openclaw)) {
+  if (fields.afora) {
+    const metadata = requireRecord(record["__afora"], "message metadata");
+    for (const [key, value] of Object.entries(fields.afora)) {
       expect(metadata[key]).toEqual(value);
     }
   }
@@ -261,7 +261,7 @@ describe("readSessionMessages", () => {
   let tmpDir: string;
   let storePath: string;
 
-  registerTempSessionStore("openclaw-session-fs-test-", (nextTmpDir, nextStorePath) => {
+  registerTempSessionStore("afora-session-fs-test-", (nextTmpDir, nextStorePath) => {
     tmpDir = nextTmpDir;
     storePath = nextStorePath;
   });
@@ -292,13 +292,13 @@ describe("readSessionMessages", () => {
     const marker = out[1] as {
       role: string;
       content?: Array<{ text?: string }>;
-      __openclaw?: { kind?: string; id?: string };
+      __afora?: { kind?: string; id?: string };
       timestamp?: number;
     };
     expect(marker.role).toBe("system");
     expect(marker.content?.[0]?.text).toBe("Compaction");
-    expect(marker["__openclaw"]?.kind).toBe("compaction");
-    expect(marker["__openclaw"]?.id).toBe("comp-1");
+    expect(marker["__afora"]?.kind).toBe("compaction");
+    expect(marker["__afora"]?.id).toBe("comp-1");
     expect(typeof marker.timestamp).toBe("number");
   });
 
@@ -326,8 +326,8 @@ describe("readSessionMessages", () => {
 
       expect(result.totalMessages).toBe(4);
       expect(result.messages).toHaveLength(2);
-      expectMessageFields(result.messages[0], { content: "recent", openclaw: { seq: 3 } });
-      expectMessageFields(result.messages[1], { content: "latest", openclaw: { seq: 4 } });
+      expectMessageFields(result.messages[0], { content: "recent", afora: { seq: 3 } });
+      expectMessageFields(result.messages[1], { content: "latest", afora: { seq: 4 } });
       expect(readFileSpy).not.toHaveBeenCalled();
     } finally {
       readFileSpy.mockRestore();
@@ -349,7 +349,7 @@ describe("readSessionMessages", () => {
     ).resolves.toMatchObject({ messages: [], totalMessages: 2 });
   });
 
-  test("forwards the outer JSONL record timestamp to __openclaw.recordTimestampMs (#85648)", async () => {
+  test("forwards the outer JSONL record timestamp to __afora.recordTimestampMs (#85648)", async () => {
     const sessionId = "test-session-record-timestamp";
     const t1 = "2026-05-16T16:00:31.000Z";
     const t2 = "2026-05-23T04:02:33.000Z";
@@ -365,15 +365,15 @@ describe("readSessionMessages", () => {
     expect(result).toHaveLength(2);
     expectMessageFields(result[0], {
       content: "old turn",
-      openclaw: { recordTimestampMs: Date.parse(t1) },
+      afora: { recordTimestampMs: Date.parse(t1) },
     });
     expectMessageFields(result[1], {
       content: "fresh turn",
-      openclaw: { recordTimestampMs: Date.parse(t2) },
+      afora: { recordTimestampMs: Date.parse(t2) },
     });
   });
 
-  test("surfaces persisted user idempotency keys in __openclaw metadata (#79844)", async () => {
+  test("surfaces persisted user idempotency keys in __afora metadata (#79844)", async () => {
     const sessionId = "test-session-idempotency-key";
     writeTranscript(tmpDir, sessionId, [
       { type: "session", version: 1, id: sessionId },
@@ -395,7 +395,7 @@ describe("readSessionMessages", () => {
     expect(result).toHaveLength(1);
     expectMessageFields(result[0], {
       content: "pending optimistic turn",
-      openclaw: { id: "entry-user-1", idempotencyKey: "client-turn-1" },
+      afora: { id: "entry-user-1", idempotencyKey: "client-turn-1" },
     });
   });
 
@@ -452,7 +452,7 @@ describe("readSessionMessages", () => {
         maxMessages: 10,
       });
       expectMessageContents(recentMessages, ["root", "active branch", "latest active"]);
-      expectMessageFields(messages[2], { openclaw: { id: "user-2", seq: 3 } });
+      expectMessageFields(messages[2], { afora: { id: "user-2", seq: 3 } });
       expect(sessionManagerOpenSpy).not.toHaveBeenCalled();
       expect(readFileSpy).not.toHaveBeenCalled();
     } finally {
@@ -555,8 +555,8 @@ describe("readSessionMessages", () => {
 
     const project = (messages: unknown[]) =>
       messages.map((message) => {
-        const record = message as { content?: unknown; __openclaw?: { kind?: string } };
-        return record["__openclaw"]?.kind ?? record.content;
+        const record = message as { content?: unknown; __afora?: { kind?: string } };
+        return record["__afora"]?.kind ?? record.content;
       });
     const full = await readSessionMessagesAsync(sessionId, storePath, undefined, {
       mode: "full",
@@ -596,13 +596,13 @@ describe("readSessionMessages", () => {
     });
 
     expect(newest.totalMessages).toBe(3);
-    expectMessageFields(newest.messages[0], { content: "active prompt", openclaw: { seq: 2 } });
-    expectMessageFields(newest.messages[1], { content: "active answer", openclaw: { seq: 3 } });
+    expectMessageFields(newest.messages[0], { content: "active prompt", afora: { seq: 2 } });
+    expectMessageFields(newest.messages[1], { content: "active answer", afora: { seq: 3 } });
     expect(oldest.totalMessages).toBe(3);
     expectMessageFields(oldest.messages[0], {
       role: "system",
       content: [{ type: "text", text: "Reset" }],
-      openclaw: { kind: "reset", id: "reset-1", seq: 1 },
+      afora: { kind: "reset", id: "reset-1", seq: 1 },
     });
   });
 
@@ -667,7 +667,7 @@ describe("readSessionMessages", () => {
     expectMessageFields(recent.messages[0], {
       role: "assistant",
       content: "restored archive",
-      openclaw: { seq: 2 },
+      afora: { seq: 2 },
     });
   });
 
@@ -753,13 +753,13 @@ describe("readSessionMessages", () => {
       { type: "session", version: 1, id: sessionId },
       { message: { role: "assistant", content: "older store archive" } },
     ]);
-    const legacySessionsDir = path.join(tmpDir, ".openclaw", "sessions");
+    const legacySessionsDir = path.join(tmpDir, ".afora", "sessions");
     fs.mkdirSync(legacySessionsDir, { recursive: true });
     writeResetArchive(legacySessionsDir, sessionId, "2026-02-16T22-26-34.000Z", [
       { type: "session", version: 1, id: sessionId },
       { message: { role: "assistant", content: "newer legacy archive" } },
     ]);
-    await withEnvAsync({ OPENCLAW_HOME: tmpDir }, async () => {
+    await withEnvAsync({ AFORA_HOME: tmpDir }, async () => {
       const fullMessages = await readSessionMessagesAsync(sessionId, storePath, undefined, {
         mode: "full",
         reason: "test cross-root reset archive fallback",
@@ -951,9 +951,9 @@ describe("readSessionMessages", () => {
     });
 
     expectMessageContents(messages, ["legacy prompt", "tree reply", "reachable orphan tail"]);
-    expectMessageFields(messages[0], { openclaw: { id: "legacy-user", seq: 1 } });
-    expectMessageFields(messages[1], { openclaw: { id: "tree-assistant", seq: 2 } });
-    expectMessageFields(messages[2], { openclaw: { id: "orphan-tail", seq: 3 } });
+    expectMessageFields(messages[0], { afora: { id: "legacy-user", seq: 1 } });
+    expectMessageFields(messages[1], { afora: { id: "tree-assistant", seq: 2 } });
+    expectMessageFields(messages[2], { afora: { id: "orphan-tail", seq: 3 } });
   });
 
   test("keeps legacy async parents when tree transcripts reference pre-v3 rows", async () => {
@@ -970,8 +970,8 @@ describe("readSessionMessages", () => {
     });
 
     expectMessageContents(messages, ["legacy hello", "tree hello"]);
-    expectMessageFields(messages[0], { openclaw: { id: "legacy-user", seq: 1 } });
-    expectMessageFields(messages[1], { openclaw: { id: "tree-assistant", seq: 2 } });
+    expectMessageFields(messages[0], { afora: { id: "legacy-user", seq: 1 } });
+    expectMessageFields(messages[1], { afora: { id: "tree-assistant", seq: 2 } });
   });
 
   test("caches async transcript indexes by file stats", async () => {
@@ -1078,7 +1078,7 @@ describe("readSessionMessages", () => {
           message: {
             ...recordTimestamp(3).message,
             api: "chat",
-            provider: "openclaw",
+            provider: "afora",
             model: "test",
             usage: {},
             stopReason: "stop",
@@ -1111,11 +1111,11 @@ describe("readSessionMessages", () => {
         reason: "test",
       });
       expect(out).toHaveLength(2);
-      expectMessageFields(out[0], { role: "user", content: "clean prompt", openclaw: { seq: 1 } });
+      expectMessageFields(out[0], { role: "user", content: "clean prompt", afora: { seq: 1 } });
       expectMessageFields(out[1], {
         role: "assistant",
         content: [{ type: "text", text: "clean answer" }],
-        openclaw: { seq: 2 },
+        afora: { seq: 2 },
       });
       expect(JSON.stringify(out)).not.toContain("original wrapped prompt");
       expect(JSON.stringify(out)).not.toContain("side delivery");
@@ -1159,7 +1159,7 @@ describe("readSessionMessages", () => {
       });
       expect(out).toHaveLength(1);
       expectMessageFields(out[0], message);
-      expect((out[0] as { __openclaw?: { seq?: number } })["__openclaw"]?.seq).toBe(1);
+      expect((out[0] as { __afora?: { seq?: number } })["__afora"]?.seq).toBe(1);
     },
   );
 
@@ -1245,7 +1245,7 @@ describe("readSessionMessages", () => {
       out.map((message) => ({
         role: (message as { role?: string }).role,
         content: (message as { content?: unknown }).content,
-        kind: (message as { __openclaw?: { kind?: string } })["__openclaw"]?.kind,
+        kind: (message as { __afora?: { kind?: string } })["__afora"]?.kind,
       })),
     ).toEqual([
       { role: "system", content: [{ type: "text", text: "Compaction" }], kind: "compaction" },
@@ -1281,13 +1281,13 @@ describe("readSessionMessages", () => {
     });
 
     expect(newest.totalMessages).toBe(3);
-    expectMessageFields(newest.messages[0], { content: "active prompt", openclaw: { seq: 2 } });
-    expectMessageFields(newest.messages[1], { content: "active answer", openclaw: { seq: 3 } });
+    expectMessageFields(newest.messages[0], { content: "active prompt", afora: { seq: 2 } });
+    expectMessageFields(newest.messages[1], { content: "active answer", afora: { seq: 3 } });
     expect(oldest.totalMessages).toBe(3);
     expectMessageFields(oldest.messages[0], {
       role: "system",
       content: [{ type: "text", text: "Compaction" }],
-      openclaw: { kind: "compaction", id: "comp-1", seq: 1 },
+      afora: { kind: "compaction", id: "comp-1", seq: 1 },
     });
   });
 
@@ -1480,7 +1480,7 @@ describe("readLatestSessionUsageFromTranscript", () => {
   let tmpDir: string;
   let storePath: string;
 
-  registerTempSessionStore("openclaw-session-usage-test-", (nextTmpDir, nextStorePath) => {
+  registerTempSessionStore("afora-session-usage-test-", (nextTmpDir, nextStorePath) => {
     tmpDir = nextTmpDir;
     storePath = nextStorePath;
   });
@@ -1625,12 +1625,12 @@ describe("readLatestSessionUsageFromTranscript", () => {
 });
 
 describe("resolveSessionTranscriptCandidates", () => {
-  test("fallback candidate uses OPENCLAW_HOME instead of os.homedir()", () => {
-    withEnv({ OPENCLAW_HOME: "/srv/openclaw-home", HOME: "/home/other" }, () => {
+  test("fallback candidate uses AFORA_HOME instead of os.homedir()", () => {
+    withEnv({ AFORA_HOME: "/srv/afora-home", HOME: "/home/other" }, () => {
       const candidates = resolveSessionTranscriptCandidates("sess-1", undefined);
       const fallback = candidates[candidates.length - 1];
       expect(fallback).toBe(
-        path.join(path.resolve("/srv/openclaw-home"), ".openclaw", "sessions", "sess-1.jsonl"),
+        path.join(path.resolve("/srv/afora-home"), ".afora", "sessions", "sess-1.jsonl"),
       );
     });
   });
@@ -1639,8 +1639,8 @@ describe("resolveSessionTranscriptCandidates", () => {
 describe("resolveSessionTranscriptCandidates safety", () => {
   test.each([
     {
-      storePath: "/tmp/openclaw/agents/main/sessions/sessions.json",
-      sessionFile: "/tmp/openclaw/agents/ops/sessions/sess-safe.jsonl",
+      storePath: "/tmp/afora/agents/main/sessions/sessions.json",
+      sessionFile: "/tmp/afora/agents/ops/sessions/sess-safe.jsonl",
     },
     {
       storePath: "/srv/custom/agents/main/sessions/sessions.json",
@@ -1657,14 +1657,14 @@ describe("resolveSessionTranscriptCandidates safety", () => {
   test("drops unsafe session IDs instead of producing traversal paths", () => {
     const candidates = resolveSessionTranscriptCandidates(
       "../etc/passwd",
-      "/tmp/openclaw/agents/main/sessions/sessions.json",
+      "/tmp/afora/agents/main/sessions/sessions.json",
     );
 
     expect(candidates).toStrictEqual([]);
   });
 
   test("drops unsafe sessionFile candidates and keeps safe fallbacks", () => {
-    const storePath = "/tmp/openclaw/agents/main/sessions/sessions.json";
+    const storePath = "/tmp/afora/agents/main/sessions/sessions.json";
     const candidates = resolveSessionTranscriptCandidates(
       "sess-safe",
       storePath,
@@ -1678,18 +1678,18 @@ describe("resolveSessionTranscriptCandidates safety", () => {
   });
 
   test("prefers the current sessionId transcript before a stale sessionFile candidate", () => {
-    const storePath = "/tmp/openclaw/agents/main/sessions/sessions.json";
+    const storePath = "/tmp/afora/agents/main/sessions/sessions.json";
     const candidates = resolveSessionTranscriptCandidates(
       "11111111-1111-4111-8111-111111111111",
       storePath,
-      "/tmp/openclaw/agents/main/sessions/22222222-2222-4222-8222-222222222222.jsonl",
+      "/tmp/afora/agents/main/sessions/22222222-2222-4222-8222-222222222222.jsonl",
     );
 
     expect(candidates[0]).toBe(
-      path.resolve("/tmp/openclaw/agents/main/sessions/11111111-1111-4111-8111-111111111111.jsonl"),
+      path.resolve("/tmp/afora/agents/main/sessions/11111111-1111-4111-8111-111111111111.jsonl"),
     );
     expect(candidates).toContain(
-      path.resolve("/tmp/openclaw/agents/main/sessions/22222222-2222-4222-8222-222222222222.jsonl"),
+      path.resolve("/tmp/afora/agents/main/sessions/22222222-2222-4222-8222-222222222222.jsonl"),
     );
   });
 
@@ -1705,7 +1705,7 @@ describe("resolveSessionTranscriptCandidates safety", () => {
       filename: "2026-03-23T16-30-00-000Z_notes.jsonl",
     },
   ])("keeps $name ahead of synthesized fallback", ({ filename }) => {
-    const storePath = "/tmp/openclaw/agents/main/sessions/sessions.json";
+    const storePath = "/tmp/afora/agents/main/sessions/sessions.json";
     const sessionFile = path.join(path.dirname(storePath), filename);
     const candidates = resolveSessionTranscriptCandidates(
       "11111111-1111-4111-8111-111111111111",
@@ -1716,14 +1716,14 @@ describe("resolveSessionTranscriptCandidates safety", () => {
   });
 
   test("still treats generated topic transcripts from another session as stale", () => {
-    const storePath = "/tmp/openclaw/agents/main/sessions/sessions.json";
+    const storePath = "/tmp/afora/agents/main/sessions/sessions.json";
     const sessionId = "11111111-1111-4111-8111-111111111111";
     const staleSessionFile =
-      "/tmp/openclaw/agents/main/sessions/22222222-2222-4222-8222-222222222222-topic-thread.jsonl";
+      "/tmp/afora/agents/main/sessions/22222222-2222-4222-8222-222222222222-topic-thread.jsonl";
     const candidates = resolveSessionTranscriptCandidates(sessionId, storePath, staleSessionFile);
 
     expect(candidates[0]).toBe(
-      path.resolve("/tmp/openclaw/agents/main/sessions/11111111-1111-4111-8111-111111111111.jsonl"),
+      path.resolve("/tmp/afora/agents/main/sessions/11111111-1111-4111-8111-111111111111.jsonl"),
     );
     expect(candidates).toContain(path.resolve(staleSessionFile));
   });
@@ -1733,7 +1733,7 @@ describe("oversized transcript line guards", () => {
   let tmpDir: string;
   let storePath: string;
 
-  registerTempSessionStore("openclaw-session-fs-oversized-", (nextTmpDir, nextStorePath) => {
+  registerTempSessionStore("afora-session-fs-oversized-", (nextTmpDir, nextStorePath) => {
     tmpDir = nextTmpDir;
     storePath = nextStorePath;
   });
@@ -1826,7 +1826,7 @@ describe("oversized transcript line guards", () => {
           { type: "image", omitted: true, bytes: png.length },
           { type: "text", text: "keep suffix text" },
         ],
-        __openclaw: { id: "archived-image" },
+        __afora: { id: "archived-image" },
       },
     ]);
     expect(JSON.stringify(messages)).not.toContain(encoded);
@@ -1996,14 +1996,14 @@ describe("oversized transcript line guards", () => {
           { type: "text", text: "keep prefix text" },
           { type: "image", data: encoded },
         ],
-        { message: { compactNumbers: "__OPENCLAW_COMPACT_NUMBERS__" } },
+        { message: { compactNumbers: "__AFORA_COMPACT_NUMBERS__" } },
       ),
     ]);
     const compactNumbers = Array.from({ length: 13_000 }, () => "1e20").join(",");
     const archive = fs.readFileSync(archivePath, "utf8");
     fs.writeFileSync(
       archivePath,
-      archive.replace('"__OPENCLAW_COMPACT_NUMBERS__"', `[${compactNumbers}]`),
+      archive.replace('"__AFORA_COMPACT_NUMBERS__"', `[${compactNumbers}]`),
       "utf8",
     );
 
@@ -2016,7 +2016,7 @@ describe("oversized transcript line guards", () => {
     expect(messages).toMatchObject([
       {
         content: [{ type: "text", text: "[chat.history omitted: message too large]" }],
-        __openclaw: { id: "expanded-json", truncated: true, reason: "oversized" },
+        __afora: { id: "expanded-json", truncated: true, reason: "oversized" },
       },
     ]);
     expect(
@@ -2040,7 +2040,7 @@ describe("oversized transcript line guards", () => {
     const archive = fs.readFileSync(archivePath, "utf8");
     fs.writeFileSync(
       archivePath,
-      archive.replace('"__MARKER_SPOOF__"', '"\\u005f_openclaw_omitted_image_0__"'),
+      archive.replace('"__MARKER_SPOOF__"', '"\\u005f_afora_omitted_image_0__"'),
       "utf8",
     );
 
@@ -2053,7 +2053,7 @@ describe("oversized transcript line guards", () => {
     expect(messages).toMatchObject([
       {
         content: [{ type: "text", text: "[chat.history omitted: message too large]" }],
-        __openclaw: { id: "escaped-marker", truncated: true, reason: "oversized" },
+        __afora: { id: "escaped-marker", truncated: true, reason: "oversized" },
       },
     ]);
     expect(
@@ -2122,7 +2122,7 @@ describe("oversized transcript line guards", () => {
       {
         role: "user",
         content: [{ type: "text", text: "[chat.history omitted: message too large]" }],
-        __openclaw: { id: "adversarial-image", truncated: true, reason: "oversized" },
+        __afora: { id: "adversarial-image", truncated: true, reason: "oversized" },
       },
     ]);
     expect(JSON.stringify(messages)).not.toContain(encoded);
@@ -2221,13 +2221,13 @@ describe("oversized transcript line guards", () => {
 
     // The oversized line's id and parentId are extracted by regex from the
     // prefix bytes. parentId drives active-tree selection; id is attached
-    // to the __openclaw metadata. Both must be correct for the record to
+    // to the __afora metadata. Both must be correct for the record to
     // appear in the right position.
     expect(out).toHaveLength(2); // root-msg + oversized-child
     const oversized = out[1] as Record<string, unknown>;
     expect(oversized.role).toBe("assistant");
-    // id is preserved in __openclaw transcript metadata
-    const meta = (oversized as Record<string, Record<string, unknown>>)["__openclaw"];
+    // id is preserved in __afora transcript metadata
+    const meta = (oversized as Record<string, Record<string, unknown>>)["__afora"];
     expect(meta?.id).toBe("oversized-child");
     expect(meta?.idempotencyKey).toBe("oversized-key");
     expect(meta?.recordTimestampMs).toBe(Date.parse(timestamp));
@@ -2267,7 +2267,7 @@ describe("short read resilience", () => {
   let tmpDir: string;
   let storePath: string;
 
-  registerTempSessionStore("openclaw-short-read-test-", (nextTmpDir, nextStorePath) => {
+  registerTempSessionStore("afora-short-read-test-", (nextTmpDir, nextStorePath) => {
     tmpDir = nextTmpDir;
     storePath = nextStorePath;
   });

@@ -14,23 +14,23 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 const ENV_KEYS = [
   "HOME",
   "USERPROFILE",
-  "OPENCLAW_STATE_DIR",
-  "OPENCLAW_CONFIG_PATH",
-  "OPENCLAW_SKIP_CHANNELS",
-  "OPENCLAW_SKIP_GMAIL_WATCHER",
-  "OPENCLAW_SKIP_CRON",
-  "OPENCLAW_SKIP_CANVAS_HOST",
-  "OPENCLAW_SKIP_BROWSER_CONTROL_SERVER",
-  "OPENCLAW_SKIP_PROVIDERS",
-  "OPENCLAW_TEST_MINIMAL_GATEWAY",
-  "OPENCLAW_BUNDLED_PLUGINS_DIR",
-  "OPENCLAW_DISABLE_BUNDLED_PLUGINS",
+  "AFORA_STATE_DIR",
+  "AFORA_CONFIG_PATH",
+  "AFORA_SKIP_CHANNELS",
+  "AFORA_SKIP_GMAIL_WATCHER",
+  "AFORA_SKIP_CRON",
+  "AFORA_SKIP_CANVAS_HOST",
+  "AFORA_SKIP_BROWSER_CONTROL_SERVER",
+  "AFORA_SKIP_PROVIDERS",
+  "AFORA_TEST_MINIMAL_GATEWAY",
+  "AFORA_BUNDLED_PLUGINS_DIR",
+  "AFORA_DISABLE_BUNDLED_PLUGINS",
 ] as const;
 
 async function setupTempHome() {
   const env = captureEnv([...ENV_KEYS]);
-  const home = tempDirs.make("openclaw-rpc-tools-skills-");
-  const stateDir = path.join(home, ".openclaw");
+  const home = tempDirs.make("afora-rpc-tools-skills-");
+  const stateDir = path.join(home, ".afora");
   const workspace = path.join(home, "workspace");
   const bundledPlugins = path.join(home, "empty-bundled-plugins");
   const skillDir = path.join(workspace, "skills", "catalog-proof");
@@ -57,19 +57,19 @@ async function setupTempHome() {
   await fs.writeFile(path.join(skillDir, "skill-card.md"), SKILL_CARD, "utf8");
   setTestEnvValue("HOME", home);
   setTestEnvValue("USERPROFILE", home);
-  setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
-  setTestEnvValue("OPENCLAW_SKIP_CHANNELS", "1");
-  setTestEnvValue("OPENCLAW_SKIP_GMAIL_WATCHER", "1");
-  setTestEnvValue("OPENCLAW_SKIP_CRON", "1");
-  setTestEnvValue("OPENCLAW_SKIP_CANVAS_HOST", "1");
-  setTestEnvValue("OPENCLAW_SKIP_BROWSER_CONTROL_SERVER", "1");
-  setTestEnvValue("OPENCLAW_SKIP_PROVIDERS", "1");
-  setTestEnvValue("OPENCLAW_BUNDLED_PLUGINS_DIR", bundledPlugins);
-  setTestEnvValue("OPENCLAW_DISABLE_BUNDLED_PLUGINS", "1");
-  delete process.env.OPENCLAW_CONFIG_PATH;
-  delete process.env.OPENCLAW_TEST_MINIMAL_GATEWAY;
+  setTestEnvValue("AFORA_STATE_DIR", stateDir);
+  setTestEnvValue("AFORA_SKIP_CHANNELS", "1");
+  setTestEnvValue("AFORA_SKIP_GMAIL_WATCHER", "1");
+  setTestEnvValue("AFORA_SKIP_CRON", "1");
+  setTestEnvValue("AFORA_SKIP_CANVAS_HOST", "1");
+  setTestEnvValue("AFORA_SKIP_BROWSER_CONTROL_SERVER", "1");
+  setTestEnvValue("AFORA_SKIP_PROVIDERS", "1");
+  setTestEnvValue("AFORA_BUNDLED_PLUGINS_DIR", bundledPlugins);
+  setTestEnvValue("AFORA_DISABLE_BUNDLED_PLUGINS", "1");
+  delete process.env.AFORA_CONFIG_PATH;
+  delete process.env.AFORA_TEST_MINIMAL_GATEWAY;
   return {
-    configPath: path.join(stateDir, "openclaw.json"),
+    configPath: path.join(stateDir, "afora.json"),
     env,
     home,
     skillDir,
@@ -140,7 +140,7 @@ describe("gateway RPC tool and skill catalogs", () => {
           skillKey: "catalog-proof",
         });
         expect(card).toEqual({
-          schema: "openclaw.skills.skill-card.v1",
+          schema: "afora.skills.skill-card.v1",
           skillKey: "catalog-proof",
           path: path.join(temp.skillDir, "skill-card.md"),
           sizeBytes: Buffer.byteLength(SKILL_CARD),

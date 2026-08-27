@@ -304,10 +304,10 @@ describe("docs-link-audit", () => {
     fs.mkdirSync(docsRoot, { recursive: true });
     fs.writeFileSync(path.join(docsRoot, "docs.json"), "{ invalid json", "utf8");
 
-    const before = tempEntries("openclaw-docs-anchor-audit-");
+    const before = tempEntries("afora-docs-anchor-audit-");
     try {
       expect(() => prepareAnchorAuditDocsDir(docsRoot)).toThrow();
-      const after = tempEntries("openclaw-docs-anchor-audit-");
+      const after = tempEntries("afora-docs-anchor-audit-");
       expect([...after].filter((entry) => !before.has(entry))).toEqual([]);
     } finally {
       cleanupTempDirs(tempDirs);
@@ -320,7 +320,7 @@ describe("docs-link-audit", () => {
     const docsRoot = path.join(fixtureRoot, "docs");
     fs.mkdirSync(docsRoot, { recursive: true });
 
-    const before = tempEntries("openclaw-docs-link-audit-");
+    const before = tempEntries("afora-docs-link-audit-");
     try {
       const mirroredDocsDir = prepareMirroredDocsDir(docsRoot);
       expect(mirroredDocsDir).toEqual({
@@ -329,7 +329,7 @@ describe("docs-link-audit", () => {
         mirroredClawHub: false,
       });
       mirroredDocsDir.cleanup();
-      const after = tempEntries("openclaw-docs-link-audit-");
+      const after = tempEntries("afora-docs-link-audit-");
       expect([...after].filter((entry) => !before.has(entry))).toEqual([]);
     } finally {
       cleanupTempDirs(tempDirs);
@@ -337,7 +337,7 @@ describe("docs-link-audit", () => {
   });
 
   it("cleans mirrored docs copies when ClawHub sync fails", () => {
-    const before = tempEntries("openclaw-docs-link-audit-");
+    const before = tempEntries("afora-docs-link-audit-");
 
     expect(() =>
       prepareMirroredDocsDir(undefined, {
@@ -350,7 +350,7 @@ describe("docs-link-audit", () => {
       }),
     ).toThrow("sync failed");
 
-    const after = tempEntries("openclaw-docs-link-audit-");
+    const after = tempEntries("afora-docs-link-audit-");
     expect([...after].filter((entry) => !before.has(entry))).toEqual([]);
   });
 
@@ -370,7 +370,7 @@ describe("docs-link-audit", () => {
           cleanup() {
             mirroredCleaned = true;
           },
-          dir: path.join(os.tmpdir(), "openclaw-docs-mirrored"),
+          dir: path.join(os.tmpdir(), "afora-docs-mirrored"),
           mirroredClawHub: true,
         }),
       }),
@@ -392,7 +392,7 @@ describe("docs-link-audit", () => {
 
     const exitCode = runDocsLinkAuditCli({
       args: ["--anchors"],
-      env: { ...process.env, OPENCLAW_DOCS_LINK_SENTINEL: "1" },
+      env: { ...process.env, AFORA_DOCS_LINK_SENTINEL: "1" },
       nodeExecPath: "/opt/node/bin/node",
       nodeVersion: "22.21.1",
       prepareAnchorAuditDocsDirImpl() {
@@ -421,7 +421,7 @@ describe("docs-link-audit", () => {
       ],
       options: expect.objectContaining({
         cwd: anchorDocsDir,
-        env: expect.objectContaining({ OPENCLAW_DOCS_LINK_SENTINEL: "1" }),
+        env: expect.objectContaining({ AFORA_DOCS_LINK_SENTINEL: "1" }),
         shell: false,
         stdio: "inherit",
       }),

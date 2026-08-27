@@ -7,10 +7,10 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "$ROOT_DIR/scripts/lib/docker-e2e-image.sh"
 
-IMAGE_NAME="${OPENCLAW_PLUGIN_BINDING_COMMAND_ESCAPE_E2E_IMAGE:-openclaw-plugin-binding-command-escape-e2e}"
-CONTAINER_NAME="openclaw-plugin-binding-command-escape-e2e-$$"
-DOCKER_RUN_TIMEOUT="${OPENCLAW_PLUGIN_BINDING_COMMAND_ESCAPE_DOCKER_RUN_TIMEOUT:-900s}"
-RUN_LOG="$(mktemp -t openclaw-plugin-binding-command-escape-log.XXXXXX)"
+IMAGE_NAME="${AFORA_PLUGIN_BINDING_COMMAND_ESCAPE_E2E_IMAGE:-afora-plugin-binding-command-escape-e2e}"
+CONTAINER_NAME="afora-plugin-binding-command-escape-e2e-$$"
+DOCKER_RUN_TIMEOUT="${AFORA_PLUGIN_BINDING_COMMAND_ESCAPE_DOCKER_RUN_TIMEOUT:-900s}"
+RUN_LOG="$(mktemp -t afora-plugin-binding-command-escape-log.XXXXXX)"
 FOCUSED_TEST_REGEX="lets authorized gateway-style plugin commands escape plugin-owned bindings|keeps authorized unknown slash text in a plugin-owned binding routed to the bound plugin|keeps unauthorized plugin-owned binding slash replies suppressed while routed to the bound plugin"
 
 cleanup() {
@@ -31,7 +31,7 @@ DOCKER_COMMAND_TIMEOUT="$DOCKER_RUN_TIMEOUT" docker_e2e_docker_run_cmd run --rm 
   --name "$CONTAINER_NAME" \
   -e COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
   -e "FOCUSED_TEST_REGEX=$FOCUSED_TEST_REGEX" \
-  -e OPENCLAW_VITEST_FS_MODULE_CACHE_PATH=/tmp/openclaw-vitest-cache \
+  -e AFORA_VITEST_FS_MODULE_CACHE_PATH=/tmp/afora-vitest-cache \
   "$IMAGE_NAME" \
   bash -lc 'set -euo pipefail; corepack enable; node scripts/run-vitest.mjs src/auto-reply/reply/dispatch-from-config.test.ts --reporter=verbose -t "$FOCUSED_TEST_REGEX"' \
   >"$RUN_LOG" 2>&1

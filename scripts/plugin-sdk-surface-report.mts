@@ -5,7 +5,7 @@ import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import type tsTypes from "typescript";
 import { booleanFlag, parseFlagArgs } from "./lib/arg-utils.mts";
 import {
@@ -178,7 +178,7 @@ const defaultPublicDeprecatedExportsByEntrypointBudget = Object.freeze({
 export function readPluginSdkSurfaceBudgets(env: NodeJS.ProcessEnv = process.env) {
   const budgets = {
     publicEntrypoints: readPluginSdkSurfaceBudgetEnv(
-      "OPENCLAW_PLUGIN_SDK_MAX_PUBLIC_ENTRYPOINTS",
+      "AFORA_PLUGIN_SDK_MAX_PUBLIC_ENTRYPOINTS",
       // +1: session-discussion binds one external discussion provider to sessions.
       // +1: focused media-local-roots replacement for the legacy agent-media facade.
       // +1: account-aware channel DM policy setup descriptors.
@@ -199,7 +199,7 @@ export function readPluginSdkSurfaceBudgets(env: NodeJS.ProcessEnv = process.env
       env,
     ),
     publicExports: readPluginSdkSurfaceBudgetEnv(
-      "OPENCLAW_PLUGIN_SDK_MAX_PUBLIC_EXPORTS",
+      "AFORA_PLUGIN_SDK_MAX_PUBLIC_EXPORTS",
       // +5: session discussion state, info, provider, registration, and Control UI path contracts.
       // +2: structured media placeholder formatter and its text-fact contract.
       // +2: narrow settled-turn finalization result and safe full-attempt projector.
@@ -299,7 +299,7 @@ export function readPluginSdkSurfaceBudgets(env: NodeJS.ProcessEnv = process.env
       env,
     ),
     publicFunctionExports: readPluginSdkSurfaceBudgetEnv(
-      "OPENCLAW_PLUGIN_SDK_MAX_PUBLIC_FUNCTION_EXPORTS",
+      "AFORA_PLUGIN_SDK_MAX_PUBLIC_FUNCTION_EXPORTS",
       // +2: session discussion provider registration and canonical Control UI path building.
       // +1: structured media placeholder formatter for text-only channel carriers.
       // +1: settled-turn full-attempt projector.
@@ -380,7 +380,7 @@ export function readPluginSdkSurfaceBudgets(env: NodeJS.ProcessEnv = process.env
       env,
     ),
     publicDeprecatedExports: readPluginSdkSurfaceBudgetEnv(
-      "OPENCLAW_PLUGIN_SDK_MAX_PUBLIC_DEPRECATED_EXPORTS",
+      "AFORA_PLUGIN_SDK_MAX_PUBLIC_DEPRECATED_EXPORTS",
       // +3: canonical incognito classifier projected through deprecated compatibility barrels.
       // +10: named media legacy projection deprecations across public compatibility barrels.
       // +2: channel prompt-context type and metadata builder compatibility aliases.
@@ -399,7 +399,7 @@ export function readPluginSdkSurfaceBudgets(env: NodeJS.ProcessEnv = process.env
       env,
     ),
     publicWildcardReexports: readPluginSdkSurfaceBudgetEnv(
-      "OPENCLAW_PLUGIN_SDK_MAX_PUBLIC_WILDCARD_REEXPORTS",
+      "AFORA_PLUGIN_SDK_MAX_PUBLIC_WILDCARD_REEXPORTS",
       // -1: infra-runtime now names its error exports explicitly.
       // -1: infra-runtime excludes the internal system-event receipt API.
       // -1: infra-runtime re-exports number coercion directly from its canonical owner.
@@ -408,7 +408,7 @@ export function readPluginSdkSurfaceBudgets(env: NodeJS.ProcessEnv = process.env
     ),
   };
   const publicDeprecatedExportsByEntrypointBudget = readPluginSdkEntrypointBudgetEnv(
-    "OPENCLAW_PLUGIN_SDK_MAX_PUBLIC_DEPRECATED_EXPORTS_BY_ENTRYPOINT",
+    "AFORA_PLUGIN_SDK_MAX_PUBLIC_DEPRECATED_EXPORTS_BY_ENTRYPOINT",
     defaultPublicDeprecatedExportsByEntrypointBudget,
     env,
   );

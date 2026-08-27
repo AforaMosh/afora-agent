@@ -1,24 +1,24 @@
 /**
- * Voice call response generator - uses the embedded OpenClaw agent for tool support.
+ * Voice call response generator - uses the embedded Afora agent for tool support.
  * Routes voice responses through the same agent infrastructure as messaging.
  */
 
 import crypto from "node:crypto";
-import { resolveDefaultModelForAgent } from "openclaw/plugin-sdk/agent-runtime";
-import { resolveAgentConfig } from "openclaw/plugin-sdk/agent-scope-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import { resolveDefaultModelForAgent } from "afora-agent/plugin-sdk/agent-runtime";
+import { resolveAgentConfig } from "afora-agent/plugin-sdk/agent-scope-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   applyModelOverrideWithAuthProfileCompatibility,
   ModelSelectionLockedError,
   resolvePersistedSessionRuntimeId,
-} from "openclaw/plugin-sdk/model-session-runtime";
+} from "afora-agent/plugin-sdk/model-session-runtime";
 import {
   isRecord,
   filterStringEntries,
   normalizeLowercaseStringOrEmpty,
   normalizeStringEntries,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
-import type { OpenClawPluginApi } from "../api.js";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
+import type { AforaPluginApi } from "../api.js";
 import { resolveVoiceCallSessionKey, type VoiceCallConfig } from "./config.js";
 import { resolveCallAgentId } from "./resolve-call-agent-id.js";
 import { resolveVoiceResponseModel } from "./response-model.js";
@@ -26,10 +26,10 @@ import { resolveVoiceResponseModel } from "./response-model.js";
 type VoiceResponseParams = {
   /** Voice call config */
   voiceConfig: VoiceCallConfig;
-  /** Core OpenClaw config */
-  coreConfig: OpenClawConfig;
+  /** Core Afora config */
+  coreConfig: AforaConfig;
   /** Injected host agent runtime */
-  agentRuntime: OpenClawPluginApi["runtime"]["agent"];
+  agentRuntime: AforaPluginApi["runtime"]["agent"];
   /** Call ID for session tracking */
   callId: string;
   /** Persisted call session key */
@@ -73,7 +73,7 @@ function readExplicitToolsAllow(value: unknown): string[] | undefined {
 }
 
 function resolveVoiceAgentToolsAllow(
-  config: OpenClawConfig,
+  config: AforaConfig,
   agentId: string,
 ): string[] | undefined {
   return readExplicitToolsAllow(resolveAgentConfig(config, agentId)?.tools);
@@ -234,7 +234,7 @@ function resolveVoiceSandboxSessionKey(agentId: string, sessionKey: string): str
 }
 
 /**
- * Generate a voice response using the embedded OpenClaw agent with full tool support.
+ * Generate a voice response using the embedded Afora agent with full tool support.
  * Uses the same agent infrastructure as messaging for consistent behavior.
  */
 export async function generateVoiceResponse(

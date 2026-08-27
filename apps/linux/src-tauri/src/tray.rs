@@ -203,7 +203,7 @@ pub fn build(
     let start = MenuItem::with_id(app, START_ID, "Start Gateway", false, None::<&str>)?;
     let stop = MenuItem::with_id(app, STOP_ID, "Stop Gateway", false, None::<&str>)?;
     let restart = MenuItem::with_id(app, RESTART_ID, "Restart Gateway", false, None::<&str>)?;
-    let quit = MenuItem::with_id(app, QUIT_ID, "Quit OpenClaw", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, QUIT_ID, "Quit Afora", true, None::<&str>)?;
     let separator_one = PredefinedMenuItem::separator(app)?;
     let separator_two = PredefinedMenuItem::separator(app)?;
     let separator_three = PredefinedMenuItem::separator(app)?;
@@ -247,7 +247,7 @@ pub fn build(
     let menu_start_at_login = start_at_login.clone();
     let menu_quickchat_shortcut = quickchat_shortcut.clone();
     let menu_global_shortcut = global_shortcut.clone();
-    let tray_builder = TrayIconBuilder::with_id("openclaw-main")
+    let tray_builder = TrayIconBuilder::with_id("afora-main")
         .icon(tray_icon)
         .menu(&menu)
         .show_menu_on_left_click(false)
@@ -556,7 +556,7 @@ mod tests {
             .expect("clock before Unix epoch")
             .as_nanos();
         let directory = std::env::temp_dir().join(format!(
-            "openclaw-global-shortcut-test-{}-{unique}",
+            "afora-global-shortcut-test-{}-{unique}",
             std::process::id()
         ));
         fs::create_dir_all(&directory).expect("create test directory");

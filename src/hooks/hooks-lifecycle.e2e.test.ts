@@ -6,7 +6,7 @@ import JSON5 from "json5";
 import * as tar from "tar";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { installHooksFromPath } from "./install.js";
 import {
   clearInternalHooks,
@@ -48,12 +48,12 @@ async function runHooksCli(args: string[], env: NodeJS.ProcessEnv) {
   }
 }
 
-async function readConfig(configPath: string): Promise<OpenClawConfig> {
-  return JSON5.parse(await fs.readFile(configPath, "utf8")) as OpenClawConfig;
+async function readConfig(configPath: string): Promise<AforaConfig> {
+  return JSON5.parse(await fs.readFile(configPath, "utf8")) as AforaConfig;
 }
 
 async function createHookPackFixture() {
-  const rootDir = tempDirs.make("openclaw-hooks-lifecycle-e2e-");
+  const rootDir = tempDirs.make("afora-hooks-lifecycle-e2e-");
   const homeDir = path.join(rootDir, "home");
   const stateDir = path.join(rootDir, "state");
   const workspaceDir = path.join(rootDir, "workspace");
@@ -63,7 +63,7 @@ async function createHookPackFixture() {
   const packageDir = path.join(packageRoot, "package");
   const hookDir = path.join(packageDir, "hooks", hookName);
   const archivePath = path.join(rootDir, "qa-lifecycle-hooks.tgz");
-  const configPath = path.join(stateDir, "openclaw.json");
+  const configPath = path.join(stateDir, "afora.json");
 
   await Promise.all([
     fs.mkdir(homeDir, { recursive: true }),
@@ -73,7 +73,7 @@ async function createHookPackFixture() {
     fs.mkdir(hookDir, { recursive: true }),
   ]);
 
-  const initialConfig: OpenClawConfig = {
+  const initialConfig: AforaConfig = {
     agents: { defaults: { workspace: workspaceDir } },
     hooks: { internal: { enabled: true } },
   };
@@ -82,9 +82,9 @@ async function createHookPackFixture() {
     path.join(packageDir, "package.json"),
     `${JSON.stringify(
       {
-        name: "@openclaw/qa-lifecycle-hooks",
+        name: "@afora/qa-lifecycle-hooks",
         version: "1.0.0",
-        openclaw: { hooks: [`./hooks/${hookName}`] },
+        afora: { hooks: [`./hooks/${hookName}`] },
       },
       null,
       2,
@@ -97,7 +97,7 @@ async function createHookPackFixture() {
       "---",
       `name: ${hookName}`,
       "description: Records a Gateway startup lifecycle event",
-      'metadata: {"openclaw":{"events":["gateway:startup"]}}',
+      'metadata: {"afora":{"events":["gateway:startup"]}}',
       "---",
       "",
       "# QA lifecycle recorder",
@@ -116,11 +116,11 @@ async function createHookPackFixture() {
     ...process.env,
     HOME: homeDir,
     USERPROFILE: homeDir,
-    OPENCLAW_CONFIG_PATH: configPath,
-    OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-    OPENCLAW_HOME: homeDir,
-    OPENCLAW_STATE_DIR: stateDir,
-    OPENCLAW_TEST_FAST: "1",
+    AFORA_CONFIG_PATH: configPath,
+    AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+    AFORA_HOME: homeDir,
+    AFORA_STATE_DIR: stateDir,
+    AFORA_TEST_FAST: "1",
     VITEST: "",
   };
 
@@ -166,7 +166,7 @@ describe("internal hook lifecycle", () => {
       expect.objectContaining({
         hook: expect.objectContaining({
           name: hookName,
-          source: "openclaw-managed",
+          source: "afora-managed",
         }),
         metadata: expect.objectContaining({
           events: ["gateway:startup"],

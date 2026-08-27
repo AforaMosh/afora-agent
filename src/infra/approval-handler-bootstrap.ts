@@ -2,7 +2,7 @@
 import { resolveChannelApprovalCapability } from "../channels/plugins/approvals.js";
 import type { ChannelRuntimeSurface } from "../channels/plugins/channel-runtime-surface.types.js";
 import type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { withGatewayNativeApprovalRuntime } from "./approval-gateway-runtime-context.js";
 import type { GatewayNativeApprovalRuntime } from "./approval-gateway-runtime.types.js";
@@ -45,7 +45,7 @@ function formatRetryableApprovalBootstrapStartError(error: unknown): string {
 /** Starts the native approval handler for a channel runtime context and returns its cleanup hook. */
 export async function startChannelApprovalHandlerBootstrap(params: {
   plugin: Pick<ChannelPlugin, "id" | "meta" | "approvalCapability">;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   channelRuntime?: ChannelRuntimeSurface;
   gatewayRuntime?: GatewayNativeApprovalRuntime;

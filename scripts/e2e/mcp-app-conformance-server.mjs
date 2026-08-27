@@ -17,7 +17,7 @@ const appHtml = `<!doctype html>
 <script type="module">
 import { App } from ${JSON.stringify(appModuleUrl)};
 const write = (id, value) => { document.getElementById(id).textContent = value; };
-const app = new App({ name: "OpenClaw conformance fixture", version: "1.0.0" });
+const app = new App({ name: "Afora conformance fixture", version: "1.0.0" });
 app.onerror = (error) => console.error("mcp-conformance-app", error);
 document.getElementById("call-app").onclick = async () => {
   try {

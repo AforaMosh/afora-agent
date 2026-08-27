@@ -1,19 +1,19 @@
 // Qa Lab plugin module implements suite runtime agent session behavior.
 import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { buildSessionEntry } from "openclaw/plugin-sdk/memory-core-host-engine-sessions";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { buildSessionEntry } from "afora-agent/plugin-sdk/memory-core-host-engine-sessions";
 import {
   listSessionEntries,
   loadTranscriptEventsSync,
   resolveStorePath,
   upsertSessionEntry,
-} from "openclaw/plugin-sdk/session-store-runtime";
-import { appendSessionTranscriptMessageByIdentity } from "openclaw/plugin-sdk/session-transcript-runtime";
+} from "afora-agent/plugin-sdk/session-store-runtime";
+import { appendSessionTranscriptMessageByIdentity } from "afora-agent/plugin-sdk/session-transcript-runtime";
 import {
   isRecord,
   normalizeOptionalString as readNonEmptyString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   createDirectReplyTranscriptSentinelScanner,
   extractGatewayMessageText,
@@ -45,7 +45,7 @@ type QaSessionTranscriptSeedParams = {
 const SESSION_STORE_FTS_SETTLE_RETRY_DELAYS_MS = [100, 250, 500, 1_000, 2_000] as const;
 const MAX_COMPACTION_SUMMARIES = 16;
 const MAX_SUCCESSFUL_TOOL_CALL_EVENTS = 64;
-const SESSION_RESET_RECALL_CUTOFF = Symbol.for("openclaw.memory.sessionResetRecallCutoff");
+const SESSION_RESET_RECALL_CUTOFF = Symbol.for("afora.memory.sessionResetRecallCutoff");
 
 type QaSessionTranscriptSummary = {
   assistantMirrors?: Array<{ identity: string; text: string }>;
@@ -193,8 +193,8 @@ function summarizeSessionTranscriptEvents(
     if (text) {
       finalText = text;
     }
-    const openClawMeta = isRecord(message["__openclaw"]) ? message["__openclaw"] : undefined;
-    const mirrorIdentity = readNonEmptyString(openClawMeta?.mirrorIdentity);
+    const aforaMeta = isRecord(message["__afora"]) ? message["__afora"] : undefined;
+    const mirrorIdentity = readNonEmptyString(aforaMeta?.mirrorIdentity);
     if (mirrorIdentity && text) {
       assistantMirrors.push({ identity: mirrorIdentity, text });
     }
@@ -308,7 +308,7 @@ async function readSkillStatus(env: QaGatewayCallEnv, agentId = "qa") {
 function qaSessionRuntimeEnv(tempRoot: string): NodeJS.ProcessEnv {
   return {
     ...process.env,
-    OPENCLAW_STATE_DIR: path.join(tempRoot, "state"),
+    AFORA_STATE_DIR: path.join(tempRoot, "state"),
   };
 }
 

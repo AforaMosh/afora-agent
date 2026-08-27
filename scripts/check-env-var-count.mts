@@ -6,7 +6,7 @@ import { pathToFileURL } from "node:url";
 const BUDGET_PATH = "config/env-var-count-budget.txt";
 const SOURCE_ROOTS = ["src", "packages", "extensions"];
 const SOURCE_EXTENSIONS = new Set([".cjs", ".cts", ".js", ".jsx", ".mjs", ".mts", ".ts", ".tsx"]);
-const ENV_VAR_PATTERN = /OPENCLAW_[A-Z0-9_]+/gu;
+const ENV_VAR_PATTERN = /AFORA_[A-Z0-9_]+/gu;
 
 export function isCountedSourcePath(filePath: string) {
   const normalized = filePath.replaceAll("\\", "/");
@@ -128,16 +128,16 @@ export function main(argv: string[] = process.argv.slice(2), root = process.cwd(
   const approvedGrowth =
     (baseBudget === 501 && budget === 502) || (baseBudget === 502 && budget === 503);
   if (baseBudget !== null && budget > baseBudget && !approvedGrowth) {
-    throw new Error(`OPENCLAW_* budget grew from ${baseBudget} to ${budget}`);
+    throw new Error(`AFORA_* budget grew from ${baseBudget} to ${budget}`);
   }
   const names = collectEnvVarNames(root, { staged });
   if (names.length !== budget) {
     const direction = names.length > budget ? "exceeds" : "is below";
     throw new Error(
-      `OPENCLAW_* count ${names.length} ${direction} budget ${budget}; update ${BUDGET_PATH}`,
+      `AFORA_* count ${names.length} ${direction} budget ${budget}; update ${BUDGET_PATH}`,
     );
   }
-  console.log(`OPENCLAW_* count ${names.length}/${budget}`);
+  console.log(`AFORA_* count ${names.length}/${budget}`);
   return names.length;
 }
 

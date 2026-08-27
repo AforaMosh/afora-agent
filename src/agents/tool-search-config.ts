@@ -1,5 +1,5 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   MAX_TOOL_SEARCH_RESULTS,
   type ToolSearchConfig,
@@ -10,7 +10,7 @@ const DEFAULT_CODE_TIMEOUT_MS = 10_000;
 const DEFAULT_SEARCH_LIMIT = 8;
 const DEFAULT_MAX_SEARCH_LIMIT = 20;
 
-function readToolSearchConfig(config?: OpenClawConfig): Record<string, unknown> {
+function readToolSearchConfig(config?: AforaConfig): Record<string, unknown> {
   const tools = isRecord(config?.tools) ? config.tools : undefined;
   const toolSearch = tools?.toolSearch;
   if (toolSearch === true) {
@@ -44,7 +44,7 @@ function resolveMinCodeTimeoutMs(): number {
   return toolSearchMinCodeTimeoutMsForTest ?? 1000;
 }
 
-export function resolveToolSearchConfig(config?: OpenClawConfig): ToolSearchConfig {
+export function resolveToolSearchConfig(config?: AforaConfig): ToolSearchConfig {
   const raw = readToolSearchConfig(config);
   const rawMode = typeof raw.mode === "string" ? raw.mode : "code";
   const requestedMode: ToolSearchMode =

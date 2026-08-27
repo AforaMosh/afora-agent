@@ -11,7 +11,7 @@ import { createAbortError } from "../../infra/abort-signal.js";
 import { resolveRootPath } from "../../infra/boundary-path.js";
 import { toErrorObject } from "../../infra/errors.js";
 import { parseSshTarget } from "../../infra/ssh-tunnel.js";
-import { resolvePreferredOpenClawTmpDir } from "../../infra/tmp-openclaw-dir.js";
+import { resolvePreferredAforaTmpDir } from "../../infra/tmp-afora-dir.js";
 import { isPlainCommandExitFailure, spawnCommand } from "../../process/exec.js";
 import { resolveUserPath } from "../../utils.js";
 import type { SandboxBackendCommandResult } from "./backend-handle.types.js";
@@ -362,7 +362,7 @@ export function buildRemoteWorkdirValidationCommand(params: {
     "/bin/sh",
     "-c",
     VALIDATE_REMOTE_WORKDIR_SCRIPT,
-    "openclaw-validate-workdir",
+    "afora-validate-workdir",
     params.workdir,
     params.root,
   ]);
@@ -599,7 +599,7 @@ export async function createSshSandboxSessionFromSettings(
 
   return await createSshSandboxSession(
     settings.command.trim() || "ssh",
-    "openclaw-sandbox",
+    "afora-sandbox",
     async (configDir) => {
       // Inline secret material is written into the temp config dir with strict
       // permissions so ssh can consume it without exposing values in argv/env.
@@ -621,7 +621,7 @@ export async function createSshSandboxSessionFromSettings(
       assertSshConfigLineValue(certificateFile, "certificateFile");
       assertSshConfigLineValue(knownHostsFile, "knownHostsFile");
       const lines = [
-        "Host openclaw-sandbox",
+        "Host afora-sandbox",
         `  HostName ${parsed.host}`,
         `  Port ${parsed.port}`,
         "  BatchMode yes",
@@ -754,7 +754,7 @@ export async function uploadDirectoryToSshTarget(params: {
     "/bin/sh",
     "-c",
     `${ENSURE_REMOTE_REAL_DIRECTORY_SCRIPT}\ntar -xf - -C "$1"`,
-    "openclaw-sandbox-upload",
+    "afora-sandbox-upload",
     params.remoteDir,
     params.remoteRootDir ?? params.remoteDir,
   ]);
@@ -896,7 +896,7 @@ function parseSshConfigHost(configText: string): string | null {
 }
 
 function resolveSshTmpRoot(): string {
-  return path.resolve(resolvePreferredOpenClawTmpDir() ?? os.tmpdir());
+  return path.resolve(resolvePreferredAforaTmpDir() ?? os.tmpdir());
 }
 
 async function createSshSandboxSession(
@@ -904,7 +904,7 @@ async function createSshSandboxSession(
   host: string,
   buildConfigText: (configDir: string) => string | Promise<string>,
 ): Promise<SshSandboxSession> {
-  const configDir = await fs.mkdtemp(path.join(resolveSshTmpRoot(), "openclaw-sandbox-ssh-"));
+  const configDir = await fs.mkdtemp(path.join(resolveSshTmpRoot(), "afora-sandbox-ssh-"));
   const configPath = path.join(configDir, "config");
   try {
     await writePrivateFile(configPath, await buildConfigText(configDir));

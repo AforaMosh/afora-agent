@@ -1,13 +1,13 @@
-// Lobster plugin entrypoint registers its OpenClaw integration.
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
-import type { AnyAgentTool, OpenClawPluginApi, OpenClawPluginToolFactory } from "./runtime-api.js";
+// Lobster plugin entrypoint registers its Afora integration.
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
+import type { AnyAgentTool, AforaPluginApi, AforaPluginToolFactory } from "./runtime-api.js";
 import { createLobsterTool } from "./src/lobster-tool.js";
 
 export default definePluginEntry({
   id: "lobster",
   name: "Lobster",
   description: "Optional local shell helper tools",
-  register(api: OpenClawPluginApi) {
+  register(api: AforaPluginApi) {
     api.registerTool(
       ((ctx) => {
         if (ctx.sandboxed) {
@@ -18,7 +18,7 @@ export default definePluginEntry({
             ? api.runtime.tasks.managedFlows.fromToolContext(ctx)
             : undefined;
         return createLobsterTool(api, { taskFlow }) as AnyAgentTool;
-      }) as OpenClawPluginToolFactory,
+      }) as AforaPluginToolFactory,
       { optional: true },
     );
   },

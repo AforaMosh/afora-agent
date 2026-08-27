@@ -89,7 +89,7 @@ function makeInput(overrides: RecoveryOverrides = {}): RecoveryInput {
     workspaceDir: "/tmp/workspace",
     provider: "openai",
     modelId: "gpt-5.6-luna",
-    harnessRuntime: "openclaw",
+    harnessRuntime: "afora",
     thinkLevel: "off",
     authProfileIdSource: "auto",
     resolveContextEnginePluginId: () => undefined,

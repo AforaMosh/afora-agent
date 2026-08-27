@@ -154,7 +154,7 @@ function runScript(
 
 describe("scripts/ios-team-id.sh", () => {
   beforeAll(async () => {
-    fixtureRoot = makeTempDir(tempDirs, "openclaw-ios-team-id-");
+    fixtureRoot = makeTempDir(tempDirs, "afora-ios-team-id-");
     sharedBinDir = path.join(fixtureRoot, "shared-bin");
     await mkdir(sharedBinDir, { recursive: true });
     sharedHomeDir = path.join(fixtureRoot, "home");
@@ -243,8 +243,8 @@ printf 'BBBBB22222\\t0\\tBeta Team\\r\\n'`,
     expect(fallback).toBe("BBBBB22222");
   });
 
-  it("prefers the canonical OpenClaw iOS team when it is present", async () => {
-    const homeDir = makeTempDir(tempDirs, "openclaw-ios-team-id-canonical-");
+  it("prefers the canonical Afora iOS team when it is present", async () => {
+    const homeDir = makeTempDir(tempDirs, "afora-ios-team-id-canonical-");
     const binDir = path.join(homeDir, "bin");
     await mkdir(path.join(homeDir, "Library", "Preferences"), { recursive: true });
     await mkdir(binDir, { recursive: true });
@@ -258,7 +258,7 @@ printf 'BBBBB22222\\t0\\tBeta Team\\r\\n'`,
       fakePythonPath,
       `#!/usr/bin/env bash
 printf 'AAAAA11111\\t0\\tAlpha Team\\r\\n'
-printf '${CANONICAL_TEAM_ID}\\t0\\tOpenClaw\\r\\n'`,
+printf '${CANONICAL_TEAM_ID}\\t0\\tAfora\\r\\n'`,
     );
 
     const result = runScript(homeDir, { IOS_PYTHON_BIN: fakePythonPath });
@@ -267,7 +267,7 @@ printf '${CANONICAL_TEAM_ID}\\t0\\tOpenClaw\\r\\n'`,
   });
 
   it("loads teams from Xcode account identifier team metadata", async () => {
-    const homeDir = makeTempDir(tempDirs, "openclaw-ios-team-id-by-identifier-");
+    const homeDir = makeTempDir(tempDirs, "afora-ios-team-id-by-identifier-");
     const binDir = path.join(homeDir, "bin");
     await mkdir(path.join(homeDir, "Library", "Preferences"), { recursive: true });
     await mkdir(binDir, { recursive: true });
@@ -281,7 +281,7 @@ printf '${CANONICAL_TEAM_ID}\\t0\\tOpenClaw\\r\\n'`,
       `#!/usr/bin/env bash
 if [[ "$1" == "-extract" && "$2" == "IDEProvisioningTeamByIdentifier" ]]; then
   cat <<'JSON'
-{"account-id":[{"teamID":"FWJYW4S8P8","teamName":"OpenClaw Foundation","isFreeProvisioningTeam":false,"teamType":"Company"}]}
+{"account-id":[{"teamID":"FWJYW4S8P8","teamName":"Afora Foundation","isFreeProvisioningTeam":false,"teamType":"Company"}]}
 JSON
   exit 0
 fi
@@ -305,7 +305,7 @@ echo '{}'`,
     ]);
     expect(result.ok).toBe(false);
     expect(result.stderr).toContain(
-      `Canonical OpenClaw iOS Team ID '${CANONICAL_TEAM_ID}' is not available`,
+      `Canonical Afora iOS Team ID '${CANONICAL_TEAM_ID}' is not available`,
     );
   });
 
@@ -314,7 +314,7 @@ echo '{}'`,
       "--require-canonical",
     ]);
     expect(result.ok).toBe(false);
-    expect(result.stderr).toContain("is not the canonical OpenClaw iOS team");
+    expect(result.stderr).toContain("is not the canonical Afora iOS team");
   });
 
   it("prints actionable guidance when Xcode account exists but no Team ID is resolvable", () => {

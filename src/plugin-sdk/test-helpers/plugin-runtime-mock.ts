@@ -1,5 +1,5 @@
 // Plugin runtime mock helpers build minimal runtime doubles for plugin SDK tests.
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { vi } from "vitest";
 import type { InboundDebounceCreateParams } from "../../auto-reply/inbound-debounce.js";
 import { normalizeInboundTextNewlines } from "../../auto-reply/reply/inbound-text.js";
@@ -12,7 +12,7 @@ import {
 } from "../../channels/ack-reactions.js";
 import { createChannelReplyPipeline } from "../../channels/message/reply-pipeline.js";
 import { resolveSessionEntryResetFreshness } from "../../config/sessions/entry-freshness.js";
-import type { ConfigFileSnapshot } from "../../config/types.openclaw.js";
+import type { ConfigFileSnapshot } from "../../config/types.afora.js";
 import { createChannelRuntimeContextRegistry } from "../../plugins/runtime/channel-runtime-contexts.js";
 import { resolveAgentCatalogCreateTarget } from "../../plugins/runtime/runtime-agent-session-catalog.js";
 import type { PluginRuntime } from "../../plugins/runtime/types.js";
@@ -148,7 +148,7 @@ function resolveMockChannelStructuredContext(
 export type PluginRuntimeMediaMock = PluginRuntime["channel"]["media"];
 
 const TEST_CONFIG_SNAPSHOT = {
-  path: "/tmp/openclaw.json",
+  path: "/tmp/afora.json",
   exists: true,
   raw: "{}",
   parsed: {},
@@ -513,7 +513,7 @@ export function createPluginRuntimeMock(overrides: DeepPartial<PluginRuntime> = 
       current: vi.fn<PluginRuntime["config"]["current"]>(() => ({})),
       mutateConfigFile: createGenericMock<PluginRuntime["config"]["mutateConfigFile"]>(
         async () => ({
-          path: "/tmp/openclaw.json",
+          path: "/tmp/afora.json",
           previousHash: null,
           persistedHash: null,
           snapshot: TEST_CONFIG_SNAPSHOT,
@@ -525,7 +525,7 @@ export function createPluginRuntimeMock(overrides: DeepPartial<PluginRuntime> = 
       ),
       replaceConfigFile: vi.fn<PluginRuntime["config"]["replaceConfigFile"]>(
         async ({ nextConfig }) => ({
-          path: "/tmp/openclaw.json",
+          path: "/tmp/afora.json",
           previousHash: null,
           persistedHash: null,
           snapshot: TEST_CONFIG_SNAPSHOT,
@@ -971,7 +971,7 @@ export function createPluginRuntimeMock(overrides: DeepPartial<PluginRuntime> = 
       })),
     },
     state: {
-      resolveStateDir: vi.fn(() => "/tmp/openclaw"),
+      resolveStateDir: vi.fn(() => "/tmp/afora"),
       openBlobStore: createGenericMock<PluginRuntime["state"]["openBlobStore"]>(() => {
         throw new Error("openBlobStore mock is not configured");
       }),

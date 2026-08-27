@@ -1,5 +1,5 @@
 // Signal tests cover access policy plugin behavior.
-import type { AccessGroupsConfig, OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AccessGroupsConfig, AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it, vi } from "vitest";
 import { resolveSignalSender } from "../identity.js";
 import { handleSignalDirectMessageAccess, resolveSignalAccessState } from "./access-policy.js";
@@ -51,7 +51,7 @@ async function resolveGroupAccess(params: {
 
 function accessGroupsConfig(
   accessGroups: AccessGroupsConfig | undefined,
-): Pick<OpenClawConfig, "accessGroups"> | undefined {
+): Pick<AforaConfig, "accessGroups"> | undefined {
   return accessGroups ? { accessGroups } : undefined;
 }
 

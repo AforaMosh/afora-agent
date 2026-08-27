@@ -13,11 +13,11 @@ export const MEDIA_LEGACY_PROJECTION_COMPAT_RECORD = {
   // published-plugin artifact sweep at removal time.
   removeAfter: "2026-10-01",
   replacement:
-    "ordered `MsgContext.media` / `InboundMediaFacts[]`; typed hook `media` and `originalMedia`; `Attachment*` template variables; and `openclaw/plugin-sdk/media-local-roots`",
+    "ordered `MsgContext.media` / `InboundMediaFacts[]`; typed hook `media` and `originalMedia`; `Attachment*` template variables; and `afora/plugin-sdk/media-local-roots`",
   docsPath: "/plugins/sdk-migration#media-legacy-projection",
   surfaces: [
     "MsgContext MediaPath/MediaUrl/MediaType and plural/staging fields",
-    "openclaw/plugin-sdk/agent-media-payload",
+    "afora-agent/plugin-sdk/agent-media-payload",
     "ChannelInboundMediaPayload and buildChannelInboundMediaPayload",
     "MediaPayload and buildMediaPayload",
     "message hook mediaPath/mediaUrl/mediaType and plural/original metadata aliases",

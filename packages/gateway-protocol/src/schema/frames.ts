@@ -13,8 +13,8 @@ export const GATEWAY_SERVER_CAPS = {
   GATEWAY_RESTART_TARGET_SAFE: "gateway-restart-target-safe-v1",
   NODE_WORKER_BUNDLE_RETENTION: "node-worker-bundle-retention-v1",
   NODE_WORKER_BUNDLE_STATUS: "node-worker-bundle-status-v1",
-  SYSTEM_AGENT_WIZARD_CANCEL: "openclaw-chat-wizard-cancel",
-  SYSTEM_AGENT_SETUP_MODEL_REF: "openclaw-setup-model-ref",
+  SYSTEM_AGENT_WIZARD_CANCEL: "afora-chat-wizard-cancel",
+  SYSTEM_AGENT_SETUP_MODEL_REF: "afora-setup-model-ref",
   TASK_SUGGESTIONS_ACCEPT_MODES: "taskSuggestions.acceptModes",
 } as const;
 

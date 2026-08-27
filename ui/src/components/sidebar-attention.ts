@@ -13,7 +13,7 @@ import { applicationContext, type ApplicationContext } from "../app/context.ts";
 import { t } from "../i18n/index.ts";
 import { createInitialCronState, loadCronJobsPage } from "../lib/cron/index.ts";
 import { loadModelAuthStatus } from "../lib/model-auth.ts";
-import { OpenClawLightDomContentsElement } from "../lit/openclaw-element.ts";
+import { AforaLightDomContentsElement } from "../lit/afora-element.ts";
 import { SubscriptionsController } from "../lit/subscriptions-controller.ts";
 import { icons } from "./icons.ts";
 import {
@@ -37,7 +37,7 @@ const VISIBILITY_REFRESH_MIN_AGE_MS = 60_000;
 // slow lifecycle-owned interval keeps the chips from going permanently stale.
 const IDLE_REFRESH_INTERVAL_MS = 10 * 60_000;
 
-class SidebarAttention extends OpenClawLightDomContentsElement {
+class SidebarAttention extends AforaLightDomContentsElement {
   @consume({ context: applicationContext, subscribe: true })
   private context?: ApplicationContext;
 
@@ -288,7 +288,7 @@ class SidebarAttention extends OpenClawLightDomContentsElement {
         ${items.map(
           (item) => html`
             <div class="sidebar-attention__item sidebar-attention__item--${item.severity}">
-              <openclaw-tooltip .content=${item.detail ?? item.label}>
+              <afora-tooltip .content=${item.detail ?? item.label}>
                 <button
                   type="button"
                   class="sidebar-attention__open"
@@ -299,8 +299,8 @@ class SidebarAttention extends OpenClawLightDomContentsElement {
                   >
                   <span class="sidebar-attention__label">${item.label}</span>
                 </button>
-              </openclaw-tooltip>
-              <openclaw-tooltip .content=${t("common.dismiss")}>
+              </afora-tooltip>
+              <afora-tooltip .content=${t("common.dismiss")}>
                 <button
                   type="button"
                   class="sidebar-attention__dismiss"
@@ -309,7 +309,7 @@ class SidebarAttention extends OpenClawLightDomContentsElement {
                 >
                   ${icons.x}
                 </button>
-              </openclaw-tooltip>
+              </afora-tooltip>
             </div>
           `,
         )}
@@ -318,6 +318,6 @@ class SidebarAttention extends OpenClawLightDomContentsElement {
   }
 }
 
-if (!customElements.get("openclaw-sidebar-attention")) {
-  customElements.define("openclaw-sidebar-attention", SidebarAttention);
+if (!customElements.get("afora-sidebar-attention")) {
+  customElements.define("afora-sidebar-attention", SidebarAttention);
 }

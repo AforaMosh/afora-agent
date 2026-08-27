@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createMediaProviderRegistry } from "../media-generation/provider-registry.js";
 import { normalizeCapabilityProviderId } from "../plugins/provider-registry-shared.js";
 import type { RealtimeTranscriptionProviderId } from "./provider-types.js";
@@ -14,7 +14,7 @@ export const {
 /** Canonicalizes a configured provider id while preserving unknown ids. */
 export function canonicalizeRealtimeTranscriptionProviderId(
   providerId: string | undefined,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): RealtimeTranscriptionProviderId | undefined {
   const normalized = normalizeCapabilityProviderId(providerId);
   return normalized

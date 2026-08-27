@@ -1,20 +1,20 @@
-import { adaptMemoryEmbeddingProviderAdapter } from "openclaw/plugin-sdk/memory-core-host-engine-embeddings";
-// Lmstudio plugin entrypoint registers its OpenClaw integration.
+import { adaptMemoryEmbeddingProviderAdapter } from "afora-agent/plugin-sdk/memory-core-host-engine-embeddings";
+// Lmstudio plugin entrypoint registers its Afora integration.
 import {
   definePluginEntry,
-  type OpenClawConfig,
-  type OpenClawPluginApi,
+  type AforaConfig,
+  type AforaPluginApi,
   type ProviderAuthContext,
   type ProviderAuthMethod,
   type ProviderAuthMethodNonInteractiveContext,
   type ProviderAuthResult,
   type ProviderRuntimeModel,
-} from "openclaw/plugin-sdk/plugin-entry";
+} from "afora-agent/plugin-sdk/plugin-entry";
 import {
   CUSTOM_LOCAL_AUTH_MARKER,
   normalizeOptionalSecretInput,
-} from "openclaw/plugin-sdk/provider-auth";
-import { buildProviderToolCompatFamilyHooks } from "openclaw/plugin-sdk/provider-tools";
+} from "afora-agent/plugin-sdk/provider-auth";
+import { buildProviderToolCompatFamilyHooks } from "afora-agent/plugin-sdk/provider-tools";
 import { lmstudioMemoryEmbeddingProviderAdapter } from "./memory-embedding-adapter.js";
 import {
   LMSTUDIO_DEFAULT_API_KEY_ENV_VAR,
@@ -45,7 +45,7 @@ async function validateLmstudioNonInteractive(
 ): Promise<boolean> {
   const configuredBaseUrl = normalizeOptionalSecretInput(ctx.opts.customBaseUrl);
   const dockerSetup = ["1", "true", "yes", "on"].includes(
-    process.env.OPENCLAW_DOCKER_SETUP?.trim().toLowerCase() ?? "",
+    process.env.AFORA_DOCKER_SETUP?.trim().toLowerCase() ?? "",
   );
   const baseUrl = resolveLmstudioInferenceBase(
     configuredBaseUrl ||
@@ -125,7 +125,7 @@ async function validateLmstudioNonInteractive(
   return true;
 }
 
-function resolveLmstudioAugmentedCatalogEntries(config: OpenClawConfig | undefined) {
+function resolveLmstudioAugmentedCatalogEntries(config: AforaConfig | undefined) {
   if (!config) {
     return [];
   }
@@ -152,7 +152,7 @@ export default definePluginEntry({
   id: PROVIDER_ID,
   name: "LM Studio Provider",
   description: "Bundled LM Studio provider plugin",
-  register(api: OpenClawPluginApi) {
+  register(api: AforaPluginApi) {
     api.registerEmbeddingProvider(
       adaptMemoryEmbeddingProviderAdapter(lmstudioMemoryEmbeddingProviderAdapter),
     );

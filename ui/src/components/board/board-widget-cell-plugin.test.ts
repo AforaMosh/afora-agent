@@ -50,7 +50,7 @@ describe("plugin board widget cells", () => {
       revision: 1,
     };
     const cellCallbacks = callbacks();
-    const cell = document.createElement("openclaw-board-widget-cell");
+    const cell = document.createElement("afora-board-widget-cell");
     cell.widget = widget;
     cell.rect = { name: widget.name, x: 0, y: 0, w: 6, h: 4 };
     cell.sessionKey = "agent:main:test";
@@ -95,7 +95,7 @@ describe("plugin board widget cells", () => {
       },
     } as unknown as ApplicationContext;
     const provider = createApplicationContextProvider(context);
-    const cell = document.createElement("openclaw-board-widget-cell");
+    const cell = document.createElement("afora-board-widget-cell");
     cell.widget = widget;
     cell.rect = { name: widget.name, x: 0, y: 0, w: 6, h: 4 };
     cell.sessionKey = "agent:main:test";
@@ -103,7 +103,7 @@ describe("plugin board widget cells", () => {
     provider.append(cell);
     document.body.append(provider);
     await vi.waitFor(
-      () => expect(cell.querySelector("openclaw-workboard-card-widget")).not.toBeNull(),
+      () => expect(cell.querySelector("afora-workboard-card-widget")).not.toBeNull(),
       CHUNK_LOAD_WAIT,
     );
 
@@ -118,7 +118,7 @@ describe("plugin board widget cells", () => {
     retry?.click();
 
     await vi.waitFor(
-      () => expect(cell.querySelector("openclaw-workboard-card-widget")).not.toBeNull(),
+      () => expect(cell.querySelector("afora-workboard-card-widget")).not.toBeNull(),
       CHUNK_LOAD_WAIT,
     );
     expect(cell.querySelector('[data-test-id="board-widget-error"]')).toBeNull();
@@ -153,7 +153,7 @@ describe("plugin board widget cells", () => {
       revision: 1,
     };
     const provider = createApplicationContextProvider(context);
-    const cell = document.createElement("openclaw-board-widget-cell");
+    const cell = document.createElement("afora-board-widget-cell");
     cell.widget = widget;
     cell.rect = { name: widget.name, x: 0, y: 0, w: 6, h: 4 };
     cell.sessionKey = "agent:main:test";
@@ -162,20 +162,20 @@ describe("plugin board widget cells", () => {
     document.body.append(provider);
 
     await vi.waitFor(
-      () => expect(cell.querySelector("openclaw-workboard-card-widget")).not.toBeNull(),
+      () => expect(cell.querySelector("afora-workboard-card-widget")).not.toBeNull(),
       CHUNK_LOAD_WAIT,
     );
-    const retained = cell.querySelector("openclaw-workboard-card-widget");
+    const retained = cell.querySelector("afora-workboard-card-widget");
     expect(retained?.active).toBe(true);
 
     cell.active = false;
     await cell.updateComplete;
-    expect(cell.querySelector("openclaw-workboard-card-widget")).toBe(retained);
+    expect(cell.querySelector("afora-workboard-card-widget")).toBe(retained);
     expect(retained?.active).toBe(false);
 
     cell.active = true;
     await cell.updateComplete;
-    expect(cell.querySelector("openclaw-workboard-card-widget")).toBe(retained);
+    expect(cell.querySelector("afora-workboard-card-widget")).toBe(retained);
     expect(retained?.active).toBe(true);
   });
 
@@ -229,7 +229,7 @@ describe("plugin board widget cells", () => {
       revision: 1,
     };
     const provider = createApplicationContextProvider(context);
-    const cell = document.createElement("openclaw-board-widget-cell");
+    const cell = document.createElement("afora-board-widget-cell");
     cell.widget = widget;
     cell.rect = { name: widget.name, x: 0, y: 0, w: 6, h: 4 };
     cell.sessionKey = "agent:main:test";
@@ -240,12 +240,12 @@ describe("plugin board widget cells", () => {
 
     await vi.waitFor(
       () =>
-        expect(cell.querySelector("openclaw-workboard-card-widget")?.textContent).toContain(
+        expect(cell.querySelector("afora-workboard-card-widget")?.textContent).toContain(
           "Read-only embedded card",
         ),
       CHUNK_LOAD_WAIT,
     );
-    const select = cell.querySelector<HTMLSelectElement>("openclaw-workboard-card-widget select");
+    const select = cell.querySelector<HTMLSelectElement>("afora-workboard-card-widget select");
     expect(select).not.toBeNull();
     expect(select?.disabled).toBe(true);
     if (select) {

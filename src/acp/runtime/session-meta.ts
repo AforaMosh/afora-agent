@@ -1,7 +1,7 @@
 /** SQLite-backed ACP session metadata storage keyed through session-store entries. */
 import type { DatabaseSync } from "node:sqlite";
-import { safeParseJsonRecord } from "@openclaw/normalization-core";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { safeParseJsonRecord } from "@afora/normalization-core";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import type { Insertable } from "kysely";
 import { getRuntimeConfig } from "../../config/config.js";
 import { patchSessionEntryWithKey } from "../../config/sessions/session-accessor.js";
@@ -12,13 +12,13 @@ import {
   type SessionAcpMeta,
   type SessionEntry,
 } from "../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { executeSqliteQuerySync } from "../../infra/kysely-sync.js";
 import {
-  openOpenClawStateDatabase,
-  type OpenClawStateDatabaseOptions,
-  runOpenClawStateWriteTransaction,
-} from "../../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  type AforaStateDatabaseOptions,
+  runAforaStateWriteTransaction,
+} from "../../state/afora-state-db.js";
 import {
   acpSessionRowMatchesEntry,
   type AcpSessionEntryBinding,
@@ -43,7 +43,7 @@ import {
 export { resolveSessionStorePathForAcp } from "./session-meta-store.js";
 
 export type AcpSessionStoreEntry = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string;
   storePath: string;
   sessionKey: string;
@@ -103,7 +103,7 @@ function bindAcpSessionMeta(params: {
 export function readAcpSessionMeta(params: {
   sessionKey: string;
   agentId?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   databasePath?: string;
 }): SessionAcpMeta | undefined {
@@ -121,7 +121,7 @@ export function readAcpSessionMeta(params: {
   if (!storeEntry.storePath) {
     return undefined;
   }
-  const database = openOpenClawStateDatabase({
+  const database = openAforaStateDatabase({
     env: params.env,
     path: params.databasePath,
   });
@@ -146,7 +146,7 @@ export function readAcpSessionMeta(params: {
 export function readAcpSessionMetaForEntry(params: {
   sessionKey: string;
   agentId?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   entry: AcpSessionEntryBinding | undefined;
   env?: NodeJS.ProcessEnv;
   databasePath?: string;
@@ -155,7 +155,7 @@ export function readAcpSessionMetaForEntry(params: {
   if (!sessionKey) {
     return undefined;
   }
-  const database = openOpenClawStateDatabase({
+  const database = openAforaStateDatabase({
     env: params.env,
     path: params.databasePath,
   });
@@ -185,7 +185,7 @@ export function readAcpSessionMetaBatch(params: {
   }>;
   env?: NodeJS.ProcessEnv;
   databasePath?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
 }): Map<SessionEntry, SessionAcpMeta | undefined> {
   const result = new Map<SessionEntry, SessionAcpMeta | undefined>();
   const entriesByKey = new Map<
@@ -211,7 +211,7 @@ export function readAcpSessionMetaBatch(params: {
     return result;
   }
 
-  const database = openOpenClawStateDatabase({
+  const database = openAforaStateDatabase({
     env: params.env,
     path: params.databasePath,
   });
@@ -261,7 +261,7 @@ export function readAcpSessionMetaBatch(params: {
     }
   }
   if (legacyRowsToRekey.length > 0) {
-    runOpenClawStateWriteTransaction(
+    runAforaStateWriteTransaction(
       (transactionDatabase) => {
         for (const { row, sessionKey } of legacyRowsToRekey) {
           upsertAcpSessionMetaRow(transactionDatabase.db, { ...row, session_key: sessionKey });
@@ -279,8 +279,8 @@ export function readAcpSessionMetaBatch(params: {
   return result;
 }
 
-function selectAcpSessionRows(options: OpenClawStateDatabaseOptions = {}): AcpSessionRow[] {
-  const database = openOpenClawStateDatabase(options);
+function selectAcpSessionRows(options: AforaStateDatabaseOptions = {}): AcpSessionRow[] {
+  const database = openAforaStateDatabase(options);
   return executeSqliteQuerySync(
     database.db,
     getAcpSessionKysely(database.db)
@@ -311,7 +311,7 @@ export function writeAcpSessionMetaForMigration(params: {
     meta: params.meta,
     updatedAt: params.now?.() ?? Date.now(),
   });
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     (database) => {
       upsertAcpSessionMetaRow(database.db, row);
     },
@@ -333,7 +333,7 @@ export function repairAcpSessionMetaKeyForMigration(params: {
   }
 
   let repaired = false;
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     (database) => {
       const currentRow = selectAcpSessionRow(database.db, sessionKey);
       if (currentRow && acpSessionRowMatchesEntry(currentRow, params.entry)) {
@@ -424,7 +424,7 @@ function upsertAcpSessionMetaRow(db: DatabaseSync, row: Insertable<AcpSessionsTa
 export function readAcpSessionEntry(params: {
   sessionKey: string;
   agentId?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   clone?: boolean;
   env?: NodeJS.ProcessEnv;
   databasePath?: string;
@@ -437,7 +437,7 @@ export function readAcpSessionEntry(params: {
   if (!storeEntry.storePath) {
     return null;
   }
-  const database = openOpenClawStateDatabase({
+  const database = openAforaStateDatabase({
     env: params.env,
     path: params.databasePath,
   });
@@ -467,7 +467,7 @@ export function readAcpSessionEntry(params: {
 }
 
 export async function listAcpSessionEntries(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   clone?: boolean;
   databasePath?: string;
@@ -547,7 +547,7 @@ function sessionStoreUpdateOptions(params: {
 export async function upsertAcpSessionMeta(params: {
   sessionKey: string;
   agentId?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   databasePath?: string;
   now?: () => number;
@@ -580,7 +580,7 @@ export async function upsertAcpSessionMeta(params: {
   let nextMeta: SessionAcpMeta | null | undefined;
   let preparedEntry: SessionEntry | undefined;
   const updatedAt = params.now?.() ?? Date.now();
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     (database) => {
       const currentRow = selectAcpSessionRowForStoreEntry(
         database.db,
@@ -622,7 +622,7 @@ export async function upsertAcpSessionMeta(params: {
           },
         )
       : null;
-    runOpenClawStateWriteTransaction(
+    runAforaStateWriteTransaction(
       (database) => {
         const sessionKeysToDelete = new Set([databaseSessionKey]);
         if (currentRowKey) {
@@ -676,7 +676,7 @@ export async function upsertAcpSessionMeta(params: {
     storePath: storeEntry.storePath,
     sessionKeys: [storageSessionKey, persisted.sessionKey],
   });
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     (database) => {
       const persistedDatabaseSessionKey = buildAcpDatabaseSessionKey(
         persisted.sessionKey,

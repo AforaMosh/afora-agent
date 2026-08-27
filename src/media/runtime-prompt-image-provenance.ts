@@ -1,4 +1,4 @@
-const RUNTIME_PROMPT_IMAGE_FACT_INDEXES = Symbol.for("openclaw.runtimePromptImageFactIndexes");
+const RUNTIME_PROMPT_IMAGE_FACT_INDEXES = Symbol.for("afora.runtimePromptImageFactIndexes");
 
 type RuntimePromptImageFactIndex = number | null;
 

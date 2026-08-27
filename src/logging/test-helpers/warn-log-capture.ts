@@ -1,6 +1,6 @@
 // Warning log capture helpers collect warning output during tests.
 import path from "node:path";
-import { resolvePreferredOpenClawTmpDir } from "../../infra/tmp-openclaw-dir.js";
+import { resolvePreferredAforaTmpDir } from "../../infra/tmp-afora-dir.js";
 import { resetLogger, setLoggerOverride } from "../logger.js";
 import { createDiagnosticLogRecordCapture } from "./diagnostic-log-capture.js";
 
@@ -10,7 +10,7 @@ export function createWarnLogCapture(prefix: string) {
   setLoggerOverride({
     level: "warn",
     consoleLevel: "silent",
-    file: path.join(resolvePreferredOpenClawTmpDir(), `${prefix}-${process.pid}-${Date.now()}.log`),
+    file: path.join(resolvePreferredAforaTmpDir(), `${prefix}-${process.pid}-${Date.now()}.log`),
   });
   return {
     async findText(needle: string): Promise<string | undefined> {

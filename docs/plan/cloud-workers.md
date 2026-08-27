@@ -13,7 +13,7 @@ Proposal, revision 3. Not implemented. Direction agreed 2026-07; revision 2 inco
 
 ## Problem
 
-OpenClaw agent sessions run their loop, tools, and inference inside the gateway process on one machine. Compute is capped by that machine, long tasks occupy it, and parallel work competes for it. Hosted products (Cursor cloud agents, Claude Code on the web, Codex cloud) solve this with ephemeral per-task cloud sandboxes, but they require vendor infrastructure and vendor trust.
+Afora agent sessions run their loop, tools, and inference inside the gateway process on one machine. Compute is capped by that machine, long tasks occupy it, and parallel work competes for it. Hosted products (Cursor cloud agents, Claude Code on the web, Codex cloud) solve this with ephemeral per-task cloud sandboxes, but they require vendor infrastructure and vendor trust.
 
 Operators who already own spare machines (or can lease them cheaply) have no way to say: run this session over there, show it in my sidebar like any other session, and throw the machine away afterwards.
 
@@ -28,7 +28,7 @@ Operators who already own spare machines (or can lease them cheaply) have no way
 
 ## Non-goals (v1)
 
-- No external coding harnesses (Claude Code, Codex CLI) on workers. Worker sessions run OpenClaw's embedded runner only. Harness support is a v2 opt-in because harnesses do their own inference with their own credentials.
+- No external coding harnesses (Claude Code, Codex CLI) on workers. Worker sessions run Afora's embedded runner only. Harness support is a v2 opt-in because harnesses do their own inference with their own credentials.
 - No best-of-N / parallel attempt fan-out.
 - No VPN/tailnet dependency. Transport is SSH only.
 - No new sandbox runtime. The worker machine is the isolation boundary; in-box OS sandboxing can layer on later.
@@ -46,7 +46,7 @@ Operators who already own spare machines (or can lease them cheaply) have no way
 
 Three placements were considered:
 
-1. Loop stays on the gateway, worker executes tools (Cursor model). Safest failure domain (transcript, inference, approvals, restart recovery all stay local) and a reviewer-preferred first milestone. Rejected as the product architecture: OpenClaw's non-exec tools are in-process filesystem operations, so every file read/edit/grep becomes a network round trip or a large tool-surface refactor into coarse workspace RPCs; runtime behavior is chatty and latency-bound. We reuse its spirit where it is already built (exec offload to nodes) but do not build the tool-remoting layer.
+1. Loop stays on the gateway, worker executes tools (Cursor model). Safest failure domain (transcript, inference, approvals, restart recovery all stay local) and a reviewer-preferred first milestone. Rejected as the product architecture: Afora's non-exec tools are in-process filesystem operations, so every file read/edit/grep becomes a network round trip or a large tool-surface refactor into coarse workspace RPCs; runtime behavior is chatty and latency-bound. We reuse its spirit where it is already built (exec offload to nodes) but do not build the tool-remoting layer.
 2. Loop and inference both on the worker. Simplest failure domain, but model credentials (including OAuth profiles) must ship to throwaway machines, the gateway loses policy/routing/audit control, and migration switches the provider-calling identity, invalidating provider caches.
 3. Loop + tools on the worker, model calls proxied through the gateway. Chosen. One round trip per model turn instead of per tool call; tools run next to the code; the gateway remains the single owner of auth profiles, provider routing, and policy; the worker holds no secrets.
 
@@ -83,16 +83,16 @@ type WorkerProvider = {
 
 RPCs: `environments.create`, `environments.destroy`, extended `environments.list/status` (provider, lease id, state, age, idle time, attached sessions). First providers: a Crabbox-shape lease CLI wrapper (product path) and a static-SSH-host provider marked development-only — a worker on a shared host can read unrelated host data, so static hosts are for feature development, not the default posture.
 
-### 2. Worker bootstrap: install OpenClaw on the box
+### 2. Worker bootstrap: install Afora on the box
 
 No bespoke worker artifact, and no dependence on npm availability:
 
 - Canonical install for all modes: a gateway-produced, content-hashed worker bundle (the gateway's own build output packed as a tarball), pushed over SSH and installed on the box. This covers dev builds and unreleased commits by construction.
-- On npm 12 or npm 11.16+, `npm i -g openclaw@<exact gateway version> --allow-scripts=openclaw` is an optimization when the gateway runs a released version; never `latest`. On npm 11.12 and earlier, omit `--allow-scripts=openclaw`; upgrade npm 11.13–11.15 first.
+- On npm 12 or npm 11.16+, `npm i -g afora@<exact gateway version> --allow-scripts=afora` is an optimization when the gateway runs a released version; never `latest`. On npm 11.12 and earlier, omit `--allow-scripts=afora`; upgrade npm 11.13–11.15 first.
 - Bootstrap is idempotent; a warm lease with a matching bundle hash skips install. Raw machines may need a networked toolchain phase (Node runtime) — part of the setup phase, closed afterwards.
 - Handshake verifies worker build hash, protocol feature set, and runtime compatibility. The existing gateway version/protocol checks are insufficient for this (SSH-tunneled nodes are exempted from exact-version rejection), so worker admission does its own exact-build check.
 
-Worker mode (`openclaw worker`) is an entry point, not a fork: connection handling plus the embedded agent runner, with session persistence and model calls backed by gateway RPCs. It must not start gateway surfaces: no channels, no plugin auto-start beyond the session toolset, throwaway state dir, no local auth profiles.
+Worker mode (`afora worker`) is an entry point, not a fork: connection handling plus the embedded agent runner, with session persistence and model calls backed by gateway RPCs. It must not start gateway surfaces: no channels, no plugin auto-start beyond the session toolset, throwaway state dir, no local auth profiles.
 
 ### 3. Transport: everything over SSH
 

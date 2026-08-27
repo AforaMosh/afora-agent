@@ -111,10 +111,10 @@ function catalogEntriesFingerprint(entries: readonly ToolSearchCatalogEntry[]): 
         entry.description,
         // Remote/client schemas may be attacker-sized. Object identity still
         // invalidates reuse when a schema object is replaced without walking it.
-        entry.source === "openclaw"
+        entry.source === "afora"
           ? stableJsonFingerprint(entry.parameters)
           : untrustedSchemaFingerprint(entry.parameters),
-        entry.source === "openclaw"
+        entry.source === "afora"
           ? stableJsonFingerprint(entry.outputSchema)
           : untrustedSchemaFingerprint(entry.outputSchema),
         String(catalogToolIdentity(entry.tool)),
@@ -172,9 +172,9 @@ function classifyTool(tool: CatalogTool): {
     return { source: "mcp", sourceName: pluginId };
   }
   if (pluginId) {
-    return { source: "openclaw", sourceName: pluginId };
+    return { source: "afora", sourceName: pluginId };
   }
-  return { source: "openclaw", sourceName: "core" };
+  return { source: "afora", sourceName: "core" };
 }
 
 function makeCatalogId(tool: CatalogTool, source: CatalogSource, sourceName?: string): string {
@@ -208,7 +208,7 @@ function toCatalogEntry(
     label: tool.label,
     description: tool.description ?? "",
     parameters: tool.parameters,
-    ...(source === "openclaw" && (tool as AnyAgentTool).outputSchema
+    ...(source === "afora" && (tool as AnyAgentTool).outputSchema
       ? { outputSchema: (tool as AnyAgentTool).outputSchema }
       : {}),
     tool: catalogTool,
@@ -222,7 +222,7 @@ function shouldCatalogTool(tool: AnyAgentTool): boolean {
 /**
  * Core file/shell primitives and caller-required names (e.g. message when it is
  * the only reply path) stay visible while remaining searchable. Both must
- * resolve to trusted OpenClaw tools: an MCP lookalike must never become a
+ * resolve to trusted Afora tools: an MCP lookalike must never become a
  * direct delivery or core-coding tool.
  */
 export function isDirectVisibleCatalogTool(
@@ -231,7 +231,7 @@ export function isDirectVisibleCatalogTool(
 ): boolean {
   const classified = classifyTool(tool);
   return (
-    classified.source === "openclaw" &&
+    classified.source === "afora" &&
     (directToolNames.has(tool.name) ||
       (isCoreCodingSurfaceToolName(tool.name) && classified.sourceName === "core"))
   );
@@ -354,7 +354,7 @@ export function visibleCatalogEntries(
 
 export function compactToolSearchCatalogEntry(entry: ToolSearchCatalogEntry) {
   const output =
-    entry.source === "openclaw" ? compactToolOutputHint(entry.outputSchema) : undefined;
+    entry.source === "afora" ? compactToolOutputHint(entry.outputSchema) : undefined;
   // Node provenance is namespace-only metadata; generic Tool Search keeps its
   // existing MCP result shape outside Code Mode.
   const mcp = entry.mcp
@@ -373,7 +373,7 @@ export function compactToolSearchCatalogEntry(entry: ToolSearchCatalogEntry) {
     name: entry.name,
     label: entry.label,
     description: entry.description,
-    input: entry.source === "openclaw" ? compactToolInputHint(entry.parameters) : "unknown",
+    input: entry.source === "afora" ? compactToolInputHint(entry.parameters) : "unknown",
     ...(output ? { output } : {}),
   };
 }

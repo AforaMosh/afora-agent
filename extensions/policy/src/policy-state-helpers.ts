@@ -1,5 +1,5 @@
 // Shared policy evidence path and value helpers.
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 export function ocPathSegment(value: string): string {
   if (/^(?:[A-Za-z0-9_-]+|#\d+)$/.test(value)) {

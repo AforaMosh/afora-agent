@@ -115,7 +115,7 @@ describe("live cache regression runner", () => {
       config: {
         provider: "openai",
         api: "openai-responses",
-        envVar: "OPENCLAW_LIVE_OPENAI_CACHE_MODEL",
+        envVar: "AFORA_LIVE_OPENAI_CACHE_MODEL",
         preferredModelIds: ["gpt-5.5"],
       },
       resolver: async () => {
@@ -151,7 +151,7 @@ describe("live cache regression runner", () => {
       config: {
         provider: "anthropic",
         api: "anthropic-messages",
-        envVar: "OPENCLAW_LIVE_ANTHROPIC_CACHE_MODEL",
+        envVar: "AFORA_LIVE_ANTHROPIC_CACHE_MODEL",
         preferredModelIds: ["claude-sonnet-4-6"],
       },
       resolver: async () => {

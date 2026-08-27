@@ -8,7 +8,7 @@ import {
   normalizeAgentModelRefForConfig,
 } from "../config/model-input.js";
 import type { ModelProviderConfig } from "../config/types.models.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { ProviderAuthResult } from "../plugins/types.js";
 
 function normalizeAgentModelConfigForAuthResult(value: unknown): unknown {
@@ -63,8 +63,8 @@ function normalizeProviderConfigModelIdsForAuthResult(
 }
 
 function normalizeProviderAuthConfigPatchModelRefs(
-  patch: Partial<OpenClawConfig>,
-): Partial<OpenClawConfig> {
+  patch: Partial<AforaConfig>,
+): Partial<AforaConfig> {
   let next = patch;
   const defaults = patch.agents?.defaults;
   if (defaults) {
@@ -151,7 +151,7 @@ export function buildOauthProviderAuthResult(params: {
   /** Provider-specific credential fields merged into the OAuth credential. */
   credentialExtra?: Record<string, unknown>;
   /** Explicit config patch to emit after model-ref normalization. */
-  configPatch?: Partial<OpenClawConfig>;
+  configPatch?: Partial<AforaConfig>;
   /** Optional setup notes forwarded to provider login callers. */
   notes?: string[];
 }): ProviderAuthResult {
@@ -188,7 +188,7 @@ export function buildOauthProviderAuthResult(params: {
               },
             },
           },
-        } as Partial<OpenClawConfig>),
+        } as Partial<AforaConfig>),
     ),
     defaultModel,
     notes: params.notes,

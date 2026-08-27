@@ -11,7 +11,7 @@ import type { TlsOptions } from "node:tls";
 import { isCoreCanvasHostEnabled } from "../canvas/config.js";
 import { isCanvasDocumentHttpPath } from "../canvas/constants.js";
 import { getRuntimeConfig } from "../config/io.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   createDiagnosticTraceContext,
   runWithDiagnosticTraceContext,
@@ -179,7 +179,7 @@ export function createGatewayHttpServer(opts: {
   handleNodeWorkspaceTransferRequest?: NodeWorkspaceTransferHttpCallback;
   getReadiness?: ReadinessChecker;
   getStartup?: StartupChecker;
-  getRuntimeConfig?: () => OpenClawConfig;
+  getRuntimeConfig?: () => AforaConfig;
   isStartupPluginRuntimeReady?: () => boolean;
   isTerminalEnabled?: () => boolean;
   tlsOptions?: TlsOptions;
@@ -424,7 +424,7 @@ export function createGatewayHttpServer(opts: {
           getResolvedAuth,
         }),
       );
-      addAdmittedStage(scopedRequestPath.startsWith("/__openclaw__/board/"), async () =>
+      addAdmittedStage(scopedRequestPath.startsWith("/__afora__/board/"), async () =>
         (await getBoardHttpModule()).handleBoardHttpRequest(req, res),
       );
       const userProfileAvatarPath = canonicalizeUserProfileAvatarPath(

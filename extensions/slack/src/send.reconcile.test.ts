@@ -1,9 +1,9 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 // Slack tests cover exact delivery-queue reconciliation through message metadata.
 import type { MessageMetadata } from "@slack/types";
 import type { ChatPostMessageArguments, WebClient } from "@slack/web-api";
-import type { ChannelMessageUnknownSendContext } from "openclaw/plugin-sdk/channel-outbound";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { ChannelMessageUnknownSendContext } from "afora-agent/plugin-sdk/channel-outbound";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { registerSlackInstallationState } from "./installation-identity-state.js";
 import { reconcileSlackUnknownSend, sendMessageSlack } from "./send.js";
@@ -47,7 +47,7 @@ const cfg = {
       botToken: "xoxb-test",
     },
   },
-} as OpenClawConfig;
+} as AforaConfig;
 
 function createSlackReconcileTestClient(): SlackReconcileTestClient {
   return {
@@ -133,7 +133,7 @@ describe("reconcileSlackUnknownSend", () => {
               botToken: "xoxb-org",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         to: "team:T123:channel:C123",
       }),
     );
@@ -202,8 +202,8 @@ describe("reconcileSlackUnknownSend", () => {
     const metadata = request.metadata as MessageMetadata;
 
     expect(metadata.event_payload).toMatchObject({
-      openclaw_delivery_part_index: 0,
-      openclaw_delivery_part_count: 1,
+      afora_delivery_part_index: 0,
+      afora_delivery_part_count: 1,
     });
     expect(sent.receipt.platformMessageIds).toEqual(["1782584647.000002"]);
     client.conversations.history.mockResolvedValueOnce({
@@ -286,11 +286,11 @@ describe("reconcileSlackUnknownSend", () => {
       .slice(1)
       .map((request) => request.metadata as MessageMetadata);
 
-    expect(rejectedMetadata.event_payload.openclaw_delivery_part_count).toBe(1);
-    expect(fallbackMetadata.map((part) => part.event_payload.openclaw_delivery_part_index)).toEqual(
+    expect(rejectedMetadata.event_payload.afora_delivery_part_count).toBe(1);
+    expect(fallbackMetadata.map((part) => part.event_payload.afora_delivery_part_index)).toEqual(
       [0, 1, 2, 3],
     );
-    expect(fallbackMetadata.map((part) => part.event_payload.openclaw_delivery_part_count)).toEqual(
+    expect(fallbackMetadata.map((part) => part.event_payload.afora_delivery_part_count)).toEqual(
       [4, 4, 4, 4],
     );
     expect(fallbackMetadata[0]?.event_payload).toMatchObject({ team_id: "T123" });
@@ -298,7 +298,7 @@ describe("reconcileSlackUnknownSend", () => {
     expect(fallbackMetadata[2]?.event_payload).not.toHaveProperty("team_id");
     expect(fallbackMetadata[3]?.event_payload).not.toHaveProperty("team_id");
     expect(
-      new Set(fallbackMetadata.map((part) => part.event_payload.openclaw_delivery_id)).size,
+      new Set(fallbackMetadata.map((part) => part.event_payload.afora_delivery_id)).size,
     ).toBe(1);
     expect(sent.receipt.platformMessageIds).toEqual([
       "1782584647.000001",
@@ -381,7 +381,7 @@ describe("reconcileSlackUnknownSend", () => {
           userToken: "test-user-token",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await sendMessageSlack("user:U123", "final answer", {
       cfg: userIdentityCfg,
@@ -404,7 +404,7 @@ describe("reconcileSlackUnknownSend", () => {
 
     expect(metadata.event_type).toBe("assistant_thread_context");
     expect(metadata.event_payload).toMatchObject({ channel_id: "C456", team_id: "T123" });
-    expect(metadata.event_payload.openclaw_delivery_id).toEqual(expect.any(String));
+    expect(metadata.event_payload.afora_delivery_id).toEqual(expect.any(String));
   });
 
   it("reads history with the configured read token", async () => {
@@ -424,7 +424,7 @@ describe("reconcileSlackUnknownSend", () => {
           userToken: "xoxp-read",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await expect(
       reconcileSlackUnknownSend(createUnknownSendContext({ cfg: tokenCfg })),
@@ -457,7 +457,7 @@ describe("reconcileSlackUnknownSend", () => {
           userToken: "xoxp-read",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await expect(
       reconcileSlackUnknownSend(createUnknownSendContext({ cfg: tokenCfg, to: "U123" })),
@@ -485,7 +485,7 @@ describe("reconcileSlackUnknownSend", () => {
           userToken: "xoxp-read",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await expect(
       reconcileSlackUnknownSend(createUnknownSendContext({ cfg: tokenCfg })),
@@ -612,7 +612,7 @@ describe("reconcileSlackUnknownSend", () => {
     const client = createSlackReconcileTestClient();
     const chunkedCfg = {
       channels: { slack: { botToken: "xoxb-test", textChunkLimit: 5 } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     let postedPart = 0;
     client.chat.postMessage.mockImplementation(async () => ({
       ok: true,
@@ -631,16 +631,16 @@ describe("reconcileSlackUnknownSend", () => {
       ([request]) => (request as ChatPostMessageArguments).metadata as MessageMetadata,
     );
     expect(
-      postedMetadata.map((metadata) => metadata.event_payload.openclaw_delivery_part_index),
+      postedMetadata.map((metadata) => metadata.event_payload.afora_delivery_part_index),
     ).toEqual([0, 1, 2]);
     expect(
-      postedMetadata.map((metadata) => metadata.event_payload.openclaw_delivery_part_count),
+      postedMetadata.map((metadata) => metadata.event_payload.afora_delivery_part_count),
     ).toEqual([3, 3, 3]);
     expect(
-      new Set(postedMetadata.map((metadata) => metadata.event_payload.openclaw_delivery_id)).size,
+      new Set(postedMetadata.map((metadata) => metadata.event_payload.afora_delivery_id)).size,
     ).toBe(1);
     expect(
-      new Set(postedMetadata.map((metadata) => metadata.event_payload.openclaw_delivery_signature))
+      new Set(postedMetadata.map((metadata) => metadata.event_payload.afora_delivery_signature))
         .size,
     ).toBe(3);
     client.conversations.history.mockResolvedValueOnce({
@@ -670,7 +670,7 @@ describe("reconcileSlackUnknownSend", () => {
         ...firstMetadata,
         event_payload: {
           ...firstMetadata.event_payload,
-          openclaw_delivery_part_index: partIndex,
+          afora_delivery_part_index: partIndex,
         },
       });
     }
@@ -698,7 +698,7 @@ describe("reconcileSlackUnknownSend", () => {
   it("skips a malformed multi-byte signature and finds the valid delivery marker", async () => {
     const client = createSlackReconcileTestClient();
     const metadata = await postWithDeliveryMetadata({ client });
-    const signature = metadata.event_payload.openclaw_delivery_signature as string;
+    const signature = metadata.event_payload.afora_delivery_signature as string;
     const malformedSignature = "é".repeat(signature.length);
     expect(malformedSignature).toHaveLength(signature.length);
     expect(Buffer.byteLength(malformedSignature)).not.toBe(Buffer.byteLength(signature));
@@ -706,7 +706,7 @@ describe("reconcileSlackUnknownSend", () => {
       ...metadata,
       event_payload: {
         ...metadata.event_payload,
-        openclaw_delivery_signature: malformedSignature,
+        afora_delivery_signature: malformedSignature,
       },
     };
     client.conversations.history.mockResolvedValueOnce({

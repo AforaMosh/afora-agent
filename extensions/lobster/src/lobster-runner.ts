@@ -2,7 +2,7 @@
 import { stat } from "node:fs/promises";
 import path from "node:path";
 import { Readable, Writable } from "node:stream";
-import { toErrorObject as toLintErrorObject } from "openclaw/plugin-sdk/error-runtime";
+import { toErrorObject as toLintErrorObject } from "afora-agent/plugin-sdk/error-runtime";
 
 export type LobsterEnvelope =
   | {
@@ -125,7 +125,7 @@ function normalizeEnvelope(envelope: EmbeddedToolEnvelope): Extract<LobsterEnvel
     throw new Error(envelope.error?.message ?? "lobster runtime failed");
   }
   if (envelope.status === "needs_input") {
-    throw new Error("Lobster input requests are not supported by the OpenClaw Lobster tool yet");
+    throw new Error("Lobster input requests are not supported by the Afora Lobster tool yet");
   }
   return {
     ok: true,

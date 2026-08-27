@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
 import {
   parseCardsJson,
@@ -109,7 +109,7 @@ describe("parseCardsJson", () => {
   it("accepts a valid card array and normalizes fields", () => {
     const result = parseCardsJson({
       raw: `Here you go:\n${JSON.stringify([
-        card({ category: "CODING", appSites: { primary: "https://GitHub.com/openclaw" } }),
+        card({ category: "CODING", appSites: { primary: "https://GitHub.com/afora" } }),
       ])}\nHope that helps!`,
       day: DAY,
       windowStartMs,

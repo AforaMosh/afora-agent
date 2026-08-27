@@ -1,25 +1,25 @@
 ---
-summary: "Use Z.AI (GLM models) with OpenClaw"
+summary: "Use Z.AI (GLM models) with Afora"
 read_when:
-  - You want Z.AI / GLM models in OpenClaw
+  - You want Z.AI / GLM models in Afora
   - You need a simple ZAI_API_KEY setup
 title: "Z.AI"
 ---
 
 Z.AI is the API platform for **GLM** models. It provides REST APIs for GLM and
 uses API keys for authentication. Create your API key in the Z.AI console.
-OpenClaw uses the `zai` provider with a Z.AI API key.
+Afora uses the `zai` provider with a Z.AI API key.
 
 | Property | Value                                        |
 | -------- | -------------------------------------------- |
 | Provider | `zai`                                        |
-| Package  | `@openclaw/zai-provider`                     |
+| Package  | `@afora/zai-provider`                     |
 | Auth     | `ZAI_API_KEY` (legacy alias: `Z_AI_API_KEY`) |
 | API      | Z.AI Chat Completions (Bearer auth)          |
 
 ## GLM models
 
-GLM is a model family, not a separate provider. In OpenClaw, GLM models use
+GLM is a model family, not a separate provider. In Afora, GLM models use
 refs such as `zai/glm-5.3`: provider `zai`, model id `glm-5.3`.
 
 ## Getting started
@@ -27,22 +27,22 @@ refs such as `zai/glm-5.3`: provider `zai`, model id `glm-5.3`.
 Install the provider plugin first:
 
 ```bash
-openclaw plugins install @openclaw/zai-provider
+afora plugins install @afora/zai-provider
 ```
 
 <Tabs>
   <Tab title="Auto-detect endpoint">
-    **Best for:** most users. OpenClaw probes supported Z.AI endpoints with your API key and applies the correct base URL automatically.
+    **Best for:** most users. Afora probes supported Z.AI endpoints with your API key and applies the correct base URL automatically.
 
     <Steps>
       <Step title="Run onboarding">
         ```bash
-        openclaw onboard --auth-choice zai-api-key
+        afora onboard --auth-choice zai-api-key
         ```
       </Step>
       <Step title="Verify the model is listed">
         ```bash
-        openclaw models list --all --provider zai
+        afora models list --all --provider zai
         ```
       </Step>
     </Steps>
@@ -56,21 +56,21 @@ openclaw plugins install @openclaw/zai-provider
       <Step title="Pick the right onboarding choice">
         ```bash
         # Coding Plan Global (recommended for Coding Plan users)
-        openclaw onboard --auth-choice zai-coding-global
+        afora onboard --auth-choice zai-coding-global
 
         # Coding Plan CN (China region)
-        openclaw onboard --auth-choice zai-coding-cn
+        afora onboard --auth-choice zai-coding-cn
 
         # General API
-        openclaw onboard --auth-choice zai-global
+        afora onboard --auth-choice zai-global
 
         # General API CN (China region)
-        openclaw onboard --auth-choice zai-cn
+        afora onboard --auth-choice zai-cn
         ```
       </Step>
       <Step title="Verify the model is listed">
         ```bash
-        openclaw models list --all --provider zai
+        afora models list --all --provider zai
         ```
       </Step>
     </Steps>
@@ -88,7 +88,7 @@ openclaw plugins install @openclaw/zai-provider
 | `zai-coding-cn`     | `https://open.bigmodel.cn/api/coding/paas/v4` | `glm-5.3`     |
 
 Z.AI also publishes the Anthropic-compatible Coding Plan base URL
-`https://api.z.ai/api/anthropic`. OpenClaw's Z.AI choices use the documented
+`https://api.z.ai/api/anthropic`. Afora's Z.AI choices use the documented
 OpenAI Chat Completions endpoints above; the Anthropic URL is for clients that
 speak Anthropic Messages directly.
 
@@ -105,7 +105,7 @@ Z.AI documents the Coding Plan and general-purpose agent tools as capacity
 managed services. In Z.AI's own docs:
 
 - [General-purpose agent tools](https://docs.z.ai/devpack/tool/others),
-  including OpenClaw, are served on a best-effort basis. During high inference
+  including Afora, are served on a best-effort basis. During high inference
   load, typically around 2-6 PM Singapore time, some requests may face temporary
   rate limits.
 - [Coding Plan rate and concurrency limits](https://docs.z.ai/devpack/usage-policy)
@@ -121,8 +121,8 @@ occur for one endpoint, model, or request shape, check the configured endpoint
 and model first:
 
 ```bash
-openclaw models list --all --provider zai
-openclaw config get models.providers.zai.baseUrl
+afora models list --all --provider zai
+afora config get models.providers.zai.baseUrl
 ```
 
 Coding Plan keys should use a Coding Plan endpoint such as
@@ -134,7 +134,7 @@ not ordinary peak-load throttling.
 ## Config example
 
 <Tip>
-`zai-api-key` lets OpenClaw detect the matching Z.AI endpoint from the key and
+`zai-api-key` lets Afora detect the matching Z.AI endpoint from the key and
 apply the correct base URL automatically. Use the explicit regional choices when
 you want to force a specific Coding Plan or general API surface.
 </Tip>
@@ -160,7 +160,7 @@ The `zai` provider plugin ships its catalog in the plugin manifest, so read-only
 listing can show known GLM rows without loading provider runtime:
 
 ```bash
-openclaw models list --all --provider zai
+afora models list --all --provider zai
 ```
 
 The manifest-backed catalog currently includes:
@@ -169,7 +169,7 @@ The manifest-backed catalog currently includes:
 | ------------------ | ------------------------------------------------- |
 | `zai/glm-5.3`      | Coding Plan default; 1,048,576-token context      |
 | `zai/glm-5.2`      | General API default; 1M context                   |
-| `zai/glm-5-turbo`  | OpenClaw-optimized text model; 200K context       |
+| `zai/glm-5-turbo`  | Afora-optimized text model; 200K context       |
 | `zai/glm-5v-turbo` | Multimodal coding model; 200K context             |
 | `zai/glm-5.1`      | Deprecated; hidden unless configured; use GLM-5.2 |
 
@@ -189,7 +189,7 @@ Fresh Coding Plan setup defaults to `zai/glm-5.3`; general API setup remains on
 `glm-5.1` and `glm-4.7` when a key or regional endpoint does not expose GLM-5.3
 directly. Z.AI currently routes Coding Plan requests for GLM-5.2 and GLM-5.1 to
 GLM-5.3. Run
-`openclaw models list --all --provider zai` to see the catalog known to your
+`afora models list --all --provider zai` to see the catalog known to your
 installed version.
 </Note>
 
@@ -197,13 +197,13 @@ installed version.
 
 <Tabs>
   <Tab title="GLM-5.3">
-    Levels: `low`, `high`, and `max` (default `max`). OpenClaw maps these to
+    Levels: `low`, `high`, and `max` (default `max`). Afora maps these to
     Z.AI's `reasoning_effort` request field. An explicit `off` setting sends
     `thinking: { type: "disabled" }`; Z.AI treats disabled thinking as its
     lightweight `low` effort rather than disabling reasoning entirely.
   </Tab>
   <Tab title="GLM-5.2">
-    Full range: `off`, `low`, `high`, `max` (default `off`). OpenClaw maps
+    Full range: `off`, `low`, `high`, `max` (default `off`). Afora maps
     `low` and `high` to Z.AI's `high` reasoning effort, and `max` to Z.AI's
     `max` effort, via `reasoning_effort` on the request payload.
   </Tab>
@@ -265,7 +265,7 @@ Setting thinking to `off` avoids responses that spend the output budget on
     }
     ```
 
-    When enabled and thinking is on, OpenClaw sends
+    When enabled and thinking is on, Afora sends
     `thinking: { type: "enabled", clear_thinking: false }` and replays prior
     `reasoning_content` for the same OpenAI-compatible transcript. The snake_case
     `preserve_thinking` param key works as an alias.
@@ -291,7 +291,7 @@ Setting thinking to `off` avoids responses that spend the output budget on
     - Z.AI uses Bearer auth with your API key.
     - The `zai-api-key` onboarding choice auto-detects the matching Z.AI endpoint by probing supported endpoints with your key.
     - Use the explicit regional choices (`zai-coding-global`, `zai-coding-cn`, `zai-global`, `zai-cn`) when you want to force a specific API surface.
-    - The legacy env var `Z_AI_API_KEY` is still accepted; OpenClaw copies it to `ZAI_API_KEY` at startup if `ZAI_API_KEY` is unset.
+    - The legacy env var `Z_AI_API_KEY` is still accepted; Afora copies it to `ZAI_API_KEY` at startup if `ZAI_API_KEY` is unset.
 
   </Accordion>
 </AccordionGroup>
@@ -303,6 +303,6 @@ Setting thinking to `off` avoids responses that spend the output budget on
     Choosing providers, model refs, and failover behavior.
   </Card>
   <Card title="Configuration reference" href="/gateway/configuration-reference" icon="gear">
-    Full OpenClaw config schema, including provider and model settings.
+    Full Afora config schema, including provider and model settings.
   </Card>
 </CardGroup>

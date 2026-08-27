@@ -1,4 +1,4 @@
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 // Tests typing mode persistence across session updates and reply turns.
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from "vitest";
 import { createTypingController } from "./typing.js";

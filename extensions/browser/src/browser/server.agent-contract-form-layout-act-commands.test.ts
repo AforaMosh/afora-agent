@@ -1,9 +1,9 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 // Browser tests cover server.agent contract form layout act commands plugin behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import "../test-support/browser-security.mock.js";
 import { DEFAULT_DOWNLOAD_DIR, DEFAULT_TRACE_DIR, DEFAULT_UPLOAD_DIR } from "./paths.js";
@@ -163,7 +163,7 @@ async function withSymlinkPathEscape<T>(params: {
   rootDir: string;
   run: (relativePath: string) => Promise<T>;
 }): Promise<T> {
-  const outsideDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-route-escape-"));
+  const outsideDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-route-escape-"));
   const linkName = `escape-link-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const linkPath = path.join(params.rootDir, linkName);
   await fs.mkdir(params.rootDir, { recursive: true });

@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 // Plugin registry migration tests cover doctor repair of persisted plugin registry state.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { recordPluginCandidateInstallOwner } from "../../../plugins/candidate-install-owner.js";
 import type { PluginCandidate } from "../../../plugins/discovery.js";
 import {
@@ -16,7 +16,7 @@ import {
   cleanupTrackedTempDirs,
   makeTrackedTempDir,
 } from "../../../plugins/test-helpers/fs-fixtures.js";
-import { runOpenClawStateWriteTransaction } from "../../../state/openclaw-state-db.js";
+import { runAforaStateWriteTransaction } from "../../../state/afora-state-db.js";
 import { migratePluginRegistryForInstall } from "./plugin-registry-migration.js";
 const tempDirs: string[] = [];
 
@@ -25,13 +25,13 @@ afterEach(() => {
 });
 
 function makeTempDir() {
-  return makeTrackedTempDir("openclaw-plugin-registry-migration", tempDirs);
+  return makeTrackedTempDir("afora-plugin-registry-migration", tempDirs);
 }
 
 function hermeticEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
   return {
-    OPENCLAW_BUNDLED_PLUGINS_DIR: undefined,
-    OPENCLAW_VERSION: "2026.4.25",
+    AFORA_BUNDLED_PLUGINS_DIR: undefined,
+    AFORA_VERSION: "2026.4.25",
     VITEST: "true",
     ...overrides,
   };
@@ -53,7 +53,7 @@ function createCandidate(
     "utf8",
   );
   fs.writeFileSync(
-    path.join(rootDir, "openclaw.plugin.json"),
+    path.join(rootDir, "afora.plugin.json"),
     JSON.stringify({
       id,
       name: id,
@@ -119,7 +119,7 @@ function requirePlugin(index: InstalledPluginIndex | null | undefined, pluginId:
 }
 
 function insertStalePersistedIndexRow(stateDir: string, installRecordsJson = "{}") {
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       db.prepare(
         `
@@ -135,7 +135,7 @@ function insertStalePersistedIndexRow(stateDir: string, installRecordsJson = "{}
         `,
       ).run({ install_records_json: installRecordsJson });
     },
-    { env: { ...process.env, OPENCLAW_STATE_DIR: stateDir } },
+    { env: { ...process.env, AFORA_STATE_DIR: stateDir } },
   );
 }
 
@@ -201,7 +201,7 @@ describe("plugin registry install migration", () => {
       "delete only the installed_plugin_index row with index_key='installed-plugin-index'",
     );
 
-    const row = runOpenClawStateWriteTransaction(
+    const row = runAforaStateWriteTransaction(
       ({ db }) =>
         db
           .prepare(
@@ -214,7 +214,7 @@ describe("plugin registry install migration", () => {
           install_records_json: string;
           updated_at_ms: number | bigint;
         },
-      { env: { ...process.env, OPENCLAW_STATE_DIR: stateDir } },
+      { env: { ...process.env, AFORA_STATE_DIR: stateDir } },
     );
     expect(row).toEqual({
       migration_version: 0,
@@ -227,7 +227,7 @@ describe("plugin registry install migration", () => {
     const stateDir = makeTempDir();
     const invalidConfig = JSON.parse(
       '{"plugins":{"installs":{"constructor":{"source":"bogus"}}}}',
-    ) as OpenClawConfig;
+    ) as AforaConfig;
 
     await expect(
       migratePluginRegistryForInstall({
@@ -236,7 +236,7 @@ describe("plugin registry install migration", () => {
         env: hermeticEnv(),
       }),
     ).rejects.toThrow(
-      "Back up openclaw.json, correct or remove the invalid retired plugins.installs record",
+      "Back up afora.json, correct or remove the invalid retired plugins.installs record",
     );
     expect(fs.existsSync(resolveInstalledPluginIndexStorePath({ stateDir }))).toBe(false);
   });

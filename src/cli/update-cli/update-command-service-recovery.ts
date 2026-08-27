@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { GatewayService } from "../../daemon/service.js";
 import type { UpdateRunResult } from "../../infra/update-runner.js";
 import { replaceCliName, resolveCliName } from "../cli-name.js";
@@ -74,19 +74,19 @@ export async function hasLoadedLaunchdKeepAliveSupervisor(params: {
   if (process.platform !== "darwin") {
     return false;
   }
-  // OpenClaw's loaded LaunchAgent has canonical KeepAlive policy. Read this once before
+  // Afora's loaded LaunchAgent has canonical KeepAlive policy. Read this once before
   // polling so an unloaded agent can still reach the existing recovery path promptly.
   return await params.service.isLoaded({ env: params.env }).catch(() => false);
 }
 
 function formatPostUpdateGatewayRecoveryLine(platform: NodeJS.Platform): string {
-  const restartCommand = replaceCliName(formatCliCommand("openclaw gateway restart"), CLI_NAME);
+  const restartCommand = replaceCliName(formatCliCommand("afora gateway restart"), CLI_NAME);
   const installCommand = replaceCliName(
-    formatCliCommand("openclaw gateway install --force"),
+    formatCliCommand("afora gateway install --force"),
     CLI_NAME,
   );
   const statusCommand = replaceCliName(
-    formatCliCommand("openclaw gateway status --deep"),
+    formatCliCommand("afora gateway status --deep"),
     CLI_NAME,
   );
   if (platform === "darwin") {
@@ -109,7 +109,7 @@ export function formatPostUpdateGatewayRecoveryInstructions(
   const beforeVersion = normalizeOptionalString(result.before?.version);
   if (isPackageManagerUpdateMode(result.mode) && beforeVersion) {
     lines.push(
-      `Rollback: reinstall OpenClaw ${beforeVersion} with the same package manager, then rerun \`${replaceCliName(formatCliCommand("openclaw gateway install --force"), CLI_NAME)}\`.`,
+      `Rollback: reinstall Afora ${beforeVersion} with the same package manager, then rerun \`${replaceCliName(formatCliCommand("afora gateway install --force"), CLI_NAME)}\`.`,
     );
   }
   return lines;

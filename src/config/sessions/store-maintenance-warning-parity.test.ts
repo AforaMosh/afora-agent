@@ -28,7 +28,7 @@ it("uses enforcement preservation when predicting active-session eviction", asyn
     highWaterBytes: null,
   };
   const shared = {
-    storePath: "/tmp/openclaw-sessions/warn-enforce-parity.json",
+    storePath: "/tmp/afora-sessions/warn-enforce-parity.json",
     activeSessionKey: "active",
     log: { warn: () => {}, info: () => {} },
     artifacts: createMaintenanceArtifacts(),

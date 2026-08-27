@@ -27,11 +27,11 @@ describe("web_search signal plumbing", () => {
     const controller = new AbortController();
     const tool = createWebSearchTool({ config: {} });
 
-    await tool?.execute("call-search", { query: "openclaw" }, controller.signal);
+    await tool?.execute("call-search", { query: "afora" }, controller.signal);
 
     expect(mocks.runWebSearch).toHaveBeenCalledTimes(1);
     const params = mocks.runWebSearch.mock.calls.at(0)?.[0];
-    expect(params?.args).toEqual({ query: "openclaw" });
+    expect(params?.args).toEqual({ query: "afora" });
     expect(params?.signal).toBe(controller.signal);
   });
 
@@ -50,7 +50,7 @@ describe("web_search signal plumbing", () => {
       mocks.runWebSearch.mockResolvedValueOnce({ provider: "mock", result: output });
       const tool = createWebSearchTool({ config: {} });
 
-      const result = await tool?.execute("call-truncated-search", { query: "openclaw" });
+      const result = await tool?.execute("call-truncated-search", { query: "afora" });
 
       expect(result?.details).toMatchObject({ kind, provider: "mock", truncated: true });
     },
@@ -63,7 +63,7 @@ describe("web_search signal plumbing", () => {
     mocks.runWebSearch.mockResolvedValueOnce({ provider: "mock", result: rawPayload });
     const tool = createWebSearchTool({ config: {} });
 
-    const result = await tool?.execute("call-raw-search", { query: "openclaw" });
+    const result = await tool?.execute("call-raw-search", { query: "afora" });
 
     expect(result?.details).toEqual({ kind: "raw", provider: "mock", data: rawPayload });
     expect(result?.content[0]).toMatchObject({
@@ -84,7 +84,7 @@ describe("web_search signal plumbing", () => {
     mocks.runWebSearch.mockResolvedValueOnce({ provider: "mock", result: rawPayload });
     const tool = createWebSearchTool({ config: {} });
 
-    const result = await tool?.execute("call-huge-raw-search", { query: "openclaw" });
+    const result = await tool?.execute("call-huge-raw-search", { query: "afora" });
     const text = result?.content[0]?.type === "text" ? result.content[0].text : "";
 
     expect(text.length).toBeLessThan(20_300);
@@ -104,7 +104,7 @@ describe("web_search signal plumbing", () => {
     mocks.runWebSearch.mockResolvedValueOnce({ provider: "mock", result: rawPayload });
     const tool = createWebSearchTool({ config: {} });
 
-    const result = await tool?.execute("call-expanding-raw-search", { query: "openclaw" });
+    const result = await tool?.execute("call-expanding-raw-search", { query: "afora" });
     const text = result?.content[0]?.type === "text" ? result.content[0].text : "";
 
     expect(text.length).toBeLessThan(20_300);
@@ -124,7 +124,7 @@ describe("web_search signal plumbing", () => {
       mocks.runWebSearch.mockResolvedValueOnce({ provider: "mock", result });
       const tool = createWebSearchTool({ config: {} });
 
-      const output = await tool?.execute(`call-huge-${kind}-search`, { query: "openclaw" });
+      const output = await tool?.execute(`call-huge-${kind}-search`, { query: "afora" });
       const text = output?.content[0]?.type === "text" ? output.content[0].text : "";
 
       expect(output?.details).toMatchObject({ kind, provider: "mock", truncated: true });

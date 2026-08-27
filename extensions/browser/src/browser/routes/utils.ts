@@ -4,7 +4,7 @@
  * Profile lookup, JSON errors, and route value coercion shared across browser
  * control endpoints.
  */
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { BrowserProfileUnavailableError, type BrowserErrorResponse } from "../errors.js";
 import {
   type BrowserRouteContext,

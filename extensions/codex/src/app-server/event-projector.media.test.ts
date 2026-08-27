@@ -1,4 +1,4 @@
-import { createOpenClawTestState, type OpenClawTestState } from "openclaw/plugin-sdk/test-state";
+import { createAforaTestState, type AforaTestState } from "afora-agent/plugin-sdk/test-state";
 import { afterEach, beforeEach } from "vitest";
 import {
   describe,
@@ -20,15 +20,15 @@ import {
 
 registerCodexEventProjectorTestLifecycle();
 
-let openClawState: OpenClawTestState;
+let aforaState: AforaTestState;
 beforeEach(async () => {
-  openClawState = await createOpenClawTestState({
+  aforaState = await createAforaTestState({
     layout: "state-only",
-    prefix: "openclaw-codex-media-state-",
+    prefix: "afora-codex-media-state-",
   });
 });
 afterEach(async () => {
-  await openClawState.cleanup();
+  await aforaState.cleanup();
 });
 
 describe("CodexAppServerEventProjector media projection", () => {

@@ -79,7 +79,7 @@ export function renderChatPagePaneCell(options: ChatPagePaneRenderOptions) {
               resolvedKey,
               sessions.find((row) => areUiSessionKeysEquivalent(row.key, resolvedKey)),
             );
-            return html`<openclaw-chat-pane
+            return html`<afora-chat-pane
               class="chat-pane-cache__pane ${visible
                 ? "chat-pane-cache__pane--visible"
                 : ""} ${active ? "chat-pane-cache__pane--active" : ""} ${options.splitMode
@@ -122,7 +122,7 @@ export function renderChatPagePaneCell(options: ChatPagePaneRenderOptions) {
               ) => options.onPaneSessionChange(paneId, sessionKey, nextSessionKey, paneOptions)}
               .onSessionDeleted=${options.onSessionDeleted}
               .onFaceChange=${options.onFaceChange}
-            ></openclaw-chat-pane>`;
+            ></afora-chat-pane>`;
           },
         )}
       </div>

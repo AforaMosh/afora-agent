@@ -11,7 +11,7 @@ import type {
 import type {
   BoardTabs as BoardTabRow,
   BoardWidgets as BoardWidgetRow,
-} from "../state/openclaw-agent-db.generated.js";
+} from "../state/afora-agent-db.generated.js";
 import { normalizeBoardWidgetDeclared } from "./board-capabilities.js";
 import { BoardValidationError } from "./board-layout.js";
 import {

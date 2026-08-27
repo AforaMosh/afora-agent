@@ -19,7 +19,7 @@ export function mockClientRuntimeMethods() {
   };
 }
 
-export function threadStartResult(threadId = "thread-1", cwd = "/tmp/openclaw-codex-test") {
+export function threadStartResult(threadId = "thread-1", cwd = "/tmp/afora-codex-test") {
   return {
     thread: {
       id: threadId,

@@ -1,12 +1,12 @@
-# OpenClaw Arcee AI Provider
+# Afora Arcee AI Provider
 
-Official OpenClaw provider plugin for Arcee AI.
+Official Afora provider plugin for Arcee AI.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/arcee-provider
-openclaw gateway restart
+afora plugins install @afora/arcee-provider
+afora gateway restart
 ```
 
-See <https://docs.openclaw.ai/providers/arcee> for setup and configuration.
+See <https://docs.afora.ai/providers/arcee> for setup and configuration.

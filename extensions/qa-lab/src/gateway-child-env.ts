@@ -19,12 +19,12 @@ import type { RuntimeId } from "./runtime-parity.js";
 
 const QA_MOCK_OPENAI_API_KEY = ["qa", "mock", "openai", "key"].join("-");
 const QA_GATEWAY_CHILD_BLOCKED_SECRET_ENV_VARS = Object.freeze([
-  "OPENCLAW_QA_CONVEX_SECRET_CI",
-  "OPENCLAW_QA_CONVEX_SECRET_MAINTAINER",
-  "OPENCLAW_QA_SUT_FORBIDDEN_SENTINEL",
-  "OPENCLAW_QA_TELEGRAM_GROUP_ID",
-  "OPENCLAW_QA_TELEGRAM_DRIVER_BOT_TOKEN",
-  "OPENCLAW_QA_TELEGRAM_SUT_BOT_TOKEN",
+  "AFORA_QA_CONVEX_SECRET_CI",
+  "AFORA_QA_CONVEX_SECRET_MAINTAINER",
+  "AFORA_QA_SUT_FORBIDDEN_SENTINEL",
+  "AFORA_QA_TELEGRAM_GROUP_ID",
+  "AFORA_QA_TELEGRAM_DRIVER_BOT_TOKEN",
+  "AFORA_QA_TELEGRAM_SUT_BOT_TOKEN",
 ]);
 
 function scrubQaGatewayChildSecretEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
@@ -79,41 +79,41 @@ export function buildQaRuntimeEnv(params: {
           claudeCliAuthMode: params.claudeCliAuthMode,
         })
       : {}),
-    OPENCLAW_HOME: params.homeDir,
-    OPENCLAW_CONFIG_PATH: params.configPath,
-    OPENCLAW_STATE_DIR: params.stateDir,
-    OPENCLAW_OAUTH_DIR: path.join(params.stateDir, "credentials"),
-    OPENCLAW_GATEWAY_TOKEN: params.gatewayToken,
-    OPENCLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
-    OPENCLAW_SKIP_GMAIL_WATCHER: "1",
-    OPENCLAW_SKIP_CANVAS_HOST: "1",
-    OPENCLAW_SKIP_STARTUP_MODEL_PREWARM: "1",
-    OPENCLAW_NO_RESPAWN: "1",
-    OPENCLAW_TEST_FAST: "1",
-    OPENCLAW_EMBEDDED_ABORT_SETTLE_TIMEOUT_MS: "2000",
-    OPENCLAW_QA_PARENT_PID: String(process.pid),
-    OPENCLAW_QA_TEMP_ROOT: params.tempRoot,
+    AFORA_HOME: params.homeDir,
+    AFORA_CONFIG_PATH: params.configPath,
+    AFORA_STATE_DIR: params.stateDir,
+    AFORA_OAUTH_DIR: path.join(params.stateDir, "credentials"),
+    AFORA_GATEWAY_TOKEN: params.gatewayToken,
+    AFORA_SKIP_BROWSER_CONTROL_SERVER: "1",
+    AFORA_SKIP_GMAIL_WATCHER: "1",
+    AFORA_SKIP_CANVAS_HOST: "1",
+    AFORA_SKIP_STARTUP_MODEL_PREWARM: "1",
+    AFORA_NO_RESPAWN: "1",
+    AFORA_TEST_FAST: "1",
+    AFORA_EMBEDDED_ABORT_SETTLE_TIMEOUT_MS: "2000",
+    AFORA_QA_PARENT_PID: String(process.pid),
+    AFORA_QA_TEMP_ROOT: params.tempRoot,
     ...(params.stagedBundledPluginsRoot
-      ? { OPENCLAW_QA_STAGED_RUNTIME_ROOT: params.stagedBundledPluginsRoot }
+      ? { AFORA_QA_STAGED_RUNTIME_ROOT: params.stagedBundledPluginsRoot }
       : {}),
-    OPENCLAW_QA_ALLOW_LOCAL_IMAGE_PROVIDER: "1",
+    AFORA_QA_ALLOW_LOCAL_IMAGE_PROVIDER: "1",
     // QA uses the fast runtime envelope for speed, but it still exercises
     // normal config-driven heartbeats and runtime config writes.
-    OPENCLAW_ALLOW_SLOW_REPLY_TESTS: "1",
+    AFORA_ALLOW_SLOW_REPLY_TESTS: "1",
     XDG_CONFIG_HOME: params.xdgConfigHome,
     XDG_DATA_HOME: params.xdgDataHome,
     XDG_CACHE_HOME: params.xdgCacheHome,
-    ...(params.bundledPluginsDir ? { OPENCLAW_BUNDLED_PLUGINS_DIR: params.bundledPluginsDir } : {}),
+    ...(params.bundledPluginsDir ? { AFORA_BUNDLED_PLUGINS_DIR: params.bundledPluginsDir } : {}),
     ...(params.compatibilityHostVersion
-      ? { OPENCLAW_COMPATIBILITY_HOST_VERSION: params.compatibilityHostVersion }
+      ? { AFORA_COMPATIBILITY_HOST_VERSION: params.compatibilityHostVersion }
       : {}),
   };
   const normalizedEnv = normalizeQaProviderModeEnv(env, params.providerMode);
   // Test-runner skip flags are parent controls; each QA child declares its own runtime needs.
-  delete normalizedEnv.OPENCLAW_SKIP_CHANNELS;
-  delete normalizedEnv.OPENCLAW_SKIP_PROVIDERS;
+  delete normalizedEnv.AFORA_SKIP_CHANNELS;
+  delete normalizedEnv.AFORA_SKIP_PROVIDERS;
   Object.assign(normalizedEnv, params.runtimeEnvPatch);
-  normalizedEnv.OPENCLAW_BUILD_PRIVATE_QA = "1";
+  normalizedEnv.AFORA_BUILD_PRIVATE_QA = "1";
   delete normalizedEnv[QA_LIVE_ANTHROPIC_SETUP_TOKEN_ENV];
   delete normalizedEnv[QA_LIVE_SETUP_TOKEN_VALUE_ENV];
   return scrubQaGatewayChildSecretEnv(scrubQaGatewayChildTestRunnerEnv(normalizedEnv));
@@ -152,14 +152,14 @@ export function buildQaForcedRuntimeEnvPatch(params: {
     return undefined;
   }
   const patch: NodeJS.ProcessEnv = {
-    OPENCLAW_BUILD_PRIVATE_QA: "1",
-    OPENCLAW_QA_FORCE_RUNTIME: params.forcedRuntime,
+    AFORA_BUILD_PRIVATE_QA: "1",
+    AFORA_QA_FORCE_RUNTIME: params.forcedRuntime,
   };
   if (params.forcedRuntime !== "codex") {
     return patch;
   }
   if (params.providerMode !== "mock-openai") {
-    patch.OPENCLAW_CODEX_APP_SERVER_ARGS = buildQaCodexAppServerArgs({
+    patch.AFORA_CODEX_APP_SERVER_ARGS = buildQaCodexAppServerArgs({
       existingArgs: params.nativeAppServerArgs,
     });
     return patch;
@@ -171,7 +171,7 @@ export function buildQaForcedRuntimeEnvPatch(params: {
   if (!params.codexModelCatalogPath) {
     throw new Error("forced Codex mock QA requires the staged native model catalog");
   }
-  patch.OPENCLAW_CODEX_APP_SERVER_ARGS = buildQaCodexAppServerArgs({
+  patch.AFORA_CODEX_APP_SERVER_ARGS = buildQaCodexAppServerArgs({
     providerBaseUrl,
     modelCatalogPath: params.codexModelCatalogPath,
   });

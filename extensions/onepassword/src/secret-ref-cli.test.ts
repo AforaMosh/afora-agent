@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { Command } from "commander";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/plugin-entry";
+import type { AforaConfig } from "afora-agent/plugin-sdk/plugin-entry";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { encodeOnePasswordSecretId } from "../onepassword-secret-id.js";
 import { registerOnePasswordSecretRefCommands, testing } from "./secret-ref-cli.js";
@@ -21,20 +21,20 @@ function captureStdout() {
   return () => output;
 }
 
-function createProgram(config: OpenClawConfig = {}): Command {
+function createProgram(config: AforaConfig = {}): Command {
   const program = new Command().exitOverride();
   const onepassword = program.command("onepassword");
   registerOnePasswordSecretRefCommands({
     command: onepassword,
     config,
-    tokenFile: path.join(os.tmpdir(), "openclaw-onepassword-missing-token"),
+    tokenFile: path.join(os.tmpdir(), "afora-onepassword-missing-token"),
     env: { PATH: "" },
   });
   return program;
 }
 
 async function runStatus(
-  config: OpenClawConfig,
+  config: AforaConfig,
   args: string[] = [],
 ): Promise<Record<string, unknown>> {
   const output = captureStdout();
@@ -55,7 +55,7 @@ async function runSetup(planPath: string, args: string[]): Promise<string> {
 }
 
 async function createSetupPlan(args: string[]): Promise<OnePasswordPlan> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-onepassword-cli-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-onepassword-cli-"));
   const planPath = path.join(dir, "plan.json");
   try {
     await runSetup(planPath, args);
@@ -74,11 +74,11 @@ describe("1Password SecretRef setup", () => {
   it("builds provider config and model API-key targets", async () => {
     const plan = await createSetupPlan([
       "--anthropic-id",
-      "op://openclaw/Anthropic/credential",
+      "op://afora/Anthropic/credential",
       "--openrouter-id",
-      "openclaw/OpenRouter/credential",
+      "afora-agent/OpenRouter/credential",
       "--provider-key",
-      "xai=op://openclaw/xAI/credential",
+      "xai=op://afora/xAI/credential",
     ]);
 
     expect(plan.providerUpserts.onepassword).toEqual({
@@ -89,21 +89,21 @@ describe("1Password SecretRef setup", () => {
       expect.objectContaining({
         type: "models.providers.apiKey",
         providerId: "anthropic",
-        ref: { source: "exec", provider: "onepassword", id: "op://openclaw/Anthropic/credential" },
+        ref: { source: "exec", provider: "onepassword", id: "op://afora/Anthropic/credential" },
       }),
       expect.objectContaining({ providerId: "openrouter" }),
       expect.objectContaining({ providerId: "xai" }),
     ]);
   });
 
-  it("builds arbitrary known OpenClaw and auth-profile targets", async () => {
+  it("builds arbitrary known Afora and auth-profile targets", async () => {
     const plan = await createSetupPlan([
       "--target",
-      "channels.telegram.botToken=op://openclaw/Telegram/botToken",
+      "channels.telegram.botToken=op://afora/Telegram/botToken",
       "--target",
-      "models.providers.openai.headers.x-api-key=op://openclaw/OpenAI/proxyKey",
+      "models.providers.openai.headers.x-api-key=op://afora/OpenAI/proxyKey",
       "--target",
-      "auth-profiles:main:profiles.openai.key=op://openclaw/OpenAI/credential",
+      "auth-profiles:main:profiles.openai.key=op://afora/OpenAI/credential",
     ]);
 
     expect(plan.targets).toEqual([
@@ -124,7 +124,7 @@ describe("1Password SecretRef setup", () => {
   });
 
   it("encodes native 1Password refs with spaces and selectors", async () => {
-    const nativeRef = "op://Personal/OpenClaw QA API Key/password?attribute=value%20one";
+    const nativeRef = "op://Personal/Afora QA API Key/password?attribute=value%20one";
     const plan = await createSetupPlan(["--provider-key", `openai=${nativeRef}`]);
     expect(plan.targets[0]).toMatchObject({
       providerId: "openai",
@@ -137,34 +137,34 @@ describe("1Password SecretRef setup", () => {
       "duplicate providers",
       [
         "--openai-id",
-        "op://openclaw/OpenAI/credential",
+        "op://afora/OpenAI/credential",
         "--provider-key",
-        "OpenAI=op://openclaw/OpenAI/other",
+        "OpenAI=op://afora/OpenAI/other",
       ],
       "Duplicate model provider id",
     ],
     [
       "non-canonical auth-profile agent ids",
-      ["--target", "auth-profiles:../main:profiles.openai.key=op://openclaw/OpenAI/credential"],
+      ["--target", "auth-profiles:../main:profiles.openai.key=op://afora/OpenAI/credential"],
       "Invalid --target auth-profiles target for 1Password",
     ],
     [
       "traversal secret ids",
-      ["--provider-key", "openai=op://openclaw/../credential"],
+      ["--provider-key", "openai=op://afora/../credential"],
       "Invalid --provider-key openai 1Password SecretRef id",
     ],
     [
       "unsupported targets",
-      ["--target", "secrets.github_pat=op://openclaw/GitHub/pat"],
+      ["--target", "secrets.github_pat=op://afora/GitHub/pat"],
       "Unknown or unsupported 1Password setup target path",
     ],
     [
       "duplicate target paths",
       [
         "--openai-id",
-        "op://openclaw/OpenAI/credential",
+        "op://afora/OpenAI/credential",
         "--target",
-        "models.providers.openai.apiKey=op://openclaw/OpenAI/other",
+        "models.providers.openai.apiKey=op://afora/OpenAI/other",
       ],
       "Duplicate secret target path",
     ],
@@ -173,7 +173,7 @@ describe("1Password SecretRef setup", () => {
     await expect(createSetupPlan(args)).rejects.toThrow(message);
   });
 
-  it.each(["/absolute/path", "op://openclaw\\OpenAI\\credential", "op://vault/clé"])(
+  it.each(["/absolute/path", "op://afora\\OpenAI\\credential", "op://vault/clé"])(
     "rejects invalid 1Password ref %s",
     async (id) => {
       await expect(createSetupPlan(["--provider-key", `openai=${id}`])).rejects.toThrow(
@@ -183,16 +183,16 @@ describe("1Password SecretRef setup", () => {
   );
 
   it("prints a quoted canonical plan path after the readiness command", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-1password-setup-test-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-1password-setup-test-"));
     const planPath = path.join(tempDir, "plan with spaces.json");
     const canonicalPlanPath = path.join(await fs.realpath(tempDir), "plan with spaces.json");
     try {
-      const output = await runSetup(planPath, ["--openai-id", "op://openclaw/OpenAI/credential"]);
-      expect(output).toContain("openclaw onepassword secretref status");
+      const output = await runSetup(planPath, ["--openai-id", "op://afora/OpenAI/credential"]);
+      expect(output).toContain("afora onepassword secretref status");
       expect(output).toContain(
-        `openclaw secrets apply --from '${canonicalPlanPath}' --dry-run --allow-exec`,
+        `afora secrets apply --from '${canonicalPlanPath}' --dry-run --allow-exec`,
       );
-      expect(output).toContain(`openclaw secrets apply --from '${canonicalPlanPath}' --allow-exec`);
+      expect(output).toContain(`afora secrets apply --from '${canonicalPlanPath}' --allow-exec`);
     } finally {
       await fs.rm(tempDir, { recursive: true, force: true });
     }
@@ -201,12 +201,12 @@ describe("1Password SecretRef setup", () => {
   it.skipIf(process.platform === "win32")(
     "rejects plan output in a directory writable by another account",
     async () => {
-      const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-secret-plan-test-"));
+      const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-secret-plan-test-"));
       const planPath = path.join(tempDir, "plan.json");
       try {
         await fs.chmod(tempDir, 0o777);
         await expect(
-          runSetup(planPath, ["--openai-id", "op://openclaw/OpenAI/credential"]),
+          runSetup(planPath, ["--openai-id", "op://afora/OpenAI/credential"]),
         ).rejects.toThrow("path is writable by another user");
         await expect(fs.stat(planPath)).rejects.toMatchObject({ code: "ENOENT" });
       } finally {
@@ -219,8 +219,8 @@ describe("1Password SecretRef setup", () => {
   it.skipIf(process.platform === "win32")(
     "writes through the canonical directory instead of a replaceable alias",
     async () => {
-      const trustedDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-secret-plan-trusted-"));
-      const aliasParent = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-secret-plan-alias-"));
+      const trustedDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-secret-plan-trusted-"));
+      const aliasParent = await fs.mkdtemp(path.join(os.tmpdir(), "afora-secret-plan-alias-"));
       const aliasDir = path.join(aliasParent, "output");
       const canonicalPlanPath = path.join(await fs.realpath(trustedDir), "plan.json");
       try {
@@ -228,7 +228,7 @@ describe("1Password SecretRef setup", () => {
         await fs.chmod(aliasParent, 0o777);
         const output = await runSetup(path.join(aliasDir, "plan.json"), [
           "--openai-id",
-          "op://openclaw/OpenAI/credential",
+          "op://afora/OpenAI/credential",
         ]);
         expect(output).toContain(`Plan written to ${canonicalPlanPath}`);
         expect(JSON.parse(await fs.readFile(canonicalPlanPath, "utf8"))).toMatchObject({
@@ -335,7 +335,7 @@ describe("1Password CLI status", () => {
   });
 
   it("requires an explicit alias when multiple providers are configured", async () => {
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       secrets: {
         providers: Object.fromEntries(
           ["corp-onepassword", "prod-onepassword"].map((alias) => [

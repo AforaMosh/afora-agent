@@ -15,7 +15,7 @@ type SkillUploadStoreTestApi = {
 
 function getTestApi(): SkillUploadStoreTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.skillUploadStoreTestApi")
+    Symbol.for("afora.skillUploadStoreTestApi")
   ] as SkillUploadStoreTestApi;
 }
 

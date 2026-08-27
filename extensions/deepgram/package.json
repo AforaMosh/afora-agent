@@ -1,13 +1,13 @@
 {
-  "name": "@openclaw/deepgram-provider",
+  "name": "@afora/deepgram-provider",
   "version": "2026.8.1",
   "private": true,
-  "description": "OpenClaw Deepgram media-understanding provider",
+  "description": "Afora Deepgram media-understanding provider",
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

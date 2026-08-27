@@ -10,8 +10,8 @@ import {
 describe("plugin SDK declaration budget", () => {
   it("selects private QA mode only for the explicit build flag", () => {
     expect(isPrivateQaPluginSdkBuild({})).toBe(false);
-    expect(isPrivateQaPluginSdkBuild({ OPENCLAW_BUILD_PRIVATE_QA: "0" })).toBe(false);
-    expect(isPrivateQaPluginSdkBuild({ OPENCLAW_BUILD_PRIVATE_QA: "1" })).toBe(true);
+    expect(isPrivateQaPluginSdkBuild({ AFORA_BUILD_PRIVATE_QA: "0" })).toBe(false);
+    expect(isPrivateQaPluginSdkBuild({ AFORA_BUILD_PRIVATE_QA: "1" })).toBe(true);
   });
 
   it("enforces the publication budget at its exact boundary", () => {

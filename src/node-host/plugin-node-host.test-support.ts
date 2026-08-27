@@ -8,7 +8,7 @@ type NodeHostPluginTestApi = {
 
 function getTestApi(): NodeHostPluginTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.nodeHostPluginTestApi")
+    Symbol.for("afora.nodeHostPluginTestApi")
   ] as NodeHostPluginTestApi;
 }
 

@@ -1,12 +1,12 @@
-import type { AgentHarness } from "openclaw/plugin-sdk/agent-harness";
+import type { AgentHarness } from "afora-agent/plugin-sdk/agent-harness";
 import {
   assignMcpCatalogSafeServerNames,
   type McpToolCatalog,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
 import {
   asOptionalRecord,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { CodexAppServerClient } from "./client.js";
 import type { CodexMcpServerStatus } from "./protocol.js";
 import { sessionBindingIdentity, type CodexAppServerBindingStore } from "./session-binding.js";
@@ -38,7 +38,7 @@ function catalogTool(params: {
   };
 }
 
-/** Converts Codex's thread-scoped status response into OpenClaw's MCP catalog shape. */
+/** Converts Codex's thread-scoped status response into Afora's MCP catalog shape. */
 function buildCodexEffectiveMcpCatalog(
   statuses: readonly CodexMcpServerStatus[],
   toolOverrides?: AgentHarnessMcpCatalogParams["toolOverrides"],

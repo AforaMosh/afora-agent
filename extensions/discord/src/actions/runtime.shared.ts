@@ -1,4 +1,4 @@
-import { asBoolean } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { asBoolean } from "afora-agent/plugin-sdk/string-coerce-runtime";
 // Discord plugin module implements runtime.shared behavior.
 import {
   parseAvailableTags,
@@ -6,7 +6,7 @@ import {
   readPositiveIntegerParam,
   readStringParam,
 } from "../runtime-api.js";
-import type { OpenClawConfig } from "../runtime-api.js";
+import type { AforaConfig } from "../runtime-api.js";
 import type {
   DiscordChannelCreate,
   DiscordChannelEdit,
@@ -49,10 +49,10 @@ export function readDiscordAutoArchiveDurationParam(
 export function createDiscordActionOptions<
   T extends Record<string, unknown> = Record<string, never>,
 >(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string;
   extra?: T;
-}): { cfg: OpenClawConfig; accountId?: string } & T {
+}): { cfg: AforaConfig; accountId?: string } & T {
   return {
     cfg: params.cfg,
     ...(params.accountId ? { accountId: params.accountId } : {}),

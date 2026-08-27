@@ -10,7 +10,7 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("CLAW.md prompt bodies", () => {
   it("preserves non-ASCII UTF-8 frontmatter values", async () => {
-    const root = tempDirs.make("openclaw-claw-markdown-unicode-");
+    const root = tempDirs.make("afora-claw-markdown-unicode-");
     const manifestPath = join(root, "CLAW.md");
     await writeFile(
       manifestPath,
@@ -31,7 +31,7 @@ describe("CLAW.md prompt bodies", () => {
     ["case-folded nested", "soul.MD/child"],
     ["Unicode-normalized nested", "SOUL.md/cafe\u0301"],
   ])("rejects a body with a %s workspace collision", async (_label, destination) => {
-    const root = tempDirs.make("openclaw-claw-markdown-soul-hierarchy-");
+    const root = tempDirs.make("afora-claw-markdown-soul-hierarchy-");
     const manifestPath = join(root, "CLAW.md");
     await writeFile(
       manifestPath,
@@ -65,7 +65,7 @@ describe("CLAW.md prompt bodies", () => {
     if (!parsed.ok) {
       throw new Error("expected fixture manifest to parse");
     }
-    const root = tempDirs.make("openclaw-claw-markdown-soul-direct-plan-");
+    const root = tempDirs.make("afora-claw-markdown-soul-direct-plan-");
     await writeFile(join(root, "package.json"), "{}", "utf8");
     const plan = await buildClawAddPlan({
       manifest: parsed.manifest,
@@ -93,7 +93,7 @@ describe("CLAW.md prompt bodies", () => {
   });
 
   it("rejects a hardlinked CLAW.md before planning", async () => {
-    const root = tempDirs.make("openclaw-claw-markdown-hardlink-");
+    const root = tempDirs.make("afora-claw-markdown-hardlink-");
     const original = join(root, "original.md");
     const manifestPath = join(root, "CLAW.md");
     await writeFile(

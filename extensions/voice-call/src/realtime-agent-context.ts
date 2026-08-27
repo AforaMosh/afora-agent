@@ -1,10 +1,10 @@
 // Voice Call plugin module implements realtime agent context behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { buildRealtimeVoiceAgentConsultPolicyInstructions } from "openclaw/plugin-sdk/realtime-voice";
-import { root } from "openclaw/plugin-sdk/security-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
-import type { OpenClawPluginApi } from "../api.js";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { buildRealtimeVoiceAgentConsultPolicyInstructions } from "afora-agent/plugin-sdk/realtime-voice";
+import { root } from "afora-agent/plugin-sdk/security-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
+import type { AforaPluginApi } from "../api.js";
 import type { VoiceCallConfig } from "./config.js";
 
 // Builds compact agent context injected into realtime voice sessions.
@@ -59,8 +59,8 @@ async function readWorkspaceVoiceContextFiles(params: {
 export async function buildRealtimeVoiceInstructions(params: {
   baseInstructions: string;
   config: VoiceCallConfig;
-  coreConfig: OpenClawConfig;
-  agentRuntime: OpenClawPluginApi["runtime"]["agent"];
+  coreConfig: AforaConfig;
+  agentRuntime: AforaPluginApi["runtime"]["agent"];
   agentId: string;
 }): Promise<string> {
   const { config } = params;
@@ -77,10 +77,10 @@ export async function buildRealtimeVoiceInstructions(params: {
 
   const { agentId } = params;
   const capsule: string[] = [
-    "OpenClaw agent voice context:",
+    "Afora agent voice context:",
     `- Agent id: ${agentId}`,
-    "- Use this context to match the OpenClaw agent's personality and standing preferences on fast voice turns.",
-    "- Treat this as compact context only; call openclaw_agent_consult when the caller needs the full agent brain, tools, memory, or workspace state.",
+    "- Use this context to match the Afora agent's personality and standing preferences on fast voice turns.",
+    "- Treat this as compact context only; call afora_agent_consult when the caller needs the full agent brain, tools, memory, or workspace state.",
   ];
 
   if (contextConfig.includeIdentity) {

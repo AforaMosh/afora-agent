@@ -11,8 +11,8 @@ Fish Audio S2.1 hosted text-to-speech with streaming, voice notes, and telephony
 
 ## Distribution
 
-- Package: `@openclaw/fish-audio-speech`
-- Install route: npm; ClawHub: `clawhub:@openclaw/fish-audio-speech`
+- Package: `@afora/fish-audio-speech`
+- Install route: npm; ClawHub: `clawhub:@afora/fish-audio-speech`
 
 ## Surface
 

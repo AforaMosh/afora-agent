@@ -1,4 +1,4 @@
-name: openclaw-codeql-session-diagnostics-boundary-critical-quality
+name: afora-codeql-session-diagnostics-boundary-critical-quality
 
 disable-default-queries: true
 

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   buildReplyUsageState,
   consumeReplyUsageState,
@@ -36,8 +36,8 @@ describe("reply usage state handoff", () => {
             },
           },
         },
-      } as OpenClawConfig,
-      agentDir: "/tmp/openclaw-main-agent",
+      } as AforaConfig,
+      agentDir: "/tmp/afora-main-agent",
       provider: "fixture",
       model: "priced",
       agentId: "main",

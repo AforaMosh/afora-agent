@@ -1,5 +1,5 @@
-import { expectDefined } from "openclaw/plugin-sdk/expect-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { expectDefined } from "afora-agent/plugin-sdk/expect-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { Browser, BrowserContext, CDPSession, Page } from "playwright-core";
 import { formatErrorMessage, toErrorObject } from "../infra/errors.js";
 import type { SsrFPolicy } from "../infra/net/ssrf.js";
@@ -423,7 +423,7 @@ export async function connectBrowser(
         const hasUrlCredentials = stripCdpUrlCredentials(normalized) !== normalized;
         if (!resolvedEndpoint && hasUrlCredentials && !isWebSocketUrl(normalized)) {
           // Playwright preserves explicit headers across HTTP discovery redirects.
-          // Keep credentialed discovery in OpenClaw's guarded fetch path instead.
+          // Keep credentialed discovery in Afora's guarded fetch path instead.
           throw new Error("Authenticated CDP HTTP endpoint did not expose a usable WebSocket URL.");
         }
         if (!resolvedEndpoint && ssrfPolicy && !isWebSocketUrl(normalized)) {

@@ -1,5 +1,5 @@
 /** Shared option types for the migrate command family. */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { MigrationPlan } from "../../plugins/types.js";
 
 /** Embedded migration mode that returns config patch details instead of persisting them. */
@@ -23,7 +23,7 @@ export type MigrateCommonOptions = {
   suppressPlanLog?: boolean;
   // Internal embedded migration source of truth. Standalone CLI callers should
   // omit this so migration uses the current runtime config from disk.
-  configOverride?: OpenClawConfig;
+  configOverride?: AforaConfig;
   // Internal embedded mode for config patch items. Default CLI behavior persists
   // patches when this is omitted; onboarding can request returned patch details.
   configPatchMode?: MigrationConfigPatchMode;

@@ -43,7 +43,7 @@ type EmbeddedSubscribeMessagesTestApi = {
 
 function getTestApi(): EmbeddedSubscribeMessagesTestApi {
   const api = (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.embeddedSubscribeMessagesTestApi")
+    Symbol.for("afora.embeddedSubscribeMessagesTestApi")
   ];
   if (!api) {
     throw new Error("embedded subscribe messages test API is unavailable");

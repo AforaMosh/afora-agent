@@ -3,11 +3,11 @@
  *
  * Classifies a tool call into a small set of presentation kinds (command,
  * read, edit, write, search, fetch, generic) across the arg spellings used by
- * the OpenClaw session tools and foreign harnesses (Claude/Codex style).
+ * the Afora session tools and foreign harnesses (Claude/Codex style).
  */
 
-import { asNullableRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
-import { readNonBlankString } from "@openclaw/normalization-core/string-coerce";
+import { asNullableRecord as asRecord } from "@afora/normalization-core/record-coerce";
+import { readNonBlankString } from "@afora/normalization-core/string-coerce";
 import {
   buildWriteDiffLines,
   computeLineDiff,

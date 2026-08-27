@@ -1,7 +1,7 @@
 /**
  * Upload an image from a URL to Tlon storage.
  */
-import { MAX_IMAGE_BYTES, readRemoteMediaBuffer } from "openclaw/plugin-sdk/media-runtime";
+import { MAX_IMAGE_BYTES, readRemoteMediaBuffer } from "afora-agent/plugin-sdk/media-runtime";
 import { TLON_MEDIA_FETCH_TIMEOUTS } from "../media-fetch-timeouts.js";
 import { uploadFile } from "../tlon-api.js";
 

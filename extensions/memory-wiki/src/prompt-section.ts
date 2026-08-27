@@ -1,5 +1,5 @@
 // Memory Wiki plugin module implements prompt section behavior.
-import type { MemoryPromptSectionBuilder } from "openclaw/plugin-sdk/memory-host-core";
+import type { MemoryPromptSectionBuilder } from "afora-agent/plugin-sdk/memory-host-core";
 import {
   loadMemoryWikiCompiledCache,
   type MemoryWikiCompiledCacheSnapshot,

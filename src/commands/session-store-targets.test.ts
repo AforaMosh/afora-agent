@@ -87,7 +87,7 @@ describe("resolveSessionStoreTargetsOrExit", () => {
     ["foreign-database", "human"],
     ["foreign-database", "json"],
   ] as const)("rejects a %s explicit store in %s mode", (storeKind, mode) => {
-    const dir = tempDirs.make("openclaw-explicit-session-store-");
+    const dir = tempDirs.make("afora-explicit-session-store-");
     const storePath =
       storeKind === "missing"
         ? path.join(dir, "missing.sqlite")
@@ -139,10 +139,10 @@ describe("resolveSessionStoreTargetsOrExit", () => {
   });
 
   it.each([
-    ["legacy JSON locator", "sessions.json", "openclaw-agent.sqlite"],
+    ["legacy JSON locator", "sessions.json", "afora-agent.sqlite"],
     ["suffixless locator", "offline-store", "offline-store.sqlite"],
   ])("accepts an existing SQLite target resolved from a %s", (_name, locator, target) => {
-    const dir = tempDirs.make("openclaw-explicit-session-store-");
+    const dir = tempDirs.make("afora-explicit-session-store-");
     const storePath = path.join(dir, locator);
     createRepairableSessionDatabase(path.join(dir, target));
     resolveSessionStoreTargetsMock.mockReturnValue([{ agentId: "main", storePath }]);

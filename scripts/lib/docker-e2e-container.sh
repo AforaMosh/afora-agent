@@ -70,7 +70,7 @@ const signalExitCodes = new Map([
   ["SIGTERM", 143],
 ]);
 const killGraceMs = Number.parseInt(
-  process.env.OPENCLAW_DOCKER_TIMEOUT_KILL_GRACE_MS || "30000",
+  process.env.AFORA_DOCKER_TIMEOUT_KILL_GRACE_MS || "30000",
   10,
 );
 const killTarget = process.platform === "win32" ? child.pid : -child.pid;
@@ -158,7 +158,7 @@ docker_e2e_docker_cmd() {
 }
 
 docker_e2e_docker_run_cmd() {
-  local timeout_value="${DOCKER_COMMAND_TIMEOUT:-${OPENCLAW_DOCKER_E2E_RUN_TIMEOUT:-3600s}}"
+  local timeout_value="${DOCKER_COMMAND_TIMEOUT:-${AFORA_DOCKER_E2E_RUN_TIMEOUT:-3600s}}"
   if [ "${1:-}" = "run" ]; then
     shift
     docker_e2e_docker_run_resource_args "$@" || return $?
@@ -169,7 +169,7 @@ docker_e2e_docker_run_cmd() {
 }
 
 docker_e2e_resource_limits_disabled() {
-  case "${OPENCLAW_DOCKER_E2E_DISABLE_RESOURCE_LIMITS:-}" in
+  case "${AFORA_DOCKER_E2E_DISABLE_RESOURCE_LIMITS:-}" in
     1 | true | TRUE | yes | YES | on | ON)
       return 0
       ;;
@@ -187,8 +187,8 @@ docker_e2e_resource_value_disabled() {
 }
 
 docker_e2e_detect_available_cpus() {
-  if [ -n "${OPENCLAW_DOCKER_E2E_AVAILABLE_CPUS:-}" ]; then
-    printf '%s\n' "$OPENCLAW_DOCKER_E2E_AVAILABLE_CPUS"
+  if [ -n "${AFORA_DOCKER_E2E_AVAILABLE_CPUS:-}" ]; then
+    printf '%s\n' "$AFORA_DOCKER_E2E_AVAILABLE_CPUS"
     return 0
   fi
   if command -v nproc >/dev/null 2>&1; then
@@ -233,7 +233,7 @@ docker_e2e_run_arg_present() {
 docker_e2e_resolve_pids_limit() {
   local pids_limit="$1"
   if [[ ! "$pids_limit" =~ ^[0-9]+$ ]] || (( 10#$pids_limit < 1 )); then
-    echo "invalid OPENCLAW_DOCKER_E2E_PIDS_LIMIT: $pids_limit" >&2
+    echo "invalid AFORA_DOCKER_E2E_PIDS_LIMIT: $pids_limit" >&2
     return 2
   fi
   printf '%s\n' "$((10#$pids_limit))"
@@ -245,9 +245,9 @@ docker_e2e_docker_run_resource_args() {
     return 0
   fi
 
-  local memory="${OPENCLAW_DOCKER_E2E_MEMORY:-8g}"
-  local cpus="${OPENCLAW_DOCKER_E2E_CPUS:-16}"
-  local pids_limit="${OPENCLAW_DOCKER_E2E_PIDS_LIMIT:-2048}"
+  local memory="${AFORA_DOCKER_E2E_MEMORY:-8g}"
+  local cpus="${AFORA_DOCKER_E2E_CPUS:-16}"
+  local pids_limit="${AFORA_DOCKER_E2E_PIDS_LIMIT:-2048}"
   cpus="$(docker_e2e_resolve_cpus "$cpus")"
 
   if ! docker_e2e_resource_value_disabled "$memory" && ! docker_e2e_run_arg_present --memory "$@"; then

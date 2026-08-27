@@ -1,7 +1,7 @@
 /** Builds and revalidates system.run approval plans for cwd and executable paths. */
 import fs from "node:fs";
 import path from "node:path";
-import { normalizeNullableString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeNullableString } from "@afora/normalization-core/string-coerce";
 import type { SystemRunApprovalPlan } from "../infra/exec-approvals.js";
 import { resolveCommandResolutionFromArgv } from "../infra/exec-command-resolution.js";
 import { isBlockedShellWrapperCommand } from "../infra/exec-wrapper-resolution.js";

@@ -1,4 +1,4 @@
-// `openclaw plugins list`: builds registry reports and defers terminal-only formatting modules.
+// `afora plugins list`: builds registry reports and defers terminal-only formatting modules.
 import { getRuntimeConfig } from "../config/config.js";
 import type { PluginRecord } from "../plugins/registry.js";
 import { defaultRuntime, writeRuntimeJson, type RuntimeEnv } from "../runtime.js";
@@ -92,8 +92,8 @@ export async function runPluginsListCommand(
             cfg.plugins?.enabled === false
               ? "No enabled plugins found. Plugins are globally disabled."
               : "No enabled plugins found."
-          } Run ${formatCliCommand("openclaw plugins list")} to inspect installed plugins.`
-        : `No plugins found. Run ${formatCliCommand("openclaw plugins install <plugin>")} to add one, or ${formatCliCommand("openclaw plugins list --json")} to inspect raw discovery state.`;
+          } Run ${formatCliCommand("afora plugins list")} to inspect installed plugins.`
+        : `No plugins found. Run ${formatCliCommand("afora plugins install <plugin>")} to add one, or ${formatCliCommand("afora plugins list --json")} to inspect raw discovery state.`;
     runtime.log(theme.muted(message));
     return;
   }
@@ -117,7 +117,7 @@ export async function runPluginsListCommand(
       return {
         Name: plugin.name || plugin.id,
         ID: plugin.name && plugin.name !== plugin.id ? plugin.id : "",
-        Format: plugin.format ?? "openclaw",
+        Format: plugin.format ?? "afora",
         Status:
           plugin.status === "error"
             ? theme.error("error")

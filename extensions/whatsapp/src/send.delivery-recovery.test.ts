@@ -1,16 +1,16 @@
 // Whatsapp tests cover the durable outbound handoff across startup recovery.
-import { sendDurableMessageBatch } from "openclaw/plugin-sdk/channel-outbound";
+import { sendDurableMessageBatch } from "afora-agent/plugin-sdk/channel-outbound";
 import {
   createEmptyPluginRegistry,
   createOutboundTestPlugin,
   createTestRegistry,
   resetPluginRuntimeStateForTest,
   setActivePluginRegistry,
-} from "openclaw/plugin-sdk/channel-test-helpers";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { drainPendingDeliveries } from "openclaw/plugin-sdk/delivery-queue-runtime";
-import { PlatformMessageNotDispatchedError } from "openclaw/plugin-sdk/error-runtime";
-import { withStateDirEnv } from "openclaw/plugin-sdk/test-env";
+} from "afora-agent/plugin-sdk/channel-test-helpers";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { drainPendingDeliveries } from "afora-agent/plugin-sdk/delivery-queue-runtime";
+import { PlatformMessageNotDispatchedError } from "afora-agent/plugin-sdk/error-runtime";
+import { withStateDirEnv } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { whatsappChannelOutbound } from "./channel-outbound.js";
 import { createAcceptedWhatsAppSendResult } from "./inbound/send-result.test-helper.js";
@@ -25,7 +25,7 @@ vi.mock("./connection-controller-runtime-context.js", () => ({
     runtimeContextMocks.controllers.get(accountId) ?? null,
 }));
 
-const cfg = { channels: { whatsapp: {} } } as OpenClawConfig;
+const cfg = { channels: { whatsapp: {} } } as AforaConfig;
 const accountId = "default";
 
 async function drainDefaultWhatsAppDeliveries(stateDir: string) {
@@ -75,7 +75,7 @@ describe("WhatsApp delivery recovery", () => {
   });
 
   it("keeps pre-connect recovery replayable, then sends exactly once after connect", async () => {
-    await withStateDirEnv("openclaw-whatsapp-delivery-recovery-", async ({ stateDir }) => {
+    await withStateDirEnv("afora-whatsapp-delivery-recovery-", async ({ stateDir }) => {
       const initialResult = await sendDurableMessageBatch({
         cfg,
         channel: "whatsapp",

@@ -4,12 +4,12 @@ import {
   executeSqliteQueryTakeFirstSync,
   getNodeSqliteKysely,
 } from "../infra/kysely-sync.js";
-import { tableExists } from "./openclaw-state-db-schema-helpers.js";
+import { tableExists } from "./afora-state-db-schema-helpers.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "./openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "./afora-state-db.js";
 import { classifyTailscaleLogin } from "./user-profiles-tailscale-login.js";
 import { ensureUserProfilesSchema, type UserProfilesDatabase } from "./user-profiles.js";
 
@@ -19,9 +19,9 @@ type UserProfileIdentityMigrationResult = {
 };
 
 export function migrateLegacyTailscaleProfileIdentities(
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): UserProfileIdentityMigrationResult {
-  const database = openOpenClawStateDatabase(options);
+  const database = openAforaStateDatabase(options);
   if (!tableExists(database.db, "user_profile_emails")) {
     return { changes: [], warnings: [] };
   }
@@ -43,7 +43,7 @@ export function migrateLegacyTailscaleProfileIdentities(
   }
 
   ensureUserProfilesSchema(options);
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     ({ db }) => {
       const transactionKysely = getNodeSqliteKysely<UserProfilesDatabase>(db);
       let migrated = 0;

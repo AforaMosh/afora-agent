@@ -3,12 +3,12 @@
  *
  * Keeps web_fetch and web_search providers aligned on bounded IO and cache semantics.
  */
-import { decodeTextPrefix } from "@openclaw/normalization-core";
+import { decodeTextPrefix } from "@afora/normalization-core";
 import {
   asDateTimestampMs,
   MAX_TIMER_TIMEOUT_SECONDS,
   resolveExpiresAtMsFromDurationMs,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 import { pruneMapToMaxSize } from "../../infra/map-size.js";
 export type CacheEntry<T> = {
   value: T;

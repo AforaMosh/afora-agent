@@ -2,7 +2,7 @@
 import {
   resolveIntegerOption,
   resolveNonNegativeIntegerOption,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 
 type ScopedExpiringIdCache<TScope extends string | number, TId extends string | number> = {
   /** Records an id for a scope at the provided timestamp or current time. */

@@ -1,7 +1,7 @@
 import path from "node:path";
 import process from "node:process";
 import { execa, type Options as ExecaOptions, type ResultPromise } from "execa";
-import { markOpenClawExecEnv } from "../infra/openclaw-exec-env.js";
+import { markAforaExecEnv } from "../infra/afora-exec-env.js";
 import { mergeProcessEnv } from "../infra/process-env.js";
 import { resolveSafeChildProcessInvocation } from "./windows-command.js";
 
@@ -90,5 +90,5 @@ export function resolveCommandEnv(params: {
       resolvedEnv.npm_config_fund = "false";
     }
   }
-  return markOpenClawExecEnv(resolvedEnv);
+  return markAforaExecEnv(resolvedEnv);
 }

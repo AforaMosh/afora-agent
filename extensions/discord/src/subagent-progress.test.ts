@@ -1,5 +1,5 @@
 // Discord tests cover cleanup left by the retired subagent progress feature.
-import type { PluginStateKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { PluginStateKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { recoverDiscordSubagentProgress } from "./subagent-progress.js";
 

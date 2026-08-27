@@ -5,7 +5,7 @@ import {
   listNodes,
   resolveNodeIdFromList,
   type NodeListNode,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
 import { appendFileTransferAudit, type FileTransferAuditOp } from "../shared/audit.js";
 import { throwFromNodePayload } from "../shared/errors.js";
 import { readGatewayCallOptions, readTrimmedString } from "../shared/params.js";

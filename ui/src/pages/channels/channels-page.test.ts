@@ -139,7 +139,7 @@ describe("ChannelsPage lifecycle", () => {
     const gateway = createGateway();
     const first = createContext(gateway);
     const second = createContext(gateway);
-    const page = document.createElement("openclaw-channels-page") as ChannelsPageTestElement;
+    const page = document.createElement("afora-channels-page") as ChannelsPageTestElement;
     page.context = first.context;
     document.body.append(page);
 
@@ -172,7 +172,7 @@ describe("ChannelsPage lifecycle", () => {
       limits: { pendingPerAccount: 3, ttlMs: 3_600_000 },
     };
     const refreshPairing = vi.spyOn(source.channels, "refreshPairing").mockResolvedValue();
-    const page = document.createElement("openclaw-channels-page") as PairingTestPage;
+    const page = document.createElement("afora-channels-page") as PairingTestPage;
     page.context = source.context;
     document.body.append(page);
     await page.updateComplete;
@@ -204,7 +204,7 @@ describe("ChannelsPage lifecycle", () => {
     const response = createDeferred<Response>();
     const fetchMock = vi.fn(() => response.promise);
     vi.stubGlobal("fetch", fetchMock);
-    const page = document.createElement("openclaw-channels-page") as NostrTestPage;
+    const page = document.createElement("afora-channels-page") as NostrTestPage;
     page.context = first.context;
     document.body.append(page);
     await page.updateComplete;
@@ -241,7 +241,7 @@ describe("ChannelsPage lifecycle", () => {
     const response = createDeferred<Response>();
     const fetchMock = vi.fn(() => response.promise);
     vi.stubGlobal("fetch", fetchMock);
-    const page = document.createElement("openclaw-channels-page") as NostrTestPage;
+    const page = document.createElement("afora-channels-page") as NostrTestPage;
     page.context = source.context;
     document.body.append(page);
     await page.updateComplete;
@@ -273,7 +273,7 @@ describe("ChannelsPage lifecycle", () => {
     const response = createDeferred<Response>();
     const fetchMock = vi.fn(() => response.promise);
     vi.stubGlobal("fetch", fetchMock);
-    const page = document.createElement("openclaw-channels-page") as NostrTestPage;
+    const page = document.createElement("afora-channels-page") as NostrTestPage;
     page.context = source.context;
     document.body.append(page);
     await page.updateComplete;
@@ -302,7 +302,7 @@ describe("ChannelsPage lifecycle", () => {
     const gateway = createGateway();
     const source = createContext(gateway);
     const fetchMock = stubHangingFetch();
-    const page = document.createElement("openclaw-channels-page") as NostrTestPage;
+    const page = document.createElement("afora-channels-page") as NostrTestPage;
     page.context = source.context;
     document.body.append(page);
     await page.updateComplete;
@@ -326,7 +326,7 @@ describe("ChannelsPage lifecycle", () => {
     const gateway = createGateway();
     const source = createContext(gateway);
     const fetchMock = stubHangingFetch();
-    const page = document.createElement("openclaw-channels-page") as NostrTestPage;
+    const page = document.createElement("afora-channels-page") as NostrTestPage;
     page.context = source.context;
     document.body.append(page);
     await page.updateComplete;

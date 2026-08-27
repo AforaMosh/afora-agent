@@ -5,13 +5,13 @@
  * caps, dialog states) and attaches fresh page state to actions that changed
  * the page document so the model does not need a follow-up snapshot call.
  */
-import type { AgentToolResult } from "openclaw/plugin-sdk/agent-core";
+import type { AgentToolResult } from "afora-agent/plugin-sdk/agent-core";
 import {
   readNonNegativeIntegerParam,
   readPositiveIntegerParam,
-} from "openclaw/plugin-sdk/param-readers";
-import { truncateSanitizedExternalContent } from "openclaw/plugin-sdk/security-runtime";
-import { DEFAULT_MAX_LIVE_TOOL_RESULT_CHARS } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/param-readers";
+import { truncateSanitizedExternalContent } from "afora-agent/plugin-sdk/security-runtime";
+import { DEFAULT_MAX_LIVE_TOOL_RESULT_CHARS } from "afora-agent/plugin-sdk/text-utility-runtime";
 import {
   DEFAULT_AI_SNAPSHOT_MAX_CHARS,
   browserSnapshot,

@@ -2,12 +2,12 @@ import { resolveAgentSessionDirs } from "../../agents/session-dirs.js";
 import { migrateOrphanedSessionKeys } from "../../infra/state-migrations.session-store.js";
 import type { PreparedLegacySessionSurfaces } from "../../plugins/legacy-session-surfaces.types.js";
 import {
-  closeOpenClawAgentDatabaseByPath,
-  isOpenClawAgentDatabaseOpen,
-  openOpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
+  closeAforaAgentDatabaseByPath,
+  isAforaAgentDatabaseOpen,
+  openAforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
 import { resolveStateDir } from "../paths.js";
-import type { OpenClawConfig } from "../types.openclaw.js";
+import type { AforaConfig } from "../types.afora.js";
 import { migrateLegacyMainSessionKeys } from "./legacy-main-session-migration.js";
 import { setCanonicalSqliteSessionMainKey } from "./session-canonical-key.js";
 import { resolveSqliteTargetFromSessionStorePath } from "./session-sqlite-target.js";
@@ -17,13 +17,13 @@ import { resolveAllAgentSessionStoreTargetsSync } from "./targets.js";
 export type SessionStartupMigrationLogger = Record<"info" | "warn", (message: string) => void>;
 
 type PrepareLegacySessionSurfaces = (params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env?: NodeJS.ProcessEnv;
 }) => PreparedLegacySessionSurfaces;
 
 /** Runs best-effort session migration and orphan-temp cleanup before runtime reads. */
 export async function runSessionStartupMigration(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   log: SessionStartupMigrationLogger;
   deps?: {
@@ -114,11 +114,11 @@ export async function runSessionStartupMigration(params: {
         agentId: target.agentId,
         env: params.env,
       }).path;
-      const alreadyOpen = isOpenClawAgentDatabaseOpen(path);
-      const database = openOpenClawAgentDatabase({ agentId: target.agentId, path });
+      const alreadyOpen = isAforaAgentDatabaseOpen(path);
+      const database = openAforaAgentDatabase({ agentId: target.agentId, path });
       setCanonicalSqliteSessionMainKey(database, params.cfg.session?.mainKey);
       if (!alreadyOpen) {
-        closeOpenClawAgentDatabaseByPath(path);
+        closeAforaAgentDatabaseByPath(path);
       }
       removedFiles += await sweepTemps({ storePath: target.storePath });
     }

@@ -27,7 +27,7 @@ function createController(
     provider: "openai",
     modelId: "gpt-5.6-luna",
     globalLane: "test",
-    agentDir: "/tmp/openclaw-failover-retry-controller-test",
+    agentDir: "/tmp/afora-failover-retry-controller-test",
     fallbackConfigured,
     profileFailureStore: { version: 1, profiles: {} },
     getLastProfileId: () => "openai:p1",

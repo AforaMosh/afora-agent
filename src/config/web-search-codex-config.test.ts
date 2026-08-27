@@ -1,15 +1,15 @@
 // Verifies web-search config behavior for Codex provider settings.
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { describe, expect, it } from "vitest";
 import { mergeScopedSearchConfig } from "../agents/tools/web-search-provider-config.js";
 import { validateConfigObjectRaw } from "./validation.js";
 
 describe("web search Codex native config validation", () => {
   it("accepts tools.web.search.openaiCodex", async () => {
-    const { OpenClawSchema: freshOpenClawSchema } = await importFreshModule<
+    const { AforaSchema: freshAforaSchema } = await importFreshModule<
       typeof import("./zod-schema.js")
     >(import.meta.url, "./zod-schema.js?scope=web-search-codex");
-    const result = freshOpenClawSchema.safeParse({
+    const result = freshAforaSchema.safeParse({
       tools: {
         web: {
           search: {

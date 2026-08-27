@@ -7,7 +7,7 @@
   </defs>
   <!-- SMIL, not CSS: Chromium/Safari only run declarative SMIL inside <img>-loaded
        SVGs, and every app surface loads this file via <img src>. Mirrors the
-       openclaw.ai hero mascot keyframes (float 4s, wiggle 2s, blink 3s, snap 4s). -->
+       afora.ai hero mascot keyframes (float 4s, wiggle 2s, blink 3s, snap 4s). -->
   <g>
     <animateTransform attributeName="transform" type="translate" additive="sum"
       values="0 0; 0 -5; 0 0" keyTimes="0; 0.5; 1" dur="4s" repeatCount="indefinite"

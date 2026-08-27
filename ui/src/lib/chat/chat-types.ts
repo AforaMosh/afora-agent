@@ -2,7 +2,7 @@
  * Chat message types for the UI layer.
  */
 
-import type { MediaKind } from "@openclaw/media-core/constants";
+import type { MediaKind } from "@afora/media-core/constants";
 import type { toolIcons } from "../../components/icons-tools.ts";
 import type { SenderIdentity } from "./sender-label.ts";
 

@@ -1,5 +1,5 @@
 import { ApprovalPage } from "./approval-page.ts";
 
-if (!customElements.get("openclaw-approval-page")) {
-  customElements.define("openclaw-approval-page", ApprovalPage);
+if (!customElements.get("afora-approval-page")) {
+  customElements.define("afora-approval-page", ApprovalPage);
 }

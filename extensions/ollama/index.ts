@@ -1,17 +1,17 @@
-// Ollama plugin entrypoint registers its OpenClaw integration.
+// Ollama plugin entrypoint registers its Afora integration.
 import { createHash } from "node:crypto";
-import { collectConfiguredModelRefValues } from "@openclaw/model-catalog-core/configured-model-refs";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
-import type { MediaUnderstandingProvider } from "openclaw/plugin-sdk/media-understanding";
+import { collectConfiguredModelRefValues } from "@afora/model-catalog-core/configured-model-refs";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
+import type { MediaUnderstandingProvider } from "afora-agent/plugin-sdk/media-understanding";
 import {
   adaptMemoryEmbeddingProviderAdapter,
   type MemoryEmbeddingProviderAdapter,
-} from "openclaw/plugin-sdk/memory-core-host-engine-embeddings";
-import { resolvePluginConfigObject } from "openclaw/plugin-sdk/plugin-config-runtime";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-embeddings";
+import { resolvePluginConfigObject } from "afora-agent/plugin-sdk/plugin-config-runtime";
 import {
   definePluginEntry,
-  type OpenClawPluginApi,
+  type AforaPluginApi,
   type ProviderAppGuidedSetupContext,
   type ProviderAuthContext,
   type ProviderAuthMethod,
@@ -22,20 +22,20 @@ import {
   type ProviderPlugin,
   type ProviderReplayPolicy,
   type ProviderRuntimeModel,
-} from "openclaw/plugin-sdk/plugin-entry";
+} from "afora-agent/plugin-sdk/plugin-entry";
 import {
   buildApiKeyCredential,
   coerceSecretRef,
   isNonSecretApiKeyMarker,
-} from "openclaw/plugin-sdk/provider-auth";
-import { createProviderApiKeyAuthMethod } from "openclaw/plugin-sdk/provider-auth-api-key";
+} from "afora-agent/plugin-sdk/provider-auth";
+import { createProviderApiKeyAuthMethod } from "afora-agent/plugin-sdk/provider-auth-api-key";
 import type {
   ModelDefinitionConfig,
   ModelProviderConfig,
-} from "openclaw/plugin-sdk/provider-model-shared";
-import { buildOpenAICompatibleReplayPolicy } from "openclaw/plugin-sdk/provider-model-shared";
-import { buildProviderToolCompatFamilyHooks } from "openclaw/plugin-sdk/provider-tools";
-import { resolveConfiguredSecretInputString } from "openclaw/plugin-sdk/secret-input-runtime";
+} from "afora-agent/plugin-sdk/provider-model-shared";
+import { buildOpenAICompatibleReplayPolicy } from "afora-agent/plugin-sdk/provider-model-shared";
+import { buildProviderToolCompatFamilyHooks } from "afora-agent/plugin-sdk/provider-tools";
+import { resolveConfiguredSecretInputString } from "afora-agent/plugin-sdk/secret-input-runtime";
 import { resolveThinkingProfile as resolveOllamaThinkingProfile } from "./provider-policy-api.js";
 import {
   DEFAULT_OLLAMA_EMBEDDING_MODEL,
@@ -128,9 +128,9 @@ const lazyOllamaMediaUnderstandingProvider: MediaUnderstandingProvider = {
   },
 };
 
-async function checkWsl2CrashLoopRiskLazily(api: OpenClawPluginApi): Promise<void> {
+async function checkWsl2CrashLoopRiskLazily(api: AforaPluginApi): Promise<void> {
   try {
-    const { isWSL2Sync } = await import("openclaw/plugin-sdk/runtime-env");
+    const { isWSL2Sync } = await import("afora-agent/plugin-sdk/runtime-env");
     if (!isWSL2Sync()) {
       return;
     }
@@ -162,7 +162,7 @@ function classifyOllamaFailoverReason(errorMessage: string): "server_error" | un
 }
 
 const dynamicModelCache = new Map<string, ProviderRuntimeModel[]>();
-const dynamicManagedCredentialFingerprints = new WeakMap<OpenClawConfig, Map<string, string>>();
+const dynamicManagedCredentialFingerprints = new WeakMap<AforaConfig, Map<string, string>>();
 const OLLAMA_CLOUD_DEFAULT_MODEL_REF = `${OLLAMA_CLOUD_PROVIDER_ID}/${OLLAMA_CLOUD_DEFAULT_MODELS[0].id}`;
 const OLLAMA_CONFIGURED_SHOW_CONCURRENCY = 4;
 const OLLAMA_CONFIGURED_SHOW_MAX_MODELS = 8;
@@ -442,7 +442,7 @@ function buildDynamicCacheKey(
   provider: string,
   baseUrl: string | undefined,
   configuredApiKey: unknown,
-  config?: OpenClawConfig,
+  config?: AforaConfig,
 ): string {
   const secretRef = coerceSecretRef(configuredApiKey);
   const managedSecretScope = buildDynamicManagedSecretScope(provider, baseUrl, configuredApiKey);
@@ -634,7 +634,7 @@ function readUsableOllamaShowApiKey(params: {
 }
 
 function collectConfiguredOllamaModelIds(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   provider: string;
   entries?: ProviderAugmentModelCatalogContext["entries"];
 }): Array<{
@@ -772,7 +772,7 @@ async function resolveRequestedDynamicOllamaModel(params: {
 }
 
 async function augmentConfiguredOllamaCatalogModels(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   defaultBaseUrl: string;
   env: NodeJS.ProcessEnv;
   provider: string;
@@ -888,7 +888,7 @@ export default definePluginEntry({
   id: "ollama",
   name: "Ollama Provider",
   description: "Bundled Ollama provider plugin",
-  register(api: OpenClawPluginApi) {
+  register(api: AforaPluginApi) {
     const startupPluginConfig = (api.pluginConfig ?? {}) as OllamaPluginConfig;
     if (api.registrationMode === "full") {
       void checkWsl2CrashLoopRiskLazily(api);
@@ -904,7 +904,7 @@ export default definePluginEntry({
     }
     api.registerNodeInvokePolicy(createOllamaNodeInvokePolicy());
     api.registerTool(createLazyOllamaNodeInferenceTool(api));
-    const resolveCurrentPluginConfig = (config?: OpenClawConfig): OllamaPluginConfig => {
+    const resolveCurrentPluginConfig = (config?: AforaConfig): OllamaPluginConfig => {
       const runtimePluginConfig = resolvePluginConfigObject(config, "ollama");
       if (runtimePluginConfig) {
         return runtimePluginConfig as OllamaPluginConfig;
@@ -986,8 +986,8 @@ export default definePluginEntry({
         }),
       buildUnknownModelHint: () =>
         "Ollama Cloud requires an API key. " +
-        'Set OLLAMA_API_KEY or run "openclaw onboard --auth-choice ollama-cloud". ' +
-        "See: https://docs.openclaw.ai/providers/ollama",
+        'Set OLLAMA_API_KEY or run "afora onboard --auth-choice ollama-cloud". ' +
+        "See: https://docs.afora.ai/providers/ollama",
     });
     api.registerProvider({
       id: OLLAMA_PROVIDER_ID,
@@ -1295,8 +1295,8 @@ export default definePluginEntry({
       },
       buildUnknownModelHint: () =>
         "Ollama requires authentication to be registered as a provider. " +
-        'Set OLLAMA_API_KEY="ollama-local" (any value works) or run "openclaw configure". ' +
-        "See: https://docs.openclaw.ai/providers/ollama",
+        'Set OLLAMA_API_KEY="ollama-local" (any value works) or run "afora configure". ' +
+        "See: https://docs.afora.ai/providers/ollama",
     });
   },
 });

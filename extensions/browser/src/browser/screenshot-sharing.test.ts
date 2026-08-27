@@ -12,7 +12,7 @@ vi.mock("./screenshot.js", () => ({
   DEFAULT_BROWSER_SCREENSHOT_MAX_SIDE: 2000,
   normalizeBrowserScreenshot: mocks.normalizeBrowserScreenshot,
 }));
-vi.mock("openclaw/plugin-sdk/media-store", () => ({
+vi.mock("afora-agent/plugin-sdk/media-store", () => ({
   saveMediaBuffer: mocks.saveMediaBuffer,
 }));
 

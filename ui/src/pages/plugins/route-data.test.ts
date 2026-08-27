@@ -47,7 +47,7 @@ describe("Plugins route data", () => {
     expect(
       pluginsRouteLocation(
         location(
-          "/settings/plugins?__openclawPluginsPath=%2Fsettings%2Fplugins%2Fdiscover&query=calendar#featured",
+          "/settings/plugins?__aforaPluginsPath=%2Fsettings%2Fplugins%2Fdiscover&query=calendar#featured",
         ),
       ),
     ).toEqual(location("/settings/plugins/discover?query=calendar#featured"));

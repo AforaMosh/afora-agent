@@ -18,8 +18,8 @@ function resolveCanvasDocumentDir(stateDir: string, documentId: string): string 
 
 describe("canvas documents", () => {
   it("builds entry urls for materialized path documents under managed storage", async () => {
-    const stateDir = tempDirs.make("openclaw-canvas-documents-");
-    const workspaceDir = tempDirs.make("openclaw-canvas-documents-workspace-");
+    const stateDir = tempDirs.make("afora-canvas-documents-");
+    const workspaceDir = tempDirs.make("afora-canvas-documents-workspace-");
     await mkdir(path.join(workspaceDir, "player"), { recursive: true });
     await writeFile(path.join(workspaceDir, "player/index.html"), "<div>ok</div>", "utf8");
 
@@ -31,13 +31,13 @@ describe("canvas documents", () => {
       { stateDir, workspaceDir },
     );
 
-    expect(document.entryUrl).toContain("/__openclaw__/canvas/documents/");
+    expect(document.entryUrl).toContain("/__afora__/canvas/documents/");
     expect(document.localEntrypoint).toBe("index.html");
     expect(resolveCanvasDocumentDir(stateDir, document.id)).toContain(stateDir);
   });
 
   it("materializes inline html bundles as index documents", async () => {
-    const stateDir = tempDirs.make("openclaw-canvas-documents-");
+    const stateDir = tempDirs.make("afora-canvas-documents-");
     const document = await createCanvasDocument(
       {
         kind: "html_bundle",
@@ -58,14 +58,14 @@ describe("canvas documents", () => {
     expect(indexHtml).toContain("<div class='demo'>Front</div>");
     expect(indexHtml).toContain("<style>.demo{color:red}</style>");
     expect(document.title).toBe("Preview");
-    expect(document.entryUrl).toBe(`/__openclaw__/canvas/documents/${document.id}/index.html`);
+    expect(document.entryUrl).toBe(`/__afora__/canvas/documents/${document.id}/index.html`);
     await expect(readCanvasDocumentHtmlSource(document.id, { stateDir })).resolves.toEqual({
       html: indexHtml,
     });
   });
 
   it("reports the document sandbox policy alongside board source bytes", async () => {
-    const stateDir = tempDirs.make("openclaw-canvas-documents-");
+    const stateDir = tempDirs.make("afora-canvas-documents-");
     const document = await createCanvasDocument(
       {
         kind: "html_bundle",
@@ -82,7 +82,7 @@ describe("canvas documents", () => {
   });
 
   it("reuses a supplied stable id by replacing the prior materialized view", async () => {
-    const stateDir = tempDirs.make("openclaw-canvas-documents-");
+    const stateDir = tempDirs.make("afora-canvas-documents-");
     const first = await createCanvasDocument(
       {
         id: "status-card",
@@ -111,8 +111,8 @@ describe("canvas documents", () => {
   });
 
   it("copies declared assets into managed storage", async () => {
-    const stateDir = tempDirs.make("openclaw-canvas-documents-");
-    const workspaceDir = tempDirs.make("openclaw-canvas-documents-workspace-");
+    const stateDir = tempDirs.make("afora-canvas-documents-");
+    const workspaceDir = tempDirs.make("afora-canvas-documents-workspace-");
     await mkdir(path.join(workspaceDir, "collection.media"), { recursive: true });
     await writeFile(path.join(workspaceDir, "collection.media/audio.mp3"), "audio", "utf8");
 
@@ -143,8 +143,8 @@ describe("canvas documents", () => {
   });
 
   it("wraps local and remote PDF documents in index viewer pages", async () => {
-    const stateDir = tempDirs.make("openclaw-canvas-documents-");
-    const workspaceDir = tempDirs.make("openclaw-canvas-documents-workspace-");
+    const stateDir = tempDirs.make("afora-canvas-documents-");
+    const workspaceDir = tempDirs.make("afora-canvas-documents-workspace-");
     await writeFile(path.join(workspaceDir, "demo.pdf"), "%PDF-1.4", "utf8");
     const localDocument = await createCanvasDocument(
       { kind: "document", entrypoint: { type: "path", value: "demo.pdf" } },
@@ -171,10 +171,10 @@ describe("canvas documents", () => {
   });
 
   it("rejects traversal and malformed encoded hosted paths", async () => {
-    const stateDir = tempDirs.make("openclaw-canvas-documents-");
+    const stateDir = tempDirs.make("afora-canvas-documents-");
     expect(
       resolveCanvasHttpPathToLocalPath(
-        "/__openclaw__/canvas/documents/../collection.media/index.html",
+        "/__afora__/canvas/documents/../collection.media/index.html",
         { stateDir },
       ),
     ).toBeNull();
@@ -184,13 +184,13 @@ describe("canvas documents", () => {
     await writeFile(path.join(documentDir, "%E0%A4%A.html"), "literal-percent-name", "utf8");
     expect(
       resolveCanvasHttpPathToLocalPath(
-        "/__openclaw__/canvas/documents/cv_malformed/%E0%A4%A.html",
+        "/__afora__/canvas/documents/cv_malformed/%E0%A4%A.html",
         { stateDir },
       ),
     ).toBeNull();
     expect(
       resolveCanvasHttpPathToLocalPath(
-        "/__openclaw__/canvas/documents/cv_malformed/%25E0%25A4%25A.html",
+        "/__afora__/canvas/documents/cv_malformed/%25E0%25A4%25A.html",
         { stateDir },
       ),
     ).toBe(path.join(documentDir, "%E0%A4%A.html"));

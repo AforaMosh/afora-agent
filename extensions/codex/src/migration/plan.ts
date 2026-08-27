@@ -8,18 +8,18 @@ import {
   MIGRATION_REASON_TARGET_EXISTS,
   readMigrationConfigPath,
   summarizeMigrationItems,
-} from "openclaw/plugin-sdk/migration";
+} from "afora-agent/plugin-sdk/migration";
 import type {
   MigrationItem,
   MigrationPlan,
   MigrationProviderContext,
-} from "openclaw/plugin-sdk/plugin-entry";
+} from "afora-agent/plugin-sdk/plugin-entry";
 import {
   canonicalPathFromExistingAncestor,
   extractErrorCode,
   isPathInside,
-} from "openclaw/plugin-sdk/security-runtime";
-import { asBoolean, isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/security-runtime";
+import { asBoolean, isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { CODEX_PLUGINS_MARKETPLACE_NAME } from "../app-server/config.js";
 import { buildCodexAuthItems } from "./auth.js";
 import { exists, sanitizeName } from "./helpers.js";
@@ -92,7 +92,7 @@ async function buildCodexMemoryItems(params: {
       }
       if (isPathInside(source, destination) || isPathInside(destination, source)) {
         throw new Error(
-          "Codex memory source and OpenClaw import destination must be separate paths.",
+          "Codex memory source and Afora import destination must be separate paths.",
         );
       }
     }
@@ -110,7 +110,7 @@ async function buildCodexMemoryItems(params: {
           : targetConflict
             ? MIGRATION_REASON_TARGET_EXISTS
             : undefined,
-        message: "Copy consolidated Codex memory into the OpenClaw memory index.",
+        message: "Copy consolidated Codex memory into the Afora memory index.",
         details: {
           sourceType: "codex-memory",
           sourceLabel: memory.label,
@@ -168,7 +168,7 @@ async function buildCodexSkillItems(params: {
           : conflict
             ? MIGRATION_REASON_TARGET_EXISTS
             : undefined,
-        message: `Copy ${item.skill.sourceLabel} into this OpenClaw agent workspace.`,
+        message: `Copy ${item.skill.sourceLabel} into this Afora agent workspace.`,
         details: { skillName: item.name, sourceLabel: item.skill.sourceLabel },
       });
     }),
@@ -282,7 +282,7 @@ function buildPluginItems(
           applyPhase: "after-promotion",
           source: plugin.source,
           target: `plugins.entries.codex.config.codexPlugins.plugins.${configKey}`,
-          message: `Install Codex plugin "${plugin.pluginName}" in the OpenClaw-managed Codex app-server runtime.`,
+          message: `Install Codex plugin "${plugin.pluginName}" in the Afora-managed Codex app-server runtime.`,
           details: {
             configKey,
             marketplaceName: CODEX_PLUGINS_MARKETPLACE_NAME,
@@ -333,7 +333,7 @@ function buildPluginItems(
           plugin.message ??
           `Codex native plugin "${plugin.name}" was found but not activated automatically.`,
         recommendation:
-          "Review the plugin bundle first, then install trusted compatible plugins with openclaw plugins install <path> --force.",
+          "Review the plugin bundle first, then install trusted compatible plugins with afora plugins install <path> --force.",
       }),
     );
   }
@@ -519,7 +519,7 @@ function buildPluginConfigItem(
     reason: conflict ? MIGRATION_REASON_TARGET_EXISTS : undefined,
     applyPhase: "after-promotion",
     message:
-      "Enable OpenClaw's Codex plugin integration and record migrated source-installed curated plugins.",
+      "Enable Afora's Codex plugin integration and record migrated source-installed curated plugins.",
     details: {
       path: [...CODEX_PLUGIN_CONFIG_PATH],
       value,
@@ -616,8 +616,8 @@ export async function buildCodexMigrationPlan(
     nextSteps: memoryOnly
       ? []
       : [
-          "Run openclaw doctor after applying the migration.",
-          "Review skipped or auth-required Codex plugin/config/hook items before exposing them in OpenClaw sessions.",
+          "Run afora doctor after applying the migration.",
+          "Review skipped or auth-required Codex plugin/config/hook items before exposing them in Afora sessions.",
         ],
     metadata: {
       agentDir: targets.agentDir,

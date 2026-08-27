@@ -1,7 +1,7 @@
-import { clearLiveCatalogCacheForTests } from "openclaw/plugin-sdk/provider-catalog-live-runtime";
+import { clearLiveCatalogCacheForTests } from "afora-agent/plugin-sdk/provider-catalog-live-runtime";
 // Nvidia tests cover provider catalog plugin behavior.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import manifest from "./afora.plugin.json" with { type: "json" };
 import {
   buildLiveNvidiaProvider,
   buildNvidiaProvider,
@@ -86,7 +86,7 @@ const ssrfRuntimeMocks = vi.hoisted(() => ({
   })),
 }));
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", () => ssrfRuntimeMocks);
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", () => ssrfRuntimeMocks);
 
 afterEach(() => {
   vi.useRealTimers();

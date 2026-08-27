@@ -9,7 +9,7 @@ type PluginConfigValidation = { ok: true; value?: unknown } | { ok: false; error
  * Plugins can provide a Zod-like parser, a lightweight `validate(...)`
  * function, or both. `jsonSchema` is optional runtime schema metadata.
  */
-export type OpenClawPluginConfigSchema = {
+export type AforaPluginConfigSchema = {
   safeParse?: (value: unknown) => {
     success: boolean;
     data?: unknown;
@@ -21,7 +21,7 @@ export type OpenClawPluginConfigSchema = {
   validate?: (value: unknown) => PluginConfigValidation;
   /**
    * @deprecated Declare config presentation metadata in the plugin's
-   * `openclaw.plugin.json` manifest via top-level `uiHints`. The host reads
+   * `afora.plugin.json` manifest via top-level `uiHints`. The host reads
    * manifest hints and does not consume runtime config-schema hints.
    */
   uiHints?: Record<string, PluginConfigUiHint>;

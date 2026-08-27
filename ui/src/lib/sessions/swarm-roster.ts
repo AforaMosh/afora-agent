@@ -1,4 +1,4 @@
-import { asNullableRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNullableRecord } from "@afora/normalization-core/record-coerce";
 import type { GatewaySessionRow } from "../../api/types.ts";
 import { fetchChildSessionRows } from "./child-session-data.ts";
 import type { SessionCapability } from "./index.ts";

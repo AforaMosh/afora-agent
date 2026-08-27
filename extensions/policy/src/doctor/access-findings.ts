@@ -1,5 +1,5 @@
-import type { HealthFinding } from "openclaw/plugin-sdk/health";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { HealthFinding } from "afora-agent/plugin-sdk/health";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { CHECK_IDS } from "./check-ids.js";
 import { SUPPORTED_AUTH_PROFILE_METADATA } from "./policy-constants.js";
 import { isChannelDenyRule } from "./policy-runtime.js";

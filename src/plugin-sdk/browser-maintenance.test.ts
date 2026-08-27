@@ -45,7 +45,7 @@ describe("browser maintenance", () => {
     vi.restoreAllMocks();
     vi.resetModules();
     testRoot = realRealpathSyncNative(
-      realMkdtempSync(path.join(os.tmpdir(), "openclaw-browser-maintenance-")),
+      realMkdtempSync(path.join(os.tmpdir(), "afora-browser-maintenance-")),
     );
     homeDir = path.join(testRoot, "home", "test");
     tmpDir = path.join(testRoot, "tmp");
@@ -197,7 +197,7 @@ describe("browser maintenance", () => {
     const { movePathToTrash } = await import("./browser-maintenance.js");
     const outsideDir = path.join(testRoot, "outside");
     realMkdirSync(outsideDir, { recursive: true });
-    const outsidePath = path.join(outsideDir, "openclaw-demo");
+    const outsidePath = path.join(outsideDir, "afora-demo");
     realWriteFileSync(outsidePath, "outside");
 
     await expect(movePathToTrash(outsidePath)).rejects.toThrow(

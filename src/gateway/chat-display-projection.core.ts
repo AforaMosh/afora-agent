@@ -1,5 +1,5 @@
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeLowercaseStringOrEmpty as normalizeErrorSignal } from "@openclaw/normalization-core/string-coerce";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeLowercaseStringOrEmpty as normalizeErrorSignal } from "@afora/normalization-core/string-coerce";
 import { isContextOverflowError } from "../agents/failover/classify.js";
 import { STREAM_ERROR_FALLBACK_TEXT } from "../agents/stream-message-shared.js";
 import {
@@ -50,7 +50,7 @@ function projectCurrentUserProfileAvatars(
     if (message.role !== "user") {
       return message;
     }
-    const metadata = asOptionalRecord(message["__openclaw"]);
+    const metadata = asOptionalRecord(message["__afora"]);
     if (!metadata) {
       return message;
     }
@@ -72,7 +72,7 @@ function projectCurrentUserProfileAvatars(
     changed = true;
     return {
       ...message,
-      __openclaw: { ...metadata, senderProfileAvatarUrl: display.avatarUrl },
+      __afora: { ...metadata, senderProfileAvatarUrl: display.avatarUrl },
     };
   });
   return changed ? projected : messages;

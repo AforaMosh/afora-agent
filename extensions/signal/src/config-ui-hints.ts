@@ -1,6 +1,6 @@
-import { createChannelConfigUiHints } from "openclaw/plugin-sdk/channel-core";
+import { createChannelConfigUiHints } from "afora-agent/plugin-sdk/channel-core";
 // Signal helper module supports config ui hints behavior.
-import type { ChannelConfigUiHint } from "openclaw/plugin-sdk/core";
+import type { ChannelConfigUiHint } from "afora-agent/plugin-sdk/core";
 
 export const signalChannelConfigUiHints = {
   "": {
@@ -32,7 +32,7 @@ export const signalChannelConfigUiHints = {
   },
   "transport.kind": {
     label: "Signal Transport Kind",
-    help: "Use managed-native to let OpenClaw start signal-cli, external-native for an existing native daemon, or container for signal-cli-rest-api.",
+    help: "Use managed-native to let Afora start signal-cli, external-native for an existing native daemon, or container for signal-cli-rest-api.",
   },
   "transport.configPath": {
     label: "Signal CLI Config Path",

@@ -1,21 +1,21 @@
 // Agent runtime config tests cover agent-specific runtime config resolution from temp homes.
 import path from "node:path";
-import { withTempHome as withTempHomeBase } from "openclaw/plugin-sdk/test-env";
+import { withTempHome as withTempHomeBase } from "afora-agent/plugin-sdk/test-env";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveAgentRuntimeConfig } from "../agents/agent-runtime-config.js";
 import { resolveSession } from "../agents/command/session.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.types.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { createThrowingTestRuntime } from "./test-runtime-config-helpers.js";
 
 type ConfigSnapshotForWrite = {
-  snapshot: { valid: boolean; resolved: OpenClawConfig };
+  snapshot: { valid: boolean; resolved: AforaConfig };
   writeOptions: { basePluginMetadataSnapshot?: PluginMetadataSnapshot };
 };
 
 type ResolveCommandConfigParams = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   commandName: string;
   targetIds: Set<string>;
   allowedPaths?: Set<string>;
@@ -23,7 +23,7 @@ type ResolveCommandConfigParams = {
   runtime: RuntimeEnv;
 };
 
-const loadConfigMock = vi.hoisted(() => vi.fn<() => OpenClawConfig>());
+const loadConfigMock = vi.hoisted(() => vi.fn<() => AforaConfig>());
 const readConfigFileSnapshotForWriteMock = vi.hoisted(() =>
   vi.fn<() => Promise<ConfigSnapshotForWrite>>(),
 );
@@ -42,7 +42,7 @@ vi.mock("../cli/command-secret-targets.js", () => ({
   getAgentRuntimeOptionalCommandSecretPaths: () =>
     new Set(["plugins.entries.firecrawl.config.webFetch.apiKey"]),
   getScopedChannelsCommandSecretTargets: (params: {
-    config: OpenClawConfig;
+    config: AforaConfig;
     channel?: string;
     accountId?: string;
     defaultAccountWhenMissing?: boolean;
@@ -75,7 +75,7 @@ vi.mock("../cli/command-secret-targets.js", () => ({
 
 vi.mock("../secrets/target-registry.js", () => ({
   discoverConfigSecretTargetsByIds: (
-    config: OpenClawConfig,
+    config: AforaConfig,
     targetIds: Iterable<string>,
   ): Array<{ path: string }> => {
     const ids = new Set(targetIds);
@@ -86,7 +86,7 @@ vi.mock("../secrets/target-registry.js", () => ({
 }));
 
 const setRuntimeConfigSnapshotMock = vi.hoisted(() =>
-  vi.fn<(cfg: OpenClawConfig, sourceConfig: OpenClawConfig) => void>(),
+  vi.fn<(cfg: AforaConfig, sourceConfig: AforaConfig) => void>(),
 );
 vi.mock("../config/runtime-snapshot.js", () => ({
   registerRuntimeConfigSnapshotPreparer: vi.fn(),
@@ -97,8 +97,8 @@ const getActiveSecretsRuntimeSnapshotMock = vi.hoisted(() => vi.fn<() => object 
 const prepareSecretsRuntimeSnapshotMock = vi.hoisted(() =>
   vi.fn(
     async (params: {
-      config: OpenClawConfig;
-      assignmentConfig: OpenClawConfig;
+      config: AforaConfig;
+      assignmentConfig: AforaConfig;
       pluginMetadataSnapshot?: Pick<PluginMetadataSnapshot, "plugins" | "manifestRegistry">;
     }) => ({
       sourceConfig: params.config,
@@ -120,8 +120,8 @@ vi.mock("../secrets/runtime.js", () => ({
 const resolveCommandConfigWithSecretsMock = vi.hoisted(() =>
   vi.fn<
     (params: ResolveCommandConfigParams) => Promise<{
-      resolvedConfig: OpenClawConfig;
-      effectiveConfig: OpenClawConfig;
+      resolvedConfig: AforaConfig;
+      effectiveConfig: AforaConfig;
       diagnostics: never[];
     }>
   >(),
@@ -133,7 +133,7 @@ vi.mock("../cli/command-config-resolution.runtime.js", () => ({
 const runtime = createThrowingTestRuntime();
 
 async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
-  return withTempHomeBase(fn, { prefix: "openclaw-agent-" });
+  return withTempHomeBase(fn, { prefix: "afora-agent-" });
 }
 
 function requireResolveCommandConfigParams(callIndex = 0): ResolveCommandConfigParams {
@@ -145,17 +145,17 @@ function requireResolveCommandConfigParams(callIndex = 0): ResolveCommandConfigP
   return params;
 }
 
-function mockConfig(home: string, storePath: string): OpenClawConfig {
+function mockConfig(home: string, storePath: string): AforaConfig {
   const cfg = {
     agents: {
       defaults: {
         model: { primary: "anthropic/claude-opus-4-6" },
         models: { "anthropic/claude-opus-4-6": {} },
-        workspace: path.join(home, "openclaw"),
+        workspace: path.join(home, "afora"),
       },
     },
     session: { store: storePath, mainKey: "main" },
-  } as OpenClawConfig;
+  } as AforaConfig;
   loadConfigMock.mockReturnValue(cfg);
   return cfg;
 }
@@ -166,7 +166,7 @@ beforeEach(() => {
     sourceConfig: loadConfigMock(),
   }));
   readConfigFileSnapshotForWriteMock.mockResolvedValue({
-    snapshot: { valid: false, resolved: {} as OpenClawConfig },
+    snapshot: { valid: false, resolved: {} as AforaConfig },
     writeOptions: {},
   });
 });
@@ -176,7 +176,7 @@ describe("agentCommand runtime config", () => {
     await withTempHome(async (home) => {
       const store = path.join(home, "sessions.json");
       const loadedConfig = mockConfig(home, store);
-      const sourceConfig = { ...loadedConfig, secrets: { providers: {} } } as OpenClawConfig;
+      const sourceConfig = { ...loadedConfig, secrets: { providers: {} } } as AforaConfig;
       const pluginMetadataSnapshot = {
         plugins: [],
         manifestRegistry: { plugins: [], diagnostics: [] },
@@ -213,7 +213,7 @@ describe("agentCommand runtime config", () => {
           defaults: {
             model: { primary: "anthropic/claude-opus-4-6" },
             models: { "anthropic/claude-opus-4-6": {} },
-            workspace: path.join(home, "openclaw"),
+            workspace: path.join(home, "afora"),
           },
         },
         session: { store, mainKey: "main" },
@@ -226,7 +226,7 @@ describe("agentCommand runtime config", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
       const sourceConfig = {
         ...loadedConfig,
         models: {
@@ -238,7 +238,7 @@ describe("agentCommand runtime config", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
       const resolvedConfig = {
         ...loadedConfig,
         models: {
@@ -250,7 +250,7 @@ describe("agentCommand runtime config", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       loadConfigMock.mockReturnValue(loadedConfig);
       readConfigFileSnapshotForWriteMock.mockResolvedValue({
@@ -289,7 +289,7 @@ describe("agentCommand runtime config", () => {
         telegram: {
           botToken: { source: "env", provider: "default", id: "TELEGRAM_BOT_TOKEN" },
         },
-      } as unknown as OpenClawConfig["channels"];
+      } as unknown as AforaConfig["channels"];
       resolveCommandConfigWithSecretsMock.mockResolvedValueOnce({
         resolvedConfig: loadedConfig,
         effectiveConfig: loadedConfig,
@@ -316,7 +316,7 @@ describe("agentCommand runtime config", () => {
         discord: {
           token: { source: "env", provider: "default", id: "DISCORD_BOT_TOKEN" },
         },
-      } as unknown as OpenClawConfig["channels"];
+      } as unknown as AforaConfig["channels"];
       resolveCommandConfigWithSecretsMock.mockResolvedValueOnce({
         resolvedConfig: loadedConfig,
         effectiveConfig: loadedConfig,
@@ -352,7 +352,7 @@ describe("agentCommand runtime config", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig["channels"];
+      } as unknown as AforaConfig["channels"];
       resolveCommandConfigWithSecretsMock.mockResolvedValueOnce({
         resolvedConfig: loadedConfig,
         effectiveConfig: loadedConfig,
@@ -383,7 +383,7 @@ describe("agentCommand runtime config", () => {
             models: [],
           },
         },
-      } as OpenClawConfig["models"];
+      } as AforaConfig["models"];
       loadedConfig.channels = {
         telegram: {
           botToken: { source: "env", provider: "default", id: "TELEGRAM_BOT_TOKEN" },
@@ -396,7 +396,7 @@ describe("agentCommand runtime config", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig["channels"];
+      } as unknown as AforaConfig["channels"];
       resolveCommandConfigWithSecretsMock.mockResolvedValueOnce({
         resolvedConfig: loadedConfig,
         effectiveConfig: loadedConfig,
@@ -437,7 +437,7 @@ describe("agentCommand runtime config", () => {
   it.each([
     {
       name: "global memory headers",
-      apply: (config: OpenClawConfig) => {
+      apply: (config: AforaConfig) => {
         config.memory = {
           search: {
             remote: {
@@ -446,12 +446,12 @@ describe("agentCommand runtime config", () => {
               },
             },
           },
-        } as unknown as OpenClawConfig["memory"];
+        } as unknown as AforaConfig["memory"];
       },
     },
     {
       name: "per-agent memory headers",
-      apply: (config: OpenClawConfig) => {
+      apply: (config: AforaConfig) => {
         config.agents = {
           ...config.agents,
           entries: {
@@ -471,12 +471,12 @@ describe("agentCommand runtime config", () => {
               },
             },
           },
-        } as unknown as OpenClawConfig["agents"];
+        } as unknown as AforaConfig["agents"];
       },
     },
     {
       name: "per-agent TTS provider",
-      apply: (config: OpenClawConfig) => {
+      apply: (config: AforaConfig) => {
         config.agents = {
           ...config.agents,
           entries: {
@@ -490,7 +490,7 @@ describe("agentCommand runtime config", () => {
               },
             },
           },
-        } as OpenClawConfig["agents"];
+        } as AforaConfig["agents"];
       },
     },
   ])("resolves command secrets for $name", async ({ apply }) => {

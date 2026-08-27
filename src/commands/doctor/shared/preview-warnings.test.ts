@@ -2,9 +2,9 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { AforaConfig } from "../../../config/config.js";
 import { collectDoctorPreviewNotes } from "./preview-warnings.js";
 
 async function collectDoctorPreviewWarnings(
@@ -14,31 +14,31 @@ async function collectDoctorPreviewWarnings(
 }
 
 async function collectProfileConfiguredToolSectionWarningsThroughDoctor(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): Promise<string[]> {
   const warnings = await collectDoctorPreviewWarnings({
     cfg,
-    doctorFixCommand: "openclaw doctor --fix",
+    doctorFixCommand: "afora doctor --fix",
   });
   return warnings.filter((warning) => warning.includes("is configured, but configured sections"));
 }
 
 async function collectVisibleReplyToolPolicyWarningsThroughDoctor(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): Promise<string[]> {
   const warnings = await collectDoctorPreviewWarnings({
     cfg,
-    doctorFixCommand: "openclaw doctor --fix",
+    doctorFixCommand: "afora doctor --fix",
   });
   return warnings.filter((warning) => warning.includes("visibleReplies is set"));
 }
 
 async function collectChannelBoundMessageToolPolicyWarningsThroughDoctor(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): Promise<string[]> {
   const warnings = await collectDoctorPreviewWarnings({
     cfg,
-    doctorFixCommand: "openclaw doctor --fix",
+    doctorFixCommand: "afora doctor --fix",
   });
   return warnings.filter((warning) => warning.includes("is routed from channel"));
 }
@@ -75,14 +75,14 @@ const activeToolSchemaState = vi.hoisted(() => ({
 
 const commandSecretState = vi.hoisted(() => ({
   targetIds: new Set<string>(),
-  resolvedConfig: undefined as OpenClawConfig | undefined,
+  resolvedConfig: undefined as AforaConfig | undefined,
   diagnostics: [] as string[],
 }));
 
 const tempRoots = new Set<string>();
 
 vi.mock("../../../cli/command-secret-gateway.js", () => ({
-  resolveCommandSecretRefsViaGateway: vi.fn(async (params: { config: OpenClawConfig }) => ({
+  resolveCommandSecretRefsViaGateway: vi.fn(async (params: { config: AforaConfig }) => ({
     resolvedConfig: commandSecretState.resolvedConfig ?? params.config,
     diagnostics: commandSecretState.diagnostics,
     targetStatesByPath: {},
@@ -240,8 +240,8 @@ vi.mock("./stale-plugin-config.js", () => ({
       ...(cfg.plugins?.allow ?? []).map((id) => ({ id, surface: "allow" })),
       ...Object.keys(cfg.plugins?.entries ?? {}).map((id) => ({ id, surface: "entries" })),
     ].filter((hit) => !knownIds.has(hit.id));
-    if (cfg.channels?.["openclaw-weixin"]) {
-      hits.push({ id: "openclaw-weixin", surface: "channel" });
+    if (cfg.channels?.["afora-weixin"]) {
+      hits.push({ id: "afora-weixin", surface: "channel" });
     }
     return hits.filter(
       (hit, index) =>
@@ -413,7 +413,7 @@ describe("doctor preview warnings", () => {
   });
 
   it("routes personal Codex asset notices to info instead of warnings", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-preview-codex-assets-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-preview-codex-assets-"));
     tempRoots.add(root);
     const codexHome = path.join(root, ".codex");
     await fs.mkdir(path.join(root, ".agents", "skills", "agent-helper"), { recursive: true });
@@ -433,8 +433,8 @@ describe("doctor preview warnings", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig,
-      doctorFixCommand: "openclaw doctor --fix",
+      } as unknown as AforaConfig,
+      doctorFixCommand: "afora doctor --fix",
       env: { CODEX_HOME: codexHome, HOME: root },
     });
 
@@ -454,7 +454,7 @@ describe("doctor preview warnings", () => {
           },
         },
       },
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
     });
 
     expect(
@@ -475,7 +475,7 @@ describe("doctor preview warnings", () => {
           botToken: { source: "env", provider: "default", id: "TELEGRAM_BOT_TOKEN" },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const resolvedConfig = {
       channels: {
         telegram: {
@@ -483,7 +483,7 @@ describe("doctor preview warnings", () => {
           allowFrom: ["@alice"],
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     commandSecretState.targetIds = new Set(["channels.telegram.botToken"]);
     commandSecretState.resolvedConfig = resolvedConfig;
     commandSecretState.diagnostics = [
@@ -494,7 +494,7 @@ describe("doctor preview warnings", () => {
       await import("../../../cli/command-secret-gateway.js");
     const notes = await collectDoctorPreviewNotes({
       cfg: rawConfig,
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
       env: {},
     });
 
@@ -527,8 +527,8 @@ describe("doctor preview warnings", () => {
             botToken: { source: "exec", provider: "default", id: "telegram/bot-token" },
           },
         },
-      } as unknown as OpenClawConfig,
-      doctorFixCommand: "openclaw doctor --fix",
+      } as unknown as AforaConfig,
+      doctorFixCommand: "afora doctor --fix",
       env: {},
       allowExec: true,
     });
@@ -560,8 +560,8 @@ describe("doctor preview warnings", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig,
-      doctorFixCommand: "openclaw doctor --fix",
+      } as unknown as AforaConfig,
+      doctorFixCommand: "afora doctor --fix",
     });
 
     const warning = expectSingleWarningContaining(
@@ -585,7 +585,7 @@ describe("doctor preview warnings", () => {
           },
         },
       },
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
     });
 
     const warning = expectSingleWarningContaining(
@@ -599,14 +599,14 @@ describe("doctor preview warnings", () => {
   it("includes stale plugin config warnings", async () => {
     const warnings = await collectDoctorPreviewWarnings({
       cfg: stalePluginConfig(),
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
     });
 
     const warning = expectSingleWarningContaining(
       warnings,
       "Stale plugin references (plugins.allow/deny/entries): acpx",
     );
-    expect(warning).toContain('Run "openclaw doctor --fix"');
+    expect(warning).toContain('Run "afora doctor --fix"');
     expect(warning).not.toContain("Auto-removal is paused");
   });
 
@@ -617,7 +617,7 @@ describe("doctor preview warnings", () => {
           allow: ["codex"],
         },
       },
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
     });
 
     expect(warnings.join("\n")).not.toContain("Stale plugin references");
@@ -627,19 +627,19 @@ describe("doctor preview warnings", () => {
     const warnings = await collectDoctorPreviewWarnings({
       cfg: {
         channels: {
-          "openclaw-weixin": {
+          "afora-weixin": {
             enabled: true,
           },
         },
       },
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
     });
 
-    expectSingleWarningContaining(warnings, "channels.openclaw-weixin: dangling channel config");
+    expectSingleWarningContaining(warnings, "channels.afora-weixin: dangling channel config");
   });
 
   it("includes bundled plugin load path migration warnings", async () => {
-    const packageRoot = path.resolve("app-node-modules", "openclaw");
+    const packageRoot = path.resolve("app-node-modules", "afora");
     const legacyPath = path.join(packageRoot, "extensions", "feishu");
     manifestState.plugins = [manifest("feishu")];
 
@@ -651,24 +651,24 @@ describe("doctor preview warnings", () => {
           },
         },
       },
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
     });
 
     const warning = expectSingleWarningContaining(
       warnings,
       `plugins.load.paths: legacy bundled plugin path "${legacyPath}"`,
     );
-    expect(warning).toContain('Run "openclaw doctor --fix"');
+    expect(warning).toContain('Run "afora doctor --fix"');
   });
 
   it("includes stale OAuth profile shadow warnings", async () => {
     staleOAuthShadowState.warnings = [
-      '- ~/.openclaw/agents/telegram/agent/auth-profiles.json has stale OAuth auth profile openai-codex:default. Run "openclaw doctor --fix".',
+      '- ~/.afora/agents/telegram/agent/auth-profiles.json has stale OAuth auth profile openai-codex:default. Run "afora doctor --fix".',
     ];
 
     const warnings = await collectDoctorPreviewWarnings({
       cfg: {},
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
     });
 
     expectSingleWarningContaining(warnings, "stale OAuth auth profile openai-codex:default");
@@ -676,12 +676,12 @@ describe("doctor preview warnings", () => {
 
   it("includes stale configured auth-order warnings", async () => {
     staleAuthOrderState.warnings = [
-      "- auth.order.anthropic references only missing profiles while compatible stored credentials exist; run openclaw doctor --fix to remove the stale override and restore automatic selection.",
+      "- auth.order.anthropic references only missing profiles while compatible stored credentials exist; run afora doctor --fix to remove the stale override and restore automatic selection.",
     ];
 
     const warnings = await collectDoctorPreviewWarnings({
       cfg: {},
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
     });
 
     expectSingleWarningContaining(
@@ -697,7 +697,7 @@ describe("doctor preview warnings", () => {
 
     const warnings = await collectDoctorPreviewWarnings({
       cfg: { tools: { allow: ["fuzzplugin_move_angles"] } },
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
     });
 
     expect(
@@ -707,13 +707,13 @@ describe("doctor preview warnings", () => {
 
   it("scopes active tool schema preview checks to the Doctor metadata lifecycle", async () => {
     const runWithPluginMetadataSnapshot = <T>(
-      _scope: { config: OpenClawConfig; workspaceDir?: string },
+      _scope: { config: AforaConfig; workspaceDir?: string },
       run: () => T,
     ): T => run();
 
     await collectDoctorPreviewWarnings({
       cfg: {},
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
       runWithPluginMetadataSnapshot,
     });
 
@@ -730,7 +730,7 @@ describe("doctor preview warnings", () => {
 
     const warnings = await collectDoctorPreviewWarnings({
       cfg: stalePluginConfig(),
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
     });
 
     const warning = expectSingleWarningContaining(
@@ -738,7 +738,7 @@ describe("doctor preview warnings", () => {
       "Stale plugin references (plugins.allow/deny/entries): acpx",
     );
     expect(warning).toContain("Auto-removal is paused");
-    expect(warning).toContain('rerun "openclaw doctor --fix"');
+    expect(warning).toContain('rerun "afora doctor --fix"');
   });
 
   it("warns when a configured channel plugin is disabled explicitly", async () => {
@@ -760,7 +760,7 @@ describe("doctor preview warnings", () => {
           },
         },
       },
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
     });
 
     const warning = expectSingleWarningContaining(
@@ -786,7 +786,7 @@ describe("doctor preview warnings", () => {
           },
         },
       },
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
     });
 
     const warning = expectSingleWarningContaining(
@@ -812,7 +812,7 @@ describe("doctor preview warnings", () => {
           },
         },
       },
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
     });
 
     expect(warnings.join("\n")).toContain(
@@ -835,7 +835,7 @@ describe("doctor preview warnings", () => {
         },
       },
       activationSourceConfig: {},
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
       env: {
         DISCORD_BOT_TOKEN: "configured",
       } as NodeJS.ProcessEnv,
@@ -870,7 +870,7 @@ describe("doctor preview warnings", () => {
           },
         },
       },
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
     });
 
     const warning = expectSingleWarningContaining(
@@ -896,7 +896,7 @@ describe("doctor preview warnings", () => {
           enabled: false,
         },
       },
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
     });
 
     const warning = expectSingleWarningContaining(
@@ -925,7 +925,7 @@ describe("doctor preview warnings", () => {
           },
         },
       },
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
     });
 
     expectSingleWarningContaining(
@@ -945,7 +945,7 @@ describe("doctor preview warnings", () => {
           },
         },
       },
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
     });
 
     const warning = expectSingleWarningContaining(warnings, 'tools.profile is "messaging"');
@@ -1160,7 +1160,7 @@ describe("doctor preview warnings", () => {
           },
         ],
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const warnings =
       await collectProfileConfiguredToolSectionWarningsThroughDoctor(malformedConfig);
@@ -1227,7 +1227,7 @@ describe("doctor preview warnings", () => {
       tools: {
         profile: "coding" as const,
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(await collectVisibleReplyToolPolicyWarningsThroughDoctor(cfg)).toStrictEqual([]);
     expect(await collectChannelBoundMessageToolPolicyWarningsThroughDoctor(cfg)).toStrictEqual([]);
@@ -1263,7 +1263,7 @@ describe("doctor preview warnings", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expectWarningsContaining(await collectVisibleReplyToolPolicyWarningsThroughDoctor(cfg), [
       'messages.groupChat.visibleReplies is set to "message_tool"',
@@ -1303,7 +1303,7 @@ describe("doctor preview warnings", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(await collectVisibleReplyToolPolicyWarningsThroughDoctor(cfg)).toStrictEqual([]);
     expect(await collectChannelBoundMessageToolPolicyWarningsThroughDoctor(cfg)).toStrictEqual([]);

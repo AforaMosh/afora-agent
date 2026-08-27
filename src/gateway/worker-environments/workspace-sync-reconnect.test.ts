@@ -34,7 +34,7 @@ describe("worker workspace reconnect", () => {
   });
 
   it("reconciles a completed result across a same-owner SSH reconnect", async () => {
-    const root = tempDirs.make("openclaw-worker-reconcile-reconnect-");
+    const root = tempDirs.make("afora-worker-reconcile-reconnect-");
     const localPath = path.join(root, "local");
     const remoteHome = path.join(root, "remote-home");
     await Promise.all([fs.mkdir(localPath), fs.mkdir(remoteHome)]);
@@ -123,7 +123,7 @@ describe("worker workspace reconnect", () => {
   });
 
   it("waits for a same-owner reconnect before initial workspace sync", async () => {
-    const root = tempDirs.make("openclaw-worker-sync-reconnect-");
+    const root = tempDirs.make("afora-worker-sync-reconnect-");
     const localPath = path.join(root, "local");
     const remoteHome = path.join(root, "remote-home");
     await Promise.all([fs.mkdir(localPath), fs.mkdir(remoteHome)]);

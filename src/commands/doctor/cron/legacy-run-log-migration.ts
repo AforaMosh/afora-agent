@@ -6,7 +6,7 @@ import type { CronRunLogEntry } from "../../../cron/run-log-types.js";
 import { cronStoreKey } from "../../../cron/store/key.js";
 import { parseCronRunLogEntryObject } from "../../../cron/task-run-detail.js";
 import { migrateLegacyCronRunLogsToTaskRuns } from "../../../infra/state-migrations.cron-run-logs.js";
-import { runOpenClawStateWriteTransaction } from "../../../state/openclaw-state-db.js";
+import { runAforaStateWriteTransaction } from "../../../state/afora-state-db.js";
 
 const LEGACY_CRON_RUN_LOG_ARCHIVE_SUFFIX = ".migrated";
 
@@ -63,7 +63,7 @@ export async function migrateLegacyCronRunLogsToSqlite(
       jobId,
     });
 
-    runOpenClawStateWriteTransaction(({ db }) => {
+    runAforaStateWriteTransaction(({ db }) => {
       db.exec(`
         CREATE TABLE cron_run_logs (
           store_key TEXT NOT NULL,

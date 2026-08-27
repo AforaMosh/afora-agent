@@ -23,7 +23,7 @@ import {
   listKnownSessionStoreAgentIds,
 } from "../config/sessions/targets.js";
 import type { AgentDefaultsConfig } from "../config/types.agent-defaults.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveCronJobEffectiveAgentId, tryResolveCronDefaultAgentId } from "../cron/agent-id.js";
 import {
   buildCronCommandSummary,
@@ -114,7 +114,7 @@ export type GatewayCronState = {
   stopExitWatchers: () => void;
   reconcileStreamWatchers: () => Promise<void>;
   stopStreamWatchers: () => Promise<void>;
-  reconcileHeartbeatJobs: (cfg?: OpenClawConfig) => Promise<void>;
+  reconcileHeartbeatJobs: (cfg?: AforaConfig) => Promise<void>;
 };
 
 function classifyCronScriptFailure(code: CronTriggerFailureCode): CronRunErrorClassification {
@@ -238,7 +238,7 @@ async function finalizeCronCompletionAnnouncement(params: {
   text?: string;
   abortSignal?: AbortSignal;
   deps: CliDeps;
-  resolveCronAgent: (requested?: string | null) => { agentId: string; cfg: OpenClawConfig };
+  resolveCronAgent: (requested?: string | null) => { agentId: string; cfg: AforaConfig };
   logger: ReturnType<typeof getChildLogger>;
   label: string;
   traceResolvedFailure?: boolean;
@@ -360,7 +360,7 @@ const CRON_ACTIVE_RUN_SHUTDOWN_DRAIN_MS = 10_000;
 
 /** Build the cron service state used by Gateway startup and lazy cron loading. */
 export function buildGatewayCronService(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   deps: CliDeps;
   broadcast: (event: string, payload: unknown, opts?: { dropIfSlow?: boolean }) => void;
   env?: NodeJS.ProcessEnv;
@@ -368,15 +368,15 @@ export function buildGatewayCronService(params: {
   const cronLogger = getChildLogger({ module: "cron" });
   const env = params.env ?? process.env;
   const storePath = resolveCronJobsStorePathFromConfig(params.cfg, env);
-  const cronEnabled = env.OPENCLAW_SKIP_CRON !== "1" && params.cfg.cron?.enabled !== false;
+  const cronEnabled = env.AFORA_SKIP_CRON !== "1" && params.cfg.cron?.enabled !== false;
   // Resolve once per cron service snapshot so every webhook route shares the
   // same explicit opt-in while omitted config keeps the guard strict.
   const webhookSsrfPolicy = mergeSsrFPolicies(params.cfg.cron?.webhookSsrfPolicy);
 
-  const findAgentEntry = (cfg: OpenClawConfig, agentId: string) =>
+  const findAgentEntry = (cfg: AforaConfig, agentId: string) =>
     listAgentEntries(cfg).find((entry) => normalizeAgentId(entry.id) === agentId);
 
-  const hasConfiguredAgent = (cfg: OpenClawConfig, agentId: string) =>
+  const hasConfiguredAgent = (cfg: AforaConfig, agentId: string) =>
     Boolean(findAgentEntry(cfg, agentId));
 
   const resolveCronAgent = (requested?: string | null) => {
@@ -402,7 +402,7 @@ export function buildGatewayCronService(params: {
   };
 
   const resolveCronSessionKey = (paramsValue: {
-    runtimeConfig: OpenClawConfig;
+    runtimeConfig: AforaConfig;
     agentId: string;
     requestedSessionKey?: string | null;
   }) => {
@@ -483,7 +483,7 @@ export function buildGatewayCronService(params: {
   };
 
   const resolveCronHeartbeatOverride = (paramsLocal: {
-    runtimeConfig: OpenClawConfig;
+    runtimeConfig: AforaConfig;
     agentId?: string;
     heartbeat?: AgentDefaultsConfig["heartbeat"];
   }) => {
@@ -1432,7 +1432,7 @@ export function buildGatewayCronService(params: {
       heartbeatRetryTimer = undefined;
     }
   };
-  const reconcileHeartbeatJobs = (cfgOverride?: OpenClawConfig): Promise<void> => {
+  const reconcileHeartbeatJobs = (cfgOverride?: AforaConfig): Promise<void> => {
     const epoch = ++heartbeatReconcileEpoch;
     if (heartbeatRetryTimer) {
       clearTimeout(heartbeatRetryTimer);

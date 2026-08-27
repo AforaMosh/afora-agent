@@ -1,5 +1,5 @@
-import { createAssistantMessageEventStream } from "@openclaw/llm-core";
-import type { Api, AssistantMessageEventStreamContract, Model, StreamFn } from "@openclaw/llm-core";
+import { createAssistantMessageEventStream } from "@afora/llm-core";
+import type { Api, AssistantMessageEventStreamContract, Model, StreamFn } from "@afora/llm-core";
 // Simple completion transport tests cover provider-specific stream alias
 // selection before the generic completion helper invokes the LLM layer.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -11,7 +11,7 @@ const ensureCustomApiRegistered = vi.fn();
 const resolveProviderStreamFn = vi.fn();
 const wrapProviderSimpleCompletionStreamFn = vi.fn();
 const buildTransportAwareSimpleStreamFn = vi.fn();
-const createOpenClawTransportStreamFnForModel = vi.fn();
+const createAforaTransportStreamFnForModel = vi.fn();
 const createTransportAwareStreamFnForModel = vi.fn();
 const prepareTransportAwareSimpleModel = vi.fn();
 const resolveTransportAwareSimpleApi = vi.fn();
@@ -23,7 +23,7 @@ const initialHost = getAiTransportHost();
 
 vi.mock("./provider-transport-stream.js", () => ({
   buildTransportAwareSimpleStreamFn,
-  createOpenClawTransportStreamFnForModel,
+  createAforaTransportStreamFnForModel,
   createTransportAwareStreamFnForModel,
   prepareTransportAwareSimpleModel,
   resolveTransportAwareSimpleApi,
@@ -85,7 +85,7 @@ describe("prepareModelForSimpleCompletion", () => {
     pluginStreamFn.mockClear();
     wrapProviderSimpleCompletionStreamFn.mockReset();
     buildTransportAwareSimpleStreamFn.mockReset();
-    createOpenClawTransportStreamFnForModel.mockReset();
+    createAforaTransportStreamFnForModel.mockReset();
     createTransportAwareStreamFnForModel.mockReset();
     prepareTransportAwareSimpleModel.mockReset();
     resolveTransportAwareSimpleApi.mockReset();
@@ -94,7 +94,7 @@ describe("prepareModelForSimpleCompletion", () => {
     resolveProviderStreamFn.mockReturnValue(pluginStreamFn);
     wrapProviderSimpleCompletionStreamFn.mockReturnValue(undefined);
     buildTransportAwareSimpleStreamFn.mockReturnValue(undefined);
-    createOpenClawTransportStreamFnForModel.mockReturnValue(undefined);
+    createAforaTransportStreamFnForModel.mockReturnValue(undefined);
     createTransportAwareStreamFnForModel.mockReturnValue(undefined);
     prepareTransportAwareSimpleModel.mockImplementation((model) => model);
     resolveTransportAwareSimpleApi.mockReturnValue(undefined);
@@ -158,7 +158,7 @@ describe("prepareModelForSimpleCompletion", () => {
     expect(wrapProviderSimpleCompletionStreamFn).toHaveBeenCalledTimes(1);
     expect(wrapProviderSimpleCompletionStreamFn.mock.results[0]?.value).toBeTypeOf("function");
     expect(result.api).toBe(
-      "openclaw-provider-simple:moonshot:kimi-k2.7-code:moonshot-simple-source:https%3A%2F%2Fapi.moonshot.ai%2Fv1",
+      "afora-provider-simple:moonshot:kimi-k2.7-code:moonshot-simple-source:https%3A%2F%2Fapi.moonshot.ai%2Fv1",
     );
     expect(inheritManagedTransport).toHaveBeenCalledWith(model, result);
     expect(wrapProviderSimpleCompletionStreamFn).toHaveBeenCalledWith(
@@ -274,7 +274,7 @@ describe("prepareModelForSimpleCompletion", () => {
     const result = prepareModelForSimpleCompletion({ model });
 
     const expectedApi =
-      "openclaw-provider-stream:llama-cpp:qwen3-0.6b:openai-completions:local%3A%2F%2Fllama-cpp";
+      "afora-provider-stream:llama-cpp:qwen3-0.6b:openai-completions:local%3A%2F%2Fllama-cpp";
     expect(resolveProviderStreamFn).toHaveBeenCalledWith(
       expect.objectContaining({
         provider: "llama-cpp",
@@ -339,7 +339,7 @@ describe("prepareModelForSimpleCompletion", () => {
 
     const result = prepareModelForSimpleCompletion({ model });
     const dispatchApi =
-      "openclaw-provider-stream:meta:muse-spark-1.2:openai-responses:https%3A%2F%2Fapi.meta.ai%2Fv1";
+      "afora-provider-stream:meta:muse-spark-1.2:openai-responses:https%3A%2F%2Fapi.meta.ai%2Fv1";
 
     expect(wrapProviderSimpleCompletionStreamFn).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -349,7 +349,7 @@ describe("prepareModelForSimpleCompletion", () => {
         }),
       }),
     );
-    expect(result.api).toMatch(/^openclaw-provider-simple:/);
+    expect(result.api).toMatch(/^afora-provider-simple:/);
     const finalStreamFn = apiRegistry.getApiProvider(result.api)?.streamSimple;
     if (!finalStreamFn) {
       throw new Error("Expected projected simple completion stream");
@@ -385,12 +385,12 @@ describe("prepareModelForSimpleCompletion", () => {
     expect(createAnthropicVertexStreamFnForModel).toHaveBeenCalledWith(model);
     expect(ensureCustomApiRegistered).toHaveBeenCalledWith(
       apiRegistry,
-      "openclaw-anthropic-vertex-simple:https%3A%2F%2Fus-central1-aiplatform.googleapis.com",
+      "afora-anthropic-vertex-simple:https%3A%2F%2Fus-central1-aiplatform.googleapis.com",
       "vertex-stream",
     );
     expect(result).toEqual({
       ...model,
-      api: "openclaw-anthropic-vertex-simple:https%3A%2F%2Fus-central1-aiplatform.googleapis.com",
+      api: "afora-anthropic-vertex-simple:https%3A%2F%2Fus-central1-aiplatform.googleapis.com",
     });
     expect(inheritManagedTransport).toHaveBeenCalledWith(model, result);
   });
@@ -413,7 +413,7 @@ describe("prepareModelForSimpleCompletion", () => {
     buildTransportAwareSimpleStreamFn.mockReturnValueOnce("transport-stream");
     prepareTransportAwareSimpleModel.mockReturnValueOnce({
       ...model,
-      api: "openclaw-openai-responses-transport",
+      api: "afora-openai-responses-transport",
     });
 
     const result = prepareModelForSimpleCompletion({ model });
@@ -422,12 +422,12 @@ describe("prepareModelForSimpleCompletion", () => {
     expect(buildTransportAwareSimpleStreamFn).toHaveBeenCalledWith(model, { cfg: undefined });
     expect(ensureCustomApiRegistered).toHaveBeenCalledWith(
       apiRegistry,
-      "openclaw-openai-responses-transport",
+      "afora-openai-responses-transport",
       "transport-stream",
     );
     expect(result).toEqual({
       ...model,
-      api: "openclaw-openai-responses-transport",
+      api: "afora-openai-responses-transport",
     });
   });
 
@@ -459,7 +459,7 @@ describe("prepareModelForSimpleCompletion", () => {
     expect(resolveProviderStreamFn).toHaveBeenCalledOnce();
     expect(prepareTransportAwareSimpleModel).not.toHaveBeenCalled();
     expect(buildTransportAwareSimpleStreamFn).not.toHaveBeenCalled();
-    expect(result.api).toMatch(/^openclaw-provider-stream:/);
+    expect(result.api).toMatch(/^afora-provider-stream:/);
     const registeredStream = ensureCustomApiRegistered.mock.calls.find(
       (call) => call[1] === result.api,
     )?.[2] as StreamFn | undefined;
@@ -525,7 +525,7 @@ describe("prepareModelForSimpleCompletion", () => {
       "https://proxy.example.test/openai/codex",
     ],
   ])(
-    "uses OpenClaw transport for OpenAI Codex-response simple completions with baseUrl %s",
+    "uses Afora transport for OpenAI Codex-response simple completions with baseUrl %s",
     (baseUrl, expectedBaseUrl) => {
       const model: Model<"openai-chatgpt-responses"> = {
         id: "gpt-5.5",
@@ -541,16 +541,16 @@ describe("prepareModelForSimpleCompletion", () => {
       };
 
       resolveProviderStreamFn.mockReturnValueOnce(undefined);
-      createOpenClawTransportStreamFnForModel.mockReturnValueOnce("codex-transport-stream");
+      createAforaTransportStreamFnForModel.mockReturnValueOnce("codex-transport-stream");
       resolveTransportAwareSimpleApi.mockReturnValueOnce(
-        "openclaw-openai-chatgpt-responses-transport",
+        "afora-openai-chatgpt-responses-transport",
       );
 
       const result = prepareModelForSimpleCompletion({ model });
 
       // ChatGPT/Codex response endpoints share the transport stream, but the
       // simple-completion API must normalize caller-supplied base URLs first.
-      expect(createOpenClawTransportStreamFnForModel).toHaveBeenCalledWith(
+      expect(createAforaTransportStreamFnForModel).toHaveBeenCalledWith(
         {
           ...model,
           baseUrl: expectedBaseUrl,
@@ -559,13 +559,13 @@ describe("prepareModelForSimpleCompletion", () => {
       );
       expect(ensureCustomApiRegistered).toHaveBeenCalledWith(
         apiRegistry,
-        "openclaw-openai-chatgpt-responses-transport",
+        "afora-openai-chatgpt-responses-transport",
         "codex-transport-stream",
       );
       expect(result).toEqual({
         ...model,
         baseUrl: expectedBaseUrl,
-        api: "openclaw-openai-chatgpt-responses-transport",
+        api: "afora-openai-chatgpt-responses-transport",
       });
       expect(prepareTransportAwareSimpleModel).not.toHaveBeenCalled();
     },

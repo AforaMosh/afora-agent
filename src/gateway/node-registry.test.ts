@@ -6,7 +6,7 @@ import path from "node:path";
 import {
   MAX_DATE_TIMESTAMP_MS,
   MAX_TIMER_TIMEOUT_MS,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { WebSocket } from "ws";
 import { GATEWAY_CLIENT_IDS } from "../../packages/gateway-protocol/src/client-info.js";
@@ -19,7 +19,7 @@ import {
   NODE_WORKER_WORKSPACE_EXEC_COMMAND,
 } from "../infra/node-commands.js";
 import { NODE_WORKER_SUPERVISOR_PROTOCOL_FEATURE } from "../infra/node-runner-inventory.js";
-import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+import { resolvePreferredAforaTmpDir } from "../infra/tmp-afora-dir.js";
 import { resetLogger, setLoggerOverride } from "../logging/logger.js";
 import { createDiagnosticLogRecordCapture } from "../logging/test-helpers/diagnostic-log-capture.js";
 import { createEmptyPluginRegistry } from "../plugins/registry-empty.js";
@@ -121,7 +121,7 @@ function makeClient(
       minProtocol: 1,
       maxProtocol: 1,
       client: {
-        id: opts.clientId ?? "openclaw-macos",
+        id: opts.clientId ?? "afora-macos",
         version: opts.version ?? "1.0.0",
         platform: opts.platform ?? "darwin",
         mode: "node",
@@ -254,7 +254,7 @@ function nodeSkill(name: string, body = "# Instructions") {
 
 function registerLinuxNode(registry: NodeRegistry) {
   return registerNode(registry, {
-    clientId: "openclaw-node-host",
+    clientId: "afora-node-host",
     platform: "linux",
   });
 }
@@ -2612,7 +2612,7 @@ describe("gateway/node-registry", () => {
     setLoggerOverride({
       level: "warn",
       consoleLevel: "silent",
-      file: path.join(resolvePreferredOpenClawTmpDir(), `node-event-send-${process.pid}.log`),
+      file: path.join(resolvePreferredAforaTmpDir(), `node-event-send-${process.pid}.log`),
     });
     const now = vi.spyOn(Date, "now").mockReturnValue(1_000);
     const registry = createTestNodeRegistry();
@@ -2672,7 +2672,7 @@ describe("gateway/node-registry", () => {
       "node-1",
       "generation-a",
       "voicewake.changed",
-      serializeEventPayload({ triggers: ["openclaw"] }),
+      serializeEventPayload({ triggers: ["afora"] }),
     );
     await vi.waitFor(() => expect(resolveCurrentPairingState).toHaveBeenCalledTimes(1));
     resolveCurrent({ identity: "identity-a", generation: "generation-b" });
@@ -2699,7 +2699,7 @@ describe("gateway/node-registry", () => {
       connId: "conn-1",
       pairingIdentity: "identity-a",
       event: "voicewake.changed",
-      payload: { triggers: ["openclaw"] },
+      payload: { triggers: ["afora"] },
     });
     resolveCurrent(undefined);
 

@@ -1,13 +1,13 @@
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
 } from "../../infra/kysely-sync.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../../routing/session-key.js";
 import {
-  isIncognitoOpenClawAgentDatabase,
-  type OpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
+  isIncognitoAforaAgentDatabase,
+  type AforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
 import { persistSessionTranscriptArchive } from "./session-accessor.sqlite-archive-store.js";
 import type {
   MaterializedSessionStateDeletePlan,
@@ -92,7 +92,7 @@ function sessionKeyBelongsToAgent(sessionKey: string, agentId: string | undefine
 }
 
 function readSessionTranscriptUpdatedAt(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionId: string,
 ): number | undefined {
   const db = getSessionKysely(database.db);
@@ -110,7 +110,7 @@ function readSessionTranscriptUpdatedAt(
 }
 
 function sqliteTranscriptStateIsReclaimable(params: {
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   sessionUpdatedAt?: number;
   sessionId: string;
   nowMs: number;
@@ -125,7 +125,7 @@ function sqliteTranscriptStateIsReclaimable(params: {
 }
 
 function sqliteTranscriptStateHasMarker(params: {
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   sessionId: string;
   transcriptContentMarker: string;
 }): boolean {
@@ -143,7 +143,7 @@ function sqliteTranscriptStateHasMarker(params: {
 
 /** Session ids protected by live node state. */
 export function readReferencedSessionIds(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   excludedSessionKeys: ReadonlySet<string> = new Set(),
 ): Set<string> {
   const db = getSessionKysely(database.db);
@@ -171,7 +171,7 @@ export function readReferencedSessionIds(
 // Projects references after a lifecycle mutation so reset/delete can archive
 // before removing entry rows while still preserving shared session ids.
 export function readReferencedSessionIdsAfterTargetMutation(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   target: { canonicalKey: string; storeKeys: string[] },
   nextEntry?: SessionEntry,
 ): Set<string> {
@@ -208,7 +208,7 @@ export function readReferencedSessionIdsAfterTargetMutation(
 export function planSessionStateDeleteIfUnreferenced(params: {
   archiveTranscript?: boolean;
   archiveDirectory: string;
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   reason?: "deleted" | "reset";
   referencedSessionIds: ReadonlySet<string>;
   sessionId: string;
@@ -220,7 +220,7 @@ export function planSessionStateDeleteIfUnreferenced(params: {
     agentId: params.database.agentId,
     archiveDirectory: params.archiveDirectory,
     archiveTranscript:
-      params.archiveTranscript !== false && !isIncognitoOpenClawAgentDatabase(params.database),
+      params.archiveTranscript !== false && !isIncognitoAforaAgentDatabase(params.database),
     databasePath: params.database.path,
     reason: params.reason ?? "deleted",
     sessionId: params.sessionId,
@@ -229,7 +229,7 @@ export function planSessionStateDeleteIfUnreferenced(params: {
 }
 
 export function deleteMaterializedSessionStatePlans(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   plans: readonly MaterializedSessionStateDeletePlan[],
   protectedSessionIds?: ReadonlySet<string>,
   excludedSessionKeys?: ReadonlySet<string>,
@@ -263,7 +263,7 @@ export function deleteMaterializedSessionStatePlans(
 export function planSessionStateAfterEntryRemoval(params: {
   archiveDirectory: string;
   archiveTranscript?: boolean;
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   entry: SessionEntry;
   reason: "deleted" | "reset";
   referencedSessionIds?: ReadonlySet<string>;
@@ -289,7 +289,7 @@ export function planSessionStateAfterEntryRemoval(params: {
 
 /** Ids of every persisted generation owned by the given logical session keys. */
 export function readSessionGenerationIdsForKeys(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   keys: Iterable<string>,
   options: { exactStoredKeys?: boolean } = {},
 ): string[] {
@@ -309,7 +309,7 @@ export function readSessionGenerationIdsForKeys(
 // Projects removals and upserts before archive materialization so same-call
 // upserts can keep a transcript live without producing a spurious archive.
 export async function projectSessionEntryLifecycleMutation(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   params: {
     allowCanonicalRepair?: boolean;
     archiveDirectory: string;
@@ -475,7 +475,7 @@ function collectReferencedSqliteSessionIdsFromStore(
 // Projected deletes must preserve raw session_nodes.current_session_id references for
 // remaining rows whose entry_json cannot be parsed into a SessionEntry.
 export function collectProjectedReferencedSessionIds(params: {
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   excludedSessionKeys: Iterable<string>;
   projectedStore: Record<string, SessionEntry>;
 }): Set<string> {
@@ -507,7 +507,7 @@ export function collectProjectedReferencedSessionIds(params: {
 
 export { collectSessionStateIdsForEntry };
 
-function deleteSqliteSessionStateRows(database: OpenClawAgentDatabase, sessionId: string): void {
+function deleteSqliteSessionStateRows(database: AforaAgentDatabase, sessionId: string): void {
   const db = getSessionKysely(database.db);
   // The window row cascades canonical transcript tables, but FTS is virtual;
   // clear its projection before dropping the owner row.
@@ -524,7 +524,7 @@ function planSqliteOrphanLifecycleTranscriptStateDeletes(params: {
   agentId?: string;
   archiveRemovedEntryTranscripts: boolean;
   archiveDirectory: string;
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   excludedSessionIds?: ReadonlySet<string>;
   pluginOwnerId?: string;
   referencedSessionIds: ReadonlySet<string>;
@@ -584,7 +584,7 @@ function planSqliteOrphanLifecycleTranscriptStateDeletes(params: {
 }
 
 export function planSessionLifecycleArtifactCleanup(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   params: {
     agentId?: string;
     archiveRemovedEntryTranscripts: boolean;
@@ -700,7 +700,7 @@ export function planSessionLifecycleArtifactCleanup(
 }
 
 export function deletePlannedLifecycleArtifactEntries(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   entries: readonly SessionEntryRemovalPlan[],
 ): number {
   assertPlannedLifecycleArtifactEntriesUnchanged(database, entries);
@@ -713,7 +713,7 @@ export function deletePlannedLifecycleArtifactEntries(
 }
 
 export function assertPlannedLifecycleArtifactEntriesUnchanged(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   entries: readonly SessionEntryRemovalPlan[],
 ): void {
   for (const planned of entries) {

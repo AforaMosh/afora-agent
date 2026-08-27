@@ -25,7 +25,7 @@ async function getFileHandleRead(filePath: string) {
 
 describe("readWorkspaceFilePrefix", () => {
   it("fills the bounded prefix when the handle serves short reads", async () => {
-    const tempDir = tempDirs.make("openclaw-workspace-fs-prefix-");
+    const tempDir = tempDirs.make("afora-workspace-fs-prefix-");
     const filePath = path.join(tempDir, "notes.txt");
     const content = Buffer.from("prefix-bytes-that-must-not-be-truncated");
     await writeFile(filePath, content);
@@ -46,7 +46,7 @@ describe("readWorkspaceFilePrefix", () => {
   });
 
   it("returns bytes read before an explicit EOF", async () => {
-    const tempDir = tempDirs.make("openclaw-workspace-fs-prefix-eof-");
+    const tempDir = tempDirs.make("afora-workspace-fs-prefix-eof-");
     const filePath = path.join(tempDir, "notes.txt");
     await writeFile(filePath, "prefix");
 
@@ -70,7 +70,7 @@ describe("readWorkspaceFilePrefix", () => {
   });
 
   it("still bounds the returned prefix to maxBytes", async () => {
-    const tempDir = tempDirs.make("openclaw-workspace-fs-prefix-bound-");
+    const tempDir = tempDirs.make("afora-workspace-fs-prefix-bound-");
     await writeFile(path.join(tempDir, "notes.txt"), "bounded-prefix");
 
     const result = await readWorkspaceFilePrefix(tempDir, "notes.txt", 7);

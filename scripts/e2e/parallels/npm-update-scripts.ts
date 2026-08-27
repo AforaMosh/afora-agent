@@ -1,4 +1,4 @@
-// Npm Update Scripts script supports OpenClaw repository automation.
+// Npm Update Scripts script supports Afora repository automation.
 import { posixAgentWorkspaceScript, windowsAgentWorkspaceScript } from "./agent-workspace.ts";
 import { shellQuote } from "./host-command.ts";
 import {
@@ -9,7 +9,7 @@ import {
 import {
   psSingleQuote,
   windowsAgentTurnConfigPatchScript,
-  windowsOpenClawResolver,
+  windowsAforaResolver,
   windowsScopedEnvFunction,
 } from "./powershell.ts";
 import {
@@ -25,12 +25,12 @@ interface NpmUpdateScriptInput {
   updateTarget: string;
 }
 
-const windowsStalePostSwapImportRegex = String.raw`node_modules\\openclaw\\dist\\[^\\]+-[A-Za-z0-9_-]+\.js`;
+const windowsStalePostSwapImportRegex = String.raw`node_modules\\afora\\dist\\[^\\]+-[A-Za-z0-9_-]+\.js`;
 const startupMigrationRestartPrefix =
-  "OpenClaw plugin migration inputs changed during startup convergence;";
+  "Afora plugin migration inputs changed during startup convergence;";
 const macosGuestPath =
   "/opt/homebrew/bin:/opt/homebrew/opt/node/bin:/usr/local/bin:/usr/local/sbin:/opt/homebrew/sbin:/usr/bin:/bin:/usr/sbin:/sbin";
-const macosOpenClawCommand = '"$OPENCLAW_BIN"';
+const macosAforaCommand = '"$AFORA_BIN"';
 
 function posixProviderApiKeyFunction(auth: ProviderAuth): string {
   return `with_provider_api_key() {
@@ -78,7 +78,7 @@ if [ "$provider_config_exit" -ne 0 ]; then exit "$provider_config_exit"; fi`;
 function posixPrintLogTailFunction(): string {
   return `print_log_tail() {
   log_file="$1"
-  max_bytes="\${OPENCLAW_PARALLELS_NPM_UPDATE_LOG_TAIL_BYTES:-262144}"
+  max_bytes="\${AFORA_PARALLELS_NPM_UPDATE_LOG_TAIL_BYTES:-262144}"
   case "$max_bytes" in
     ''|*[!0-9]*) max_bytes=262144 ;;
     *) [ "$max_bytes" -gt 0 ] || max_bytes=262144 ;;
@@ -111,10 +111,10 @@ agent_ok=false
 for attempt in 1 2; do
   session_id=${shellQuote(sessionId)}
   if [ "$attempt" -gt 1 ]; then session_id=${shellQuote(`${sessionId}-retry`)}"-$attempt"; fi
-  rm -f "$HOME/.openclaw/agents/main/sessions/$session_id.jsonl"
+  rm -f "$HOME/.afora/agents/main/sessions/$session_id.jsonl"
   output_file="$(mktemp)"
   set +e
-  OPENCLAW_ALLOW_ROOT="\${OPENCLAW_ALLOW_ROOT:-}" with_provider_api_key ${command} agent --local --agent main --session-id "$session_id" --message 'Reply with exact ASCII text OK only.' --thinking off --timeout ${resolveParallelsModelTimeoutSeconds(platform)} --json >"$output_file" 2>&1
+  AFORA_ALLOW_ROOT="\${AFORA_ALLOW_ROOT:-}" with_provider_api_key ${command} agent --local --agent main --session-id "$session_id" --message 'Reply with exact ASCII text OK only.' --thinking off --timeout ${resolveParallelsModelTimeoutSeconds(platform)} --json >"$output_file" 2>&1
   rc=$?
   set -e
   print_log_tail "$output_file"
@@ -139,7 +139,7 @@ for attempt in 1 2; do
   fi
 done
 if [ "$agent_ok" != true ]; then
-  echo "openclaw agent finished without OK response" >&2
+  echo "afora agent finished without OK response" >&2
   exit 1
 fi`;
 }
@@ -148,38 +148,38 @@ function windowsUpdateWithScopedEnv(input: NpmUpdateScriptInput): string {
   const registryEntry = input.npmRegistry
     ? `; NPM_CONFIG_REGISTRY = ${psSingleQuote(input.npmRegistry)}`
     : "";
-  return `$script:OpenClawUpdateExit = 0
-$updateOutput = Invoke-WithScopedEnv @{ OPENCLAW_ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS = '1'${registryEntry} } {
-  Invoke-OpenClaw update --tag ${psSingleQuote(input.updateTarget)} --yes --json --no-restart 2>&1
-  $script:OpenClawUpdateExit = $LASTEXITCODE
+  return `$script:AforaUpdateExit = 0
+$updateOutput = Invoke-WithScopedEnv @{ AFORA_ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS = '1'${registryEntry} } {
+  Invoke-Afora update --tag ${psSingleQuote(input.updateTarget)} --yes --json --no-restart 2>&1
+  $script:AforaUpdateExit = $LASTEXITCODE
 }
-$updateExit = $script:OpenClawUpdateExit
+$updateExit = $script:AforaUpdateExit
 $updateOutput`;
 }
 
 function windowsGatewayReadyScript(input: NpmUpdateScriptInput): string {
-  return `$gatewayLogRoot = Join-Path ([System.IO.Path]::GetTempPath()) 'openclaw-parallels-windows-gateway'
+  return `$gatewayLogRoot = Join-Path ([System.IO.Path]::GetTempPath()) 'afora-parallels-windows-gateway'
 $gatewayLaunch = 0
 $gatewayRestartCount = 0
-function Start-OpenClawGateway {
+function Start-AforaGateway {
   $script:gatewayLaunch += 1
   $script:gatewayLogPath = "$gatewayLogRoot-$($script:gatewayLaunch).log"
   Remove-Item $script:gatewayLogPath -Force -ErrorAction SilentlyContinue
-  $gatewayCommand = Resolve-OpenClawCommand
+  $gatewayCommand = Resolve-AforaCommand
   $gatewayCommandPath = $gatewayCommand.Path.Replace("'", "''")
   $gatewayInvocation = if ($gatewayCommand.Kind -eq 'node') {
     "& node.exe '$gatewayCommandPath' gateway run --bind loopback --port 18789 --force"
   } else {
     "& '$gatewayCommandPath' gateway run --bind loopback --port 18789 --force"
   }
-  $gatewayScript = "\`$ErrorActionPreference = 'Continue'\`n$gatewayInvocation *>> \`$env:OPENCLAW_PARALLELS_GATEWAY_LOG\`nexit \`$LASTEXITCODE"
+  $gatewayScript = "\`$ErrorActionPreference = 'Continue'\`n$gatewayInvocation *>> \`$env:AFORA_PARALLELS_GATEWAY_LOG\`nexit \`$LASTEXITCODE"
   $gatewayEncodedScript = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($gatewayScript))
   $gatewayPowerShell = (Get-Process -Id $PID).Path
   Invoke-WithScopedEnv @{
-    OPENCLAW_HOME = $env:USERPROFILE
-    OPENCLAW_STATE_DIR = (Join-Path $env:USERPROFILE '.openclaw')
-    OPENCLAW_CONFIG_PATH = (Join-Path $env:USERPROFILE '.openclaw\\openclaw.json')
-    OPENCLAW_PARALLELS_GATEWAY_LOG = $script:gatewayLogPath
+    AFORA_HOME = $env:USERPROFILE
+    AFORA_STATE_DIR = (Join-Path $env:USERPROFILE '.afora')
+    AFORA_CONFIG_PATH = (Join-Path $env:USERPROFILE '.afora\\afora.json')
+    AFORA_PARALLELS_GATEWAY_LOG = $script:gatewayLogPath
     ${input.auth.apiKeyEnv} = ${psSingleQuote(input.auth.apiKeyValue)}
   } {
     $script:gatewayProcess = Start-Process -FilePath $gatewayPowerShell -ArgumentList @('-NoProfile', '-NonInteractive', '-EncodedCommand', $gatewayEncodedScript) -WindowStyle Hidden -PassThru
@@ -194,17 +194,17 @@ function Test-CurrentGatewayStartupMigrationRefusal {
   if (-not (Test-Path $script:gatewayLogPath)) { return $false }
   return Select-String -Path $script:gatewayLogPath -SimpleMatch ${psSingleQuote(startupMigrationRestartPrefix)} -Quiet
 }
-function Wait-OpenClawGateway {
+function Wait-AforaGateway {
   $deadline = (Get-Date).AddSeconds(180)
   while ((Get-Date) -lt $deadline) {
-    Invoke-OpenClaw gateway status --deep --require-rpc --timeout 15000
+    Invoke-Afora gateway status --deep --require-rpc --timeout 15000
     if ($LASTEXITCODE -eq 0) { return }
     if ($script:gatewayProcess.HasExited) {
       $script:gatewayProcess.WaitForExit()
       if ($script:gatewayRestartCount -eq 0 -and (Test-CurrentGatewayStartupMigrationRefusal)) {
         $script:gatewayRestartCount = 1
         Write-Host 'gateway exited after startup migration convergence refusal; restarting once'
-        Start-OpenClawGateway
+        Start-AforaGateway
         continue
       }
       Write-CurrentGatewayLog
@@ -215,24 +215,24 @@ function Wait-OpenClawGateway {
   Write-CurrentGatewayLog
   throw "gateway did not become ready after update"
 }
-Start-OpenClawGateway
-Wait-OpenClawGateway`;
+Start-AforaGateway
+Wait-AforaGateway`;
 }
 
 function windowsAssertAgentOkScript(input: NpmUpdateScriptInput): string {
   return `${windowsAgentTurnConfigPatchScript(input.auth.modelId)}
 ${windowsCodexPlatformPackageRepairFunction()}
-$sessionPath = Join-Path $env:USERPROFILE '.openclaw\\agents\\main\\sessions\\parallels-npm-update-windows.jsonl'
+$sessionPath = Join-Path $env:USERPROFILE '.afora\\agents\\main\\sessions\\parallels-npm-update-windows.jsonl'
 Remove-Item $sessionPath -Force -ErrorAction SilentlyContinue
 ${windowsAgentWorkspaceScript("Parallels npm update smoke test assistant.")}
 Set-Item -Path ('Env:' + ${psSingleQuote(input.auth.apiKeyEnv)}) -Value ${psSingleQuote(input.auth.apiKeyValue)}
 $agentOk = $false
 for ($attempt = 1; $attempt -le 2; $attempt++) {
   $sessionId = if ($attempt -eq 1) { 'parallels-npm-update-windows' } else { "parallels-npm-update-windows-retry-$attempt" }
-  $sessionsDir = Join-Path $env:USERPROFILE '.openclaw\\agents\\main\\sessions'
+  $sessionsDir = Join-Path $env:USERPROFILE '.afora\\agents\\main\\sessions'
   $sessionPath = Join-Path $sessionsDir "$sessionId.jsonl"
   Remove-Item $sessionPath -Force -ErrorAction SilentlyContinue
-  $output = Invoke-OpenClaw agent --local --agent main --session-id $sessionId --model ${psSingleQuote(input.auth.modelId)} --message 'Reply with exact ASCII text OK only.' --thinking off --timeout ${resolveParallelsModelTimeoutSeconds("windows")} --json 2>&1
+  $output = Invoke-Afora agent --local --agent main --session-id $sessionId --model ${psSingleQuote(input.auth.modelId)} --message 'Reply with exact ASCII text OK only.' --thinking off --timeout ${resolveParallelsModelTimeoutSeconds("windows")} --json 2>&1
   $agentExitCode = $LASTEXITCODE
   if ($null -ne $output) { $output | ForEach-Object { $_ } }
   if ($agentExitCode -eq 0 -and ($output | Out-String) -match '"finalAssistant(Raw|Visible)Text":\\s*"OK"') {
@@ -249,7 +249,7 @@ for ($attempt = 1; $attempt -le 2; $attempt++) {
   }
   if ($agentExitCode -ne 0) { throw "agent failed with exit code $agentExitCode" }
 }
-if (-not $agentOk) { throw 'openclaw agent finished without OK response' }`;
+if (-not $agentOk) { throw 'afora agent finished without OK response' }`;
 }
 
 export function macosUpdateScript(input: NpmUpdateScriptInput): string {
@@ -263,12 +263,12 @@ resolve_required_command() {
     exit 127
   }
 }
-OPENCLAW_BIN="$(resolve_required_command openclaw)"
+AFORA_BIN="$(resolve_required_command afora)"
 scrub_future_plugin_entries() {
   python3 - <<'PY'
 import json
 from pathlib import Path
-path = Path.home() / ".openclaw" / "openclaw.json"
+path = Path.home() / ".afora" / "afora.json"
 if not path.exists():
     raise SystemExit(0)
 try:
@@ -289,9 +289,9 @@ if isinstance(allow, list):
 path.write_text(json.dumps(config, indent=2) + "\n")
 PY
 }
-stop_openclaw_gateway_processes() {
-  OPENCLAW_DISABLE_BUNDLED_PLUGINS=1 "$OPENCLAW_BIN" gateway stop || true
-  pkill -f 'openclaw.*gateway' >/dev/null 2>&1 || true
+stop_afora_gateway_processes() {
+  AFORA_DISABLE_BUNDLED_PLUGINS=1 "$AFORA_BIN" gateway stop || true
+  pkill -f 'afora.*gateway' >/dev/null 2>&1 || true
   if command -v lsof >/dev/null 2>&1; then
     pids="$(lsof -tiTCP:18789 -sTCP:LISTEN 2>/dev/null || true)"
     if [ -n "$pids" ]; then
@@ -301,24 +301,24 @@ stop_openclaw_gateway_processes() {
     fi
   fi
 }
-gateway_log=/tmp/openclaw-parallels-macos-gateway.log
+gateway_log=/tmp/afora-parallels-macos-gateway.log
 rm -f "$gateway_log"
 touch "$gateway_log"
 gateway_pid=
 gateway_launch_log_offset=0
 gateway_restart_count=0
-start_openclaw_gateway() {
-  stop_openclaw_gateway_processes
+start_afora_gateway() {
+  stop_afora_gateway_processes
   gateway_launch_log_offset="$(wc -c <"$gateway_log" 2>/dev/null | tr -d '[:space:]' || echo 0)"
   trap '' HUP
-  with_provider_api_key /usr/bin/env OPENCLAW_HOME="$HOME" OPENCLAW_STATE_DIR="$HOME/.openclaw" OPENCLAW_CONFIG_PATH="$HOME/.openclaw/openclaw.json" "$OPENCLAW_BIN" gateway run --bind loopback --port 18789 --force >>"$gateway_log" 2>&1 </dev/null &
+  with_provider_api_key /usr/bin/env AFORA_HOME="$HOME" AFORA_STATE_DIR="$HOME/.afora" AFORA_CONFIG_PATH="$HOME/.AforaMosh/afora-agent.json" "$AFORA_BIN" gateway run --bind loopback --port 18789 --force >>"$gateway_log" 2>&1 </dev/null &
   gateway_pid=$!
   sleep 1
 }
 wait_for_gateway() {
   deadline=$((SECONDS + 240))
   while [ "$SECONDS" -lt "$deadline" ]; do
-    if "$OPENCLAW_BIN" gateway status --deep --require-rpc --timeout 15000; then
+    if "$AFORA_BIN" gateway status --deep --require-rpc --timeout 15000; then
       return
     fi
     if ! kill -0 "$gateway_pid" 2>/dev/null; then
@@ -327,7 +327,7 @@ wait_for_gateway() {
         if tail -c +"$((gateway_launch_log_offset + 1))" "$gateway_log" 2>/dev/null | grep -F -- ${shellQuote(startupMigrationRestartPrefix)} >/dev/null; then
           gateway_restart_count=1
           echo "gateway exited after startup migration convergence refusal; restarting once"
-          start_openclaw_gateway
+          start_afora_gateway
           continue
         fi
       fi
@@ -343,26 +343,26 @@ wait_for_gateway() {
   exit 1
 }
 scrub_future_plugin_entries
-stop_openclaw_gateway_processes
-${posixNpmRegistryEnv(input.npmRegistry)}OPENCLAW_ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS=1 "$OPENCLAW_BIN" update --tag ${shellQuote(input.updateTarget)} --yes --json --no-restart
-${posixVersionCheck(macosOpenClawCommand, input.expectedNeedle)}
-start_openclaw_gateway
+stop_afora_gateway_processes
+${posixNpmRegistryEnv(input.npmRegistry)}AFORA_ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS=1 "$AFORA_BIN" update --tag ${shellQuote(input.updateTarget)} --yes --json --no-restart
+${posixVersionCheck(macosAforaCommand, input.expectedNeedle)}
+start_afora_gateway
 wait_for_gateway
-"$OPENCLAW_BIN" models set ${shellQuote(input.auth.modelId)}
-${posixModelProviderConfigCommands(macosOpenClawCommand, input.auth.modelId, "macos")}
-"$OPENCLAW_BIN" config set agents.defaults.skipBootstrap true --strict-json
-"$OPENCLAW_BIN" config set tools.profile minimal
+"$AFORA_BIN" models set ${shellQuote(input.auth.modelId)}
+${posixModelProviderConfigCommands(macosAforaCommand, input.auth.modelId, "macos")}
+"$AFORA_BIN" config set agents.defaults.skipBootstrap true --strict-json
+"$AFORA_BIN" config set tools.profile minimal
 ${posixAgentWorkspaceScript("Parallels npm update smoke test assistant.")}
-${posixAssertAgentOkScript(macosOpenClawCommand, input, "macos", "parallels-npm-update-macos")}`;
+${posixAssertAgentOkScript(macosAforaCommand, input, "macos", "parallels-npm-update-macos")}`;
 }
 
 export function windowsUpdateScript(input: NpmUpdateScriptInput): string {
   return `$ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $false
-${windowsOpenClawResolver}
+${windowsAforaResolver}
 ${windowsScopedEnvFunction}
 function Remove-FuturePluginEntries {
-  $configPath = Join-Path $env:USERPROFILE '.openclaw\\openclaw.json'
+  $configPath = Join-Path $env:USERPROFILE '.afora\\afora.json'
   if (-not (Test-Path $configPath)) { return }
   $nodeScript = @'
 const fs = require("node:fs");
@@ -398,7 +398,7 @@ if (changed) {
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\\n");
 }
 '@
-  $nodeScriptPath = Join-Path ([System.IO.Path]::GetTempPath()) ('openclaw-future-plugin-scrub-' + [guid]::NewGuid().ToString('N') + '.cjs')
+  $nodeScriptPath = Join-Path ([System.IO.Path]::GetTempPath()) ('afora-future-plugin-scrub-' + [guid]::NewGuid().ToString('N') + '.cjs')
   try {
     $nodeScript | Set-Content -Path $nodeScriptPath -Encoding UTF8
     & node.exe $nodeScriptPath $configPath
@@ -407,10 +407,10 @@ if (changed) {
     Remove-Item $nodeScriptPath -Force -ErrorAction SilentlyContinue
   }
 }
-function Stop-OpenClawGatewayProcesses {
-  Invoke-OpenClaw gateway stop *>&1 | Out-Host
+function Stop-AforaGatewayProcesses {
+  Invoke-Afora gateway stop *>&1 | Out-Host
   Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
-    Where-Object { $_.CommandLine -match 'openclaw.*gateway' } |
+    Where-Object { $_.CommandLine -match 'afora.*gateway' } |
     ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
   Get-NetTCPConnection -LocalPort 18789 -State Listen -ErrorAction SilentlyContinue |
     Select-Object -ExpandProperty OwningProcess -Unique |
@@ -418,13 +418,13 @@ function Stop-OpenClawGatewayProcesses {
   Start-Sleep -Seconds 2
 }
 Remove-FuturePluginEntries
-Stop-OpenClawGatewayProcesses
+Stop-AforaGatewayProcesses
 ${windowsUpdateWithScopedEnv(input)}
 if ($updateExit -ne 0) {
   $updateText = $updateOutput | Out-String
   $stalePostSwapImport = $updateText -match 'ERR_MODULE_NOT_FOUND' -and $updateText -match ${psSingleQuote(windowsStalePostSwapImportRegex)}
-  if (-not $stalePostSwapImport) { throw "openclaw update failed with exit code $updateExit" }
-  Write-Host "openclaw update returned a stale post-swap module import; continuing to post-update health checks"
+  if (-not $stalePostSwapImport) { throw "afora update failed with exit code $updateExit" }
+  Write-Host "afora update returned a stale post-swap module import; continuing to post-update health checks"
 }
 ${windowsVersionCheck(input.expectedNeedle)}
 ${windowsGatewayReadyScript(input)}
@@ -434,14 +434,14 @@ ${windowsAssertAgentOkScript(input)}`;
 export function linuxUpdateScript(input: NpmUpdateScriptInput): string {
   return String.raw`set -euo pipefail
 export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/snap/bin
-export OPENCLAW_ALLOW_ROOT=1
+export AFORA_ALLOW_ROOT=1
 ${posixProviderApiKeyFunction(input.auth)}
 ${posixPrintLogTailFunction()}
 scrub_future_plugin_entries() {
   node - <<'JS'
 const fs = require("node:fs");
 const path = require("node:path");
-const configPath = path.join(process.env.HOME || "/root", ".openclaw", "openclaw.json");
+const configPath = path.join(process.env.HOME || "/root", ".afora", "afora.json");
 if (!fs.existsSync(configPath)) process.exit(0);
 let config;
 try { config = JSON.parse(fs.readFileSync(configPath, "utf8")); } catch { process.exit(0); }
@@ -458,28 +458,28 @@ if (Array.isArray(plugins.allow)) {
 fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
 JS
 }
-stop_openclaw_gateway_processes() {
-  OPENCLAW_DISABLE_BUNDLED_PLUGINS=1 OPENCLAW_ALLOW_ROOT=1 openclaw gateway stop || true
-  pkill -f 'openclaw.*gateway' >/dev/null 2>&1 || true
+stop_afora_gateway_processes() {
+  AFORA_DISABLE_BUNDLED_PLUGINS=1 AFORA_ALLOW_ROOT=1 afora gateway stop || true
+  pkill -f 'afora.*gateway' >/dev/null 2>&1 || true
 }
-gateway_log=/tmp/openclaw-parallels-linux-gateway.log
+gateway_log=/tmp/afora-parallels-linux-gateway.log
 rm -f "$gateway_log"
 touch "$gateway_log"
 gateway_pid=
 gateway_launch_log_offset=0
 gateway_restart_count=0
-start_openclaw_gateway() {
-  pkill -f "openclaw gateway run" >/dev/null 2>&1 || true
+start_afora_gateway() {
+  pkill -f "afora gateway run" >/dev/null 2>&1 || true
   gateway_launch_log_offset="$(wc -c <"$gateway_log" 2>/dev/null | tr -d '[:space:]' || echo 0)"
   with_provider_api_key setsid sh -lc ${shellQuote(
-    "exec env OPENCLAW_HOME=/root OPENCLAW_STATE_DIR=/root/.openclaw OPENCLAW_CONFIG_PATH=/root/.openclaw/openclaw.json OPENCLAW_DISABLE_BONJOUR=1 OPENCLAW_ALLOW_ROOT=1 openclaw gateway run --bind loopback --port 18789 --force >>/tmp/openclaw-parallels-linux-gateway.log 2>&1",
+    "exec env AFORA_HOME=/root AFORA_STATE_DIR=/root/.afora AFORA_CONFIG_PATH=/root/.AforaMosh/afora-agent.json AFORA_DISABLE_BONJOUR=1 AFORA_ALLOW_ROOT=1 afora gateway run --bind loopback --port 18789 --force >>/tmp/afora-parallels-linux-gateway.log 2>&1",
   )} >/dev/null 2>&1 < /dev/null &
   gateway_pid=$!
 }
 wait_for_gateway() {
   deadline=$((SECONDS + 240))
   while [ "$SECONDS" -lt "$deadline" ]; do
-    if openclaw gateway status --deep --require-rpc --timeout 15000; then
+    if afora gateway status --deep --require-rpc --timeout 15000; then
       return
     fi
     if ! kill -0 "$gateway_pid" 2>/dev/null; then
@@ -488,7 +488,7 @@ wait_for_gateway() {
         if tail -c +"$((gateway_launch_log_offset + 1))" "$gateway_log" 2>/dev/null | grep -F -- ${shellQuote(startupMigrationRestartPrefix)} >/dev/null; then
           gateway_restart_count=1
           echo "gateway exited after startup migration convergence refusal; restarting once"
-          start_openclaw_gateway
+          start_afora_gateway
           continue
         fi
       fi
@@ -504,17 +504,17 @@ wait_for_gateway() {
   exit 1
 }
 scrub_future_plugin_entries
-stop_openclaw_gateway_processes
-${posixNpmRegistryEnv(input.npmRegistry)}OPENCLAW_ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS=1 openclaw update --tag ${shellQuote(input.updateTarget)} --yes --json --no-restart
-${posixVersionCheck("openclaw", input.expectedNeedle)}
-start_openclaw_gateway
+stop_afora_gateway_processes
+${posixNpmRegistryEnv(input.npmRegistry)}AFORA_ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS=1 afora update --tag ${shellQuote(input.updateTarget)} --yes --json --no-restart
+${posixVersionCheck("afora", input.expectedNeedle)}
+start_afora_gateway
 wait_for_gateway
-openclaw models set ${shellQuote(input.auth.modelId)}
-${posixModelProviderConfigCommands("openclaw", input.auth.modelId, "linux")}
-openclaw config set agents.defaults.skipBootstrap true --strict-json
-openclaw config set tools.profile minimal
+afora models set ${shellQuote(input.auth.modelId)}
+${posixModelProviderConfigCommands("afora", input.auth.modelId, "linux")}
+afora config set agents.defaults.skipBootstrap true --strict-json
+afora config set tools.profile minimal
 ${posixAgentWorkspaceScript("Parallels npm update smoke test assistant.")}
-${posixAssertAgentOkScript("openclaw", input, "linux", "parallels-npm-update-linux")}`;
+${posixAssertAgentOkScript("afora", input, "linux", "parallels-npm-update-linux")}`;
 }
 
 function posixVersionCheck(command: string, expectedNeedle: string): string {
@@ -563,10 +563,10 @@ function windowsVersionCheck(expectedNeedle: string): string {
   if (!expectedNeedle) {
     return `$versionDeadline = (Get-Date).AddSeconds(60)
 while ($true) {
-  $version = Invoke-OpenClaw --version
+  $version = Invoke-Afora --version
   $version
   if ($LASTEXITCODE -eq 0) { break }
-  if ((Get-Date) -ge $versionDeadline) { throw "openclaw --version failed with exit code $LASTEXITCODE" }
+  if ((Get-Date) -ge $versionDeadline) { throw "afora --version failed with exit code $LASTEXITCODE" }
   Start-Sleep -Seconds 2
 }`;
   }
@@ -574,11 +574,11 @@ while ($true) {
   const mismatch = psSingleQuote(`version mismatch: expected ${expectedNeedle}`);
   return `$versionDeadline = (Get-Date).AddSeconds(60)
 while ($true) {
-  $version = Invoke-OpenClaw --version
+  $version = Invoke-Afora --version
   $version
   if ($LASTEXITCODE -eq 0 -and (($version | Out-String) -like ${expectedPattern})) { break }
   if ((Get-Date) -ge $versionDeadline) {
-    if ($LASTEXITCODE -ne 0) { throw "openclaw --version failed with exit code $LASTEXITCODE" }
+    if ($LASTEXITCODE -ne 0) { throw "afora --version failed with exit code $LASTEXITCODE" }
     throw ${mismatch}
   }
   Start-Sleep -Seconds 2

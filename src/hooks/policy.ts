@@ -1,5 +1,5 @@
 // Hook policy helpers decide when hooks may run for a configured event.
-import type { OpenClawConfig, HookConfig } from "../config/config.js";
+import type { AforaConfig, HookConfig } from "../config/config.js";
 import { resolveHookKey } from "./frontmatter.js";
 import type { HookEntry, HookSource } from "./types.js";
 
@@ -26,33 +26,33 @@ type HookResolutionCollision = {
 };
 
 const HOOK_SOURCE_POLICIES: Record<HookSource, HookSourcePolicy> = {
-  "openclaw-bundled": {
+  "afora-bundled": {
     precedence: 10,
     trustedLocalCode: true,
     defaultEnableMode: "default-on",
-    canOverride: ["openclaw-bundled"],
-    canBeOverriddenBy: ["openclaw-managed", "openclaw-plugin"],
+    canOverride: ["afora-bundled"],
+    canBeOverriddenBy: ["afora-managed", "afora-plugin"],
   },
-  "openclaw-plugin": {
+  "afora-plugin": {
     precedence: 20,
     trustedLocalCode: true,
     defaultEnableMode: "default-on",
-    canOverride: ["openclaw-bundled", "openclaw-plugin"],
-    canBeOverriddenBy: ["openclaw-managed"],
+    canOverride: ["afora-bundled", "afora-plugin"],
+    canBeOverriddenBy: ["afora-managed"],
   },
-  "openclaw-managed": {
+  "afora-managed": {
     precedence: 30,
     trustedLocalCode: true,
     defaultEnableMode: "default-on",
-    canOverride: ["openclaw-bundled", "openclaw-managed", "openclaw-plugin"],
-    canBeOverriddenBy: ["openclaw-managed"],
+    canOverride: ["afora-bundled", "afora-managed", "afora-plugin"],
+    canBeOverriddenBy: ["afora-managed"],
   },
-  "openclaw-workspace": {
+  "afora-workspace": {
     precedence: 40,
     trustedLocalCode: true,
     defaultEnableMode: "explicit-opt-in",
-    canOverride: ["openclaw-workspace"],
-    canBeOverriddenBy: ["openclaw-workspace"],
+    canOverride: ["afora-workspace"],
+    canBeOverriddenBy: ["afora-workspace"],
   },
 };
 
@@ -63,7 +63,7 @@ function getHookSourcePolicy(source: HookSource): HookSourcePolicy {
 
 /** Resolve explicit per-hook config by hook key. */
 export function resolveHookConfig(
-  config: OpenClawConfig | undefined,
+  config: AforaConfig | undefined,
   hookKey: string,
 ): HookConfig | undefined {
   const hooks = config?.hooks?.internal?.entries;
@@ -80,14 +80,14 @@ export function resolveHookConfig(
 /** Resolve whether a hook is enabled before runtime requirement checks. */
 export function resolveHookEnableState(params: {
   entry: HookEntry;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   hookConfig?: HookConfig;
 }): HookEnableState {
   const { entry, config } = params;
   const hookKey = resolveHookKey(entry.hook.name, entry);
   const hookConfig = params.hookConfig ?? resolveHookConfig(config, hookKey);
 
-  if (entry.hook.source === "openclaw-plugin") {
+  if (entry.hook.source === "afora-plugin") {
     return { enabled: true };
   }
   if (hookConfig?.enabled === false) {

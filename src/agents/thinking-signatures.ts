@@ -1,4 +1,4 @@
-import { parseDateFirstTimestampMs } from "@openclaw/normalization-core/number-coercion";
+import { parseDateFirstTimestampMs } from "@afora/normalization-core/number-coercion";
 import type { AgentMessage } from "./runtime/index.js";
 
 type AssistantContentBlock = Extract<AgentMessage, { role: "assistant" }>["content"][number];

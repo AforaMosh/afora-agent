@@ -1,18 +1,18 @@
 ---
-summary: "CLI reference for `openclaw node` (headless node host)"
+summary: "CLI reference for `afora node` (headless node host)"
 read_when:
   - Running the headless node host
   - Pairing a non-macOS node for system.run
 title: "Node"
 ---
 
-# `openclaw node`
+# `afora node`
 
 Run a **headless node host** that connects to the Gateway WebSocket and exposes
 `system.run` / `system.which` on this machine.
 
 On macOS, the menu bar app already embeds this node-host runtime into its own
-node connection and adds native Mac capabilities. Use `openclaw node run` on a
+node connection and adds native Mac capabilities. Use `afora node run` on a
 Mac only when you intentionally want a headless node without the app. Running
 both creates two node identities for the same machine.
 
@@ -30,7 +30,7 @@ Common use cases:
 Execution is still guarded by **exec approvals** and per-agent allowlists on the
 node host, so you can keep command access scoped and explicit.
 
-`openclaw node run` can publish plugin or MCP-backed tools after it connects.
+`afora node run` can publish plugin or MCP-backed tools after it connects.
 The Gateway trusts descriptors from the paired node by default, while requiring
 each descriptor's command to remain in the node's approved command surface. The
 agent sees each accepted descriptor as a normal plugin tool, but execution still
@@ -39,7 +39,7 @@ agent runs. Gateway operators can disable publication with
 `gateway.nodes.pluginTools.enabled: false`.
 
 For declarative MCP tools, add the normal MCP server shape under
-`nodeHost.mcp.servers` in `openclaw.json` on the node machine, then restart the
+`nodeHost.mcp.servers` in `afora.json` on the node machine, then restart the
 node host. The node declares the approval-gated `mcp.tools.call.v1` command
 family and publishes listed tools after connecting; changing the server list
 later does not require re-pairing. See
@@ -70,18 +70,18 @@ Disable it on the node if needed:
 
 ## Run (foreground)
 
-For one-paste onboarding, use [`openclaw connect`](/cli/connect). It accepts a
+For one-paste onboarding, use [`afora connect`](/cli/connect). It accepts a
 single-use join URL or the same setup code forms as `--pair`, then runs this
 node-host runtime.
 
 ```bash
-openclaw node run --host <gateway-host> --port 18789
+afora node run --host <gateway-host> --port 18789
 ```
 
 Or paste a short-lived node setup link from the Control UI Devices page:
 
 ```bash
-openclaw node run --pair "oc-pair://<setup-code>"
+afora node run --pair "oc-pair://<setup-code>"
 ```
 
 Options:
@@ -91,7 +91,7 @@ Options:
   and optional certificate pin from a setup code or `oc-pair://` URL. Explicit
   gateway flags override values from `--pair`.
 - `--port <port>`: Gateway WebSocket port (default: `18789`)
-- `--context-path <path>`: Gateway WebSocket context path (e.g. `/openclaw-gw`). Appended to the WebSocket URL.
+- `--context-path <path>`: Gateway WebSocket context path (e.g. `/afora-gw`). Appended to the WebSocket URL.
 - `--tls`: Use TLS for the gateway connection
 - `--no-tls`: Force a plaintext Gateway connection even when the local Gateway config enables TLS
 - `--tls-fingerprint <sha256>`: Expected TLS certificate fingerprint (sha256)
@@ -106,18 +106,18 @@ does not pre-approve `system.run`; normal node approval and SSH verification
 remain in force. `node install --pair` is intentionally unavailable because a
 short-lived bearer setup link must not be persisted in service arguments.
 
-`openclaw node run` and `openclaw node install` resolve gateway auth from config/env (no `--token`/`--password` flags on node commands):
+`afora node run` and `afora node install` resolve gateway auth from config/env (no `--token`/`--password` flags on node commands):
 
-- `OPENCLAW_GATEWAY_TOKEN` / `OPENCLAW_GATEWAY_PASSWORD` are checked first.
+- `AFORA_GATEWAY_TOKEN` / `AFORA_GATEWAY_PASSWORD` are checked first.
 - Then local config fallback: `gateway.auth.token` / `gateway.auth.password`.
 - In local mode, node host intentionally does not inherit `gateway.remote.token` / `gateway.remote.password`.
 - If `gateway.auth.token` / `gateway.auth.password` is explicitly configured via SecretRef and unresolved, node auth resolution fails closed (no remote fallback masking).
 - In `gateway.mode=remote`, remote client fields (`gateway.remote.token` / `gateway.remote.password`) are also eligible per remote precedence rules.
-- Node host auth resolution only honors `OPENCLAW_GATEWAY_*` env vars.
+- Node host auth resolution only honors `AFORA_GATEWAY_*` env vars.
 
 For a Gateway behind Cloudflare Access, set `CF_ACCESS_CLIENT_ID` and
-`CF_ACCESS_CLIENT_SECRET` together before `openclaw connect`, `openclaw node
-run`, or `openclaw node install`. The node stores env SecretRefs under its
+`CF_ACCESS_CLIENT_SECRET` together before `afora connect`, `afora node
+run`, or `afora node install`. The node stores env SecretRefs under its
 canonical `gateway.cloudflareAccess.clientId` and `clientSecret` connection
 keys. Installed services keep the values in the managed service environment
 file, not in service arguments or inline supervisor definitions. Access
@@ -127,11 +127,11 @@ resolution while credential-free plaintext node routes remain unchanged. See
 
 For a node connecting to a plaintext `ws://` Gateway, loopback, private IP
 literals, `.local`, and Tailnet `*.ts.net` hosts are accepted. For other
-trusted private-DNS names, set `OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=1`; without
+trusted private-DNS names, set `AFORA_ALLOW_INSECURE_PRIVATE_WS=1`; without
 it, node startup fails closed and asks you to use `wss://`, an SSH tunnel, or
-Tailscale. This is a process-environment opt-in, not an `openclaw.json` config
+Tailscale. This is a process-environment opt-in, not an `afora.json` config
 key.
-`openclaw node install` persists it into the supervised node service when it is
+`afora node install` persists it into the supervised node service when it is
 present in the install command environment.
 
 ## Service (background)
@@ -140,14 +140,14 @@ Install a headless node host as a user service (launchd on macOS, systemd on
 Linux, Windows Task Scheduler on Windows).
 
 ```bash
-openclaw node install --host <gateway-host> --port 18789
+afora node install --host <gateway-host> --port 18789
 ```
 
 Options:
 
 - `--host <host>`: Gateway WebSocket host (default: `127.0.0.1`)
 - `--port <port>`: Gateway WebSocket port (default: `18789`)
-- `--context-path <path>`: Gateway WebSocket context path (e.g. `/openclaw-gw`). Appended to the WebSocket URL.
+- `--context-path <path>`: Gateway WebSocket context path (e.g. `/afora-gw`). Appended to the WebSocket URL.
 - `--tls`: Use TLS for the gateway connection
 - `--tls-fingerprint <sha256>`: Expected TLS certificate fingerprint (sha256)
 - `--node-id <id>`: Override the client instance ID stored in shared SQLite state (does not reset pairing)
@@ -158,24 +158,24 @@ Options:
 > **Linux (systemd user service):** Run `sudo loginctl enable-linger <user>` after
 > install. Without lingering, `systemd --user` tears down the node service when
 > your last SSH session ends, so the node silently goes offline after logout.
-> `openclaw node install` prints this warning when it detects lingering is
+> `afora node install` prints this warning when it detects lingering is
 > disabled.
 
 Manage the service:
 
 ```bash
-openclaw node status
-openclaw node start
-openclaw node stop
-openclaw node restart
-openclaw node uninstall
+afora node status
+afora node start
+afora node stop
+afora node restart
+afora node uninstall
 ```
 
-Use `openclaw node run` for a foreground node host (no service).
+Use `afora node run` for a foreground node host (no service).
 
 Service commands accept `--json` for machine-readable output.
 `node start` and `node restart` print install hints and exit nonzero when no
-managed node service is installed; run `openclaw node install` first. Stopping
+managed node service is installed; run `afora node install` first. Stopping
 an absent service remains a successful no-op.
 
 The node host retries Gateway restart and network closes in-process. If the
@@ -190,7 +190,7 @@ The first connection creates a pending device pairing request (`role: node`) on 
 
 When the Gateway host can SSH to the node host non-interactively (same user,
 trusted host key), the pending request is approved automatically: the Gateway
-runs `openclaw node identity --json` on the node host over SSH and approves on
+runs `afora node identity --json` on the node host over SSH and approves on
 an exact device-key match. This is on by default; see
 [SSH-verified device auto-approval](/gateway/pairing#ssh-verified-device-auto-approval-default)
 for requirements and how to disable it (`gateway.nodes.pairing.sshVerify: false`).
@@ -198,18 +198,18 @@ for requirements and how to disable it (`gateway.nodes.pairing.sshVerify: false`
 Otherwise approve manually via:
 
 ```bash
-openclaw devices list
-openclaw devices approve <requestId>
+afora devices list
+afora devices approve <requestId>
 ```
 
 Inspect the local node identity the Gateway verifies against:
 
 ```bash
-openclaw node identity --json
+afora node identity --json
 ```
 
 It prints the device ID and public key from the `primary` row in
-`state/openclaw.sqlite` and never creates the database or a new identity.
+`state/afora.sqlite` and never creates the database or a new identity.
 
 On tightly controlled node networks, the Gateway operator can explicitly opt in
 to auto-approving first-time node pairing from trusted CIDRs:
@@ -233,64 +233,64 @@ scope, metadata, or public-key upgrades still require manual approval.
 
 If the node retries pairing with changed auth details (role/scopes/public key),
 the previous pending request is superseded and a new `requestId` is created.
-Run `openclaw devices list` again before approval.
+Run `afora devices list` again before approval.
 
 ### Identity and pairing state
 
 The headless node separates its client instance ID from the signed device
 identity that the Gateway uses for pairing and routing. This state lives in the
-OpenClaw state directory (`~/.openclaw` by default, or `$OPENCLAW_STATE_DIR`
+Afora state directory (`~/.afora` by default, or `$AFORA_STATE_DIR`
 when set):
 
 | State                                                    | Purpose                                                                                                                          |
 | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `state/openclaw.sqlite` (`node_host_config`)             | Client instance ID, display name, and Gateway connection metadata. The client sends this ID as `instanceId`.                     |
-| `state/openclaw.sqlite` (`device_identities`, `primary`) | Signed Ed25519 keypair and derived device ID. For signed connections, this device ID is the routed node ID and pairing identity. |
-| `state/openclaw.sqlite` (`device_auth_tokens`)           | Paired device tokens, keyed by cryptographic device ID and role.                                                                 |
+| `state/afora.sqlite` (`node_host_config`)             | Client instance ID, display name, and Gateway connection metadata. The client sends this ID as `instanceId`.                     |
+| `state/afora.sqlite` (`device_identities`, `primary`) | Signed Ed25519 keypair and derived device ID. For signed connections, this device ID is the routed node ID and pairing identity. |
+| `state/afora.sqlite` (`device_auth_tokens`)           | Paired device tokens, keyed by cryptographic device ID and role.                                                                 |
 
 `--node-id` changes only the client instance ID in shared SQLite state. It does
 not change the cryptographic device ID or clear pairing auth. Migrating a retired
-`node.json` with `openclaw doctor --fix` likewise does not reset pairing. To
+`node.json` with `afora doctor --fix` likewise does not reset pairing. To
 revoke and re-pair a node:
 
-1. On the Gateway, run `openclaw nodes remove --node <id|name|ip>`.
-2. On the node, restart the installed service with `openclaw node restart`, or
-   stop and rerun the foreground `openclaw node run` command. This starts the
-   device-pairing flow. If `openclaw devices list` does not show a request
+1. On the Gateway, run `afora nodes remove --node <id|name|ip>`.
+2. On the node, restart the installed service with `afora node restart`, or
+   stop and rerun the foreground `afora node run` command. This starts the
+   device-pairing flow. If `afora devices list` does not show a request
    and the node reports `AUTH_DEVICE_TOKEN_MISMATCH`, restart or rerun it once
    more. The rejected attempt clears the now-revoked local token; the next
    attempt can request pairing.
-3. On the Gateway, run `openclaw devices list`, then
-   `openclaw devices approve <deviceRequestId>`.
+3. On the Gateway, run `afora devices list`, then
+   `afora devices approve <deviceRequestId>`.
 4. Restart or rerun the node again. A client paused for pairing does not resume
    automatically after approval; this reconnect creates the separate
    command-surface request.
-5. On the Gateway, run `openclaw nodes pending`, then
-   `openclaw nodes approve <nodeRequestId>`.
+5. On the Gateway, run `afora nodes pending`, then
+   `afora nodes approve <nodeRequestId>`.
 
 The two request IDs are distinct. An applicable trusted-CIDR policy can
 auto-approve the first-time device-pairing step; command-surface approval remains
 a separate check.
 
-Older OpenClaw releases stored node-host state in `node.json`, the signed
+Older Afora releases stored node-host state in `node.json`, the signed
 identity in `identity/device.json`, and paired auth in
 `identity/device-auth.json`. Stop the node host and run
-`openclaw doctor --fix` once; Doctor claims each retired source, validates it,
+`afora doctor --fix` once; Doctor claims each retired source, validates it,
 imports and verifies the canonical SQLite row, then removes the old file. Normal
 node commands fail closed with this repair instruction while either retired file
-or an interrupted Doctor claim remains. Keep `state/openclaw.sqlite` private;
+or an interrupted Doctor claim remains. Keep `state/afora.sqlite` private;
 it contains the device keypair and auth tokens.
 
 ## Exec approvals
 
 `system.run` is gated by local exec approvals:
 
-- `$OPENCLAW_STATE_DIR/state/openclaw.sqlite#exec_approvals_config`, or
-  `~/.openclaw/state/openclaw.sqlite#exec_approvals_config` when the variable is unset
+- `$AFORA_STATE_DIR/state/afora.sqlite#exec_approvals_config`, or
+  `~/.afora/state/afora.sqlite#exec_approvals_config` when the variable is unset
 - [Exec approvals](/tools/exec-approvals)
-- `openclaw approvals --node <id|name|ip>` (edit from the Gateway)
+- `afora approvals --node <id|name|ip>` (edit from the Gateway)
 
-For approved async node exec, OpenClaw prepares a canonical `systemRunPlan`
+For approved async node exec, Afora prepares a canonical `systemRunPlan`
 before prompting. The later approved `system.run` forward reuses that stored
 plan, so edits to command/cwd/session fields after the approval request was
 created are rejected instead of changing what the node executes.

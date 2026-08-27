@@ -1,5 +1,5 @@
-import { chunkMarkdownTextWithMode } from "openclaw/plugin-sdk/reply-chunking";
-import { sendTextMediaPayload } from "openclaw/plugin-sdk/reply-payload";
+import { chunkMarkdownTextWithMode } from "afora-agent/plugin-sdk/reply-chunking";
+import { sendTextMediaPayload } from "afora-agent/plugin-sdk/reply-payload";
 // Telegram tests cover telegram outbound plugin behavior.
 import { describe, expect, it, vi } from "vitest";
 import { markdownToTelegramHtml, splitTelegramHtmlChunks } from "./format.js";
@@ -35,7 +35,7 @@ describe("telegramPlugin outbound", () => {
 
   it("strips assistant-visible tool traces before outbound delivery", () => {
     clearTelegramRuntime();
-    const text = 'Done.\n⚠️ 🛠️ `search "Pipeline" in ~/.openclaw/workspace-* (agent)` failed';
+    const text = 'Done.\n⚠️ 🛠️ `search "Pipeline" in ~/.afora/workspace-* (agent)` failed';
 
     expect(telegramOutbound.sanitizeText?.({ text, payload: { text } })).toBe("Done.");
   });

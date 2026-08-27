@@ -3,7 +3,7 @@ export const TUI_PTY_RESET_FIXTURE = {
   methods: `
   async resetSession(key: string, reason?: "new" | "reset") {
     record("resetSession", { key, reason });
-    const releasePath = process.env.OPENCLAW_TUI_PTY_RESET_RELEASE_PATH;
+    const releasePath = process.env.AFORA_TUI_PTY_RESET_RELEASE_PATH;
     if (releasePath) {
       while (!existsSync(releasePath)) {
         await new Promise((resolve) => setTimeout(resolve, 5));
@@ -23,7 +23,7 @@ export const TUI_PTY_RESET_FIXTURE = {
 `,
   options: `
     submitBurstWindowMs: (() => {
-      const value = Number(process.env.OPENCLAW_TUI_PTY_SUBMIT_BURST_WINDOW_MS ?? 0);
+      const value = Number(process.env.AFORA_TUI_PTY_SUBMIT_BURST_WINDOW_MS ?? 0);
       return value > 0 ? value : undefined;
     })(),
     onSubmitBurstCaptured: (value) => record("submitBurstCaptured", { value }),

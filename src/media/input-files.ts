@@ -2,17 +2,17 @@
 import {
   classifyAttachmentBytes,
   type AttachmentClassification,
-} from "@openclaw/media-core/attachment-classify";
-import { canonicalizeBase64, estimateBase64DecodedBytes } from "@openclaw/media-core/base64";
-import { parseMediaContentLength } from "@openclaw/media-core/content-length";
-import { detectMime, normalizeMimeType } from "@openclaw/media-core/mime";
-import { resolveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
+} from "@afora/media-core/attachment-classify";
+import { canonicalizeBase64, estimateBase64DecodedBytes } from "@afora/media-core/base64";
+import { parseMediaContentLength } from "@afora/media-core/content-length";
+import { detectMime, normalizeMimeType } from "@afora/media-core/mime";
+import { resolveTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+} from "@afora/normalization-core/string-coerce";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
+import type { AforaConfig } from "../config/types.afora.js";
 import { readResponseWithLimit } from "../infra/http-body.js";
 import { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
 import type { SsrFPolicy } from "../infra/net/ssrf.js";
@@ -212,7 +212,7 @@ async function fetchWithGuard(params: {
     timeoutMs: params.timeoutMs,
     policy: params.policy,
     auditContext: params.auditContext,
-    init: { headers: { "User-Agent": "OpenClaw-Gateway/1.0" } },
+    init: { headers: { "User-Agent": "Afora-Gateway/1.0" } },
   });
 
   try {
@@ -383,7 +383,7 @@ export async function extractImageContentFromSource(
 export async function extractFileContentFromSource(params: {
   source: InputFileSource;
   limits: InputFileLimits;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   classification?: AttachmentClassification;
 }): Promise<InputFileExtractResult> {
   const { source, limits } = params;

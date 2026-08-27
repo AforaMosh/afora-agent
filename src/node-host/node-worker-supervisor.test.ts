@@ -7,9 +7,9 @@ import { NODE_WORKER_CAPACITY_EXHAUSTED_ERROR_CODE } from "../infra/node-command
 import { registerSecretValueForRedaction } from "../logging/secret-redaction-registry.js";
 import { resetSecretRedactionRegistryForTest } from "../logging/secret-redaction-registry.test-support.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { NodeWorkerLaunchStore } from "./node-worker-launch-store.js";
 import {
@@ -34,7 +34,7 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 afterEach(() => {
   vi.restoreAllMocks();
   resetSecretRedactionRegistryForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 function fixture(
@@ -90,7 +90,7 @@ describe("node worker supervisor", () => {
 
   it("keeps the additive table absent until the first stateful operation", async () => {
     const { bundleRoot, env, supervisor } = fixture();
-    const database = openOpenClawStateDatabase({ env });
+    const database = openAforaStateDatabase({ env });
     const findTable = () =>
       database.db
         .prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name = ?")
@@ -113,7 +113,7 @@ describe("node worker supervisor", () => {
   it("keeps pending and running launches owned by a live supervisor unchanged", async () => {
     const { bundleRoot, env, supervisor } = fixture();
     await supervisor.status("schema-probe");
-    const database = openOpenClawStateDatabase({ env }).db;
+    const database = openAforaStateDatabase({ env }).db;
     const supervisorIdentity = requireNodeWorkerProcessIdentity(process.pid);
     const insert = database.prepare(`
       INSERT INTO node_worker_launches (
@@ -160,9 +160,9 @@ describe("node worker supervisor", () => {
     expect(availability).toEqual([false]);
     await supervisor.close();
     await sameHandle.close();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
 
-    openOpenClawStateDatabase({ env });
+    openAforaStateDatabase({ env });
     const recovered = createNodeWorkerSupervisor({ bundleRoot, env });
     expect(await recovered.status("pending-launch")).toMatchObject({
       state: "pending",
@@ -205,7 +205,7 @@ describe("node worker supervisor", () => {
       ),
     ).rejects.toThrow("replayed with a different plan");
 
-    const row = openOpenClawStateDatabase({ env })
+    const row = openAforaStateDatabase({ env })
       .db.prepare("SELECT * FROM node_worker_launches WHERE launch_id = ?")
       .get(input.launchId);
     expect(JSON.stringify(row)).not.toContain(TEST_WORKER_CREDENTIAL);
@@ -374,8 +374,8 @@ describe("node worker supervisor", () => {
       LC_TIME: "de_DE.UTF-8",
       NODE_EXTRA_CA_CERTS: path.join(root, "private-ca.pem"),
       NODE_USE_SYSTEM_CA: "1",
-      OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: "1",
-      OPENCLAW_SUPPLIED_SECRET: "supplied-openclaw-secret",
+      AFORA_ALLOW_INSECURE_PRIVATE_WS: "1",
+      AFORA_SUPPLIED_SECRET: "supplied-afora-secret",
       NODE_OPTIONS: "--title=forbidden-worker-title",
       BASH_ENV: path.join(root, "forbidden-shell-init"),
       DYLD_INSERT_LIBRARIES: path.join(root, "forbidden-runtime-injection"),
@@ -386,7 +386,7 @@ describe("node worker supervisor", () => {
     await withEnvAsync(
       {
         AMBIENT_SECRET: "ambient-secret",
-        OPENCLAW_AMBIENT_SECRET: "ambient-openclaw-secret",
+        AFORA_AMBIENT_SECRET: "ambient-afora-secret",
         HTTP_PROXY: "http://ambient-proxy.invalid",
         NODE_OPTIONS: undefined,
       },
@@ -398,8 +398,8 @@ describe("node worker supervisor", () => {
           NODE_EXTRA_CA_CERTS: suppliedEnv.NODE_EXTRA_CA_CERTS,
           NODE_USE_SYSTEM_CA: suppliedEnv.NODE_USE_SYSTEM_CA,
           NODE_COMPILE_CACHE: expect.stringContaining("node-worker-compile-cache"),
-          OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: suppliedEnv.OPENCLAW_ALLOW_INSECURE_PRIVATE_WS,
-          OPENCLAW_NO_RESPAWN: "1",
+          AFORA_ALLOW_INSECURE_PRIVATE_WS: suppliedEnv.AFORA_ALLOW_INSECURE_PRIVATE_WS,
+          AFORA_NO_RESPAWN: "1",
           [suppliedPathKey]: suppliedEnv[suppliedPathKey],
         };
         const supervisor = createNodeWorkerSupervisor({ bundleRoot, env: suppliedEnv });
@@ -412,9 +412,9 @@ describe("node worker supervisor", () => {
 
         expect(workerEnv).toMatchObject(expectedWorkerEnv);
         expect(workerEnv).not.toHaveProperty("AMBIENT_SECRET");
-        expect(workerEnv).not.toHaveProperty("OPENCLAW_AMBIENT_SECRET");
-        expect(workerEnv).not.toHaveProperty("OPENCLAW_STATE_DIR");
-        expect(workerEnv).not.toHaveProperty("OPENCLAW_SUPPLIED_SECRET");
+        expect(workerEnv).not.toHaveProperty("AFORA_AMBIENT_SECRET");
+        expect(workerEnv).not.toHaveProperty("AFORA_STATE_DIR");
+        expect(workerEnv).not.toHaveProperty("AFORA_SUPPLIED_SECRET");
         expect(workerEnv).not.toHaveProperty("NODE_OPTIONS");
         expect(workerEnv).not.toHaveProperty("BASH_ENV");
         expect(workerEnv).not.toHaveProperty("DYLD_INSERT_LIBRARIES");
@@ -565,7 +565,7 @@ describe("node worker supervisor", () => {
     expect(
       await supervisor.launch(input, {
         kind: "websocket",
-        url: "wss://gateway.example/__openclaw__/worker",
+        url: "wss://gateway.example/__afora__/worker",
       }),
     ).toMatchObject({
       state: "running",

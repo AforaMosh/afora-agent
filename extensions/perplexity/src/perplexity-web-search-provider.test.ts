@@ -1,12 +1,12 @@
 // Perplexity tests cover perplexity web search provider plugin behavior.
-import { withEnv, withEnvAsync } from "openclaw/plugin-sdk/test-env";
+import { withEnv, withEnvAsync } from "afora-agent/plugin-sdk/test-env";
 import { describe, expect, it, vi } from "vitest";
 import { createStreamingResponse } from "../../test-support/streaming-error-response.js";
 
 const withTrustedWebSearchEndpointMock = vi.hoisted(() => vi.fn());
 
-vi.mock("openclaw/plugin-sdk/provider-web-search", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/provider-web-search")>();
+vi.mock("afora-agent/plugin-sdk/provider-web-search", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/provider-web-search")>();
   return {
     ...actual,
     withTrustedWebSearchEndpoint: withTrustedWebSearchEndpointMock,
@@ -33,11 +33,11 @@ describe("perplexity web search provider", () => {
           throw new Error("Expected tool definition");
         }
 
-        await expect(tool.execute({ query: "OpenClaw docs" })).resolves.toEqual({
+        await expect(tool.execute({ query: "Afora docs" })).resolves.toEqual({
           error: "missing_perplexity_api_key",
           message:
             "web_search (perplexity) needs an API key. Set PERPLEXITY_API_KEY or OPENROUTER_API_KEY in the Gateway environment, or configure plugins.entries.perplexity.config.webSearch.apiKey. If you do not want to configure a search API key, use web_fetch for a specific URL or the browser tool for interactive pages.",
-          docs: "https://docs.openclaw.ai/tools/web",
+          docs: "https://docs.afora.ai/tools/web",
         });
       },
     );
@@ -237,7 +237,7 @@ describe("perplexity web search provider", () => {
         }
 
         await tool.execute({
-          query: "OpenClaw releases",
+          query: "Afora releases",
           date_after: "2024-01-01",
           date_before: "2024-06-30",
         });
@@ -247,7 +247,7 @@ describe("perplexity web search provider", () => {
     expect(withTrustedWebSearchEndpointMock).toHaveBeenCalledOnce();
     const [request] = withTrustedWebSearchEndpointMock.mock.calls[0] as [{ init: RequestInit }];
     expect(JSON.parse(request.init.body as string)).toEqual({
-      query: "OpenClaw releases",
+      query: "Afora releases",
       max_results: 5,
       search_after_date_filter: "1/1/2024",
       search_before_date_filter: "6/30/2024",
@@ -269,7 +269,7 @@ describe("perplexity web search provider", () => {
           throw new Error("Expected tool definition");
         }
 
-        await expect(tool.execute({ query: "OpenClaw docs", [key]: value })).rejects.toThrow(
+        await expect(tool.execute({ query: "Afora docs", [key]: value })).rejects.toThrow(
           message,
         );
       },

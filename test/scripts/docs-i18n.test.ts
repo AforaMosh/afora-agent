@@ -15,7 +15,7 @@ describe.skipIf(!hasGoToolchain)("docs-i18n Go module", () => {
 
   beforeAll(() => {
     const tempRoot = tmpdir() === "/tmp" ? "/var/tmp" : tmpdir();
-    tempDir = mkdtempSync(path.join(tempRoot, "openclaw-docs-i18n-test-"));
+    tempDir = mkdtempSync(path.join(tempRoot, "afora-docs-i18n-test-"));
     binaryPath = path.join(
       tempDir,
       process.platform === "win32" ? "docs-i18n.test.exe" : "docs-i18n.test",

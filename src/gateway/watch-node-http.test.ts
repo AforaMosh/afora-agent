@@ -12,7 +12,7 @@ import {
   GATEWAY_CLIENT_MODES,
 } from "../../packages/gateway-protocol/src/client-info.js";
 import { PROTOCOL_VERSION, type ConnectParams } from "../../packages/gateway-protocol/src/index.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   issueDeviceBootstrapToken,
   issueDevicePairSetupBootstrapToken,
@@ -117,7 +117,7 @@ async function startRuntime(
   options?: {
     rateLimiter?: AuthRateLimiter;
     abortConnectResponse?: boolean;
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     now?: () => number;
     onConnectResponseStart?: () => void;
     onPollReady?: (response: ServerResponse) => void;
@@ -287,7 +287,7 @@ describe("watch node HTTP transport", () => {
   it("uses Gateway time for skew-independent device proof", async () => {
     const now = vi.fn(() => 1_700_000_000_123);
     const { identity, issued, baseUrl, runtime } = await createWatchNodeFixture(
-      "openclaw-watch-node-challenge-time-",
+      "afora-watch-node-challenge-time-",
       { now },
     );
 
@@ -304,7 +304,7 @@ describe("watch node HTTP transport", () => {
 
   it("rejects capabilities and identities outside the bounded watch surface", async () => {
     const { identity, issued, baseUrl, runtime } = await createWatchNodeFixture(
-      "openclaw-watch-node-surface-",
+      "afora-watch-node-surface-",
     );
     const variants: Array<(nonce: string) => ConnectParams> = [
       (nonce) =>
@@ -357,7 +357,7 @@ describe("watch node HTTP transport", () => {
 
   it("accepts a supported notification permission set to false", async () => {
     const { identity, issued, baseUrl, runtime } = await createWatchNodeFixture(
-      "openclaw-watch-node-permissions-",
+      "afora-watch-node-permissions-",
     );
     const response = await connectWatchNode({
       baseUrl,
@@ -373,7 +373,7 @@ describe("watch node HTTP transport", () => {
 
   it("does not let attacker challenges evict another client nonce", async () => {
     const { identity, issued, baseUrl, runtime } = await createWatchNodeFixture(
-      "openclaw-watch-node-challenge-eviction-",
+      "afora-watch-node-challenge-eviction-",
       {
         config: { gateway: { trustedProxies: ["127.0.0.1"] } },
       },
@@ -415,7 +415,7 @@ describe("watch node HTTP transport", () => {
       disconnectedNodes,
       runtime,
       baseUrl,
-    } = await createWatchNodeFixture("openclaw-watch-node-disconnect-");
+    } = await createWatchNodeFixture("afora-watch-node-disconnect-");
 
     const connectResponse = await connectWatchNode({
       baseUrl,
@@ -478,7 +478,7 @@ describe("watch node HTTP transport", () => {
         resolvePollReady = resolve;
       });
       const { identity, issued, nodeRegistry, disconnectedNodes, runtime, baseUrl } =
-        await createWatchNodeFixture("openclaw-watch-node-destroyed-poll-", {
+        await createWatchNodeFixture("afora-watch-node-destroyed-poll-", {
           onPollReady: resolvePollReady,
         });
       const connectResponse = await connectWatchNode({
@@ -546,7 +546,7 @@ describe("watch node HTTP transport", () => {
 
   it("rejects an HTTP node session after an external reapproval changes its generation", async () => {
     const { baseDir, identity, issued, nodeRegistry, disconnectedNodes, runtime, baseUrl } =
-      await createWatchNodeFixture("openclaw-watch-node-reapproval-");
+      await createWatchNodeFixture("afora-watch-node-reapproval-");
     const connectResponse = await connectWatchNode({
       baseUrl,
       identity,
@@ -581,7 +581,7 @@ describe("watch node HTTP transport", () => {
 
   it("rejects an invoke result when pairing changes during body upload", async () => {
     const { baseDir, identity, issued, nodeRegistry, disconnectedNodes, runtime, baseUrl } =
-      await createWatchNodeFixture("openclaw-watch-node-result-generation-");
+      await createWatchNodeFixture("afora-watch-node-result-generation-");
     const connectResponse = await connectWatchNode({
       baseUrl,
       identity,
@@ -645,7 +645,7 @@ describe("watch node HTTP transport", () => {
 
   it("rejects empty shadow credentials without consuming the challenge", async () => {
     const { baseDir, identity, issued, baseUrl, runtime } = await createWatchNodeFixture(
-      "openclaw-watch-node-auth-fields-",
+      "afora-watch-node-auth-fields-",
     );
 
     const challenge = await readJson(await fetch(`${baseUrl}/challenge`));
@@ -684,7 +684,7 @@ describe("watch node HTTP transport", () => {
       pruneIntervalMs: 0,
     };
 
-    const abortedBaseDir = await tempDirs.make("openclaw-watch-node-aborted-connect-");
+    const abortedBaseDir = await tempDirs.make("afora-watch-node-aborted-connect-");
     const abortedIdentity = loadOrCreateDeviceIdentity({
       path: path.join(abortedBaseDir, "watch-identity.sqlite"),
     });
@@ -746,7 +746,7 @@ describe("watch node HTTP transport", () => {
       abortedLimiter.dispose();
     }
 
-    const completedBaseDir = await tempDirs.make("openclaw-watch-node-completed-connect-");
+    const completedBaseDir = await tempDirs.make("afora-watch-node-completed-connect-");
     const completedIdentity = loadOrCreateDeviceIdentity({
       path: path.join(completedBaseDir, "watch-identity.sqlite"),
     });
@@ -777,7 +777,7 @@ describe("watch node HTTP transport", () => {
   });
 
   it("restores an uncorrelated bootstrap token when the connect response aborts", async () => {
-    const baseDir = await tempDirs.make("openclaw-watch-node-generic-abort-");
+    const baseDir = await tempDirs.make("afora-watch-node-generic-abort-");
     const identity = loadOrCreateDeviceIdentity({
       path: path.join(baseDir, "watch-identity.sqlite"),
     });
@@ -816,7 +816,7 @@ describe("watch node HTTP transport", () => {
     let fixtureBaseDir = "";
     let setupId = "";
     let completionAtHandoff: ReturnType<typeof loadDevicePairSetupCompletionRecord> = null;
-    const fixture = await createWatchNodeFixture("openclaw-watch-node-setup-order-", {
+    const fixture = await createWatchNodeFixture("afora-watch-node-setup-order-", {
       onConnectResponseStart: () => {
         completionAtHandoff = loadDevicePairSetupCompletionRecord(
           setupId,
@@ -874,7 +874,7 @@ describe("watch node HTTP transport", () => {
       runtime,
       connectHandled,
       baseUrl,
-    } = await createWatchNodeFixture("openclaw-watch-node-http-");
+    } = await createWatchNodeFixture("afora-watch-node-http-");
 
     const connectResponse = await connectWatchNode({
       baseUrl,

@@ -1,4 +1,4 @@
-import type { WebSearchProviderToolDefinition } from "openclaw/plugin-sdk/provider-web-search-contract";
+import type { WebSearchProviderToolDefinition } from "afora-agent/plugin-sdk/provider-web-search-contract";
 
 export const OLLAMA_WEB_SEARCH_TOOL_DESCRIPTION =
   "Search the web using Ollama's web search API. Returns titles, URLs, and snippets from the configured Ollama host.";

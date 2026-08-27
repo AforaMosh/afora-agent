@@ -2,8 +2,8 @@
 export {
   implicitMentionKindWhen,
   resolveInboundMentionDecision,
-} from "openclaw/plugin-sdk/channel-mention-gating";
-export { hasControlCommand } from "openclaw/plugin-sdk/command-detection";
-export { createChannelHistoryWindow } from "openclaw/plugin-sdk/reply-history";
-export { parseActivationCommand } from "openclaw/plugin-sdk/group-activation";
+} from "afora-agent/plugin-sdk/channel-mention-gating";
+export { hasControlCommand } from "afora-agent/plugin-sdk/command-detection";
+export { createChannelHistoryWindow } from "afora-agent/plugin-sdk/reply-history";
+export { parseActivationCommand } from "afora-agent/plugin-sdk/group-activation";
 export { normalizeE164 } from "../../text-runtime.js";

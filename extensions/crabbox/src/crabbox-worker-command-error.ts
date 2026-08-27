@@ -1,7 +1,7 @@
-import { redactSensitiveText } from "openclaw/plugin-sdk/logging-core";
-import { WorkerProviderError } from "openclaw/plugin-sdk/plugin-entry";
-import type { SpawnResult } from "openclaw/plugin-sdk/process-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { redactSensitiveText } from "afora-agent/plugin-sdk/logging-core";
+import { WorkerProviderError } from "afora-agent/plugin-sdk/plugin-entry";
+import type { SpawnResult } from "afora-agent/plugin-sdk/process-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 
 const MAX_COMMAND_DETAIL_CHARS = 512;
 

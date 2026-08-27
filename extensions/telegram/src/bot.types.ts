@@ -1,6 +1,6 @@
 // Telegram type declarations define plugin contracts.
-import type { OpenClawConfig, ReplyToMode } from "openclaw/plugin-sdk/config-contracts";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
+import type { AforaConfig, ReplyToMode } from "afora-agent/plugin-sdk/config-contracts";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
 import type { TelegramBotDeps } from "./bot-deps.js";
 import type { TelegramBotInfo } from "./bot-info.js";
 import type { TelegramTransport } from "./fetch.js";
@@ -11,14 +11,14 @@ export type TelegramBotOptions = {
   /** Agent that owns account-scoped Telegram runtime state. */
   ownerAgentId?: string;
   runtime?: RuntimeEnv;
-  buildContext?: typeof import("openclaw/plugin-sdk/channel-inbound").buildChannelInboundEventContext;
+  buildContext?: typeof import("afora-agent/plugin-sdk/channel-inbound").buildChannelInboundEventContext;
   requireMention?: boolean;
   allowFrom?: Array<string | number>;
   groupAllowFrom?: Array<string | number>;
   mediaMaxMb?: number;
   replyToMode?: ReplyToMode;
   proxyFetch?: typeof fetch;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   /** Bot identity returned by the startup getMe probe. Avoids a duplicate grammY init getMe before polling. */
   botInfo?: TelegramBotInfo;
   /** Signal to abort in-flight Telegram API fetch requests (e.g. getUpdates) on shutdown. */

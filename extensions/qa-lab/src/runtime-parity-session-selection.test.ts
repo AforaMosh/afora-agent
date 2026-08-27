@@ -1,10 +1,10 @@
 import path from "node:path";
-import { resolveStorePath, upsertSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
-import { appendSessionTranscriptMessageByIdentity } from "openclaw/plugin-sdk/session-transcript-runtime";
+import { resolveStorePath, upsertSessionEntry } from "afora-agent/plugin-sdk/session-store-runtime";
+import { appendSessionTranscriptMessageByIdentity } from "afora-agent/plugin-sdk/session-transcript-runtime";
 import {
   appendSqliteTrajectoryRuntimeEvents,
   formatSqliteSessionFileMarker,
-} from "openclaw/plugin-sdk/sqlite-runtime-testing";
+} from "afora-agent/plugin-sdk/sqlite-runtime-testing";
 import { afterEach, describe, expect, it } from "vitest";
 import { captureRuntimeParityCell } from "./runtime-parity.js";
 import { createTempDirHarness } from "./temp-dir.test-helper.js";
@@ -25,7 +25,7 @@ async function seedSession(params: {
   updatedAt: number;
 }) {
   const tempRoot = params.tempRoot ?? (await tempDirs.makeTempDir("qa-runtime-selection-"));
-  const env = { ...process.env, OPENCLAW_STATE_DIR: path.join(tempRoot, "state") };
+  const env = { ...process.env, AFORA_STATE_DIR: path.join(tempRoot, "state") };
   const storePath = resolveStorePath(undefined, { agentId: "qa", env });
   await upsertSessionEntry({
     agentId: "qa",
@@ -57,7 +57,7 @@ async function seedSession(params: {
     appendSqliteTrajectoryRuntimeEvents(
       { agentId: "qa", env, sessionId: params.sessionId, storePath },
       params.trajectoryEvents.map((event, index) => ({
-        traceSchema: "openclaw-trajectory",
+        traceSchema: "afora-trajectory",
         schemaVersion: 1,
         traceId: params.sessionId,
         source: "runtime",

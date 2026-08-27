@@ -1,8 +1,8 @@
 // Resolves canonical group policy scopes prepared by channel plugins.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import type { ChannelId } from "../channels/plugins/channel-id.types.js";
 import { resolveChannelGroups, resolveToolsBySender } from "./group-policy.js";
-import type { OpenClawConfig } from "./types.openclaw.js";
+import type { AforaConfig } from "./types.afora.js";
 import type { GroupToolPolicyBySenderConfig, GroupToolPolicyConfig } from "./types.tools.js";
 
 export type ScopeNode = {
@@ -31,7 +31,7 @@ export function scopeKey(...segments: Array<readonly [prefix: string, value: str
 type ScopeToolPolicySender = Omit<Parameters<typeof resolveToolsBySender>[0], "toolsBySender">;
 
 export function buildChannelGroupsScopeTree(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   channel: ChannelId,
   accountId?: string | null,
 ): ScopeTree {

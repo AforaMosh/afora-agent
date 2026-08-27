@@ -4,8 +4,8 @@ import {
   resolveAgentConfig,
   resolveAgentWorkspaceDir,
   resolveDefaultAgentId,
-} from "openclaw/plugin-sdk/agent-runtime";
-import type { MigrationProviderContext } from "openclaw/plugin-sdk/plugin-entry";
+} from "afora-agent/plugin-sdk/agent-runtime";
+import type { MigrationProviderContext } from "afora-agent/plugin-sdk/plugin-entry";
 import { resolveHomePath } from "./helpers.js";
 
 type CodexMigrationTargets = {

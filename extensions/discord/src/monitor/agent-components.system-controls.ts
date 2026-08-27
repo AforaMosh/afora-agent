@@ -1,7 +1,7 @@
 // Discord plugin module implements agent components.system controls behavior.
 import type { APIStringSelectComponent } from "discord-api-types/v10";
 import { ButtonStyle } from "discord-api-types/v10";
-import { logDebug, logError } from "openclaw/plugin-sdk/logging-core";
+import { logDebug, logError } from "afora-agent/plugin-sdk/logging-core";
 import {
   Button,
   StringSelectMenu,

@@ -1,9 +1,9 @@
 // Maintains channel catalog entries advertised by plugins.
-import { normalizeOptionalString as resolveOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString as resolveOptionalString } from "@afora/normalization-core/string-coerce";
 import { resolveIsNixMode } from "../config/paths.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import { resolveCompatibilityHostVersion } from "../version.js";
-import { discoverOpenClawPlugins, type PluginDiscoveryResult } from "./discovery.js";
+import { discoverAforaPlugins, type PluginDiscoveryResult } from "./discovery.js";
 import { loadInstalledPluginIndexInstallRecordsSync } from "./installed-plugin-index-record-reader.js";
 import type { PluginPackageChannel, PluginPackageInstall } from "./manifest.js";
 import { resolvePluginDiscoveryContext } from "./plugin-control-plane-context.js";
@@ -108,7 +108,7 @@ function resolveMemoizedChannelCatalogDiscovery(params: ChannelCatalogParams) {
   }
 
   const resolvedInstallRecords = resolveInstallRecords(params);
-  const discovery = discoverOpenClawPlugins({
+  const discovery = discoverAforaPlugins({
     workspaceDir: params.workspaceDir,
     env: params.env,
     extraPaths: params.extraPaths,
@@ -140,7 +140,7 @@ function resolveChannelCatalogDiscoveryScopeKey(params: ChannelCatalogParams): s
       loadPaths: params.extraPaths,
     }),
     compatibilityHostVersion: resolveCompatibilityHostVersion(env),
-    bundledSourceOverlaysDisabled: env.OPENCLAW_DISABLE_BUNDLED_SOURCE_OVERLAYS ?? "",
+    bundledSourceOverlaysDisabled: env.AFORA_DISABLE_BUNDLED_SOURCE_OVERLAYS ?? "",
     nixMode: resolveIsNixMode(env),
   });
 }

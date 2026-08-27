@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   backfillSubagentRequesterAgentIds,
   resolveSubagentRequesterAgentId,
@@ -20,7 +20,7 @@ describe("resolveSubagentRequesterAgentId", () => {
         defaults: { sessionStore: { agentId: "ops" } },
         entries: { ops: {}, research: {} },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(resolveSubagentRequesterAgentId(cfg, { requesterSessionKey: "global" })).toBe("ops");
     expect(
@@ -39,7 +39,7 @@ describe("resolveSubagentRequesterAgentId", () => {
         defaults: { sessionStore: { agentId: "ops" } },
         entries: { ops: {}, research: {} },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const entry = createSubagentRunRecord({
       runId: "legacy-run",
       childSessionKey: "agent:worker:subagent:legacy",

@@ -285,7 +285,7 @@ describe("monitorSingleAccount VC event registration", () => {
       botOpenIdSource: {
         kind: "prefetched",
         botOpenId: "ou_bot",
-        botName: "OpenClaw Bot",
+        botName: "Afora Bot",
       },
       fireAndForget: false,
       channelRuntime: buildChannelRuntime(),
@@ -303,7 +303,7 @@ describe("monitorSingleAccount VC event registration", () => {
       botOpenIdSource: {
         kind: "prefetched",
         botOpenId: "ou_bot",
-        botName: "OpenClaw Bot",
+        botName: "Afora Bot",
       },
       fireAndForget: false,
       channelRuntime: buildChannelRuntime(),

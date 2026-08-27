@@ -1,5 +1,5 @@
 /** Widens official external channel schemas for host-resolved SecretRef fields. */
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
 import {
   getOfficialExternalChannelHostSchemaAllOf,
   getOfficialExternalChannelSecretContract,

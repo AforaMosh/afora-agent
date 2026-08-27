@@ -1,5 +1,5 @@
-import type { ConfiguredModelRef } from "@openclaw/model-catalog-core/configured-model-refs";
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import type { ConfiguredModelRef } from "@afora/model-catalog-core/configured-model-refs";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import type { InlineModelEntry } from "./embedded-agent-runner/model.inline-provider.js";
 import type { ModelCatalogEntry } from "./model-catalog.js";
 import type { ModelCatalogSnapshot } from "./model-catalog.types.js";

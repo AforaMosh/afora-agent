@@ -2,7 +2,7 @@ import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { listAgentIds, resolveAgentWorkspaceDir } from "../../agents/agent-scope.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { isNotFoundPathError, isPathInside } from "../../infra/path-guards.js";
 
 async function resolveRequestedRealPath(
@@ -38,7 +38,7 @@ async function resolveRequestedRealPath(
 /** Resolves a Gateway path against the real roots of configured agent workspaces. */
 export async function resolveWorkspacePathContainment(
   requestedPath: string | undefined,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   options: { allowMissing?: boolean } = {},
 ): Promise<{ path: string; workspaceRoot: string } | null> {
   const workspaceRoots = await Promise.all(
@@ -77,7 +77,7 @@ export async function resolveWorkspacePathContainment(
 /** Revalidates an async containment result against the current workspace configuration. */
 export function isWorkspacePathContainmentCurrent(
   containment: { path: string; workspaceRoot: string },
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): boolean {
   return listAgentIds(cfg).some((agentId) => {
     try {

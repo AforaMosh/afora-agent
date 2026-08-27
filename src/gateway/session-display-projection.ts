@@ -1,6 +1,6 @@
-import { flattenMarkdownToPlainText } from "@openclaw/normalization-core/markdown-plain-text";
-import { asOptionalRecord as readRecord } from "@openclaw/normalization-core/record-coerce";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { flattenMarkdownToPlainText } from "@afora/normalization-core/markdown-plain-text";
+import { asOptionalRecord as readRecord } from "@afora/normalization-core/record-coerce";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { extractAssistantPhaseText } from "../shared/chat-message-content.js";
 import { stripEnvelope } from "./chat-sanitize.js";
 import { isSuppressedControlReplyText } from "./control-reply-text.js";

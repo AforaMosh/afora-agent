@@ -1,4 +1,4 @@
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-harness-runtime";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import { describe, expect, it } from "vitest";
 import { projectSettledCodexMessages } from "./settled-turn-projection.js";
 
@@ -184,7 +184,7 @@ describe("projectSettledCodexMessages", () => {
         message({
           role: "user",
           content: "[Telegram metadata] decorated prompt",
-          __openclaw: { upstreamUserText: "Send the Aurora notice to Erin." },
+          __afora: { upstreamUserText: "Send the Aurora notice to Erin." },
         }),
         toolCall(),
         toolResult(),
@@ -205,7 +205,7 @@ describe("projectSettledCodexMessages", () => {
             { type: "text", text: "Send the notice." },
             { type: "image", data: "aGVsbG8=", mimeType: "image/png" },
           ],
-          __openclaw: { upstreamUserText: "Send the notice." },
+          __afora: { upstreamUserText: "Send the notice." },
         }),
         toolCall(),
         toolResult(),

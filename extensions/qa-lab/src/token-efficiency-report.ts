@@ -33,7 +33,7 @@ type TokenEfficiencyAggregateRuntimeUsage = {
 type TokenEfficiencyRow = {
   scenarioId: string;
   usageSource: "live-usage" | "mock-estimate";
-  openclaw: TokenEfficiencyRuntimeUsage;
+  afora: TokenEfficiencyRuntimeUsage;
   codex: TokenEfficiencyRuntimeUsage;
   deltaPercent: number;
   classification: "regression" | "savings" | "neutral";
@@ -50,7 +50,7 @@ type TokenEfficiencyReport = {
   rows: TokenEfficiencyRow[];
   notApplicableScenarios: Array<{ scenarioId: string; reason: string }>;
   aggregate: {
-    openclaw: TokenEfficiencyAggregateRuntimeUsage;
+    afora: TokenEfficiencyAggregateRuntimeUsage;
     codex: TokenEfficiencyAggregateRuntimeUsage;
     deltaPercent: number;
     flaggedScenarios: string[];
@@ -93,7 +93,7 @@ const ZERO_AGGREGATE_RUNTIME: TokenEfficiencyAggregateRuntimeUsage = {
   p90PerScenario: 0,
 };
 const ZERO_AGGREGATE: TokenEfficiencyReport["aggregate"] = {
-  openclaw: { ...ZERO_AGGREGATE_RUNTIME },
+  afora: { ...ZERO_AGGREGATE_RUNTIME },
   codex: { ...ZERO_AGGREGATE_RUNTIME },
   deltaPercent: 0,
   flaggedScenarios: [],
@@ -106,18 +106,18 @@ function normalizeRuntimePair(
   if (pair?.[0] && pair?.[1]) {
     return pair;
   }
-  return ["openclaw", "codex"];
+  return ["afora", "codex"];
 }
 
 function normalizeTokenCount(value: number): number {
   return Number.isFinite(value) ? Math.max(0, value) : 0;
 }
 
-function deltaPercent(openclawTotalTokens: number, codexTotalTokens: number): number {
-  if (openclawTotalTokens === 0) {
+function deltaPercent(aforaTotalTokens: number, codexTotalTokens: number): number {
+  if (aforaTotalTokens === 0) {
     return codexTotalTokens === 0 ? 0 : 100;
   }
-  return ((codexTotalTokens - openclawTotalTokens) / openclawTotalTokens) * 100;
+  return ((codexTotalTokens - aforaTotalTokens) / aforaTotalTokens) * 100;
 }
 
 function percentile(values: readonly number[], p: number): number {
@@ -150,10 +150,10 @@ function formatProcessedCount(
 
 function formatProcessedDelta(params: {
   deltaPercent: number;
-  openclaw: Pick<TokenEfficiencyRuntimeUsage, "processedTokenEvidence">;
+  afora: Pick<TokenEfficiencyRuntimeUsage, "processedTokenEvidence">;
   codex: Pick<TokenEfficiencyRuntimeUsage, "processedTokenEvidence">;
 }): string {
-  return params.openclaw.processedTokenEvidence === "unavailable" ||
+  return params.afora.processedTokenEvidence === "unavailable" ||
     params.codex.processedTokenEvidence === "unavailable"
     ? "N/A"
     : formatPercent(params.deltaPercent);
@@ -233,9 +233,9 @@ function runtimeUsage(cell: RuntimeParityCell): TokenEfficiencyRuntimeUsage {
   };
 }
 
-function toolNamesForCells(openclaw: RuntimeParityCell, codex: RuntimeParityCell): string[] {
+function toolNamesForCells(afora: RuntimeParityCell, codex: RuntimeParityCell): string[] {
   return [
-    ...new Set([...openclaw.toolCalls, ...codex.toolCalls].map((call) => call.tool)),
+    ...new Set([...afora.toolCalls, ...codex.toolCalls].map((call) => call.tool)),
   ].toSorted((left, right) => left.localeCompare(right));
 }
 
@@ -244,12 +244,12 @@ function buildRow(params: {
   thresholdPercent: number;
   usageSource: TokenEfficiencyRow["usageSource"];
 }): TokenEfficiencyRow {
-  const openclaw = runtimeUsage(params.result.cells.openclaw);
+  const afora = runtimeUsage(params.result.cells.afora);
   const codex = runtimeUsage(params.result.cells.codex);
   const comparable =
-    openclaw.processedTokenEvidence !== "unavailable" &&
+    afora.processedTokenEvidence !== "unavailable" &&
     codex.processedTokenEvidence !== "unavailable";
-  const delta = comparable ? deltaPercent(openclaw.processedTokens, codex.processedTokens) : 0;
+  const delta = comparable ? deltaPercent(afora.processedTokens, codex.processedTokens) : 0;
   const flagged = params.usageSource === "live-usage" && delta > params.thresholdPercent;
   const classification =
     delta > params.thresholdPercent
@@ -260,12 +260,12 @@ function buildRow(params: {
   return {
     scenarioId: params.result.scenarioId,
     usageSource: params.usageSource,
-    openclaw,
+    afora,
     codex,
     deltaPercent: delta,
     classification,
     flagged,
-    toolsUsed: toolNamesForCells(params.result.cells.openclaw, params.result.cells.codex),
+    toolsUsed: toolNamesForCells(params.result.cells.afora, params.result.cells.codex),
   };
 }
 
@@ -319,15 +319,15 @@ function buildAggregateRuntime(
 }
 
 function buildAggregate(rows: readonly TokenEfficiencyRow[]): TokenEfficiencyReport["aggregate"] {
-  const openclaw = buildAggregateRuntime(rows, "openclaw");
+  const afora = buildAggregateRuntime(rows, "afora");
   const codex = buildAggregateRuntime(rows, "codex");
   const comparable =
-    openclaw.processedTokenEvidence !== "unavailable" &&
+    afora.processedTokenEvidence !== "unavailable" &&
     codex.processedTokenEvidence !== "unavailable";
   return {
-    openclaw,
+    afora,
     codex,
-    deltaPercent: comparable ? deltaPercent(openclaw.processedTokens, codex.processedTokens) : 0,
+    deltaPercent: comparable ? deltaPercent(afora.processedTokens, codex.processedTokens) : 0,
     flaggedScenarios: rows.filter((row) => row.flagged).map((row) => row.scenarioId),
     savingsScenarios: rows
       .filter((row) => row.classification === "savings")
@@ -337,13 +337,13 @@ function buildAggregate(rows: readonly TokenEfficiencyRow[]): TokenEfficiencyRep
 
 function liveEvidenceFailures(row: TokenEfficiencyRow): string[] {
   const failures: string[] = [];
-  if (row.openclaw.totalTokens <= 0) {
-    failures.push(`${row.scenarioId} openclaw live usage totalTokens=${row.openclaw.totalTokens}`);
+  if (row.afora.totalTokens <= 0) {
+    failures.push(`${row.scenarioId} afora live usage totalTokens=${row.afora.totalTokens}`);
   }
   if (row.codex.totalTokens <= 0) {
     failures.push(`${row.scenarioId} codex live usage totalTokens=${row.codex.totalTokens}`);
   }
-  for (const runtime of ["openclaw", "codex"] as const) {
+  for (const runtime of ["afora", "codex"] as const) {
     if (row[runtime].processedTokenEvidence === "unavailable") {
       failures.push(
         `${row.scenarioId} ${runtime} live processed-token usage cannot be verified from cache-write telemetry or coherent cache-read totals`,
@@ -446,7 +446,7 @@ export function buildTokenEfficiencyReport(
     const rowFailures =
       liveUsage && result
         ? [
-            ...liveUsageShapeFailures(row.scenarioId, "openclaw", result.cells.openclaw.usage),
+            ...liveUsageShapeFailures(row.scenarioId, "afora", result.cells.afora.usage),
             ...liveUsageShapeFailures(row.scenarioId, "codex", result.cells.codex.usage),
             ...liveEvidenceFailures(row),
           ]
@@ -475,7 +475,7 @@ export function buildTokenEfficiencyReport(
       "Efficiency deltas and percentiles compare newly processed uncached input, cache-write input, and output; reused cached input remains separately reported and never masks a regression.",
       "Missing cache-write counts are derived only when measured cache reads and coherent usage totals prove the exact processed input; otherwise live efficiency proof fails.",
       "Post-warm cache misses require measured zero cache reads and newly processed input after the same conversation has already established a cache; cache rewrites are included and unavailable telemetry is N/A.",
-      "Codex savings are reported as savings and do not fail the gate; only positive Codex-over-OpenClaw live deltas exceed the threshold.",
+      "Codex savings are reported as savings and do not fail the gate; only positive Codex-over-Afora live deltas exceed the threshold.",
       usageSource === "mock-estimate"
         ? "Mock-provider token totals are labeled as estimates and do not block the token-efficiency gate."
         : "The report does not inspect provider transport payload token counters.",
@@ -485,7 +485,7 @@ export function buildTokenEfficiencyReport(
 
 export function renderTokenEfficiencyMarkdownReport(report: TokenEfficiencyReport): string {
   const lines = [
-    `# OpenClaw Runtime Token Efficiency - ${report.runtimePair[0]} vs ${report.runtimePair[1]}`,
+    `# Afora Runtime Token Efficiency - ${report.runtimePair[0]} vs ${report.runtimePair[1]}`,
     "",
     `- Generated at: ${report.generatedAt}`,
     ...(report.providerMode ? [`- Provider mode: ${report.providerMode}`] : []),
@@ -504,9 +504,9 @@ export function renderTokenEfficiencyMarkdownReport(report: TokenEfficiencyRepor
     "",
     "| Runtime | Processed tokens | Total tokens | Cached input | Cache writes | Post-warm cache misses | p50 per scenario | p90 per scenario |",
     "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
-    `| openclaw | ${formatProcessedCount(report.aggregate.openclaw)} | ${report.aggregate.openclaw.totalTokens} | ${formatOptionalCount(report.aggregate.openclaw.cacheReadTokens)} | ${formatOptionalCount(report.aggregate.openclaw.cacheWriteTokens)} | ${formatOptionalCount(report.aggregate.openclaw.cacheMissCount)} | ${formatOptionalCount(report.aggregate.openclaw.p50PerScenario)} | ${formatOptionalCount(report.aggregate.openclaw.p90PerScenario)} |`,
+    `| afora | ${formatProcessedCount(report.aggregate.afora)} | ${report.aggregate.afora.totalTokens} | ${formatOptionalCount(report.aggregate.afora.cacheReadTokens)} | ${formatOptionalCount(report.aggregate.afora.cacheWriteTokens)} | ${formatOptionalCount(report.aggregate.afora.cacheMissCount)} | ${formatOptionalCount(report.aggregate.afora.p50PerScenario)} | ${formatOptionalCount(report.aggregate.afora.p90PerScenario)} |`,
     `| codex | ${formatProcessedCount(report.aggregate.codex)} | ${report.aggregate.codex.totalTokens} | ${formatOptionalCount(report.aggregate.codex.cacheReadTokens)} | ${formatOptionalCount(report.aggregate.codex.cacheWriteTokens)} | ${formatOptionalCount(report.aggregate.codex.cacheMissCount)} | ${formatOptionalCount(report.aggregate.codex.p50PerScenario)} | ${formatOptionalCount(report.aggregate.codex.p90PerScenario)} |`,
-    `| delta | ${formatProcessedDelta({ deltaPercent: report.aggregate.deltaPercent, openclaw: report.aggregate.openclaw, codex: report.aggregate.codex })} |  |  |  |  |  |  |`,
+    `| delta | ${formatProcessedDelta({ deltaPercent: report.aggregate.deltaPercent, afora: report.aggregate.afora, codex: report.aggregate.codex })} |  |  |  |  |  |  |`,
     "",
   );
 
@@ -514,12 +514,12 @@ export function renderTokenEfficiencyMarkdownReport(report: TokenEfficiencyRepor
     lines.push(
       "## Scenario Efficiency",
       "",
-      "| Scenario | Source | OpenClaw processed/in/out/cached/written/total/tools | Codex processed/in/out/cached/written/total/tools | Processed-token delta | Classification | Flagged | OpenClaw cache misses | Codex cache misses | Tools used |",
+      "| Scenario | Source | Afora processed/in/out/cached/written/total/tools | Codex processed/in/out/cached/written/total/tools | Processed-token delta | Classification | Flagged | Afora cache misses | Codex cache misses | Tools used |",
       "| --- | --- | ---: | ---: | ---: | --- | --- | --- | --- | --- |",
     );
     for (const row of report.rows) {
       lines.push(
-        `| ${row.scenarioId} | ${row.usageSource} | ${formatProcessedCount(row.openclaw)}/${row.openclaw.inputTokens}/${row.openclaw.outputTokens}/${formatOptionalCount(row.openclaw.cacheReadTokens)}/${formatOptionalCount(row.openclaw.cacheWriteTokens)}/${row.openclaw.totalTokens}/${row.openclaw.toolCallCount} | ${formatProcessedCount(row.codex)}/${row.codex.inputTokens}/${row.codex.outputTokens}/${formatOptionalCount(row.codex.cacheReadTokens)}/${formatOptionalCount(row.codex.cacheWriteTokens)}/${row.codex.totalTokens}/${row.codex.toolCallCount} | ${formatProcessedDelta({ deltaPercent: row.deltaPercent, openclaw: row.openclaw, codex: row.codex })} | ${row.classification} | ${row.flagged ? "yes" : "no"} | ${formatCacheMisses(row.openclaw.cacheMisses, row.openclaw.unmeasuredPostWarmTurns)} | ${formatCacheMisses(row.codex.cacheMisses, row.codex.unmeasuredPostWarmTurns)} | ${row.toolsUsed.join(", ")} |`,
+        `| ${row.scenarioId} | ${row.usageSource} | ${formatProcessedCount(row.afora)}/${row.afora.inputTokens}/${row.afora.outputTokens}/${formatOptionalCount(row.afora.cacheReadTokens)}/${formatOptionalCount(row.afora.cacheWriteTokens)}/${row.afora.totalTokens}/${row.afora.toolCallCount} | ${formatProcessedCount(row.codex)}/${row.codex.inputTokens}/${row.codex.outputTokens}/${formatOptionalCount(row.codex.cacheReadTokens)}/${formatOptionalCount(row.codex.cacheWriteTokens)}/${row.codex.totalTokens}/${row.codex.toolCallCount} | ${formatProcessedDelta({ deltaPercent: row.deltaPercent, afora: row.afora, codex: row.codex })} | ${row.classification} | ${row.flagged ? "yes" : "no"} | ${formatCacheMisses(row.afora.cacheMisses, row.afora.unmeasuredPostWarmTurns)} | ${formatCacheMisses(row.codex.cacheMisses, row.codex.unmeasuredPostWarmTurns)} | ${row.toolsUsed.join(", ")} |`,
       );
     }
     lines.push("");

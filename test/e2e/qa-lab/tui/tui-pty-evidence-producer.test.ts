@@ -78,7 +78,7 @@ function makeCase(overrides: Partial<TuiPtyCase> = {}): TuiPtyCase {
 }
 
 async function makeTempRepo() {
-  const repoRoot = tempDirs.make("openclaw-tui-pty-producer-");
+  const repoRoot = tempDirs.make("afora-tui-pty-producer-");
   for (const testFile of [ASSERTION_SUPPORT_FILE, HARNESS_FILE, LOCAL_FILE, RESET_FILE]) {
     const absolutePath = path.join(repoRoot, testFile);
     await fs.mkdir(path.dirname(absolutePath), { recursive: true });
@@ -88,7 +88,7 @@ async function makeTempRepo() {
 }
 
 async function writeBuiltCliArtifacts(repoRoot: string, entry: "entry.js" | "entry.mjs") {
-  await fs.writeFile(path.join(repoRoot, "openclaw.mjs"), "// launcher\n", "utf8");
+  await fs.writeFile(path.join(repoRoot, "afora.mjs"), "// launcher\n", "utf8");
   await fs.mkdir(path.join(repoRoot, "dist"), { recursive: true });
   await fs.writeFile(path.join(repoRoot, "dist", entry), "// entry\n", "utf8");
 }
@@ -230,9 +230,9 @@ describe("TUI PTY evidence producer", () => {
   });
 
   it("builds fake and local PTY commands with the required environment", () => {
-    vi.stubEnv("OPENCLAW_TUI_PTY_INCLUDE_LOCAL", "1");
-    vi.stubEnv("OPENCLAW_TUI_PTY_USE_BUILT_CLI", "inherited");
-    vi.stubEnv("OPENCLAW_VITEST_FS_MODULE_CACHE_PATH", "/shared/vitest-cache");
+    vi.stubEnv("AFORA_TUI_PTY_INCLUDE_LOCAL", "1");
+    vi.stubEnv("AFORA_TUI_PTY_USE_BUILT_CLI", "inherited");
+    vi.stubEnv("AFORA_VITEST_FS_MODULE_CACHE_PATH", "/shared/vitest-cache");
     const fake = buildTuiPtyVitestCommand({
       cases: [makeCase()],
       cliMode: "source",
@@ -250,10 +250,10 @@ describe("TUI PTY evidence producer", () => {
         "--outputFile.json=/artifacts/report.json",
       ]),
     );
-    expect(fake.env.OPENCLAW_BEHAVIOR_EVIDENCE).toBe("1");
-    expect(fake.env.OPENCLAW_TUI_PTY_INCLUDE_LOCAL).toBeUndefined();
-    expect(fake.env.OPENCLAW_TUI_PTY_USE_BUILT_CLI).toBeUndefined();
-    expect(fake.env.OPENCLAW_VITEST_FS_MODULE_CACHE_PATH).toBe(
+    expect(fake.env.AFORA_BEHAVIOR_EVIDENCE).toBe("1");
+    expect(fake.env.AFORA_TUI_PTY_INCLUDE_LOCAL).toBeUndefined();
+    expect(fake.env.AFORA_TUI_PTY_USE_BUILT_CLI).toBeUndefined();
+    expect(fake.env.AFORA_VITEST_FS_MODULE_CACHE_PATH).toBe(
       path.join("/artifacts", "vitest-fs-module-cache"),
     );
 
@@ -272,13 +272,13 @@ describe("TUI PTY evidence producer", () => {
       reportPath: "/artifacts-local/report.json",
     });
     expect(local.args).toContain(LOCAL_FILE);
-    expect(local.env.OPENCLAW_TUI_PTY_INCLUDE_LOCAL).toBe("1");
-    expect(local.env.OPENCLAW_TUI_PTY_USE_BUILT_CLI).toBe("1");
-    expect(oracle.env.OPENCLAW_VITEST_FS_MODULE_CACHE_PATH).toBe(
-      fake.env.OPENCLAW_VITEST_FS_MODULE_CACHE_PATH,
+    expect(local.env.AFORA_TUI_PTY_INCLUDE_LOCAL).toBe("1");
+    expect(local.env.AFORA_TUI_PTY_USE_BUILT_CLI).toBe("1");
+    expect(oracle.env.AFORA_VITEST_FS_MODULE_CACHE_PATH).toBe(
+      fake.env.AFORA_VITEST_FS_MODULE_CACHE_PATH,
     );
-    expect(local.env.OPENCLAW_VITEST_FS_MODULE_CACHE_PATH).not.toBe(
-      fake.env.OPENCLAW_VITEST_FS_MODULE_CACHE_PATH,
+    expect(local.env.AFORA_VITEST_FS_MODULE_CACHE_PATH).not.toBe(
+      fake.env.AFORA_VITEST_FS_MODULE_CACHE_PATH,
     );
   });
 
@@ -365,7 +365,7 @@ describe("TUI PTY evidence producer", () => {
         await fs.mkdir(path.join(repoRoot, "dist"), { recursive: true });
         await fs.writeFile(path.join(repoRoot, "dist", "entry.js"), "// entry\n", "utf8");
       } else {
-        await fs.writeFile(path.join(repoRoot, "openclaw.mjs"), "// launcher\n", "utf8");
+        await fs.writeFile(path.join(repoRoot, "afora.mjs"), "// launcher\n", "utf8");
       }
       const scenario = makeScenario({
         cases: [makeCase({ testFile: LOCAL_FILE })],
@@ -390,7 +390,7 @@ describe("TUI PTY evidence producer", () => {
           status: "fail",
           failure: {
             reason: expect.stringContaining(
-              "cliMode=built requires readable openclaw.mjs and at least one readable dist/entry.js or dist/entry.mjs",
+              "cliMode=built requires readable afora.mjs and at least one readable dist/entry.js or dist/entry.mjs",
             ),
           },
         },

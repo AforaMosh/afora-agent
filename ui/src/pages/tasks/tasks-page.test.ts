@@ -99,7 +99,7 @@ async function createDeferredTaskRefresh(initialTasks: TaskSummary[]) {
     },
   );
   const source = createGateway({ request } as unknown as GatewayBrowserClient);
-  const page = document.createElement("openclaw-tasks-page") as TasksPageTestElement;
+  const page = document.createElement("afora-tasks-page") as TasksPageTestElement;
   page.context = createContext(source.gateway);
   document.body.append(page);
   await vi.waitFor(() => expect(page.tasks).toHaveLength(initialTasks.length));
@@ -308,7 +308,7 @@ describe("TasksPage active pagination", () => {
   it("redacts secrets in displayed list failures", async () => {
     const request = vi.fn().mockRejectedValue(new Error("OPENAI_API_KEY=sk-1234567890abcdef"));
     const source = createGateway({ request } as unknown as GatewayBrowserClient);
-    const page = document.createElement("openclaw-tasks-page") as TasksPageTestElement;
+    const page = document.createElement("afora-tasks-page") as TasksPageTestElement;
     page.context = createContext(source.gateway);
     document.body.append(page);
 
@@ -350,7 +350,7 @@ describe("TasksPage active pagination", () => {
       },
     );
     const source = createGateway({ request } as unknown as GatewayBrowserClient);
-    const page = document.createElement("openclaw-tasks-page") as TasksPageTestElement;
+    const page = document.createElement("afora-tasks-page") as TasksPageTestElement;
     page.context = createContext(source.gateway, "writer");
     document.body.append(page);
 
@@ -385,7 +385,7 @@ describe("TasksPage active pagination", () => {
       });
     });
     const source = createGateway({ request } as unknown as GatewayBrowserClient);
-    const page = document.createElement("openclaw-tasks-page") as TasksPageTestElement;
+    const page = document.createElement("afora-tasks-page") as TasksPageTestElement;
     page.context = createContext(source.gateway);
     document.body.append(page);
 
@@ -410,7 +410,7 @@ describe("TasksPage active pagination", () => {
       },
     );
     const source = createGateway({ request } as unknown as GatewayBrowserClient);
-    const page = document.createElement("openclaw-tasks-page") as TasksPageTestElement;
+    const page = document.createElement("afora-tasks-page") as TasksPageTestElement;
     page.context = createContext(source.gateway);
     document.body.append(page);
     await vi.waitFor(() =>
@@ -453,7 +453,7 @@ describe("TasksPage cancellation lifecycle", () => {
         auth: { role: "operator", scopes: ["operator.read"] },
       } as ApplicationGatewaySnapshot["hello"],
     );
-    const page = document.createElement("openclaw-tasks-page") as TasksPageTestElement;
+    const page = document.createElement("afora-tasks-page") as TasksPageTestElement;
     page.context = createContext(source.gateway);
     const writeText = vi.fn(async () => undefined);
     const originalClipboard = Object.getOwnPropertyDescriptor(navigator, "clipboard");
@@ -498,7 +498,7 @@ describe("TasksPage cancellation lifecycle", () => {
       ],
     }));
     const source = createGateway({ request } as unknown as GatewayBrowserClient);
-    const page = document.createElement("openclaw-tasks-page") as TasksPageTestElement;
+    const page = document.createElement("afora-tasks-page") as TasksPageTestElement;
     page.context = createContext(source.gateway, "research");
     document.body.append(page);
 
@@ -516,7 +516,7 @@ describe("TasksPage cancellation lifecycle", () => {
   it("scopes both active and recent task requests to the selected agent", async () => {
     const request = vi.fn(async () => ({ tasks: [] }));
     const source = createGateway({ request } as unknown as GatewayBrowserClient);
-    const page = document.createElement("openclaw-tasks-page") as TasksPageTestElement;
+    const page = document.createElement("afora-tasks-page") as TasksPageTestElement;
     page.context = createContext(source.gateway, "writer");
     document.body.append(page);
 
@@ -543,7 +543,7 @@ describe("TasksPage cancellation lifecycle", () => {
     });
     const client = { request } as unknown as GatewayBrowserClient;
     const source = createGateway(client);
-    const page = document.createElement("openclaw-tasks-page") as TasksPageTestElement;
+    const page = document.createElement("afora-tasks-page") as TasksPageTestElement;
     page.context = createContext(source.gateway);
     document.body.append(page);
     await vi.waitFor(() =>
@@ -593,7 +593,7 @@ describe("TasksPage cancellation lifecycle", () => {
       return Promise.resolve({ tasks: [blocked] });
     });
     const source = createGateway({ request } as unknown as GatewayBrowserClient);
-    const page = document.createElement("openclaw-tasks-page") as TasksPageTestElement;
+    const page = document.createElement("afora-tasks-page") as TasksPageTestElement;
     page.context = createContext(source.gateway);
     document.body.append(page);
     await vi.waitFor(() => expect(page.tasks).toHaveLength(1));
@@ -622,7 +622,7 @@ describe("TasksPage cancellation lifecycle", () => {
       return Promise.resolve({ tasks: [blocked] });
     });
     const source = createGateway({ request } as unknown as GatewayBrowserClient);
-    const page = document.createElement("openclaw-tasks-page") as TasksPageTestElement;
+    const page = document.createElement("afora-tasks-page") as TasksPageTestElement;
     page.context = createContext(source.gateway);
     document.body.append(page);
     await vi.waitFor(() => expect(page.tasks).toHaveLength(1));
@@ -657,7 +657,7 @@ describe("TasksPage cancellation lifecycle", () => {
     });
     const request = vi.fn(() => Promise.resolve({ tasks: [dismissed] }));
     const source = createGateway({ request } as unknown as GatewayBrowserClient);
-    const page = document.createElement("openclaw-tasks-page") as TasksPageTestElement;
+    const page = document.createElement("afora-tasks-page") as TasksPageTestElement;
     page.context = createContext(source.gateway);
     document.body.append(page);
     await vi.waitFor(() => expect(page.tasks).toHaveLength(1));

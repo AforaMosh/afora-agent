@@ -13,7 +13,7 @@ describe("Anthropic compaction live settings", () => {
   it("requires the global live gate and an API key", () => {
     expect(() =>
       resolveAnthropicCompactionLiveSettings({ [ANTHROPIC_COMPACTION_LIVE_ENV]: "1" }, false),
-    ).toThrow("also requires OPENCLAW_LIVE_TEST=1");
+    ).toThrow("also requires AFORA_LIVE_TEST=1");
     expect(() =>
       resolveAnthropicCompactionLiveSettings({ [ANTHROPIC_COMPACTION_LIVE_ENV]: "1" }, true),
     ).toThrow("requires ANTHROPIC_API_KEY");

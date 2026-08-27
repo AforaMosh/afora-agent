@@ -2,10 +2,10 @@
 import { lstatSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import { formatErrorMessage } from "../infra/errors.js";
-import { readOpenClawManagedNpmRootOverrides } from "../infra/npm-managed-root.js";
+import { readAforaManagedNpmRootOverrides } from "../infra/npm-managed-root.js";
 import { createSafeNpmInstallEnv } from "../infra/safe-package-install.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import {
@@ -16,7 +16,7 @@ import {
   resolvePluginInstallDir,
   resolvePluginNpmProjectsDir,
 } from "./install-paths.js";
-import { relinkOpenClawPeerDependenciesInManagedNpmRoot } from "./plugin-peer-link.js";
+import { relinkAforaPeerDependenciesInManagedNpmRoot } from "./plugin-peer-link.js";
 import { defaultSlotIdForKey } from "./slots.js";
 import {
   isUninstallPathInsideOrEqual,
@@ -93,7 +93,7 @@ export type PluginUninstallDirectoryRemoval = {
 type PluginUninstallPlanResult =
   | {
       ok: true;
-      config: OpenClawConfig;
+      config: AforaConfig;
       pluginId: string;
       actions: UninstallActions;
       directoryRemoval: PluginUninstallDirectoryRemoval | null;
@@ -335,7 +335,7 @@ function isLinkedPathInstallRecord(installRecord: PluginInstallRecord | undefine
 }
 
 type UninstallPluginParams = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   /** Package install-record key whose record and shared directory are removed once. */
   pluginId: string;
   channelIds?: string[];
@@ -580,7 +580,7 @@ export async function applyPluginUninstallDirectoryRemoval(
       );
     }
     try {
-      const managedOverrides = await readOpenClawManagedNpmRootOverrides();
+      const managedOverrides = await readAforaManagedNpmRootOverrides();
       const warning = await pruneManagedNpmPeerDependenciesAfterUninstall({
         npmRoot: removal.cleanup.npmRoot,
         packageName: removal.cleanup.packageName,
@@ -595,7 +595,7 @@ export async function applyPluginUninstallDirectoryRemoval(
       );
     }
     try {
-      await relinkOpenClawPeerDependenciesInManagedNpmRoot({
+      await relinkAforaPeerDependenciesInManagedNpmRoot({
         npmRoot: removal.cleanup.npmRoot,
         logger: {
           warn: (message) => warnings.push(message),

@@ -3,7 +3,7 @@
  * JSONL streaming, Claude stream-json dialects, usage metadata, and tool event
  * reconstruction.
  */
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import type { CliBackendConfig, CliBackendParseJsonlEvent } from "../plugins/cli-backend.types.js";
 import type { CliOutput } from "./cli-output-contracts.js";
 import {
@@ -34,8 +34,8 @@ export function formatCliOutputError(
   const sessionId = normalizeCliContextValue(attribution.sessionId);
   const cliSessionId = normalizeCliContextValue(output.sessionId);
   const context = [
-    runId ? `OpenClaw run: ${runId}.` : undefined,
-    sessionId ? `OpenClaw session: ${sessionId}.` : undefined,
+    runId ? `Afora run: ${runId}.` : undefined,
+    sessionId ? `Afora session: ${sessionId}.` : undefined,
     cliSessionId ? `Claude session: ${cliSessionId}.` : undefined,
   ].filter((entry): entry is string => Boolean(entry));
   const limit = output.terminalFailure.limit;

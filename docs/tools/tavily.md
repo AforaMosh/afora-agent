@@ -8,7 +8,7 @@ read_when:
 title: "Tavily"
 ---
 
-[Tavily](https://tavily.com) is a search API designed for AI applications. OpenClaw exposes it in two ways:
+[Tavily](https://tavily.com) is a search API designed for AI applications. Afora exposes it in two ways:
 
 - as the `web_search` provider for the generic search tool
 - as explicit plugin tools: `tavily_search` and `tavily_extract`
@@ -18,7 +18,7 @@ Tavily returns structured results optimized for LLM consumption, with configurab
 | Property  | Value                                                                                         |
 | --------- | --------------------------------------------------------------------------------------------- |
 | Plugin id | `tavily`                                                                                      |
-| Package   | `@openclaw/tavily-plugin`                                                                     |
+| Package   | `@afora/tavily-plugin`                                                                     |
 | Auth      | `TAVILY_API_KEY` env var or config `apiKey`                                                   |
 | Base URL  | `https://api.tavily.com` (default); `TAVILY_BASE_URL` env var or config `baseUrl` to override |
 | Timeouts  | 30s search, 60s extract (default)                                                             |
@@ -29,7 +29,7 @@ Tavily returns structured results optimized for LLM consumption, with configurab
 <Steps>
   <Step title="Install the plugin">
     ```bash
-    openclaw plugins install @openclaw/tavily-plugin
+    afora plugins install @afora/tavily-plugin
     ```
   </Step>
   <Step title="Get an API key">
@@ -67,7 +67,7 @@ Tavily returns structured results optimized for LLM consumption, with configurab
 </Steps>
 
 <Tip>
-Choosing Tavily in onboarding or `openclaw configure --section web` installs and enables the official Tavily plugin when needed.
+Choosing Tavily in onboarding or `afora configure --section web` installs and enables the official Tavily plugin when needed.
 </Tip>
 
 ## Tool reference

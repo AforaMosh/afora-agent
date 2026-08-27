@@ -1,9 +1,9 @@
 // Github Copilot tests cover stream plugin behavior.
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
-import { streamSimple, type Context, type Model } from "openclaw/plugin-sdk/llm";
-import { buildCopilotIdeHeaders } from "openclaw/plugin-sdk/provider-auth";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
+import { streamSimple, type Context, type Model } from "afora-agent/plugin-sdk/llm";
+import { buildCopilotIdeHeaders } from "afora-agent/plugin-sdk/provider-auth";
 import { describe, expect, it, vi } from "vitest";
 import { COPILOT_RUNTIME_INTEGRATION_ID } from "./runtime-identity.js";
 import { wrapCopilotAnthropicStream, wrapCopilotProviderStream } from "./stream.js";
@@ -745,7 +745,7 @@ describe("wrapCopilotAnthropicStream", () => {
     expect(baseStreamFn).toHaveBeenCalledOnce();
   });
 
-  it("does not claim provider transport before OpenClaw chooses one", () => {
+  it("does not claim provider transport before Afora chooses one", () => {
     expect(
       wrapCopilotProviderStream({
         streamFn: undefined,

@@ -123,9 +123,9 @@ Configuration location:
 - `safeBins` comes from config (`tools.exec.safeBins` or per-agent `agents.entries.*.tools.exec.safeBins`).
 - `safeBinTrustedDirs` comes from config (`tools.exec.safeBinTrustedDirs` or per-agent `agents.entries.*.tools.exec.safeBinTrustedDirs`).
 - `safeBinProfiles` comes from config (`tools.exec.safeBinProfiles` or per-agent `agents.entries.*.tools.exec.safeBinProfiles`). Per-agent profile keys override global keys.
-- allowlist entries live in the host-local approvals document under `agents.<id>.allowlist` (or via Control UI / `openclaw approvals allowlist ...`).
-- `openclaw security audit` warns with `tools.exec.safe_bins_interpreter_unprofiled` when interpreter/runtime bins appear in `safeBins` without explicit profiles.
-- `openclaw doctor --fix` can scaffold missing custom `safeBinProfiles.<bin>` entries as `{}` (review and tighten afterward). Interpreter/runtime bins are not auto-scaffolded.
+- allowlist entries live in the host-local approvals document under `agents.<id>.allowlist` (or via Control UI / `afora approvals allowlist ...`).
+- `afora security audit` warns with `tools.exec.safe_bins_interpreter_unprofiled` when interpreter/runtime bins appear in `safeBins` without explicit profiles.
+- `afora doctor --fix` can scaffold missing custom `safeBinProfiles.<bin>` entries as `{}` (review and tighten afterward). Interpreter/runtime bins are not auto-scaffolded.
 
 Custom profile example:
 
@@ -156,7 +156,7 @@ Approval-backed interpreter/runtime runs are intentionally conservative:
   file snapshot.
 - Common package-manager wrapper forms that still resolve to one direct local file (for example
   `pnpm exec`, `pnpm node`, `npm exec`, `npx`) are unwrapped before binding.
-- If OpenClaw cannot identify exactly one concrete local file for an interpreter/runtime command
+- If Afora cannot identify exactly one concrete local file for an interpreter/runtime command
   (for example package scripts, eval forms, runtime-specific loader chains, or ambiguous multi-file
   forms), approval-backed execution is denied instead of claiming semantic coverage it does not
   have.
@@ -167,13 +167,13 @@ When approvals are required, the exec tool returns immediately with an approval 
 correlate later approved-run system events (`Exec finished`, and `Exec running` when configured).
 If no decision arrives before the timeout, the request is treated as an approval timeout and
 surfaced as a terminal host-command denial. For main-agent async approvals with an originating
-session, OpenClaw also resumes that session with an internal followup so the agent observes that
+session, Afora also resumes that session with an internal followup so the agent observes that
 the command did not run instead of later repairing a missing result. Pending exec approvals expire
 after 30 minutes by default.
 
 ### Followup delivery behavior
 
-After an approved async exec finishes, OpenClaw sends a followup `agent` turn to the same session.
+After an approved async exec finishes, Afora sends a followup `agent` turn to the same session.
 Denied async approvals use the same main-session followup path for the denial status, but they do
 not register elevated runtime handoffs and they do not run the command. Denials without a resumable
 main session are either suppressed or reported through a safe direct route when one exists.
@@ -276,8 +276,8 @@ The agent should not also echo a duplicate plain chat `/approve` command unless 
 chat approvals are unavailable or manual approval is the only remaining path.
 
 If a native approval client is configured but no native runtime is active for the originating
-channel, OpenClaw keeps the local deterministic `/approve` prompt visible. If the native runtime is
-active and attempts delivery but no target receives the card, OpenClaw sends a same-chat fallback
+channel, Afora keeps the local deterministic `/approve` prompt visible. If the native runtime is
+active and attempts delivery but no target receives the card, Afora sends a same-chat fallback
 notice with the exact `/approve <id> <decision>` command so the request can still be resolved.
 
 Generic model:
@@ -321,7 +321,7 @@ FAQ: [Why are there two exec approval configs for chat approvals?](/help/faq-fir
 Native-client-specific routing:
 
 - Telegram defaults to approver DMs (`target: "dm"`). Switch to `channel` or `both` to also show
-  approval prompts in the originating Telegram chat/topic. For Telegram forum topics, OpenClaw
+  approval prompts in the originating Telegram chat/topic. For Telegram forum topics, Afora
   preserves the topic for the approval prompt and the post-approval follow-up.
 - Discord and Telegram approvers can be explicit (`execApprovals.approvers`) or inferred from
   `commands.ownerAllowFrom`; only resolved approvers can approve or deny.
@@ -341,7 +341,7 @@ Native-client-specific routing:
   still requires explicit Signal approvers from `channels.signal.allowFrom` or `defaultTo`.
 - Matrix native DM/channel routing and reaction shortcuts handle both exec and plugin approvals;
   plugin authorization still comes from `channels.matrix.dm.allowFrom`. Matrix native prompts
-  include `com.openclaw.approval` custom event content on the first prompt event so OpenClaw-aware
+  include `com.afora.approval` custom event content on the first prompt event so Afora-aware
   Matrix clients can read structured approval state while stock clients keep the plain-text
   `/approve` fallback.
 - Native Discord and Telegram approval buttons carry an explicit exec or plugin owner kind in
@@ -353,7 +353,7 @@ Native-client-specific routing:
   `askFallback`.
 
 Sensitive owner-only group commands such as `/diagnostics` and `/export-trajectory` use private
-owner routing for approval prompts and final results. OpenClaw first tries a private route on the
+owner routing for approval prompts and final results. Afora first tries a private route on the
 same surface where the owner ran the command. If that surface has no private owner route, it falls
 back to the first available owner route from `commands.ownerAllowFrom`, so a Discord group command
 can still send the approval and result to the owner's Telegram DM when Telegram is the configured
@@ -394,7 +394,7 @@ Gateway -> Node Service (WS)
 Security notes:
 
 - Unix socket mode `0600`, token stored in the `exec_approvals_config` row of
-  `state/openclaw.sqlite`.
+  `state/afora.sqlite`.
 - Same-UID peer check.
 - Challenge/response (nonce + HMAC token + request hash) + short TTL.
 

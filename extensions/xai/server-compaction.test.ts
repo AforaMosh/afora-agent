@@ -2,9 +2,9 @@ import {
   captureOpenAIResponsesCompaction,
   createOpenAIResponsesTransportStreamFn,
   requestPreparedOpenAIResponsesCompaction,
-} from "@openclaw/ai/transports";
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
-import type { AssistantMessage, Context, Model } from "openclaw/plugin-sdk/llm";
+} from "@afora/ai/transports";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
+import type { AssistantMessage, Context, Model } from "afora-agent/plugin-sdk/llm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { wrapXaiProviderStream } from "./stream.js";
 

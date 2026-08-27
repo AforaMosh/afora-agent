@@ -2,8 +2,8 @@ import { access, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import type { AforaConfig } from "../config/types.afora.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { applyClawAddPlan } from "./add.js";
 import { buildClawAddPlan } from "./lifecycle.js";
 import { parseClawManifest } from "./schema.js";
@@ -12,12 +12,12 @@ import { buildClawUpdatePlan } from "./update-plan.js";
 import { applyClawWorkspaceUpdate } from "./workspace-update.js";
 import { readClawWorkspaceFiles } from "./workspace.js";
 
-afterEach(() => closeOpenClawStateDatabaseForTest());
+afterEach(() => closeAforaStateDatabaseForTest());
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("applyClawWorkspaceUpdate", () => {
   it("applies add/change/remove actions and can roll them back with provenance", async () => {
-    const root = tempDirs.make("openclaw-claw-workspace-update-");
+    const root = tempDirs.make("afora-claw-workspace-update-");
     const currentRoot = join(root, "current");
     const targetRoot = join(root, "target");
     await mkdir(currentRoot);
@@ -57,7 +57,7 @@ describe("applyClawWorkspaceUpdate", () => {
       name: "@acme/worker",
       version: "1.0.0",
       packageRoot: currentRoot,
-      manifestPath: join(currentRoot, "openclaw.claw.json"),
+      manifestPath: join(currentRoot, "afora.claw.json"),
       integrityKind: "artifact",
       integrity: "sha256:current",
       byteLength: 1,
@@ -70,13 +70,13 @@ describe("applyClawWorkspaceUpdate", () => {
       integrity: "sha256:target",
     };
     const workspace = join(root, "workspace");
-    const env = { OPENCLAW_STATE_DIR: join(root, "state") };
+    const env = { AFORA_STATE_DIR: join(root, "state") };
     const currentAddPlan = await buildClawAddPlan({
       manifest: currentParsed.manifest,
       source: currentSource,
       context: { workspace },
     });
-    let config: OpenClawConfig = {};
+    let config: AforaConfig = {};
     await applyClawAddPlan(currentAddPlan, {
       env,
       consentPlanIntegrity: currentAddPlan.planIntegrity,

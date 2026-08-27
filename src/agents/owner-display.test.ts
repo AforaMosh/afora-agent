@@ -1,6 +1,6 @@
 // Verifies owner display hashing uses a dedicated secret and raw mode disables it.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   ensureOwnerDisplaySecret,
   resolveOwnerDisplaySetting,
@@ -70,7 +70,7 @@ describe("resolveOwnerDisplaySetting", () => {
         ownerDisplay: "hash",
         ownerDisplaySecret: "  owner-secret  ",
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveOwnerDisplaySetting(cfg)).toEqual({
       ownerDisplay: "raw",
@@ -84,7 +84,7 @@ describe("resolveOwnerDisplaySetting", () => {
         ownerDisplay: "raw",
         ownerDisplaySecret: "owner-secret", // pragma: allowlist secret
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveOwnerDisplaySetting(cfg)).toEqual({
       ownerDisplay: "raw",
@@ -99,7 +99,7 @@ describe("ensureOwnerDisplaySecret", () => {
       commands: {
         ownerDisplay: "hash",
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = ensureOwnerDisplaySecret(cfg, () => "generated-owner-secret");
     expect(result.generatedSecret).toBeUndefined();
@@ -113,7 +113,7 @@ describe("ensureOwnerDisplaySecret", () => {
         ownerDisplay: "hash",
         ownerDisplaySecret: "existing-owner-secret", // pragma: allowlist secret
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = ensureOwnerDisplaySecret(cfg, () => "generated-owner-secret");
     expect(result.generatedSecret).toBeUndefined();

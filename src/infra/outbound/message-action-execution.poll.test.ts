@@ -4,7 +4,7 @@ import type {
   ChannelPlugin,
   ChannelThreadingToolContext,
 } from "../../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { executeMessagePoll } from "./message-action-execution.js";
 
 const pollerConfig = {
@@ -13,7 +13,7 @@ const pollerConfig = {
       botToken: "poller-test",
     },
   },
-} as OpenClawConfig;
+} as AforaConfig;
 
 type PollerSendPoll = NonNullable<NonNullable<ChannelPlugin["outbound"]>["sendPoll"]>;
 

@@ -1,4 +1,4 @@
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import type { SessionEntry } from "./types.js";
 
 /** Every transcript generation retained by one canonical logical-session record. */

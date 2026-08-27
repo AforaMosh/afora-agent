@@ -1,5 +1,5 @@
 /** Live cache test for MCP-style tool turns against direct model providers. */
-import type { AssistantMessage, Tool } from "openclaw/plugin-sdk/llm";
+import type { AssistantMessage, Tool } from "afora-agent/plugin-sdk/llm";
 import { Type } from "typebox";
 import { describe, expect, it } from "vitest";
 import { extractEmbeddedAssistantText } from "./embedded-agent-utils.js";
@@ -162,7 +162,7 @@ describeCacheLive("MCP-style prompt caching (live)", () => {
       const fixture = await resolveLiveDirectModel({
         provider: "openai",
         api: "openai-responses",
-        envVar: "OPENCLAW_LIVE_OPENAI_CACHE_MODEL",
+        envVar: "AFORA_LIVE_OPENAI_CACHE_MODEL",
         preferredModelIds: ["gpt-5.6-luna", "gpt-5.5", "gpt-5.4-mini", "gpt-5.4"],
       });
       logLiveCache(`openai mcp-style model=${fixture.model.provider}/${fixture.model.id}`);

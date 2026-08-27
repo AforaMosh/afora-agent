@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { buildLegacyMigrationPreview } from "openclaw/plugin-sdk/runtime-doctor-migrations";
+import { buildLegacyMigrationPreview } from "afora-agent/plugin-sdk/runtime-doctor-migrations";
 import { describe, expect, it, vi } from "vitest";
 import { stateMigrations } from "./doctor-contract-api.js";
 import * as legacySessionSurfaceApi from "./legacy-session-surface-api.js";
@@ -55,7 +55,7 @@ describe("whatsapp setup entry", () => {
   });
 
   it("plans migration for every Baileys auth category while preserving other shared-root files", async () => {
-    const oauthDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-wa-legacy-migration-"));
+    const oauthDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-wa-legacy-migration-"));
     const authFiles = [
       "creds.json",
       "creds.json.bak",

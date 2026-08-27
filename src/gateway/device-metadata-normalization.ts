@@ -1,5 +1,5 @@
 // Device metadata normalization for auth payloads and policy matching.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 function normalizeTrimmedMetadata(value?: string | null): string {
   if (typeof value !== "string") {
     return "";

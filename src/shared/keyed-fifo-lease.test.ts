@@ -1,10 +1,10 @@
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it } from "vitest";
 import { drainGlobalSingletonLifecycleState } from "./global-singleton.js";
 import { createKeyedFifoLeaseRegistry } from "./keyed-fifo-lease.js";
 
 const keysToDelete = new Set<symbol>();
-const TEST_KEY = Symbol.for("openclaw.test.keyedFifoLease");
+const TEST_KEY = Symbol.for("afora.test.keyedFifoLease");
 
 function createRegistry() {
   keysToDelete.add(TEST_KEY);

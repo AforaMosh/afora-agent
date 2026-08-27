@@ -22,7 +22,7 @@ describe("AppSidebar project session activity", () => {
               {
                 threadId: "active-thread",
                 name: "Active session",
-                cwd: "/work/openclaw",
+                cwd: "/work/afora",
                 status: "active",
                 archived: false,
                 canContinue: false,
@@ -31,7 +31,7 @@ describe("AppSidebar project session activity", () => {
               {
                 threadId: "idle-thread",
                 name: "Idle session",
-                cwd: "/work/openclaw",
+                cwd: "/work/afora",
                 status: "idle",
                 archived: false,
                 canContinue: true,
@@ -53,7 +53,7 @@ describe("AppSidebar project session activity", () => {
     sidebar.sessionData.requestSessionDataUpdate();
     await sidebar.updateComplete;
 
-    const project = sidebar.querySelector('[data-session-catalog-project="/work/openclaw"]');
+    const project = sidebar.querySelector('[data-session-catalog-project="/work/afora"]');
     const active = sidebar.querySelector('[data-session-key*="active-thread"]');
     const idle = sidebar.querySelector('[data-session-key*="idle-thread"]');
     const loose = sidebar.querySelector('[data-session-key*="loose-thread"]');
@@ -67,7 +67,7 @@ describe("AppSidebar project session activity", () => {
       [...(hostList?.children ?? [])].every((item) => item.getAttribute("role") === "listitem"),
     ).toBe(true);
     expect(projectItem?.getAttribute("role")).toBe("listitem");
-    expect(projectList?.getAttribute("aria-label")).toBe("Local Codex: openclaw");
+    expect(projectList?.getAttribute("aria-label")).toBe("Local Codex: afora");
     expect(
       [...(projectList?.children ?? [])].every((item) => item.getAttribute("role") === "listitem"),
     ).toBe(true);

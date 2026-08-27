@@ -21,7 +21,7 @@ afterEach(async () => {
 });
 
 async function makeRepo(remote?: string): Promise<string> {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-project-scope-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-project-scope-"));
   cleanup.push(root);
   await git(root, "init");
   if (remote) {
@@ -32,9 +32,9 @@ async function makeRepo(remote?: string): Promise<string> {
 
 describe("project memory scope", () => {
   it.each([
-    ["https://GitHub.COM/OpenClaw/OpenClaw.git", "github.com/OpenClaw/OpenClaw"],
-    ["git@GITHUB.com:OpenClaw/OpenClaw.git", "github.com/OpenClaw/OpenClaw"],
-    ["https://github.com/OpenClaw/Repo;Prod.git", "github.com/OpenClaw/Repo%3bProd"],
+    ["https://GitHub.COM/AforaMosh/afora-agent.git", "github.com/AforaMosh/afora-agent"],
+    ["git@GITHUB.com:AforaMosh/afora-agent.git", "github.com/AforaMosh/afora-agent"],
+    ["https://github.com/Afora/Repo;Prod.git", "github.com/Afora/Repo%3bProd"],
   ])("normalizes origin %s", async (remote, expected) => {
     await expect(resolveProjectKey(await makeRepo(remote))).resolves.toBe(expected);
   });
@@ -54,7 +54,7 @@ describe("project memory scope", () => {
   });
 
   it("preserves filesystem case so local path identities remain distinct", async () => {
-    const parent = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-project-case-"));
+    const parent = await fs.mkdtemp(path.join(os.tmpdir(), "afora-project-case-"));
     cleanup.push(parent);
     const repo = path.join(parent, "MiXeD-Repo");
     await fs.mkdir(repo);
@@ -67,7 +67,7 @@ describe("project memory scope", () => {
   });
 
   it("escapes the list delimiter in local repository paths", async () => {
-    const parent = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-project-delimiter-"));
+    const parent = await fs.mkdtemp(path.join(os.tmpdir(), "afora-project-delimiter-"));
     cleanup.push(parent);
     const repo = path.join(parent, "acme;prod<blue>");
     await fs.mkdir(repo);
@@ -82,7 +82,7 @@ describe("project memory scope", () => {
   });
 
   it("converges a linked worktree and its source repository", async () => {
-    const repo = await makeRepo("https://github.com/OpenClaw/OpenClaw.git");
+    const repo = await makeRepo("https://github.com/AforaMosh/afora-agent.git");
     await git(repo, "config", "user.email", "test@example.com");
     await git(repo, "config", "user.name", "Test");
     await fs.writeFile(path.join(repo, "README.md"), "test\n");
@@ -93,13 +93,13 @@ describe("project memory scope", () => {
     await git(repo, "worktree", "add", worktree, "-b", "test-worktree");
     await expect(
       Promise.all([resolveProjectKey(repo), resolveProjectKey(worktree)]),
-    ).resolves.toEqual(["github.com/OpenClaw/OpenClaw", "github.com/OpenClaw/OpenClaw"]);
+    ).resolves.toEqual(["github.com/AforaMosh/afora-agent", "github.com/AforaMosh/afora-agent"]);
   });
 
   it.runIf(process.platform !== "win32")(
     "falls back to the path key when the git lookup hangs",
     async () => {
-      const parent = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-project-hang-"));
+      const parent = await fs.mkdtemp(path.join(os.tmpdir(), "afora-project-hang-"));
       cleanup.push(parent);
       const fakeBinDir = path.join(parent, "fake-bin");
       await fs.mkdir(fakeBinDir);
@@ -113,7 +113,7 @@ describe("project memory scope", () => {
       const repo = path.join(parent, "repo");
       await fs.mkdir(repo);
       await git(repo, "init");
-      await git(repo, "remote", "add", "origin", "https://github.com/OpenClaw/OpenClaw.git");
+      await git(repo, "remote", "add", "origin", "https://github.com/AforaMosh/afora-agent.git");
 
       const started = Date.now();
       const key = await withEnvAsync(

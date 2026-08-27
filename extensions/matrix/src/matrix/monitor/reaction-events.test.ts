@@ -43,10 +43,10 @@ type MatrixReactionClient = MatrixReactionParams["client"];
 type MatrixReactionCore = MatrixReactionParams["core"];
 type MatrixReactionEvent = MatrixReactionParams["event"];
 
-vi.mock("openclaw/plugin-sdk/approval-gateway-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/approval-gateway-runtime", () => ({
   resolveApprovalOverGateway: (...args: unknown[]) => resolveMatrixApproval(...args),
 }));
-vi.mock("openclaw/plugin-sdk/error-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/error-runtime", () => ({
   isApprovalNotFoundError: (err: unknown) =>
     err instanceof Error && /unknown or expired approval id/i.test(err.message),
 }));

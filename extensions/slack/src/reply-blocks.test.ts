@@ -1,7 +1,7 @@
 import {
   presentationToInteractiveControlsReply,
   type MessagePresentation,
-} from "openclaw/plugin-sdk/interactive-runtime";
+} from "afora-agent/plugin-sdk/interactive-runtime";
 import { describe, expect, it } from "vitest";
 import { renderSlackMessagePresentationFallbackText } from "./presentation-fallback.js";
 import { resolveSlackReplyBlockResolution } from "./reply-blocks.js";
@@ -150,7 +150,7 @@ describe("renderSlackMessagePresentationFallbackText", () => {
           blocks: [
             {
               type: "actions",
-              block_id: "openclaw_reply_buttons_1",
+              block_id: "afora_reply_buttons_1",
               elements: [
                 {
                   type: "button",
@@ -162,7 +162,7 @@ describe("renderSlackMessagePresentationFallbackText", () => {
             },
             {
               type: "actions",
-              block_id: "openclaw_reply_select_1",
+              block_id: "afora_reply_select_1",
               elements: [
                 {
                   type: "static_select",
@@ -221,8 +221,8 @@ describe("renderSlackMessagePresentationFallbackText", () => {
     expect(segments[0]).toMatchObject({
       kind: "blocks",
       blocks: [
-        { type: "actions", block_id: "openclaw_reply_buttons_1" },
-        { type: "actions", block_id: "openclaw_reply_select_1" },
+        { type: "actions", block_id: "afora_reply_buttons_1" },
+        { type: "actions", block_id: "afora_reply_select_1" },
       ],
     });
     expect(segments[1]).toMatchObject({ kind: "text" });
@@ -232,23 +232,23 @@ describe("renderSlackMessagePresentationFallbackText", () => {
       blocks: [
         {
           type: "actions",
-          block_id: "openclaw_reply_buttons_2",
-          elements: [{ action_id: "openclaw:reply_button:2:1", value: "stage" }],
+          block_id: "afora_reply_buttons_2",
+          elements: [{ action_id: "afora:reply_button:2:1", value: "stage" }],
         },
         {
           type: "actions",
-          block_id: "openclaw_reply_select_2",
-          elements: [{ action_id: "openclaw:reply_select:2" }],
+          block_id: "afora_reply_select_2",
+          elements: [{ action_id: "afora:reply_select:2" }],
         },
         {
           type: "actions",
-          block_id: "openclaw_reply_buttons_3",
-          elements: [{ action_id: "openclaw:reply_button:3:1", value: "refresh" }],
+          block_id: "afora_reply_buttons_3",
+          elements: [{ action_id: "afora:reply_button:3:1", value: "refresh" }],
         },
         {
           type: "actions",
-          block_id: "openclaw_reply_select_3",
-          elements: [{ action_id: "openclaw:reply_select:3" }],
+          block_id: "afora_reply_select_3",
+          elements: [{ action_id: "afora:reply_select:3" }],
         },
       ],
     });
@@ -441,7 +441,7 @@ describe("renderSlackMessagePresentationFallbackText", () => {
     expect(segments[1]?.kind === "text" ? segments[1].text : "").toContain("Column 20: Value 20");
     expect(segments[2]).toMatchObject({
       kind: "blocks",
-      blocks: [{ block_id: "openclaw_reply_buttons_1", elements: [{ value: "stage" }] }],
+      blocks: [{ block_id: "afora_reply_buttons_1", elements: [{ value: "stage" }] }],
     });
     expect(segments[3]).toMatchObject({
       kind: "text",
@@ -450,8 +450,8 @@ describe("renderSlackMessagePresentationFallbackText", () => {
     expect(segments[4]).toMatchObject({
       kind: "blocks",
       blocks: [
-        { block_id: "openclaw_reply_select_1" },
-        { block_id: "openclaw_reply_buttons_2", elements: [{ value: "refresh" }] },
+        { block_id: "afora_reply_select_1" },
+        { block_id: "afora_reply_buttons_2", elements: [{ value: "refresh" }] },
       ],
     });
   });
@@ -516,7 +516,7 @@ describe("renderSlackMessagePresentationFallbackText", () => {
       kind: "blocks",
       blocks: [
         { type: "data_table", caption: "Accounts" },
-        { block_id: "openclaw_reply_buttons_1", elements: [{ value: "refresh" }] },
+        { block_id: "afora_reply_buttons_1", elements: [{ value: "refresh" }] },
       ],
     });
   });
@@ -582,13 +582,13 @@ describe("renderSlackMessagePresentationFallbackText", () => {
     expect(segments).toHaveLength(1);
     expect(blocks).toHaveLength(3);
     expect(actionIds).toEqual([
-      "openclaw:reply_button:1:1",
-      "openclaw:callback_button:1:2",
-      "openclaw:approval_button:1:3",
-      "openclaw:reply_link:1:4",
-      "openclaw:reply_link:1:5",
-      "openclaw:reply_select:1",
-      "openclaw:callback_select:2",
+      "afora:reply_button:1:1",
+      "afora:callback_button:1:2",
+      "afora:approval_button:1:3",
+      "afora:reply_link:1:4",
+      "afora:reply_link:1:5",
+      "afora:reply_select:1",
+      "afora:callback_select:2",
     ]);
   });
 
@@ -613,7 +613,7 @@ describe("renderSlackMessagePresentationFallbackText", () => {
       blocks.map(
         (block) => (block as { elements?: Array<{ action_id?: string }> }).elements?.[0]?.action_id,
       ),
-    ).toEqual(["openclaw:callback_button:1:1", "openclaw:reply_button:2:1"]);
+    ).toEqual(["afora:callback_button:1:1", "afora:reply_button:2:1"]);
   });
 
   it("subtracts mirrors as a multiset and keeps surplus or changed rows", () => {
@@ -707,8 +707,8 @@ describe("renderSlackMessagePresentationFallbackText", () => {
       withUniqueRow.segments[1]?.kind === "blocks" ? withUniqueRow.segments[1].blocks : [],
     ).toMatchObject([
       {
-        block_id: "openclaw_reply_buttons_3",
-        elements: [{ action_id: "openclaw:reply_button:3:1", value: "later" }],
+        block_id: "afora_reply_buttons_3",
+        elements: [{ action_id: "afora:reply_button:3:1", value: "later" }],
       },
     ]);
   });

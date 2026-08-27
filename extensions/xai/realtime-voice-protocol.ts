@@ -4,9 +4,9 @@ import type {
   RealtimeVoiceBargeInOptions,
   RealtimeVoiceSessionConnection,
   RealtimeVoiceToolResultOptions,
-} from "openclaw/plugin-sdk/realtime-voice";
-import { REALTIME_VOICE_AUDIO_FORMAT_G711_ULAW_8KHZ } from "openclaw/plugin-sdk/realtime-voice";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/realtime-voice";
+import { REALTIME_VOICE_AUDIO_FORMAT_G711_ULAW_8KHZ } from "afora-agent/plugin-sdk/realtime-voice";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   XAI_REALTIME_DEFAULT_PREFIX_PADDING_MS,
   XAI_REALTIME_DEFAULT_SILENCE_DURATION_MS,

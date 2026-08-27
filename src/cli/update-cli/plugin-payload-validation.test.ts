@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PluginInstallRecord } from "../../config/types.plugins.js";
-import { resolveOpenClawPackageRootSync } from "../../infra/openclaw-root.js";
+import { resolveAforaPackageRootSync } from "../../infra/afora-root.js";
 import {
   runPluginPayloadSmokeCheck,
   runPluginPayloadSmokeCheckForManifestRecords,
@@ -19,7 +19,7 @@ type FormatMarkedBundleInstallRecord = PluginInstallRecord & {
 describe("runPluginPayloadSmokeCheck", () => {
   let tmpRoot: string;
   beforeEach(async () => {
-    tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-payload-smoke-"));
+    tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-payload-smoke-"));
   });
   afterEach(async () => {
     vi.restoreAllMocks();
@@ -93,7 +93,7 @@ describe("runPluginPayloadSmokeCheck", () => {
   }
 
   function resolveTestHostRoot(): string {
-    const hostRoot = resolveOpenClawPackageRootSync({
+    const hostRoot = resolveAforaPackageRootSync({
       argv1: process.argv[1],
       moduleUrl: import.meta.url,
       cwd: process.cwd(),
@@ -102,9 +102,9 @@ describe("runPluginPayloadSmokeCheck", () => {
     return hostRoot!;
   }
 
-  async function linkOpenClawPeerToHost(dir: string): Promise<void> {
+  async function linkAforaPeerToHost(dir: string): Promise<void> {
     await fs.mkdir(path.join(dir, "node_modules"), { recursive: true });
-    await fs.symlink(resolveTestHostRoot(), path.join(dir, "node_modules", "openclaw"), "junction");
+    await fs.symlink(resolveTestHostRoot(), path.join(dir, "node_modules", "afora"), "junction");
   }
 
   async function resolveRealPath(target: string): Promise<string> {
@@ -115,7 +115,7 @@ describe("runPluginPayloadSmokeCheck", () => {
     const dir = path.join(tmpRoot, "discord");
     await writePackage(
       dir,
-      { name: "@openclaw/discord", main: "dist/index.js" },
+      { name: "@afora/discord", main: "dist/index.js" },
       "module.exports = {};",
     );
     const result = await runPluginPayloadSmokeCheck({
@@ -130,7 +130,7 @@ describe("runPluginPayloadSmokeCheck", () => {
     const dir = path.join(tmpRoot, "codex");
     await writePackage(
       dir,
-      { name: "@openclaw/codex", openclaw: { extensions: ["./index.js"] } },
+      { name: "@afora/codex", afora: { extensions: ["./index.js"] } },
       "export default {};",
     );
     const result = await runPluginPayloadSmokeCheckForManifestRecords({
@@ -152,16 +152,16 @@ describe("runPluginPayloadSmokeCheck", () => {
         dir,
         {
           name: "@clawemail/email",
-          [dependencyField]: { openclaw: "2026.7.1" },
-          openclaw: { extensions: ["./index.js"] },
+          [dependencyField]: { afora: "2026.7.1" },
+          afora: { extensions: ["./index.js"] },
         },
         "export default {};",
       );
-      const staleHostDir = path.join(dir, "node_modules", "openclaw");
+      const staleHostDir = path.join(dir, "node_modules", "afora");
       await fs.mkdir(staleHostDir, { recursive: true });
       await fs.writeFile(
         path.join(staleHostDir, "package.json"),
-        JSON.stringify({ name: "openclaw", version: "2026.7.1-beta.2" }),
+        JSON.stringify({ name: "afora", version: "2026.7.1-beta.2" }),
       );
 
       const manifestResult = await runPluginPayloadSmokeCheckForManifestRecords({
@@ -175,7 +175,7 @@ describe("runPluginPayloadSmokeCheck", () => {
 
       expect(manifestResult.failures).toHaveLength(expectedFailures);
       expect(authoritativeResult.failures).toHaveLength(1);
-      expect(authoritativeResult.failures[0]?.reason).toBe("missing-openclaw-peer-link");
+      expect(authoritativeResult.failures[0]?.reason).toBe("missing-afora-peer-link");
     },
   );
 
@@ -319,7 +319,7 @@ describe("runPluginPayloadSmokeCheck", () => {
     await writeBundle({ dir, format: "codex" });
     await writePackage(dir, {
       name: "dual-format-bundle",
-      openclaw: { extensions: ["./missing-extension.js"] },
+      afora: { extensions: ["./missing-extension.js"] },
     });
     const result = await runPluginPayloadSmokeCheck({
       records: {
@@ -344,7 +344,7 @@ describe("runPluginPayloadSmokeCheck", () => {
 
   it("reports a failure when the main entry file is missing on disk", async () => {
     const dir = path.join(tmpRoot, "brave");
-    await writePackage(dir, { name: "@openclaw/brave", main: "dist/index.js" });
+    await writePackage(dir, { name: "@afora/brave", main: "dist/index.js" });
     const result = await runPluginPayloadSmokeCheck({
       records: { brave: { source: "npm", installPath: dir } },
       env: {},
@@ -359,9 +359,9 @@ describe("runPluginPayloadSmokeCheck", () => {
     ]);
   });
 
-  it("accepts a manifest with no main field (OpenClaw plugins commonly use `exports` or `openclaw.extensions`)", async () => {
+  it("accepts a manifest with no main field (Afora plugins commonly use `exports` or `afora.extensions`)", async () => {
     const dir = path.join(tmpRoot, "matrix");
-    await writePackage(dir, { name: "@openclaw/plugin-matrix" });
+    await writePackage(dir, { name: "@afora/plugin-matrix" });
     const result = await runPluginPayloadSmokeCheck({
       records: { matrix: { source: "npm", installPath: dir } },
       env: {},
@@ -372,7 +372,7 @@ describe("runPluginPayloadSmokeCheck", () => {
   it("accepts a manifest that declares only `exports` and no `main`", async () => {
     const dir = path.join(tmpRoot, "qa");
     await writePackage(dir, {
-      name: "@openclaw/qa-channel",
+      name: "@afora/qa-channel",
       exports: { ".": "./index.js", "./api.js": "./api.js" },
     });
     const result = await runPluginPayloadSmokeCheck({
@@ -382,11 +382,11 @@ describe("runPluginPayloadSmokeCheck", () => {
     expect(result.failures).toEqual([]);
   });
 
-  it("accepts a manifest that declares an existing `openclaw.extensions` entry and no `main`", async () => {
+  it("accepts a manifest that declares an existing `afora.extensions` entry and no `main`", async () => {
     const dir = path.join(tmpRoot, "brave");
     await writePackage(dir, {
-      name: "@openclaw/brave-plugin",
-      openclaw: { extensions: ["./index.js"] },
+      name: "@afora/brave-plugin",
+      afora: { extensions: ["./index.js"] },
     });
     await fs.writeFile(path.join(dir, "index.js"), "export default {};\n", "utf8");
     const result = await runPluginPayloadSmokeCheck({
@@ -396,11 +396,11 @@ describe("runPluginPayloadSmokeCheck", () => {
     expect(result.failures).toEqual([]);
   });
 
-  it("reports a failure when `openclaw.extensions` contains invalid entries", async () => {
+  it("reports a failure when `afora.extensions` contains invalid entries", async () => {
     const dir = path.join(tmpRoot, "brave");
     await writePackage(dir, {
-      name: "@openclaw/brave-plugin",
-      openclaw: { extensions: ["./index.js", " "] },
+      name: "@afora/brave-plugin",
+      afora: { extensions: ["./index.js", " "] },
       main: "main.js",
     });
     await fs.writeFile(path.join(dir, "index.js"), "export default {};\n", "utf8");
@@ -414,7 +414,7 @@ describe("runPluginPayloadSmokeCheck", () => {
         installPath: dir,
         reason: "missing-extension-entry",
         detail:
-          "Plugin extension entry validation failed: package.json openclaw.extensions[1] must be a non-empty string",
+          "Plugin extension entry validation failed: package.json afora.extensions[1] must be a non-empty string",
       },
     ]);
   });
@@ -422,8 +422,8 @@ describe("runPluginPayloadSmokeCheck", () => {
   it("reports only extension-entry failure for an empty extensions list even if main is missing", async () => {
     const dir = path.join(tmpRoot, "brave-empty");
     await writePackage(dir, {
-      name: "@openclaw/brave-plugin",
-      openclaw: { extensions: [] },
+      name: "@afora/brave-plugin",
+      afora: { extensions: [] },
       main: "dist/index.js",
     });
     const result = await runPluginPayloadSmokeCheck({
@@ -436,7 +436,7 @@ describe("runPluginPayloadSmokeCheck", () => {
         installPath: dir,
         reason: "missing-extension-entry",
         detail:
-          "Plugin extension entry validation failed: package.json openclaw.extensions is empty",
+          "Plugin extension entry validation failed: package.json afora.extensions is empty",
       },
     ]);
   });
@@ -444,8 +444,8 @@ describe("runPluginPayloadSmokeCheck", () => {
   it("accepts a valid declared extension when an unrelated npm main is missing", async () => {
     const dir = path.join(tmpRoot, "brave");
     await writePackage(dir, {
-      name: "@openclaw/brave-plugin",
-      openclaw: { extensions: ["./index.js"] },
+      name: "@afora/brave-plugin",
+      afora: { extensions: ["./index.js"] },
       main: "dist/index.js",
     });
     await fs.writeFile(path.join(dir, "index.js"), "export default {};\n", "utf8");
@@ -462,7 +462,7 @@ describe("runPluginPayloadSmokeCheck", () => {
       dir,
       {
         name: "missing-declared-extension",
-        openclaw: { extensions: ["./missing-extension.js"] },
+        afora: { extensions: ["./missing-extension.js"] },
         main: "./index.js",
       },
       "export default {};\n",
@@ -487,8 +487,8 @@ describe("runPluginPayloadSmokeCheck", () => {
   it("accepts a packaged TypeScript extension entry when compiled runtime output exists", async () => {
     const dir = path.join(tmpRoot, "codex");
     await writePackage(dir, {
-      name: "@openclaw/codex",
-      openclaw: { extensions: ["./index.ts"] },
+      name: "@afora/codex",
+      afora: { extensions: ["./index.ts"] },
     });
     await fs.mkdir(path.join(dir, "dist"), { recursive: true });
     await fs.writeFile(path.join(dir, "dist", "index.js"), "export default {};\n", "utf8");
@@ -499,14 +499,14 @@ describe("runPluginPayloadSmokeCheck", () => {
     expect(result.failures).toEqual([]);
   });
 
-  it("reports a failure when an openclaw peer link is missing", async () => {
+  it("reports a failure when an afora peer link is missing", async () => {
     const dir = path.join(tmpRoot, "codex");
     await writePackage(
       dir,
       {
-        name: "@openclaw/codex",
+        name: "@afora/codex",
         main: "dist/index.js",
-        peerDependencies: { openclaw: ">=2026.5.18-beta.1" },
+        peerDependencies: { afora: ">=2026.5.18-beta.1" },
       },
       "export default {};\n",
     );
@@ -520,28 +520,28 @@ describe("runPluginPayloadSmokeCheck", () => {
       {
         pluginId: "codex",
         installPath: dir,
-        reason: "missing-openclaw-peer-link",
-        detail: `Plugin declares peerDependency "openclaw" but peer link audit failed: missing ${path.join(
+        reason: "missing-afora-peer-link",
+        detail: `Plugin declares peerDependency "afora" but peer link audit failed: missing ${path.join(
           dir,
           "node_modules",
-          "openclaw",
+          "afora",
         )}.`,
       },
     ]);
   });
 
-  it("reports a failure when an openclaw peer link is a stale real directory", async () => {
+  it("reports a failure when an afora peer link is a stale real directory", async () => {
     const dir = path.join(tmpRoot, "codex");
     await writePackage(
       dir,
       {
-        name: "@openclaw/codex",
+        name: "@afora/codex",
         main: "dist/index.js",
-        peerDependencies: { openclaw: ">=2026.5.18-beta.1" },
+        peerDependencies: { afora: ">=2026.5.18-beta.1" },
       },
       "export default {};\n",
     );
-    const stalePeerDir = path.join(dir, "node_modules", "openclaw");
+    const stalePeerDir = path.join(dir, "node_modules", "afora");
     await fs.mkdir(stalePeerDir, { recursive: true });
 
     const result = await runPluginPayloadSmokeCheck({
@@ -553,7 +553,7 @@ describe("runPluginPayloadSmokeCheck", () => {
     expect(result.failures[0]).toMatchObject({
       pluginId: "codex",
       installPath: dir,
-      reason: "missing-openclaw-peer-link",
+      reason: "missing-afora-peer-link",
     });
     expect(result.failures[0]?.detail).toContain(`${stalePeerDir} points to`);
     expect(result.failures[0]?.detail).toContain(
@@ -561,22 +561,22 @@ describe("runPluginPayloadSmokeCheck", () => {
     );
   });
 
-  it("reports a failure when a direct openclaw dependency resolves to a stale copied host", async () => {
+  it("reports a failure when a direct afora dependency resolves to a stale copied host", async () => {
     const dir = path.join(tmpRoot, "email");
     await writePackage(
       dir,
       {
         name: "@clawemail/email",
         main: "dist/index.js",
-        dependencies: { openclaw: "2026.7.1" },
+        dependencies: { afora: "2026.7.1" },
       },
       "export default {};\n",
     );
-    const staleHostDir = path.join(dir, "node_modules", "openclaw");
+    const staleHostDir = path.join(dir, "node_modules", "afora");
     await fs.mkdir(staleHostDir, { recursive: true });
     await fs.writeFile(
       path.join(staleHostDir, "package.json"),
-      JSON.stringify({ name: "openclaw", version: "2026.7.1-beta.2" }),
+      JSON.stringify({ name: "afora", version: "2026.7.1-beta.2" }),
       "utf8",
     );
 
@@ -589,7 +589,7 @@ describe("runPluginPayloadSmokeCheck", () => {
     expect(result.failures[0]).toMatchObject({
       pluginId: "email",
       installPath: dir,
-      reason: "missing-openclaw-peer-link",
+      reason: "missing-afora-peer-link",
     });
     expect(result.failures[0]?.detail).toContain(`${staleHostDir} points to`);
   });
@@ -603,15 +603,15 @@ describe("runPluginPayloadSmokeCheck", () => {
         {
           name: "@clawemail/email",
           main: "dist/index.js",
-          dependencies: { openclaw: "2026.7.1" },
+          dependencies: { afora: "2026.7.1" },
         },
         "export default {};\n",
       );
-      const staleHostDir = path.join(dir, "node_modules", "openclaw");
+      const staleHostDir = path.join(dir, "node_modules", "afora");
       await fs.mkdir(staleHostDir, { recursive: true });
       await fs.writeFile(
         path.join(staleHostDir, "package.json"),
-        JSON.stringify({ name: "openclaw", version: "2026.7.1-beta.2" }),
+        JSON.stringify({ name: "afora", version: "2026.7.1-beta.2" }),
         "utf8",
       );
 
@@ -624,21 +624,21 @@ describe("runPluginPayloadSmokeCheck", () => {
     },
   );
 
-  it("reports a failure when an openclaw peer link points at the wrong package root", async () => {
+  it("reports a failure when an afora peer link points at the wrong package root", async () => {
     const dir = path.join(tmpRoot, "codex");
     await writePackage(
       dir,
       {
-        name: "@openclaw/codex",
+        name: "@afora/codex",
         main: "dist/index.js",
-        peerDependencies: { openclaw: ">=2026.5.18-beta.1" },
+        peerDependencies: { afora: ">=2026.5.18-beta.1" },
       },
       "export default {};\n",
     );
-    const wrongHostRoot = path.join(tmpRoot, "old-openclaw");
+    const wrongHostRoot = path.join(tmpRoot, "old-afora");
     await fs.mkdir(wrongHostRoot, { recursive: true });
     await fs.mkdir(path.join(dir, "node_modules"), { recursive: true });
-    await fs.symlink(wrongHostRoot, path.join(dir, "node_modules", "openclaw"), "junction");
+    await fs.symlink(wrongHostRoot, path.join(dir, "node_modules", "afora"), "junction");
 
     const result = await runPluginPayloadSmokeCheck({
       records: { codex: { source: "npm", installPath: dir } },
@@ -649,31 +649,31 @@ describe("runPluginPayloadSmokeCheck", () => {
     expect(result.failures[0]).toMatchObject({
       pluginId: "codex",
       installPath: dir,
-      reason: "missing-openclaw-peer-link",
+      reason: "missing-afora-peer-link",
     });
     expect(result.failures[0]?.detail).toContain(
       `${path.join(
         dir,
         "node_modules",
-        "openclaw",
+        "afora",
       )} points to ${await resolveRealPath(wrongHostRoot)} instead of ${await resolveRealPath(
         resolveTestHostRoot(),
       )}`,
     );
   });
 
-  it("accepts an openclaw peer link when it resolves to the host package root", async () => {
+  it("accepts an afora peer link when it resolves to the host package root", async () => {
     const dir = path.join(tmpRoot, "codex");
     await writePackage(
       dir,
       {
-        name: "@openclaw/codex",
+        name: "@afora/codex",
         main: "dist/index.js",
-        peerDependencies: { openclaw: ">=2026.5.18-beta.1" },
+        peerDependencies: { afora: ">=2026.5.18-beta.1" },
       },
       "export default {};\n",
     );
-    await linkOpenClawPeerToHost(dir);
+    await linkAforaPeerToHost(dir);
 
     const result = await runPluginPayloadSmokeCheck({
       records: { codex: { source: "npm", installPath: dir } },
@@ -683,11 +683,11 @@ describe("runPluginPayloadSmokeCheck", () => {
     expect(result.failures).toEqual([]);
   });
 
-  it("reports a failure when an `openclaw.extensions` entry file is missing", async () => {
+  it("reports a failure when an `afora.extensions` entry file is missing", async () => {
     const dir = path.join(tmpRoot, "brave");
     await writePackage(dir, {
-      name: "@openclaw/brave-plugin",
-      openclaw: { extensions: ["./dist/index.js"] },
+      name: "@afora/brave-plugin",
+      afora: { extensions: ["./dist/index.js"] },
     });
     const result = await runPluginPayloadSmokeCheck({
       records: { brave: { source: "npm", installPath: dir } },

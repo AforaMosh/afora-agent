@@ -1,12 +1,12 @@
 // Persists the root ownership record for one Claw-created agent and workspace.
 
 import type { DatabaseSync } from "node:sqlite";
-import { stableStringify } from "@openclaw/normalization-core";
+import { stableStringify } from "@afora/normalization-core";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "../state/afora-state-db.js";
 import { digestClawAgentConfig } from "./agent-config-digest.js";
 import {
   CLAW_PACKAGE_REF_SCHEMA_VERSION,
@@ -167,15 +167,15 @@ export function readClawInstallRecordFromDatabase(
 
 export function readClawInstallRecord(
   agentId: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): PersistedClawInstall | undefined {
-  const row = selectClawInstallRow(openOpenClawStateDatabase(options).db, agentId);
+  const row = selectClawInstallRow(openAforaStateDatabase(options).db, agentId);
   return row ? rowToRecord(row) : undefined;
 }
 
 export function persistClawInstallRecord(
   plan: ClawAddPlan,
-  options: OpenClawStateDatabaseOptions & {
+  options: AforaStateDatabaseOptions & {
     status?: ClawInstallStatus;
     nowMs?: number;
     expectedExistingRecord?: PersistedClawInstall;
@@ -188,7 +188,7 @@ export function persistClawInstallRecord(
   const agentConfigDigest = digestClawAgentConfig(plan.agent.config);
   const ownedPaths = agentOwnedPaths(plan);
   const bootstrap = bootstrapProvenance(plan);
-  const persistedRecord = runOpenClawStateWriteTransaction(({ db }) => {
+  const persistedRecord = runAforaStateWriteTransaction(({ db }) => {
     const existing = selectClawInstallRow(db, plan.agent.finalId);
     if (existing) {
       const record = rowToRecord(existing);
@@ -281,12 +281,12 @@ export function persistClawInstallRecord(
 export function updateClawInstallRecordStatus(
   agentId: string,
   status: ClawInstallStatus,
-  options: OpenClawStateDatabaseOptions & {
+  options: AforaStateDatabaseOptions & {
     nowMs?: number;
     expectedStatuses?: ClawInstallStatus[];
   } = {},
 ): void {
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     const expectedStatuses = options.expectedStatuses ?? [];
     const expectedClause =
       expectedStatuses.length > 0
@@ -310,9 +310,9 @@ export function updateClawInstallRecordStatus(
 
 export function deleteClawInstallRecord(
   agentId: string,
-  options: OpenClawStateDatabaseOptions & { expectedStatuses?: ClawInstallStatus[] } = {},
+  options: AforaStateDatabaseOptions & { expectedStatuses?: ClawInstallStatus[] } = {},
 ): void {
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     const expectedStatuses = options.expectedStatuses ?? [];
     const expectedClause =
       expectedStatuses.length > 0
@@ -332,9 +332,9 @@ export function deleteClawInstallRecord(
 }
 
 export function readClawInstallRecords(
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): PersistedClawInstall[] {
-  const database = openOpenClawStateDatabase(options);
+  const database = openAforaStateDatabase(options);
   const bootstrapColumns = selectClawBootstrapProvenanceColumns(database.db);
   const rows =
     database.db /* sqlite-allow-raw: read-only Claw install inventory ordered by stable agent id. */
@@ -354,7 +354,7 @@ export function readClawInstallRecords(
 
 export function updateClawInstallRecord(
   plan: ClawAddPlan,
-  options: OpenClawStateDatabaseOptions & {
+  options: AforaStateDatabaseOptions & {
     nowMs?: number;
     expectedClaw?: { version: string; integrity: string };
     status?: ClawInstallStatus;
@@ -373,7 +373,7 @@ export function updateClawInstallRecord(
     .filter((action) => action.kind === "agent")
     .map((action) => action.target);
   const bootstrap = bootstrapProvenance(plan) ?? current.bootstrap;
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     const result = db /* sqlite-allow-raw: Claw install provenance compare-and-swap write. */
       .prepare(
         `UPDATE claw_installs
@@ -454,7 +454,7 @@ export function updateClawInstallRecord(
 export function persistClawPackageRef(
   plan: ClawAddPlan,
   pkg: ResolvedClawPackage,
-  options: OpenClawStateDatabaseOptions & {
+  options: AforaStateDatabaseOptions & {
     nowMs?: number;
     status?: ClawPackageRefStatus;
     relationship?: ClawPackageRelationship;
@@ -480,7 +480,7 @@ export function persistClawPackageRef(
     installedAtMs: nowMs,
     updatedAtMs: nowMs,
   };
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     const existing = db /* sqlite-allow-raw: exact owned package-ref replay lookup. */
       .prepare(
         `SELECT schema_version, agent_id, claw_name, package_kind, package_source,
@@ -614,10 +614,10 @@ export function persistClawPackageRef(
 export function updateClawPackageRefStatus(
   ref: PersistedClawPackageRef,
   status: ClawPackageRefStatus,
-  options: OpenClawStateDatabaseOptions & { nowMs?: number } = {},
+  options: AforaStateDatabaseOptions & { nowMs?: number } = {},
 ): PersistedClawPackageRef {
   const nowMs = options.nowMs ?? Date.now();
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     // sqlite-allow-raw: this Claw package reference status update is scoped to one owned row.
     db.prepare(
       `UPDATE claw_package_refs
@@ -643,7 +643,7 @@ export function updateClawPackageRefStatus(
 }
 
 export function readClawPackageRefs(
-  options: OpenClawStateDatabaseOptions & {
+  options: AforaStateDatabaseOptions & {
     agentId?: string;
     kind?: ClawPackage["kind"];
     source?: ClawPackage["source"];
@@ -653,7 +653,7 @@ export function readClawPackageRefs(
     status?: ClawPackageRefStatus;
   } = {},
 ): PersistedClawPackageRef[] {
-  const database = openOpenClawStateDatabase(options);
+  const database = openAforaStateDatabase(options);
   if (
     options.readOnly &&
     !database.db /* sqlite-allow-raw: read-only Claw package-ref table-existence probe. */

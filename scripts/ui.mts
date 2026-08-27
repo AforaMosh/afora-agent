@@ -67,13 +67,13 @@ export function resolveUiBuildEnvironment(
     now: sources.now,
     readGitCommit: sources.readGitCommit ?? readCurrentGitCommit,
   });
-  if (env.OPENCLAW_BUILD_TIMESTAMP?.trim() || env.OPENCLAW_CONTROL_UI_BUILD_ID?.trim()) {
+  if (env.AFORA_BUILD_TIMESTAMP?.trim() || env.AFORA_CONTROL_UI_BUILD_ID?.trim()) {
     return buildEnv;
   }
 
   const existing = normalizeControlUiBuildInfo((sources.readBuildInfo ?? readExistingBuildInfo)());
   const version = (sources.readPackageVersion ?? readCurrentPackageVersion)();
-  const release = env.OPENCLAW_CONTROL_UI_RELEASE_BUILD?.trim() === "1";
+  const release = env.AFORA_CONTROL_UI_RELEASE_BUILD?.trim() === "1";
   if (
     existing.buildId === "dev" ||
     !existing.builtAt ||
@@ -85,8 +85,8 @@ export function resolveUiBuildEnvironment(
   }
   return {
     ...buildEnv,
-    OPENCLAW_BUILD_TIMESTAMP: existing.builtAt,
-    OPENCLAW_CONTROL_UI_BUILD_ID: existing.buildId,
+    AFORA_BUILD_TIMESTAMP: existing.builtAt,
+    AFORA_CONTROL_UI_BUILD_ID: existing.buildId,
   };
 }
 
@@ -433,7 +433,7 @@ function main(argv: string[] = process.argv.slice(2)): void {
     return;
   }
 
-  const noPnpmBuild = action === "build" && process.env.OPENCLAW_BUILD_ALL_NO_PNPM === "1";
+  const noPnpmBuild = action === "build" && process.env.AFORA_BUILD_ALL_NO_PNPM === "1";
   if (!noPnpmBuild && !depsInstalled(action === "test" ? "test" : "build")) {
     const installEnv = process.env;
     const installArgs = ["install"];

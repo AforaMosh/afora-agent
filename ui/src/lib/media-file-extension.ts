@@ -1,8 +1,8 @@
 // Browser-safe media filename extension parsing shared by Control UI renderers.
 
 const SAME_ORIGIN_MEDIA_ROUTE_MARKERS = [
-  "/__openclaw__/assistant-media",
-  "/__openclaw__/media/",
+  "/__afora__/assistant-media",
+  "/__afora__/media/",
   "/api/chat/media/outgoing/",
   "/media/inbound/",
 ];
@@ -25,7 +25,7 @@ export function getMediaFileExtension(value: string): string | undefined {
   let filename: string;
   try {
     if (/^https?:\/\//i.test(trimmed) || isSameOriginMediaRoute(trimmed)) {
-      const pathname = new URL(trimmed, "https://openclaw.invalid").pathname;
+      const pathname = new URL(trimmed, "https://afora.invalid").pathname;
       filename = pathname.slice(pathname.lastIndexOf("/") + 1);
       try {
         // Match media-core: decode only the filename and keep encoded path

@@ -2,13 +2,13 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import type { SessionEvent } from "@github/copilot-sdk";
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-harness-runtime";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import {
   initializeGlobalHookRunner,
   resetGlobalHookRunner,
-} from "openclaw/plugin-sdk/hook-runtime";
-import { createMockPluginRegistry } from "openclaw/plugin-sdk/plugin-test-runtime";
-import { readSessionTranscriptEvents } from "openclaw/plugin-sdk/session-transcript-runtime";
+} from "afora-agent/plugin-sdk/hook-runtime";
+import { createMockPluginRegistry } from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { readSessionTranscriptEvents } from "afora-agent/plugin-sdk/session-transcript-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createAttemptTranscriptJournal } from "./attempt-transcript-journal.js";
 import {
@@ -518,9 +518,9 @@ describe("Copilot attempt transcript journal", () => {
       isError: true,
       toolCallId: "call-a",
       content: [{ type: "text", text: "A failed" }],
-      __openclaw: { resultContentSource: "network" },
+      __afora: { resultContentSource: "network" },
     });
-    expect(rows[5]?.message).toMatchObject({ __openclaw: { turnTainted: true } });
+    expect(rows[5]?.message).toMatchObject({ __afora: { turnTainted: true } });
     expect(journal.snapshot()).toMatchObject({
       assistantTranscriptOwned: true,
       assistantTranscriptIdempotencyKey: "copilot-sdk:sdk-session:assistant-final",
@@ -971,7 +971,7 @@ describe("Copilot attempt transcript journal", () => {
       role: "user",
       content: "continue",
       display: false,
-      __openclaw: {
+      __afora: {
         copilotSource: "future-source-kind",
         media: [{ path: "/tmp/notes.txt", contentType: "text/plain" }],
         copilotAttachments: [
@@ -983,7 +983,7 @@ describe("Copilot attempt transcript journal", () => {
     expect(rows[2]?.message).toMatchObject({ display: false });
     expect(rows[3]?.message).not.toHaveProperty("display", false);
     expect(rows[3]?.message).toMatchObject({
-      __openclaw: { copilotSource: "future-visible-source" },
+      __afora: { copilotSource: "future-visible-source" },
     });
     expect(journal.snapshot().replayInvalid).toBe(true);
   });

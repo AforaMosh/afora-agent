@@ -1,7 +1,7 @@
 // Hook install service installs hook packages from archives and local sources.
 
 import path from "node:path";
-import { normalizeTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
+import { normalizeTrimmedStringList } from "@afora/normalization-core/string-normalization";
 import { MANIFEST_KEY } from "../compat/legacy-names.js";
 import { resolveSafeInstallDir, unscopedPackageName } from "../infra/install-safe-path.js";
 import type { NpmIntegrityDrift, NpmSpecResolution } from "../infra/install-source-utils.js";
@@ -54,8 +54,8 @@ export type InstallHooksResult =
     };
 
 export const HOOK_INSTALL_ERROR_CODE = {
-  MISSING_OPENCLAW_HOOKS: "missing_openclaw_hooks",
-  EMPTY_OPENCLAW_HOOKS: "empty_openclaw_hooks",
+  MISSING_AFORA_HOOKS: "missing_afora_hooks",
+  EMPTY_AFORA_HOOKS: "empty_afora_hooks",
 } as const;
 
 type HookInstallErrorCode = (typeof HOOK_INSTALL_ERROR_CODE)[keyof typeof HOOK_INSTALL_ERROR_CODE];
@@ -233,23 +233,23 @@ export function resolveHookInstallDir(hookId: string, hooksDir?: string): string
   return targetDirResult.path;
 }
 
-function resolveOpenClawHooks(
+function resolveAforaHooks(
   manifest: HookPackageManifest,
 ): { ok: true; entries: string[] } | { ok: false; error: string; code: HookInstallErrorCode } {
   const hooks = manifest[MANIFEST_KEY]?.hooks;
   if (!Array.isArray(hooks)) {
     return {
       ok: false,
-      error: "package.json missing openclaw.hooks",
-      code: HOOK_INSTALL_ERROR_CODE.MISSING_OPENCLAW_HOOKS,
+      error: "package.json missing afora.hooks",
+      code: HOOK_INSTALL_ERROR_CODE.MISSING_AFORA_HOOKS,
     };
   }
   const list = normalizeTrimmedStringList(hooks);
   if (list.length === 0) {
     return {
       ok: false,
-      error: "package.json openclaw.hooks is empty",
-      code: HOOK_INSTALL_ERROR_CODE.EMPTY_OPENCLAW_HOOKS,
+      error: "package.json afora.hooks is empty",
+      code: HOOK_INSTALL_ERROR_CODE.EMPTY_AFORA_HOOKS,
     };
   }
   return { ok: true, entries: list };
@@ -410,7 +410,7 @@ async function installHookPackageFromDir(
     return { ok: false, error: `invalid package.json: ${String(err)}` };
   }
 
-  const hookManifest = resolveOpenClawHooks(manifest);
+  const hookManifest = resolveAforaHooks(manifest);
   if (!hookManifest.ok) {
     return hookManifest;
   }
@@ -444,7 +444,7 @@ async function installHookPackageFromDir(
     if (!runtime.isPathInside(params.packageDir, hookDir)) {
       return {
         ok: false,
-        error: `openclaw.hooks entry escapes package directory: ${entry}`,
+        error: `afora.hooks entry escapes package directory: ${entry}`,
       };
     }
     await validateHookDir(hookDir);
@@ -455,7 +455,7 @@ async function installHookPackageFromDir(
     ) {
       return {
         ok: false,
-        error: `openclaw.hooks entry resolves outside package directory: ${entry}`,
+        error: `afora.hooks entry resolves outside package directory: ${entry}`,
       };
     }
     const hookName = await resolveHookNameFromDir(hookDir);
@@ -681,7 +681,7 @@ async function installHooksFromArchive(
 
   return await runtime.withExtractedArchiveRoot({
     archivePath,
-    tempDirPrefix: "openclaw-hook-",
+    tempDirPrefix: "afora-hook-",
     timeoutMs,
     logger,
     onExtracted: async (rootDir) =>
@@ -722,7 +722,7 @@ export async function installHooksFromNpmSpec(
 
   logger.info?.(`Downloading ${spec.trim()}…`);
   return await runtime.installFromValidatedNpmSpecArchive({
-    tempDirPrefix: "openclaw-hook-pack-",
+    tempDirPrefix: "afora-hook-pack-",
     spec,
     timeoutMs,
     expectedIntegrity: params.expectedIntegrity,

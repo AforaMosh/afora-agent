@@ -1,6 +1,6 @@
 // Runs a Vitest config and enforces wall-time regression budgets.
 import { pathToFileURL } from "node:url";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import {
   booleanFlag,
   isStrictAffirmativeValue,
@@ -59,10 +59,10 @@ function parseArgs(argv: readonly string[], env = process.env) {
     argv,
     {
       config: "test/vitest/vitest.unit.config.ts",
-      maxWallMs: readBudgetEnvNumber("OPENCLAW_TEST_PERF_MAX_WALL_MS", env),
-      baselineWallMs: readBudgetEnvNumber("OPENCLAW_TEST_PERF_BASELINE_WALL_MS", env),
-      maxRegressionPct: readBudgetEnvNumber("OPENCLAW_TEST_PERF_MAX_REGRESSION_PCT", env) ?? 10,
-      reportOnly: isStrictAffirmativeValue(env.OPENCLAW_TEST_PERF_REPORT_ONLY),
+      maxWallMs: readBudgetEnvNumber("AFORA_TEST_PERF_MAX_WALL_MS", env),
+      baselineWallMs: readBudgetEnvNumber("AFORA_TEST_PERF_BASELINE_WALL_MS", env),
+      maxRegressionPct: readBudgetEnvNumber("AFORA_TEST_PERF_MAX_REGRESSION_PCT", env) ?? 10,
+      reportOnly: isStrictAffirmativeValue(env.AFORA_TEST_PERF_REPORT_ONLY),
     },
     [
       stringFlag("--config", "config"),
@@ -121,7 +121,7 @@ function main() {
   const startedAt = process.hrtime.bigint();
   const reportPath = runVitestJsonReport({
     config: opts.config,
-    prefix: "openclaw-vitest-perf",
+    prefix: "afora-vitest-perf",
   });
   const elapsedMs = Number.parseFloat(String(process.hrtime.bigint() - startedAt)) / 1_000_000;
 

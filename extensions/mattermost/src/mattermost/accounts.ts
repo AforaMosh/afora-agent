@@ -2,8 +2,8 @@
 import {
   createAccountListHelpers,
   hasConfiguredAccountValue,
-} from "openclaw/plugin-sdk/account-helpers";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
+} from "afora-agent/plugin-sdk/account-helpers";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "afora-agent/plugin-sdk/account-id";
 import {
   resolveChannelStreamingBlockCoalesce,
   resolveChannelStreamingBlockEnabled,
@@ -11,9 +11,9 @@ import {
   resolveChannelPreviewStreamMode,
   type StreamingMode,
   type TextChunkMode,
-} from "openclaw/plugin-sdk/channel-outbound";
-import type { BlockStreamingCoalesceConfig } from "openclaw/plugin-sdk/config-contracts";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/channel-outbound";
+import type { BlockStreamingCoalesceConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { resolveSecretInputString, type SecretInputStringResolutionMode } from "../secret-input.js";
 import type {
   MattermostAccountConfig,
@@ -22,7 +22,7 @@ import type {
   MattermostReplyToMode,
 } from "../types.js";
 import { normalizeMattermostBaseUrl } from "./client.js";
-import type { OpenClawConfig } from "./runtime-api.js";
+import type { AforaConfig } from "./runtime-api.js";
 
 type MattermostTokenSource = "env" | "config" | "none";
 type MattermostBaseUrlSource = "env" | "config" | "none";
@@ -79,7 +79,7 @@ function resolveMattermostRequireMention(config: MattermostAccountConfig): boole
 }
 
 function resolveMattermostAccountWithMode(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   mode: SecretInputStringResolutionMode;
 }): ResolvedMattermostAccount {
@@ -137,14 +137,14 @@ function resolveMattermostAccountWithMode(params: {
 }
 
 export function resolveMattermostAccount(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
 }): ResolvedMattermostAccount {
   return resolveMattermostAccountWithMode({ ...params, mode: "strict" });
 }
 
 export function inspectMattermostAccount(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
 }): ResolvedMattermostAccount {
   return resolveMattermostAccountWithMode({ ...params, mode: "inspect" });

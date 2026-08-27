@@ -1,16 +1,16 @@
 import {
   findNormalizedProviderValue,
   normalizeProviderId,
-} from "@openclaw/model-catalog-core/provider-id";
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
+} from "@afora/model-catalog-core/provider-id";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
 import {
   normalizeOptionalString,
   normalizeStringifiedOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import {
   normalizeTrimmedStringList,
   uniqueStrings,
-} from "@openclaw/normalization-core/string-normalization";
+} from "@afora/normalization-core/string-normalization";
 import type { AuthProfileCredential } from "../agents/auth-profiles/types.js";
 import { upsertAuthProfileWithLock } from "../agents/auth-profiles/upsert-with-lock.js";
 import { CUSTOM_LOCAL_AUTH_MARKER, isNonSecretApiKeyMarker } from "../agents/model-auth-markers.js";
@@ -25,7 +25,7 @@ import {
   SELF_HOSTED_DEFAULT_MAX_TOKENS,
 } from "../agents/self-hosted-provider-defaults.js";
 import type { ModelDefinitionConfig } from "../config/types.models.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 // Builds setup metadata for self-hosted provider plugins.
 import { cancelUnreadResponseBody } from "../infra/http-body.js";
 import { fetchWithSsrFGuard } from "../infra/net/fetch-guard.js";
@@ -33,7 +33,7 @@ import type { SsrFPolicy } from "../infra/net/ssrf.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { normalizeOptionalSecretInput } from "../utils/normalize-secret-input.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
-import { listOpenClawPluginManifestMetadata } from "./manifest-metadata-scan.js";
+import { listAforaPluginManifestMetadata } from "./manifest-metadata-scan.js";
 import { applyAuthProfileConfig } from "./provider-auth-helpers.js";
 import type {
   ProviderCatalogContext,
@@ -296,7 +296,7 @@ export async function discoverOpenAICompatibleLocalModels(params: {
   }
 }
 
-export function applyProviderDefaultModel(cfg: OpenClawConfig, modelRef: string): OpenClawConfig {
+export function applyProviderDefaultModel(cfg: AforaConfig, modelRef: string): AforaConfig {
   const existingModel = cfg.agents?.defaults?.model;
   const fallbacks =
     existingModel && typeof existingModel === "object" && "fallbacks" in existingModel
@@ -319,7 +319,7 @@ export function applyProviderDefaultModel(cfg: OpenClawConfig, modelRef: string)
 }
 
 function buildOpenAICompatibleSelfHostedProviderConfig(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   providerId: string;
   baseUrl: string;
   providerApiKey: string;
@@ -328,7 +328,7 @@ function buildOpenAICompatibleSelfHostedProviderConfig(params: {
   reasoning?: boolean;
   contextWindow?: number;
   maxTokens?: number;
-}): { config: OpenClawConfig; modelId: string; modelRef: string; profileId: string } {
+}): { config: AforaConfig; modelId: string; modelRef: string; profileId: string } {
   const modelRef = `${params.providerId}/${params.modelId}`;
   const profileId = `${params.providerId}:default`;
   return {
@@ -365,7 +365,7 @@ function buildOpenAICompatibleSelfHostedProviderConfig(params: {
 }
 
 type OpenAICompatibleSelfHostedProviderSetupParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   prompter: WizardPrompter;
   providerId: string;
   providerLabel: string;
@@ -379,7 +379,7 @@ type OpenAICompatibleSelfHostedProviderSetupParams = {
 };
 
 type OpenAICompatibleSelfHostedProviderPromptResult = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   credential: AuthProfileCredential;
   modelId: string;
   modelRef: string;
@@ -519,7 +519,7 @@ function isProviderOwnedSyntheticAuthMarker(
     normalizeProviderId(provider) === normalizedProvider;
   const normalizedValue = resolved.key.trim();
   // A marker is only a keyless capability when its provider's own plugin declares it.
-  return listOpenClawPluginManifestMetadata().some(
+  return listAforaPluginManifestMetadata().some(
     ({ origin, manifest }) =>
       origin === "bundled" &&
       normalizeTrimmedStringList(manifest.providers).some(matchesProvider) &&
@@ -540,7 +540,7 @@ export async function configureOpenAICompatibleSelfHostedProviderNonInteractive(
   reasoning?: boolean;
   contextWindow?: number;
   maxTokens?: number;
-}): Promise<OpenClawConfig | null> {
+}): Promise<AforaConfig | null> {
   const baseUrl = (
     normalizeOptionalSecretInput(params.ctx.opts.customBaseUrl) ?? params.defaultBaseUrl
   ).replace(/\/+$/, "");

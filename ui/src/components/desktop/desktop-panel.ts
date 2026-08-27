@@ -4,14 +4,14 @@ import type {
   EnvironmentSummary,
   EnvironmentsListResult,
   WorkerDesktopLaunchResult,
-} from "@openclaw/gateway-protocol";
+} from "@afora/gateway-protocol";
 import { html, nothing } from "lit";
 import { property, state } from "lit/decorators.js";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import type { GatewaySessionRow } from "../../api/types.ts";
 import { t } from "../../i18n/index.ts";
 import { formatUiError, formatUiExternalText } from "../../lib/format-error.ts";
-import { OpenClawLitElement } from "../../lit/openclaw-element.ts";
+import { AforaLitElement } from "../../lit/afora-element.ts";
 import { scrollbarShadowStyles } from "../../lit/scrollbar-styles.ts";
 import { DockLayoutController, dockPanelStyles } from "../dock-layout-controller.ts";
 import { createDockPanelLayout } from "../dock-panel-layout.ts";
@@ -45,7 +45,7 @@ import {
 import { desktopSourceForEnvironment, resolveDesktopDocumentTarget } from "./desktop-source.ts";
 
 const panelLayout = createDockPanelLayout({
-  storageKey: "openclaw.desktopPanel",
+  storageKey: "afora.desktopPanel",
   minHeight: 240,
   minWidth: 380,
   defaultDock: "right",
@@ -53,8 +53,8 @@ const panelLayout = createDockPanelLayout({
   defaultHeight: 420,
   defaultWidth: 560,
 });
-/** `<openclaw-desktop-panel>` — dockable RFB access to Gateway desktop sources. */
-class OpenClawDesktopPanel extends OpenClawLitElement {
+/** `<afora-desktop-panel>` — dockable RFB access to Gateway desktop sources. */
+class AforaDesktopPanel extends AforaLitElement {
   @property({ attribute: false }) client: GatewayBrowserClient | null = null;
   @property({ type: Boolean }) available = false;
   @property({ type: Boolean }) suppressed = false;
@@ -722,12 +722,12 @@ class OpenClawDesktopPanel extends OpenClawLitElement {
   }
 }
 
-if (!customElements.get("openclaw-desktop-panel")) {
-  customElements.define("openclaw-desktop-panel", OpenClawDesktopPanel);
+if (!customElements.get("afora-desktop-panel")) {
+  customElements.define("afora-desktop-panel", AforaDesktopPanel);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    "openclaw-desktop-panel": OpenClawDesktopPanel;
+    "afora-desktop-panel": AforaDesktopPanel;
   }
 }

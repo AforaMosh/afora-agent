@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   openAIModelCatalogRoutePolicy,
   resolveConfiguredOpenAIAuthMode,
@@ -39,7 +39,7 @@ describe("OpenAI model route adapter", () => {
           openai: { auth: "oauth", models: [] },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const resolution = resolveOpenAIModelRoutes({
       provider: "openai",
       modelId: "gpt-5.5",

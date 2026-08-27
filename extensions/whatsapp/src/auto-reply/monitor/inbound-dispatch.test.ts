@@ -1,5 +1,5 @@
 // Whatsapp tests cover inbound dispatch plugin behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { createTestWebInboundMessage } from "../../inbound/test-message.test-helper.js";
 
@@ -49,16 +49,16 @@ const {
   sourceReplyDeliveryModeContexts: [] as unknown[],
 }));
 
-vi.mock("openclaw/plugin-sdk/channel-inbound", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/channel-inbound")>();
+vi.mock("afora-agent/plugin-sdk/channel-inbound", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/channel-inbound")>();
   return {
     ...actual,
     readAgentRunTerminalOutcome: readAgentRunTerminalOutcomeMock,
   };
 });
 
-vi.mock("openclaw/plugin-sdk/channel-outbound", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/channel-outbound")>();
+vi.mock("afora-agent/plugin-sdk/channel-outbound", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/channel-outbound")>();
   return {
     ...actual,
     deliverInboundReplyWithMessageSendContext: deliverInboundReplyWithMessageSendContextMock,
@@ -1247,7 +1247,7 @@ describe("whatsapp inbound dispatch", () => {
         Body: "incoming",
         ReplyToId: "quoted-bot-message",
         ReplyToBody: "Earlier bot reply",
-        ReplyToSender: "OpenClaw",
+        ReplyToSender: "Afora",
       },
       deliverReply,
       msg: makeMsg({
@@ -1270,7 +1270,7 @@ describe("whatsapp inbound dispatch", () => {
     expectRecordFields(requireRecord(durableParams.ctxPayload, "durable context"), {
       ReplyToId: "quoted-bot-message",
       ReplyToBody: "Earlier bot reply",
-      ReplyToSender: "OpenClaw",
+      ReplyToSender: "Afora",
     });
     expect(deliverReply).not.toHaveBeenCalled();
   });

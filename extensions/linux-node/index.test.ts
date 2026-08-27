@@ -1,24 +1,24 @@
 import type {
-  OpenClawPluginApi,
-  OpenClawPluginNodeHostCommand,
-  OpenClawPluginNodeInvokePolicy,
-} from "openclaw/plugin-sdk/plugin-entry";
+  AforaPluginApi,
+  AforaPluginNodeHostCommand,
+  AforaPluginNodeInvokePolicy,
+} from "afora-agent/plugin-sdk/plugin-entry";
 import { describe, expect, it } from "vitest";
 import plugin from "./index.js";
 
 describe("linux-node plugin registration", () => {
   it("registers node-host commands and preserves explicit arming for capture", () => {
-    const commands: OpenClawPluginNodeHostCommand[] = [];
-    const policies: OpenClawPluginNodeInvokePolicy[] = [];
+    const commands: AforaPluginNodeHostCommand[] = [];
+    const policies: AforaPluginNodeInvokePolicy[] = [];
     plugin.register({
       pluginConfig: {
         notify: { enabled: true },
         camera: { enabled: true },
         location: { enabled: true },
       },
-      registerNodeHostCommand: (command: OpenClawPluginNodeHostCommand) => commands.push(command),
-      registerNodeInvokePolicy: (policy: OpenClawPluginNodeInvokePolicy) => policies.push(policy),
-    } as unknown as OpenClawPluginApi);
+      registerNodeHostCommand: (command: AforaPluginNodeHostCommand) => commands.push(command),
+      registerNodeInvokePolicy: (policy: AforaPluginNodeInvokePolicy) => policies.push(policy),
+    } as unknown as AforaPluginApi);
 
     expect(commands.map((command) => command.command)).toEqual([
       "system.notify",

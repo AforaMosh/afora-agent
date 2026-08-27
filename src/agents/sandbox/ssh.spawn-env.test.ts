@@ -119,8 +119,8 @@ describe("ssh subprocess env sanitization", () => {
     await runSshSandboxCommand({
       session: {
         command: "ssh",
-        configPath: "/tmp/openclaw-test-ssh-config",
-        host: "openclaw-sandbox",
+        configPath: "/tmp/afora-test-ssh-config",
+        host: "afora-sandbox",
       },
       remoteCommand: "true",
     });
@@ -147,8 +147,8 @@ describe("ssh subprocess env sanitization", () => {
       runSshSandboxCommand({
         session: {
           command: "ssh",
-          configPath: "/tmp/openclaw-test-ssh-config",
-          host: "openclaw-sandbox",
+          configPath: "/tmp/afora-test-ssh-config",
+          host: "afora-sandbox",
         },
         remoteCommand: "true",
       }),
@@ -171,8 +171,8 @@ describe("ssh subprocess env sanitization", () => {
       runSshSandboxCommand({
         session: {
           command: "ssh",
-          configPath: "/tmp/openclaw-test-ssh-config",
-          host: "openclaw-sandbox",
+          configPath: "/tmp/afora-test-ssh-config",
+          host: "afora-sandbox",
         },
         remoteCommand: "false",
         allowFailure: true,
@@ -185,14 +185,14 @@ describe("ssh subprocess env sanitization", () => {
 
     process.env.ANTHROPIC_API_KEY = "x";
     process.env.NODE_ENV = "test";
-    const localDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-ssh-upload-env-"));
+    const localDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-ssh-upload-env-"));
     tempDirs.push(localDir);
 
     await uploadDirectoryToSshTarget({
       session: {
         command: "ssh",
-        configPath: "/tmp/openclaw-test-ssh-config",
-        host: "openclaw-sandbox",
+        configPath: "/tmp/afora-test-ssh-config",
+        host: "afora-sandbox",
       },
       localDir,
       remoteDir: "/remote/workspace",
@@ -208,7 +208,7 @@ describe("ssh subprocess env sanitization", () => {
     async () => {
       mockSuccessfulSpawnCalls(2);
 
-      const localDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-ssh-upload-safe-"));
+      const localDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-ssh-upload-safe-"));
       tempDirs.push(localDir);
       await fs.mkdir(path.join(localDir, "real"), { recursive: true });
       await fs.writeFile(path.join(localDir, "real", "payload.txt"), "ok\n", "utf8");
@@ -217,8 +217,8 @@ describe("ssh subprocess env sanitization", () => {
       await uploadDirectoryToSshTarget({
         session: {
           command: "ssh",
-          configPath: "/tmp/openclaw-test-ssh-config",
-          host: "openclaw-sandbox",
+          configPath: "/tmp/afora-test-ssh-config",
+          host: "afora-sandbox",
         },
         localDir,
         remoteDir: "/remote/workspace",

@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { resolveConfiguredProviderFallback } from "./configured-provider-fallback.js";
 
-type ModelProviders = NonNullable<NonNullable<OpenClawConfig["models"]>["providers"]>;
+type ModelProviders = NonNullable<NonNullable<AforaConfig["models"]>["providers"]>;
 type ConfiguredModel = ModelProviders[string]["models"][number];
 
-function configuredProviders(providers: ModelProviders): Pick<OpenClawConfig, "models"> {
+function configuredProviders(providers: ModelProviders): Pick<AforaConfig, "models"> {
   return { models: { providers } };
 }
 

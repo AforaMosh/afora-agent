@@ -31,7 +31,7 @@ import {
 } from "../commands/onboard-helpers.js";
 import type { OnboardOptions } from "../commands/onboard-types.js";
 import type { GatewayAuthConfig } from "../config/types.gateway.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   describeGatewayServiceRestart,
   formatGatewayServiceStartRepairIssues,
@@ -60,9 +60,9 @@ import type { GatewayWizardSettings, WizardFlow } from "./setup.types.js";
 type FinalizeOnboardingOptions = {
   flow: WizardFlow;
   opts: OnboardOptions;
-  baseConfig: OpenClawConfig;
+  baseConfig: AforaConfig;
   hadExistingConfig?: boolean;
-  nextConfig: OpenClawConfig;
+  nextConfig: AforaConfig;
   workspaceDir: string;
   settings: GatewayWizardSettings;
   prompter: WizardPrompter;
@@ -72,7 +72,7 @@ type FinalizeOnboardingOptions = {
 const HATCH_TUI_TIMEOUT_MS = 5 * 60 * 1000;
 
 function buildSessionGatewayAuthOverride(params: {
-  nextConfig: OpenClawConfig;
+  nextConfig: AforaConfig;
   settings: GatewayWizardSettings;
   resolvedGatewayPassword: string;
 }): GatewayAuthConfig | undefined {
@@ -94,7 +94,7 @@ function buildSessionGatewayAuthOverride(params: {
 }
 
 async function startSessionGatewayForOnboarding(params: {
-  nextConfig: OpenClawConfig;
+  nextConfig: AforaConfig;
   settings: GatewayWizardSettings;
   resolvedGatewayPassword: string;
   prompter: WizardPrompter;
@@ -123,7 +123,7 @@ async function startSessionGatewayForOnboarding(params: {
         t("wizard.finalize.sessionGatewayStartFailed"),
         formatErrorMessage(error),
         t("wizard.finalize.startGatewayNow", {
-          command: formatCliCommand("openclaw gateway run"),
+          command: formatCliCommand("afora gateway run"),
         }),
       ].join("\n"),
       "Gateway",
@@ -180,8 +180,8 @@ function buildGatewayRecoveryProjection(params: {
     const service = params.serviceLabel ?? t("wizard.finalize.gatewayService");
     const detail = t("wizard.finalize.managedGatewayUnreachable", {
       service,
-      statusCommand: formatCliCommand("openclaw gateway status --deep"),
-      recoveryCommand: formatCliCommand("openclaw gateway restart"),
+      statusCommand: formatCliCommand("afora gateway status --deep"),
+      recoveryCommand: formatCliCommand("afora gateway restart"),
     });
     return { detail, summary: `${notDetected} ${detail.replaceAll("\n", " ")}` };
   }
@@ -190,8 +190,8 @@ function buildGatewayRecoveryProjection(params: {
     const detail = t("wizard.finalize.managedGatewaySetupFailed", {
       service,
       error: gateway.error,
-      statusCommand: formatCliCommand("openclaw gateway status --deep"),
-      recoveryCommand: formatCliCommand("openclaw gateway install --force"),
+      statusCommand: formatCliCommand("afora gateway status --deep"),
+      recoveryCommand: formatCliCommand("afora gateway install --force"),
     });
     return { detail, summary: `${notDetected} ${detail.replaceAll("\n", " ")}` };
   }
@@ -200,7 +200,7 @@ function buildGatewayRecoveryProjection(params: {
     gateway.reason === "external"
       ? formatExternalSupervisorActionRequired("start the gateway")
       : t("wizard.finalize.startGatewayNow", {
-          command: formatCliCommand("openclaw gateway run"),
+          command: formatCliCommand("afora gateway run"),
         });
   const summary = [notDetected, startGuidance].join(" ");
   if (gateway.reason === "external") {
@@ -212,10 +212,10 @@ function buildGatewayRecoveryProjection(params: {
       t("wizard.finalize.noBackgroundGatewayExpected"),
       startGuidance,
       t("wizard.finalize.rerunInstallDaemon", {
-        command: formatCliCommand("openclaw onboard --install-daemon"),
+        command: formatCliCommand("afora onboard --install-daemon"),
       }),
       t("wizard.finalize.skipHealthNextTime", {
-        command: formatCliCommand("openclaw onboard --skip-health"),
+        command: formatCliCommand("afora onboard --skip-health"),
       }),
     ].join("\n"),
     summary,
@@ -230,7 +230,7 @@ function buildGatewayRecoveryProjection(params: {
 export async function ensureGatewayServiceForOnboarding(params: {
   flow: WizardFlow;
   opts: Pick<OnboardOptions, "installDaemon" | "daemonRuntime">;
-  nextConfig: OpenClawConfig;
+  nextConfig: AforaConfig;
   settings: Pick<GatewayWizardSettings, "port">;
   prompter: WizardPrompter;
   runtime: RuntimeEnv;
@@ -575,7 +575,7 @@ export async function finalizeSetupWizard(
       }
       if (gatewayProbe.ok) {
         try {
-          const healthConfig: OpenClawConfig =
+          const healthConfig: AforaConfig =
             settings.authMode === "token" && settings.gatewayToken
               ? {
                   ...nextConfig,
@@ -604,8 +604,8 @@ export async function finalizeSetupWizard(
           await prompter.note(
             [
               t("common.docs"),
-              "https://docs.openclaw.ai/gateway/health",
-              "https://docs.openclaw.ai/gateway/troubleshooting",
+              "https://docs.afora.ai/gateway/health",
+              "https://docs.afora.ai/gateway/troubleshooting",
             ].join("\n"),
             t("wizard.finalize.healthCheckHelp"),
           );
@@ -621,8 +621,8 @@ export async function finalizeSetupWizard(
         await prompter.note(
           [
             t("common.docs"),
-            "https://docs.openclaw.ai/gateway/health",
-            "https://docs.openclaw.ai/gateway/troubleshooting",
+            "https://docs.afora.ai/gateway/health",
+            "https://docs.afora.ai/gateway/troubleshooting",
           ].join("\n"),
           t("wizard.finalize.healthCheckHelp"),
         );
@@ -701,7 +701,7 @@ export async function finalizeSetupWizard(
                 : {}),
             },
           },
-          env: { ...process.env, OPENCLAW_GATEWAY_PORT: String(settings.port) },
+          env: { ...process.env, AFORA_GATEWAY_PORT: String(settings.port) },
         });
         const document = await waitForControlUiDocument({
           url: target.documentUrl,
@@ -803,7 +803,7 @@ export async function finalizeSetupWizard(
           [
             t("wizard.finalize.noModelAuth", { provider: modelAuthStatus.provider }),
             t("wizard.finalize.noModelAuthNext", {
-              command: formatCliCommand("openclaw configure --section model"),
+              command: formatCliCommand("afora configure --section model"),
             }),
           ].join("\n"),
           t("wizard.finalize.noModelAuthTitle"),
@@ -815,14 +815,14 @@ export async function finalizeSetupWizard(
           t("wizard.finalize.gatewayTokenShared"),
           t("wizard.finalize.gatewayTokenStored"),
           t("wizard.finalize.gatewayTokenView", {
-            command: formatCliCommand("openclaw gateway auth-token --show"),
+            command: formatCliCommand("afora gateway auth-token --show"),
           }),
           t("wizard.finalize.gatewayTokenGenerate", {
-            command: formatCliCommand("openclaw doctor --generate-gateway-token"),
+            command: formatCliCommand("afora doctor --generate-gateway-token"),
           }),
           suppressGatewayTokenOutput ? undefined : t("wizard.finalize.dashboardTokenMemory"),
           t("wizard.finalize.dashboardOpenAnytime", {
-            command: formatCliCommand("openclaw dashboard --no-open"),
+            command: formatCliCommand("afora dashboard --no-open"),
           }),
           suppressGatewayTokenOutput ? undefined : t("wizard.finalize.dashboardTokenPrompt"),
         ].filter(Boolean);
@@ -886,7 +886,7 @@ export async function finalizeSetupWizard(
           [
             t("wizard.finalize.webSearchProviderUnavailable", { provider: label }),
             t("wizard.finalize.webSearchUnavailableAction"),
-            `  ${formatCliCommand("openclaw configure --section web")}`,
+            `  ${formatCliCommand("afora configure --section web")}`,
             "",
             t("wizard.finalize.webDocs"),
           ].join("\n"),
@@ -920,10 +920,10 @@ export async function finalizeSetupWizard(
           [
             t("wizard.finalize.webSearchNoKey", { provider: label }),
             t("wizard.finalize.webSearchNeedsKey"),
-            `  ${formatCliCommand("openclaw configure --section web")}`,
+            `  ${formatCliCommand("afora configure --section web")}`,
             "",
             t("wizard.finalize.webSearchGetKey", {
-              url: entry?.signupUrl ?? "https://docs.openclaw.ai/tools/web",
+              url: entry?.signupUrl ?? "https://docs.afora.ai/tools/web",
             }),
             t("wizard.finalize.webDocs"),
           ].join("\n"),
@@ -934,7 +934,7 @@ export async function finalizeSetupWizard(
           [
             t("wizard.finalize.webSearchDisabled", { provider: label }),
             t("wizard.finalize.webSearchReenable", {
-              command: formatCliCommand("openclaw configure --section web"),
+              command: formatCliCommand("afora configure --section web"),
             }),
             "",
             t("wizard.finalize.webDocs"),
@@ -970,7 +970,7 @@ export async function finalizeSetupWizard(
         await prompter.note(
           [
             t("wizard.finalize.webSearchSkipped"),
-            `  ${formatCliCommand("openclaw configure --section web")}`,
+            `  ${formatCliCommand("afora configure --section web")}`,
             "",
             t("wizard.finalize.webDocs"),
           ].join("\n"),
@@ -1000,7 +1000,7 @@ export async function finalizeSetupWizard(
             ? [
                 t("wizard.guided.complete"),
                 t("wizard.finalize.dashboardWhenReady", {
-                  command: formatCliCommand("openclaw dashboard"),
+                  command: formatCliCommand("afora dashboard"),
                 }),
               ].join(" ")
             : t("wizard.guided.complete")

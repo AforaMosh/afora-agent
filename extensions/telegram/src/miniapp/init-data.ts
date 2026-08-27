@@ -1,6 +1,6 @@
 // Telegram Mini App init-data validation.
 import crypto from "node:crypto";
-import { safeEqualSecret } from "openclaw/plugin-sdk/security-runtime";
+import { safeEqualSecret } from "afora-agent/plugin-sdk/security-runtime";
 
 const INIT_DATA_MAX_AGE_MS = 300_000;
 

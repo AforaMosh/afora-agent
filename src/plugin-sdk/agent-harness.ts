@@ -16,8 +16,8 @@ export type {
   AnyAgentTool,
   EmbeddedRunAttemptParams,
   EmbeddedRunAttemptParamsV2,
-  OpenClawAgentToolResult,
+  AforaAgentToolResult,
 } from "./agent-harness-runtime.js";
-export { createOpenClawCodingTools } from "../agents/agent-tools.js";
+export { createAforaCodingTools } from "../agents/agent-tools.js";
 export { createCodexAppServerToolResultExtensionRunner } from "../agents/harness/codex-app-server-extensions.js";
 export { resolveWebSearchToolPolicy } from "../agents/web-search-tool-policy.js";

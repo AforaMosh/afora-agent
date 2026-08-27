@@ -9,14 +9,14 @@ import {
   type OpenAiCompatibleVideoPayload,
   type VideoDescriptionRequest,
   type VideoDescriptionResult,
-} from "openclaw/plugin-sdk/media-understanding";
+} from "afora-agent/plugin-sdk/media-understanding";
 import {
   assertOkOrThrowHttpError,
   postJsonRequest,
   readProviderJsonResponse,
   resolveProviderHttpRequestConfig,
-} from "openclaw/plugin-sdk/provider-http";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+} from "afora-agent/plugin-sdk/provider-http";
+import manifest from "./afora.plugin.json" with { type: "json" };
 import { MOONSHOT_BASE_URL } from "./provider-catalog.js";
 
 // Media defaults are capability-specific and intentionally independent from chat onboarding.

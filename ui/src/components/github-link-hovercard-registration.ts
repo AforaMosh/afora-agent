@@ -7,7 +7,7 @@ import {
   parseGitHubLinkTarget,
 } from "./github-link-target.ts";
 
-const HOVERCARD_TAG = "openclaw-github-link-hovercard-provider";
+const HOVERCARD_TAG = "afora-github-link-hovercard-provider";
 
 type HovercardProviderElement = HTMLElement & {
   client: GatewayBrowserClient | null;

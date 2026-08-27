@@ -169,7 +169,7 @@ export async function applyClawHubSkillUninstall(
         sourceVersion: plan.version,
       })
     : undefined;
-  const stagedDir = `${plan.targetDir}.openclaw-skill-remove-${randomUUID()}`;
+  const stagedDir = `${plan.targetDir}.afora-skill-remove-${randomUUID()}`;
   let staged = false;
   let restoreTracking: (() => Promise<void>) | undefined;
   const rename = deps.rename ?? fs.rename;

@@ -1,7 +1,7 @@
 import {
   DEFAULT_GATEWAY_REQUEST_TIMEOUT_MS,
   gatewayStartupUnavailableDetails,
-} from "@openclaw/gateway-client/browser";
+} from "@afora/gateway-client/browser";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GatewayRequestError, type GatewayBrowserClient } from "../../api/gateway.ts";
 import {

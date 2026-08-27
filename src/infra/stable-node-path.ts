@@ -1,6 +1,6 @@
 // Resolves Homebrew Node binary paths to stable symlink targets.
 import fs from "node:fs/promises";
-import { stableHomebrewNodePathCandidates } from "@openclaw/normalization-core/stable-node-path";
+import { stableHomebrewNodePathCandidates } from "@afora/normalization-core/stable-node-path";
 
 /**
  * Homebrew Cellar paths (e.g. /opt/homebrew/Cellar/node/25.7.0/bin/node)

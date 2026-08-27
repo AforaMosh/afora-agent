@@ -1,5 +1,5 @@
 // Telegram tests cover shared plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import type { ResolvedTelegramAccount } from "./accounts.js";
 import { telegramConfigAdapter } from "./config-adapter.js";
@@ -10,7 +10,7 @@ const telegramPluginBase = createTelegramPluginBase({
   setupContract: {} as never,
 });
 
-function createCfg(): OpenClawConfig {
+function createCfg(): AforaConfig {
   return {
     channels: {
       telegram: {
@@ -22,10 +22,10 @@ function createCfg(): OpenClawConfig {
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
-function resolveAccount(cfg: OpenClawConfig, accountId: string): ResolvedTelegramAccount {
+function resolveAccount(cfg: AforaConfig, accountId: string): ResolvedTelegramAccount {
   return telegramPluginBase.config.resolveAccount(cfg, accountId);
 }
 
@@ -96,7 +96,7 @@ describe("createTelegramPluginBase config duplicate token guard", () => {
           enabled: true,
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const account = resolveAccount(cfg, "default");
     expect(await telegramPluginBase.config.isConfigured!(account, cfg)).toBe(true);
@@ -110,7 +110,7 @@ describe("createTelegramPluginBase config duplicate token guard", () => {
           enabled: true,
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const account = resolveAccount(cfg, "bot-main");
     expect(account.token).toBe("single-bot-token");
@@ -128,7 +128,7 @@ describe("createTelegramPluginBase config duplicate token guard", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const account = resolveAccount(cfg, "unknownBot");
     expect(await telegramPluginBase.config.isConfigured!(account, cfg)).toBe(false);
@@ -148,7 +148,7 @@ describe("createTelegramPluginBase config duplicate token guard", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const account = resolveAccount(cfg, "carey-notifications");
     expect(await telegramPluginBase.config.isConfigured!(account, cfg)).toBe(true);
@@ -162,7 +162,7 @@ describe("createTelegramPluginBase config duplicate token guard", () => {
           enabled: true,
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const account = resolveAccount(cfg, "default");
     expect(await telegramPluginBase.config.isConfigured!(account, cfg)).toBe(false);
@@ -180,7 +180,7 @@ describe("createTelegramPluginBase config duplicate token guard", () => {
         providers: {
           telegram_token: {
             source: "file",
-            path: "/tmp/openclaw-missing-telegram-token",
+            path: "/tmp/afora-missing-telegram-token",
             mode: "singleValue",
           },
         },
@@ -192,7 +192,7 @@ describe("createTelegramPluginBase config duplicate token guard", () => {
           defaultTo: "1498959610751750304",
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     expect(telegramConfigAdapter.resolveAllowFrom?.({ cfg, accountId: "default" })).toEqual([
       "1128540374256849009",

@@ -1,7 +1,7 @@
 /**
  * Public SDK subpath for LLM streaming, model utils, and validation.
  */
-export type { ApiProvider } from "@openclaw/ai";
+export type { ApiProvider } from "@afora/ai";
 export { resolveProviderContext } from "../../packages/ai/src/provider-types.js";
 export type {
   ProviderContext,
@@ -18,13 +18,13 @@ export {
   getEnvApiKey,
   parseStreamingJson,
   sanitizeSurrogates,
-} from "@openclaw/ai/internal/runtime";
+} from "@afora/ai/internal/runtime";
 export {
   adjustMaxTokensForThinking,
   buildBaseOptions,
   clampReasoning,
-} from "@openclaw/ai/internal/shared";
-export { transformMessages } from "@openclaw/ai/internal/shared";
+} from "@afora/ai/internal/shared";
+export { transformMessages } from "@afora/ai/internal/shared";
 export { complete, completeSimple, stream, streamSimple } from "../llm/stream.js";
 export type {
   Api,

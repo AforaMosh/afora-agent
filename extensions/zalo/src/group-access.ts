@@ -1,6 +1,6 @@
 // Zalo plugin module implements group access behavior.
-import type { GroupPolicy } from "openclaw/plugin-sdk/config-contracts";
-import { resolveOpenProviderRuntimeGroupPolicy } from "openclaw/plugin-sdk/runtime-group-policy";
+import type { GroupPolicy } from "afora-agent/plugin-sdk/config-contracts";
+import { resolveOpenProviderRuntimeGroupPolicy } from "afora-agent/plugin-sdk/runtime-group-policy";
 
 const ZALO_ALLOW_FROM_PREFIX_RE = /^(zalo|zl):/i;
 

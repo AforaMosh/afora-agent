@@ -2,7 +2,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { PassThrough } from "node:stream";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getWindowsCmdExePath,
@@ -96,7 +96,7 @@ const {
 const { removeStartupEntries } = await import("./schtasks-runtime.js");
 
 function resolveStartupEntryPath(env: Record<string, string>, extension = "cmd") {
-  const taskName = env.OPENCLAW_WINDOWS_TASK_NAME ?? "OpenClaw Gateway";
+  const taskName = env.AFORA_WINDOWS_TASK_NAME ?? "Afora Gateway";
   return path.join(
     expectDefined(env.APPDATA, "env.APPDATA test invariant"),
     "Microsoft",
@@ -122,9 +122,9 @@ async function writeNodeScript(env: Record<string, string>, port = "18789") {
     scriptPath,
     [
       "@echo off",
-      `set "OPENCLAW_SERVICE_KIND=node"`,
-      `set "OPENCLAW_GATEWAY_PORT=${port}"`,
-      `"C:\\bin\\openclaw.cmd" node run --host 127.0.0.1 --port ${port}`,
+      `set "AFORA_SERVICE_KIND=node"`,
+      `set "AFORA_GATEWAY_PORT=${port}"`,
+      `"C:\\bin\\afora.cmd" node run --host 127.0.0.1 --port ${port}`,
       "",
     ].join("\r\n"),
     "utf8",
@@ -137,8 +137,8 @@ const NODE_PROCESS_QUERY =
 function makeNodeServiceEnv(env: Record<string, string>): Record<string, string> {
   return {
     ...env,
-    OPENCLAW_SERVICE_KIND: "node",
-    OPENCLAW_WINDOWS_TASK_NAME: "OpenClaw Node",
+    AFORA_SERVICE_KIND: "node",
+    AFORA_WINDOWS_TASK_NAME: "Afora Node",
   };
 }
 
@@ -169,7 +169,7 @@ function mockWindowsNodeHostProcess(processId = 5151): void {
             ? [
                 {
                   ProcessId: processId,
-                  CommandLine: "C:\\bin\\openclaw.cmd node run --host 127.0.0.1 --port 18789",
+                  CommandLine: "C:\\bin\\afora.cmd node run --host 127.0.0.1 --port 18789",
                 },
                 { ProcessId: 9999, CommandLine: "powershell.exe" },
               ]
@@ -210,7 +210,7 @@ function expectStartupFallbackSpawn() {
   expect(args).toContain("--port");
   expect(args).toContain("18789");
   expect(options.detached).toBe(true);
-  expect((options.env as Record<string, string> | undefined)?.OPENCLAW_GATEWAY_PORT).toBe("18789");
+  expect((options.env as Record<string, string> | undefined)?.AFORA_GATEWAY_PORT).toBe("18789");
   expect(options.stdio).toBe("ignore");
   expect(options.windowsHide).toBe(true);
 }
@@ -249,7 +249,7 @@ function installGatewayScheduledTask(
     env,
     stdout,
     programArguments: ["node", "gateway.js", "--port", port],
-    environment: { OPENCLAW_GATEWAY_PORT: port },
+    environment: { AFORA_GATEWAY_PORT: port },
     startupFallbackTakeoverRuntime,
   });
 }
@@ -258,14 +258,14 @@ function installNodeScheduledTask(env: Record<string, string>, stdout = new Pass
   return installScheduledTask({
     env: {
       ...env,
-      OPENCLAW_SERVICE_KIND: "node",
-      OPENCLAW_WINDOWS_TASK_NAME: "OpenClaw Node",
+      AFORA_SERVICE_KIND: "node",
+      AFORA_WINDOWS_TASK_NAME: "Afora Node",
     },
     stdout,
-    programArguments: ["node", "openclaw", "node", "run", "--host", "127.0.0.1", "--port", "18789"],
+    programArguments: ["node", "afora", "node", "run", "--host", "127.0.0.1", "--port", "18789"],
     environment: {
-      OPENCLAW_SERVICE_KIND: "node",
-      OPENCLAW_GATEWAY_PORT: "18789",
+      AFORA_SERVICE_KIND: "node",
+      AFORA_GATEWAY_PORT: "18789",
     },
   });
 }
@@ -369,7 +369,7 @@ afterEach(() => {
 
 describe("Windows startup fallback", () => {
   it("uses the locale-independent task probe when a scheduled task is missing", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       schtasksResponses.push(
         { code: 0, stdout: "", stderr: "" },
         { code: 1, stdout: "", stderr: "FEHLER: Die angegebene Datei wurde nicht gefunden." },
@@ -384,7 +384,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("keeps unexpected scheduled-task query failures visible", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const detail = "Zugriff verweigert";
       schtasksResponses.push(
         { code: 0, stdout: "", stderr: "" },
@@ -401,7 +401,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("reports login item removal failures without leaking the item path", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const startupEntryPath = await writeStartupFallbackEntry(env);
       const removalError = Object.assign(
         new Error(`EACCES: permission denied, unlink '${startupEntryPath}'`),
@@ -427,20 +427,20 @@ describe("Windows startup fallback", () => {
   });
 
   it("keeps missing Startup-folder login item removal idempotent", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       await expect(removeStartupEntries(env, new PassThrough())).resolves.toBeUndefined();
     });
   });
 
   it("skips task ownership probes when no Startup fallback exists", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       await expect(readWindowsStartupFallbackRuntimeForUpdate(env)).resolves.toBeNull();
       expect(spawnSync).not.toHaveBeenCalled();
     });
   });
 
   it("falls back to a Startup-folder launcher when schtasks create is denied", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       addStartupFallbackMissingResponses([
         { code: 5, stdout: "", stderr: "ERROR: Access is denied." },
       ]);
@@ -467,14 +467,14 @@ describe("Windows startup fallback", () => {
   });
 
   it("uses a hidden Startup-folder launcher when requested", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       addStartupFallbackMissingResponses([
         { code: 5, stdout: "", stderr: "ERROR: Access is denied." },
       ]);
 
       const result = await installGatewayScheduledTask({
         ...env,
-        OPENCLAW_WINDOWS_TASK_HIDDEN_LAUNCHER: "1",
+        AFORA_WINDOWS_TASK_HIDDEN_LAUNCHER: "1",
       });
 
       const startupEntryPath = resolveStartupEntryPath(env, "vbs");
@@ -492,7 +492,7 @@ describe("Windows startup fallback", () => {
 
   it("removes an old Startup-folder launcher after migrating to a Scheduled Task", async () => {
     useListenerBackedFallbackOwnership();
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const startupEntryPath = await writeStartupFallbackEntry(env);
       const hiddenStartupEntryPath = await writeStartupFallbackEntry(env, "vbs");
       addStartupFallbackMissingResponses([
@@ -522,7 +522,7 @@ describe("Windows startup fallback", () => {
 
   it("takes over from a running Startup-folder fallback before removing its launcher", async () => {
     useListenerBackedFallbackOwnership();
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const startupEntryPath = await writeStartupFallbackEntry(env);
       findVerifiedGatewayListenerPidsOnPortSync.mockReturnValue([4242]);
       inspectPortUsageMock
@@ -551,7 +551,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("migrates an exact persisted wrapper that owns the replacement port", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const startupEntryPath = await writeStartupFallbackEntry(env);
       const scriptPath = resolveTaskScriptPath(env);
       await fs.mkdir(path.dirname(scriptPath), { recursive: true });
@@ -559,8 +559,8 @@ describe("Windows startup fallback", () => {
         scriptPath,
         [
           "@echo off",
-          'set "OPENCLAW_GATEWAY_PORT=18789"',
-          '"C:\\bin\\openclaw-doppler.exe" gateway --port 18789',
+          'set "AFORA_GATEWAY_PORT=18789"',
+          '"C:\\bin\\afora-doppler.exe" gateway --port 18789',
           "",
         ].join("\r\n"),
         "utf8",
@@ -579,7 +579,7 @@ describe("Windows startup fallback", () => {
                 ? [
                     {
                       ProcessId: 4242,
-                      CommandLine: '"C:\\bin\\openclaw-doppler.exe" gateway --port 18789',
+                      CommandLine: '"C:\\bin\\afora-doppler.exe" gateway --port 18789',
                     },
                     { ProcessId: 9999, CommandLine: "powershell.exe" },
                   ]
@@ -599,8 +599,8 @@ describe("Windows startup fallback", () => {
           listeners: [
             {
               pid: 4242,
-              command: "openclaw-doppler.exe",
-              commandLine: '"C:\\bin\\openclaw-doppler.exe" gateway --port 18789',
+              command: "afora-doppler.exe",
+              commandLine: '"C:\\bin\\afora-doppler.exe" gateway --port 18789',
             },
           ],
           hints: [],
@@ -629,7 +629,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("refuses migration when listener and process inspection are both unavailable", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const startupEntryPath = await writeStartupFallbackEntry(env);
       await writeGatewayScript(env);
       vi.spyOn(process, "platform", "get").mockReturnValue("win32");
@@ -659,7 +659,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("refuses takeover when only PID existence can be verified", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const startupEntryPath = await writeStartupFallbackEntry(env);
       await writeGatewayScript(env);
       vi.spyOn(process, "platform", "get").mockReturnValue("win32");
@@ -692,7 +692,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("accepts a process-exit race without forcing a stale PID", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const startupEntryPath = await writeStartupFallbackEntry(env);
       await writeGatewayScript(env);
       vi.spyOn(process, "platform", "get").mockReturnValue("win32");
@@ -710,7 +710,7 @@ describe("Windows startup fallback", () => {
                     {
                       ProcessId: 4242,
                       CommandLine:
-                        '"C:\\Program Files\\nodejs\\node.exe" "C:\\Users\\steipete\\AppData\\Roaming\\npm\\node_modules\\openclaw\\dist\\index.js" gateway --port 18789',
+                        '"C:\\Program Files\\nodejs\\node.exe" "C:\\Users\\steipete\\AppData\\Roaming\\npm\\node_modules\\afora\\dist\\index.js" gateway --port 18789',
                     },
                     { ProcessId: 9999, CommandLine: "powershell.exe" },
                   ]
@@ -747,7 +747,7 @@ describe("Windows startup fallback", () => {
 
   it("refuses migration when the busy port owner is not a verified gateway", async () => {
     useListenerBackedFallbackOwnership();
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const startupEntryPath = await writeStartupFallbackEntry(env);
       inspectPortUsageMock.mockResolvedValue({
         port: 18789,
@@ -765,7 +765,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("refuses migration when another gateway owns the fallback port", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const startupEntryPath = await writeStartupFallbackEntry(env);
       await writeGatewayScript(env);
       vi.spyOn(process, "platform", "get").mockReturnValue("win32");
@@ -779,7 +779,7 @@ describe("Windows startup fallback", () => {
             stdout: JSON.stringify([
               {
                 ProcessId: 3131,
-                CommandLine: "C:\\manual\\openclaw.cmd gateway --port 18789",
+                CommandLine: "C:\\manual\\afora.cmd gateway --port 18789",
               },
               {
                 ProcessId: 4242,
@@ -817,7 +817,7 @@ describe("Windows startup fallback", () => {
 
   it("relaunches the verified fallback when Scheduled Task takeover fails", async () => {
     useListenerBackedFallbackOwnership();
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const startupEntryPath = await writeStartupFallbackEntry(env);
       await writeGatewayScript(env);
       findVerifiedGatewayListenerPidsOnPortSync.mockReturnValue([4242]);
@@ -853,10 +853,10 @@ describe("Windows startup fallback", () => {
 
   it("probes the old fallback port before replacing a drifted task script", async () => {
     useListenerBackedFallbackOwnership();
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const startupEntryPath = await writeStartupFallbackEntry(env);
       await writeGatewayScript(env, 18789);
-      env.OPENCLAW_GATEWAY_PORT = "19433";
+      env.AFORA_GATEWAY_PORT = "19433";
       inspectPortUsageMock.mockImplementation(async (port) => ({
         port,
         status: port === 18789 ? "busy" : "free",
@@ -866,7 +866,7 @@ describe("Windows startup fallback", () => {
                 {
                   pid: 4242,
                   command: "node.exe",
-                  commandLine: 'node "C:\\openclaw\\dist\\index.js" gateway --port 18789',
+                  commandLine: 'node "C:\\afora\\dist\\index.js" gateway --port 18789',
                 },
               ]
             : [],
@@ -893,10 +893,10 @@ describe("Windows startup fallback", () => {
   });
 
   it("does not inspect the replaced script as the old fallback", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const startupEntryPath = await writeStartupFallbackEntry(env);
       await writeGatewayScript(env, 18789);
-      env.OPENCLAW_GATEWAY_PORT = "19433";
+      env.AFORA_GATEWAY_PORT = "19433";
       vi.spyOn(process, "platform", "get").mockReturnValue("win32");
       let processQueries = 0;
       spawnSync.mockImplementation((command, args) => {
@@ -916,7 +916,7 @@ describe("Windows startup fallback", () => {
                     {
                       ProcessId: 4242,
                       CommandLine:
-                        '"C:\\Program Files\\nodejs\\node.exe" "C:\\Users\\steipete\\AppData\\Roaming\\npm\\node_modules\\openclaw\\dist\\index.js" gateway --port 18789',
+                        '"C:\\Program Files\\nodejs\\node.exe" "C:\\Users\\steipete\\AppData\\Roaming\\npm\\node_modules\\afora\\dist\\index.js" gateway --port 18789',
                     },
                     { ProcessId: 9999, CommandLine: "powershell.exe" },
                   ]
@@ -950,12 +950,12 @@ describe("Windows startup fallback", () => {
   });
 
   it("does not take over when another process owns the replacement port", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const startupEntryPath = await writeStartupFallbackEntry(env);
       await writeGatewayScript(env, 18789);
       const scriptPath = resolveTaskScriptPath(env);
       const scriptBefore = decodeWindowsLauncherScript({ buffer: await fs.readFile(scriptPath) });
-      env.OPENCLAW_GATEWAY_PORT = "19433";
+      env.AFORA_GATEWAY_PORT = "19433";
       vi.spyOn(process, "platform", "get").mockReturnValue("win32");
       spawnSync.mockImplementation((command, args) => {
         if (
@@ -968,7 +968,7 @@ describe("Windows startup fallback", () => {
               {
                 ProcessId: 4242,
                 CommandLine:
-                  '"C:\\Program Files\\nodejs\\node.exe" "C:\\Users\\steipete\\AppData\\Roaming\\npm\\node_modules\\openclaw\\dist\\index.js" gateway --port 18789',
+                  '"C:\\Program Files\\nodejs\\node.exe" "C:\\Users\\steipete\\AppData\\Roaming\\npm\\node_modules\\afora\\dist\\index.js" gateway --port 18789',
               },
               {
                 ProcessId: 5252,
@@ -1025,12 +1025,12 @@ describe("Windows startup fallback", () => {
   });
 
   it("preflights the replacement port when the fallback is stopped", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const startupEntryPath = await writeStartupFallbackEntry(env);
       await writeGatewayScript(env, 18789);
       const scriptPath = resolveTaskScriptPath(env);
       const scriptBefore = decodeWindowsLauncherScript({ buffer: await fs.readFile(scriptPath) });
-      env.OPENCLAW_GATEWAY_PORT = "19433";
+      env.AFORA_GATEWAY_PORT = "19433";
       vi.spyOn(process, "platform", "get").mockReturnValue("win32");
       spawnSync.mockImplementation((command, args) =>
         command === getWindowsPowerShellExePath() &&
@@ -1078,12 +1078,12 @@ describe("Windows startup fallback", () => {
   });
 
   it("refuses takeover when the replacement port probe is inconclusive", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const startupEntryPath = await writeStartupFallbackEntry(env);
       await writeGatewayScript(env, 18789);
       const scriptPath = resolveTaskScriptPath(env);
       const scriptBefore = decodeWindowsLauncherScript({ buffer: await fs.readFile(scriptPath) });
-      env.OPENCLAW_GATEWAY_PORT = "19433";
+      env.AFORA_GATEWAY_PORT = "19433";
       vi.spyOn(process, "platform", "get").mockReturnValue("win32");
       spawnSync.mockImplementation((command, args) =>
         command === getWindowsPowerShellExePath() &&
@@ -1094,7 +1094,7 @@ describe("Windows startup fallback", () => {
                 {
                   ProcessId: 4242,
                   CommandLine:
-                    '"C:\\Program Files\\nodejs\\node.exe" "C:\\Users\\steipete\\AppData\\Roaming\\npm\\node_modules\\openclaw\\dist\\index.js" gateway --port 18789',
+                    '"C:\\Program Files\\nodejs\\node.exe" "C:\\Users\\steipete\\AppData\\Roaming\\npm\\node_modules\\afora\\dist\\index.js" gateway --port 18789',
                 },
                 { ProcessId: 9999, CommandLine: "powershell.exe" },
               ]),
@@ -1120,7 +1120,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("keeps a direct replacement fallback when the takeover task does not start", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const startupEntryPath = await writeStartupFallbackEntry(env);
       await writeGatewayScript(env);
       vi.spyOn(process, "platform", "get").mockReturnValue("win32");
@@ -1138,7 +1138,7 @@ describe("Windows startup fallback", () => {
                     {
                       ProcessId: 4242,
                       CommandLine:
-                        '"C:\\Program Files\\nodejs\\node.exe" "C:\\Users\\steipete\\AppData\\Roaming\\npm\\node_modules\\openclaw\\dist\\index.js" gateway --port 18789',
+                        '"C:\\Program Files\\nodejs\\node.exe" "C:\\Users\\steipete\\AppData\\Roaming\\npm\\node_modules\\afora\\dist\\index.js" gateway --port 18789',
                     },
                     { ProcessId: 9999, CommandLine: "powershell.exe" },
                   ]
@@ -1183,7 +1183,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("relaunches the fallback when replacement running evidence never appears", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const startupEntryPath = await writeStartupFallbackEntry(env);
       await writeGatewayScript(env);
       vi.spyOn(process, "platform", "get").mockReturnValue("win32");
@@ -1202,7 +1202,7 @@ describe("Windows startup fallback", () => {
                     {
                       ProcessId: 4242,
                       CommandLine:
-                        '"C:\\Program Files\\nodejs\\node.exe" "C:\\Users\\steipete\\AppData\\Roaming\\npm\\node_modules\\openclaw\\dist\\index.js" gateway --port 18789',
+                        '"C:\\Program Files\\nodejs\\node.exe" "C:\\Users\\steipete\\AppData\\Roaming\\npm\\node_modules\\afora\\dist\\index.js" gateway --port 18789',
                     },
                     { ProcessId: 9999, CommandLine: "powershell.exe" },
                   ]
@@ -1236,10 +1236,10 @@ describe("Windows startup fallback", () => {
 
   it("re-probes the captured fallback port after a transient config reload", async () => {
     useListenerBackedFallbackOwnership();
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const startupEntryPath = await writeStartupFallbackEntry(env);
       await writeGatewayScript(env, 18789);
-      env.OPENCLAW_GATEWAY_PORT = "19433";
+      env.AFORA_GATEWAY_PORT = "19433";
       let oldPortProbes = 0;
       inspectPortUsageMock.mockImplementation(async (port) => {
         if (port !== 18789) {
@@ -1255,7 +1255,7 @@ describe("Windows startup fallback", () => {
                 {
                   pid: 4242,
                   command: "node.exe",
-                  commandLine: 'node "C:\\openclaw\\dist\\index.js" gateway --port 18789',
+                  commandLine: 'node "C:\\afora\\dist\\index.js" gateway --port 18789',
                 },
               ],
               hints: [],
@@ -1283,7 +1283,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("keeps the fallback when a previously running process cannot be proven gone", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const startupEntryPath = await writeStartupFallbackEntry(env);
       await writeGatewayScript(env);
       inspectPortUsageMock.mockResolvedValue({
@@ -1301,7 +1301,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("removes an old Startup-folder launcher after Scheduled Task restart is proven", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const startupEntryPath = await writeStartupFallbackEntry(env);
       const hiddenStartupEntryPath = await writeStartupFallbackEntry(env, "vbs");
       await writeGatewayScript(env);
@@ -1315,7 +1315,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("waits for running evidence before removing a Startup-folder launcher", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const startupEntryPath = await writeStartupFallbackEntry(env);
       await writeGatewayScript(env);
       addSuccessfulScheduledTaskRestartResponses([
@@ -1331,8 +1331,8 @@ describe("Windows startup fallback", () => {
   });
 
   it("accepts a clean hidden-launcher exit when its gateway listener is running", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
-      const hiddenEnv = { ...env, OPENCLAW_WINDOWS_TASK_HIDDEN_LAUNCHER: "1" };
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
+      const hiddenEnv = { ...env, AFORA_WINDOWS_TASK_HIDDEN_LAUNCHER: "1" };
       const startupEntryPath = await writeStartupFallbackEntry(hiddenEnv);
       await writeGatewayScript(hiddenEnv);
       findVerifiedGatewayListenerPidsOnPortSync.mockReturnValue([4242]);
@@ -1346,7 +1346,7 @@ describe("Windows startup fallback", () => {
                   pid: 4242,
                   command: "node.exe",
                   commandLine:
-                    '"C:\\Program Files\\nodejs\\node.exe" "C:\\Users\\steipete\\AppData\\Roaming\\npm\\node_modules\\openclaw\\dist\\index.js" gateway --port 18789',
+                    '"C:\\Program Files\\nodejs\\node.exe" "C:\\Users\\steipete\\AppData\\Roaming\\npm\\node_modules\\afora\\dist\\index.js" gateway --port 18789',
                 },
               ],
               hints: [],
@@ -1365,7 +1365,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("does not accept a clean task exit for the foreground launcher", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const startupEntryPath = await writeStartupFallbackEntry(env);
       await writeGatewayScript(env);
       findVerifiedGatewayListenerPidsOnPortSync.mockReturnValue([4242]);
@@ -1382,8 +1382,8 @@ describe("Windows startup fallback", () => {
   });
 
   it("keeps the Startup launcher when a clean task exit needs the direct fallback", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
-      const hiddenEnv = { ...env, OPENCLAW_WINDOWS_TASK_HIDDEN_LAUNCHER: "1" };
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
+      const hiddenEnv = { ...env, AFORA_WINDOWS_TASK_HIDDEN_LAUNCHER: "1" };
       const startupEntryPath = await writeStartupFallbackEntry(hiddenEnv);
       await writeGatewayScript(hiddenEnv);
       fastForwardTaskStartWait();
@@ -1403,7 +1403,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("falls back to a Startup-folder launcher when schtasks create returns Spanish access denied", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       addStartupFallbackMissingResponses([
         { code: 1, stdout: "", stderr: "Error: Acceso denegado." },
       ]);
@@ -1416,7 +1416,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("falls back to a Startup-folder launcher when schtasks create returns localized access denied", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       addStartupFallbackMissingResponses([{ code: 1, stdout: "", stderr: "错误: 拒绝访问。" }]);
 
       await installGatewayScheduledTask(env);
@@ -1427,7 +1427,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("falls back to a Startup-folder launcher when schtasks create hangs", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       addStartupFallbackMissingResponses([
         { code: 124, stdout: "", stderr: "schtasks timed out after 15000ms" },
       ]);
@@ -1440,7 +1440,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("falls back to a Startup-folder launcher when schtasks availability is slow", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       schtasksResponses.push(
         { code: 124, stdout: "", stderr: "schtasks produced no output for 30000ms" },
         { code: 124, stdout: "", stderr: "schtasks produced no output for 30000ms" },
@@ -1455,7 +1455,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("launches through the Startup-style launcher when schtasks /Run is accepted but never starts the task", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       fastForwardTaskStartWait();
       addAcceptedRunNeverStartsResponses();
 
@@ -1466,7 +1466,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("falls back after an accepted task exits cleanly without launch evidence", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       fastForwardTaskStartWait();
       addAcceptedRunCleanExitResponses();
 
@@ -1477,7 +1477,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("falls back when Task Scheduler records a fresh clean exit without launch evidence", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       fastForwardTaskStartWait();
       addAcceptedRunCleanExitResponses(cleanExitTaskQueryOutput("5/2/2026 2:40:00 PM"));
 
@@ -1488,7 +1488,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("keeps polling when an accepted task transitions from not-yet-run to clean exit", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       fastForwardTaskStartWait();
       addAcceptedRunCleanExitResponses(notYetRunTaskQueryOutput());
 
@@ -1499,7 +1499,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("does not fall back when a listener appears after the clean task exit", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       fastForwardTaskStartWait();
       findVerifiedGatewayListenerPidsOnPortSync.mockReturnValue([4242]);
       let portInspections = 0;
@@ -1528,7 +1528,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("does not treat a gateway listener as node Scheduled Task launch evidence", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       fastForwardTaskStartWait();
       findVerifiedGatewayListenerPidsOnPortSync.mockReturnValue([4242]);
       addAcceptedRunNeverStartsResponses();
@@ -1541,7 +1541,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("does not relaunch when the node Scheduled Task process is already running", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       vi.spyOn(process, "platform", "get").mockReturnValue("win32");
       fastForwardTaskStartWait();
       findVerifiedGatewayListenerPidsOnPortSync.mockReturnValue([4242]);
@@ -1559,7 +1559,7 @@ describe("Windows startup fallback", () => {
             stdout: JSON.stringify([
               {
                 ProcessId: 5151,
-                CommandLine: "node openclaw node run --host 127.0.0.1 --port 18789",
+                CommandLine: "node afora node run --host 127.0.0.1 --port 18789",
               },
             ]),
             stderr: "",
@@ -1586,7 +1586,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("does not relaunch the task script when schtasks shows startup progress after /Run", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       addStartupFallbackMissingResponses([
         { code: 0, stdout: "", stderr: "" },
         { code: 0, stdout: "", stderr: "" },
@@ -1611,7 +1611,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("does not relaunch the task script when the scheduled task process is already starting", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       vi.spyOn(process, "platform", "get").mockReturnValue("win32");
       const taskScriptPath = resolveTaskScriptPath(env);
       fastForwardTaskStartWait();
@@ -1655,7 +1655,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("does not attribute another gateway listener to the registered task", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       await writeGatewayScript(env);
       vi.spyOn(process, "platform", "get").mockReturnValue("win32");
       findVerifiedGatewayListenerPidsOnPortSync.mockReturnValue([4242]);
@@ -1701,7 +1701,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("reports the exact scheduled gateway process while its listener is still starting", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       vi.spyOn(process, "platform", "get").mockReturnValue("win32");
       await writeGatewayScript(env);
       schtasksResponses.push(
@@ -1719,7 +1719,7 @@ describe("Windows startup fallback", () => {
               {
                 ProcessId: 4242,
                 CommandLine:
-                  '"C:\\Program Files\\nodejs\\node.exe" "C:\\Users\\steipete\\AppData\\Roaming\\npm\\node_modules\\openclaw\\dist\\index.js" gateway --port 18789',
+                  '"C:\\Program Files\\nodejs\\node.exe" "C:\\Users\\steipete\\AppData\\Roaming\\npm\\node_modules\\afora\\dist\\index.js" gateway --port 18789',
               },
             ]),
           });
@@ -1737,9 +1737,9 @@ describe("Windows startup fallback", () => {
   });
 
   it("does not report a node task as running from a gateway listener", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
-      env.OPENCLAW_SERVICE_KIND = "node";
-      env.OPENCLAW_WINDOWS_TASK_NAME = "OpenClaw Node";
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
+      env.AFORA_SERVICE_KIND = "node";
+      env.AFORA_WINDOWS_TASK_NAME = "Afora Node";
       findVerifiedGatewayListenerPidsOnPortSync.mockReturnValue([4242]);
       schtasksResponses.push(
         { code: 0, stdout: "", stderr: "" },
@@ -1755,12 +1755,12 @@ describe("Windows startup fallback", () => {
   });
 
   it("reports a registered node task as running from the matching node host process", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       vi.spyOn(process, "platform", "get").mockReturnValue("win32");
       const nodeEnv = {
         ...env,
-        OPENCLAW_SERVICE_KIND: "node",
-        OPENCLAW_WINDOWS_TASK_NAME: "OpenClaw Node",
+        AFORA_SERVICE_KIND: "node",
+        AFORA_WINDOWS_TASK_NAME: "Afora Node",
       };
       await writeNodeScript(nodeEnv);
       findVerifiedGatewayListenerPidsOnPortSync.mockReturnValue([4242]);
@@ -1782,11 +1782,11 @@ describe("Windows startup fallback", () => {
             stdout: JSON.stringify([
               {
                 ProcessId: 4242,
-                CommandLine: "C:\\manual\\openclaw.cmd node run --host 127.0.0.1 --port 18789",
+                CommandLine: "C:\\manual\\afora.cmd node run --host 127.0.0.1 --port 18789",
               },
               {
                 ProcessId: 5151,
-                CommandLine: "C:\\bin\\openclaw.cmd node run --host 127.0.0.1 --port 18789",
+                CommandLine: "C:\\bin\\afora.cmd node run --host 127.0.0.1 --port 18789",
               },
             ]),
             stderr: "",
@@ -1813,7 +1813,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("does not trust an unverified busy port when schtasks still says not-yet-run", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       await writeGatewayScript(env);
       inspectPortUsageMock.mockResolvedValue({
         port: 18789,
@@ -1834,7 +1834,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("treats an installed Startup-folder launcher as loaded", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       addStartupFallbackMissingResponses();
       await writeStartupFallbackEntry(env);
 
@@ -1843,7 +1843,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("keeps legacy Startup-folder cmd entries visible after hidden launcher opt-in", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       addStartupFallbackMissingResponses();
       await writeStartupFallbackEntry(env);
 
@@ -1851,7 +1851,7 @@ describe("Windows startup fallback", () => {
         isScheduledTaskInstalled({
           env: {
             ...env,
-            OPENCLAW_WINDOWS_TASK_HIDDEN_LAUNCHER: "1",
+            AFORA_WINDOWS_TASK_HIDDEN_LAUNCHER: "1",
           },
         }),
       ).resolves.toBe(true);
@@ -1859,7 +1859,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("removes legacy Startup-folder cmd entries after hidden launcher opt-in", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       schtasksResponses.push({ code: 0, stdout: "", stderr: "" });
       const startupEntryPath = await writeStartupFallbackEntry(env);
       const stdout = new PassThrough();
@@ -1867,7 +1867,7 @@ describe("Windows startup fallback", () => {
       await uninstallScheduledTask({
         env: {
           ...env,
-          OPENCLAW_WINDOWS_TASK_HIDDEN_LAUNCHER: "1",
+          AFORA_WINDOWS_TASK_HIDDEN_LAUNCHER: "1",
         },
         stdout,
       });
@@ -1877,7 +1877,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("removes hidden Startup-folder entries when the caller env lacks the marker", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       schtasksResponses.push({ code: 0, stdout: "", stderr: "" });
       const startupEntryPath = resolveStartupEntryPath(env, "vbs");
       await fs.mkdir(path.dirname(startupEntryPath), { recursive: true });
@@ -1893,7 +1893,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("reports runtime from a verified gateway listener when using the Startup fallback", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       addStartupFallbackMissingResponses();
       await writeStartupFallbackEntry(env);
       inspectPortUsageMock.mockResolvedValue({
@@ -1903,7 +1903,7 @@ describe("Windows startup fallback", () => {
           {
             pid: 4242,
             command: "node.exe",
-            commandLine: 'node "C:\\openclaw\\dist\\index.js" gateway --port 18789',
+            commandLine: 'node "C:\\afora\\dist\\index.js" gateway --port 18789',
           },
         ],
         hints: [],
@@ -1916,7 +1916,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("does not report a node Startup fallback as running from the gateway listener", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const nodeEnv = makeNodeServiceEnv(env);
       addStartupFallbackMissingResponses();
       await writeStartupFallbackEntry(nodeEnv);
@@ -1935,7 +1935,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("does not kill the gateway listener when stopping a node Startup fallback", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const nodeEnv = makeNodeServiceEnv(env);
       vi.spyOn(process, "platform", "get").mockReturnValue("win32");
       addStartupFallbackMissingResponses();
@@ -1947,7 +1947,7 @@ describe("Windows startup fallback", () => {
           {
             pid: 5151,
             command: "node.exe",
-            commandLine: 'node "C:\\openclaw\\dist\\index.js" gateway --port 18789',
+            commandLine: 'node "C:\\afora\\dist\\index.js" gateway --port 18789',
           },
         ],
         hints: [],
@@ -1962,7 +1962,7 @@ describe("Windows startup fallback", () => {
 
   it("refuses to stop a Startup fallback with an unverified busy port owner", async () => {
     useListenerBackedFallbackOwnership();
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       addStartupFallbackMissingResponses();
       await writeStartupFallbackEntry(env);
       inspectPortUsageMock.mockResolvedValue({
@@ -1980,7 +1980,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("stops a node Startup fallback by terminating the matching node host process", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const nodeEnv = makeNodeServiceEnv(env);
       addStartupFallbackMissingResponses();
       await writeStartupFallbackEntry(nodeEnv);
@@ -1995,7 +1995,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("cleans up a stale node Startup fallback when a node Scheduled Task is registered", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const nodeEnv = makeNodeServiceEnv(env);
       schtasksResponses.push(
         { code: 0, stdout: "", stderr: "" },
@@ -2014,7 +2014,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("stops a registered node Scheduled Task by terminating the matching node host process", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       const nodeEnv = makeNodeServiceEnv(env);
       schtasksResponses.push(
         { code: 0, stdout: "", stderr: "" },
@@ -2033,7 +2033,7 @@ describe("Windows startup fallback", () => {
 
   it("restarts the Startup fallback by killing the current pid and relaunching the entry", async () => {
     useListenerBackedFallbackOwnership();
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       addStartupFallbackMissingResponses([
         { code: 0, stdout: "", stderr: "" },
         { code: 1, stdout: "", stderr: "not found" },
@@ -2047,7 +2047,7 @@ describe("Windows startup fallback", () => {
           {
             pid: 5151,
             command: "node.exe",
-            commandLine: 'node "C:\\openclaw\\dist\\index.js" gateway --port 18789',
+            commandLine: 'node "C:\\afora\\dist\\index.js" gateway --port 18789',
           },
         ],
         hints: [],
@@ -2064,7 +2064,7 @@ describe("Windows startup fallback", () => {
 
   it("audits Startup fallback termination when relaunch fails", async () => {
     useListenerBackedFallbackOwnership();
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       addStartupFallbackMissingResponses([
         { code: 0, stdout: "", stderr: "" },
         { code: 1, stdout: "", stderr: "not found" },
@@ -2078,7 +2078,7 @@ describe("Windows startup fallback", () => {
           {
             pid: 5151,
             command: "node.exe",
-            commandLine: 'node "C:\\openclaw\\dist\\index.js" gateway --port 18789',
+            commandLine: 'node "C:\\afora\\dist\\index.js" gateway --port 18789',
           },
         ],
         hints: [],
@@ -2100,7 +2100,7 @@ describe("Windows startup fallback", () => {
 
   it("refuses to restart a Startup fallback with an unverified busy port owner", async () => {
     useListenerBackedFallbackOwnership();
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       addStartupFallbackMissingResponses();
       await writeStartupFallbackEntry(env);
       inspectPortUsageMock.mockResolvedValue({
@@ -2119,7 +2119,7 @@ describe("Windows startup fallback", () => {
   });
 
   it("relaunches the task script when restart sees a scheduled-task run no-op", async () => {
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       await writeGatewayScript(env);
       sleepMock.mockImplementationOnce(async () => {
         timeState.now += 15_000;
@@ -2151,7 +2151,7 @@ describe("Windows startup fallback", () => {
 
   it("kills the Startup fallback runtime even when the CLI env omits the gateway port", async () => {
     useListenerBackedFallbackOwnership();
-    await withWindowsEnv("openclaw-win-startup-", async ({ env }) => {
+    await withWindowsEnv("afora-win-startup-", async ({ env }) => {
       schtasksResponses.push({ code: 0, stdout: "", stderr: "" });
       await writeGatewayScript(env);
       await writeStartupFallbackEntry(env);
@@ -2178,7 +2178,7 @@ describe("Windows startup fallback", () => {
 
       const stdout = new PassThrough();
       const envWithoutPort = { ...env };
-      delete envWithoutPort.OPENCLAW_GATEWAY_PORT;
+      delete envWithoutPort.AFORA_GATEWAY_PORT;
       await stopScheduledTask({ env: envWithoutPort, stdout });
 
       expectGatewayTermination(5151);

@@ -1,5 +1,5 @@
 ---
-summary: "OpenClaw WhatsApp channel plugin for WhatsApp Web chats."
+summary: "Afora WhatsApp channel plugin for WhatsApp Web chats."
 read_when:
   - You are installing, configuring, or auditing the whatsapp plugin
 title: "WhatsApp plugin"
@@ -7,12 +7,12 @@ title: "WhatsApp plugin"
 
 # WhatsApp plugin
 
-OpenClaw WhatsApp channel plugin for WhatsApp Web chats.
+Afora WhatsApp channel plugin for WhatsApp Web chats.
 
 ## Distribution
 
-- Package: `@openclaw/whatsapp`
-- Install route: ClawHub: `clawhub:@openclaw/whatsapp`; npm
+- Package: `@afora/whatsapp`
+- Install route: ClawHub: `clawhub:@afora/whatsapp`; npm
 
 ## Surface
 

@@ -1,4 +1,4 @@
-import type { AssistantMessage, AssistantMessageEvent, Model } from "@openclaw/llm-core";
+import type { AssistantMessage, AssistantMessageEvent, Model } from "@afora/llm-core";
 import {
   processResponsesStream as processTransportStream,
   type OpenAIResponsesStreamEvent,

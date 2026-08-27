@@ -1,6 +1,6 @@
 // Narrow response-size reader for plugins that download bounded HTTP bodies.
 
-export { readByteStreamWithLimit } from "@openclaw/media-core/read-byte-stream-with-limit";
+export { readByteStreamWithLimit } from "@afora/media-core/read-byte-stream-with-limit";
 export { readResponseTextPrefix, readResponseWithLimit } from "../infra/http-body.js";
 export type {
   ReadResponseTextPrefixOptions,

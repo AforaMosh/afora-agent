@@ -4,7 +4,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { writePersistedInstalledPluginIndexInstallRecords } from "../plugins/installed-plugin-index-records.js";
 
 const execFileAsync = promisify(execFile);
@@ -14,7 +14,7 @@ async function writeHarnessPlugin(stateDir: string): Promise<void> {
   const pluginDir = path.join(stateDir, "extensions", "exec-proof");
   await fs.mkdir(pluginDir, { recursive: true });
   await fs.writeFile(
-    path.join(pluginDir, "openclaw.plugin.json"),
+    path.join(pluginDir, "afora.plugin.json"),
     JSON.stringify({
       id: "exec-proof",
       name: "Agent exec proof harness",
@@ -29,7 +29,7 @@ async function writeHarnessPlugin(stateDir: string): Promise<void> {
       name: "exec-proof",
       version: "1.0.0",
       type: "module",
-      openclaw: { extensions: ["./index.js"] },
+      afora: { extensions: ["./index.js"] },
     }),
     "utf8",
   );
@@ -108,7 +108,7 @@ async function writeHarnessPlugin(stateDir: string): Promise<void> {
   );
 }
 
-function buildExecProofConfig(): OpenClawConfig {
+function buildExecProofConfig(): AforaConfig {
   return {
     plugins: {
       allow: ["exec-proof"],
@@ -140,7 +140,7 @@ function buildExecProofConfig(): OpenClawConfig {
 
 async function writeConfig(stateDir: string): Promise<void> {
   await fs.writeFile(
-    path.join(stateDir, "openclaw.json"),
+    path.join(stateDir, "afora.json"),
     JSON.stringify(buildExecProofConfig()),
     "utf8",
   );
@@ -149,23 +149,23 @@ async function writeConfig(stateDir: string): Promise<void> {
 function buildCliSource(args: string[]): string {
   return `
     import { runMainOrRootHelp } from "./src/entry.ts";
-    await runMainOrRootHelp(${JSON.stringify(["node", "openclaw", ...args])});
+    await runMainOrRootHelp(${JSON.stringify(["node", "afora", ...args])});
   `;
 }
 
 describe("agent exec installed plugin isolation", () => {
   it("runs an operator-installed harness without retaining run state", async () => {
-    const stateDir = tempDirs.make("openclaw-agent-exec-plugin-e2e-");
+    const stateDir = tempDirs.make("afora-agent-exec-plugin-e2e-");
     await writeHarnessPlugin(stateDir);
     await writeConfig(stateDir);
     const source = buildCliSource(["agent", "exec", "prove plugin discovery", "--json"]);
     const childEnv: NodeJS.ProcessEnv = {
       ...process.env,
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+      AFORA_STATE_DIR: stateDir,
     };
     delete childEnv.NODE_ENV;
-    delete childEnv.OPENCLAW_RUN_NODE_OUTPUT_LOG;
+    delete childEnv.AFORA_RUN_NODE_OUTPUT_LOG;
     delete childEnv.VITEST;
     delete childEnv.VITEST_POOL_ID;
     delete childEnv.VITEST_WORKER_ID;
@@ -223,10 +223,10 @@ describe("agent exec installed plugin isolation", () => {
     }
     expect(isolatedExitCode).toBe(1);
     expect(isolatedStdout).not.toContain("PLUGIN_HARNESS_OK");
-    await expect(fs.readdir(stateDir)).resolves.toEqual(["extensions", "openclaw.json", "state"]);
+    await expect(fs.readdir(stateDir)).resolves.toEqual(["extensions", "afora.json", "state"]);
     const registryFiles = await fs.readdir(path.join(stateDir, "state"));
-    expect(registryFiles).toContain("openclaw.sqlite");
-    expect(registryFiles.every((file) => file.startsWith("openclaw.sqlite"))).toBe(true);
+    expect(registryFiles).toContain("afora.sqlite");
+    expect(registryFiles.every((file) => file.startsWith("afora.sqlite"))).toBe(true);
     await expect(fs.stat(path.join(stateDir, "agents"))).rejects.toMatchObject({ code: "ENOENT" });
   });
 });

@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { readAcpSessionMeta, upsertAcpSessionMeta } from "../../acp/runtime/session-meta.js";
-import { withOpenClawTestState } from "../../test-utils/openclaw-test-state.js";
+import { withAforaTestState } from "../../test-utils/afora-test-state.js";
 import { createRuntimeAgent } from "./runtime-agent.js";
 
 describe("plugin runtime ACP session creation", () => {
   it("persists a plugin-owned native resume binding", async () => {
-    await withOpenClawTestState({ label: "plugin-runtime-acp-session-create" }, async () => {
+    await withAforaTestState({ label: "plugin-runtime-acp-session-create" }, async () => {
       const runtime = createRuntimeAgent();
       const created = await runtime.session.createSessionEntry({
         cfg: {},
@@ -44,7 +44,7 @@ describe("plugin runtime ACP session creation", () => {
   });
 
   it("rejects recovery when the native resume binding differs", async () => {
-    await withOpenClawTestState({ label: "plugin-runtime-acp-recovery-binding" }, async () => {
+    await withAforaTestState({ label: "plugin-runtime-acp-recovery-binding" }, async () => {
       const runtime = createRuntimeAgent();
       const key = "agent:main:plugin:opencode:catalog-adopt:source";
       const storePath = runtime.session.resolveStorePath(undefined, { agentId: "main" });
@@ -115,7 +115,7 @@ describe("plugin runtime ACP session creation", () => {
   });
 
   it("recovers an interrupted ACP initializer before metadata was seeded", async () => {
-    await withOpenClawTestState({ label: "plugin-runtime-acp-recovery-missing-meta" }, async () => {
+    await withAforaTestState({ label: "plugin-runtime-acp-recovery-missing-meta" }, async () => {
       const runtime = createRuntimeAgent();
       const key = "agent:main:plugin:acpx:catalog-adopt:pi:recovery";
       const storePath = runtime.session.resolveStorePath(undefined, { agentId: "main" });

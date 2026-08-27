@@ -1,7 +1,7 @@
 // Qa Lab plugin module implements crabbox runtime behavior.
 import { spawn, type SpawnOptions } from "node:child_process";
 import path from "node:path";
-import { pathExists } from "openclaw/plugin-sdk/security-runtime";
+import { pathExists } from "afora-agent/plugin-sdk/security-runtime";
 import { trimToValue } from "../mantis-options.runtime.js";
 
 type CommandResult = {

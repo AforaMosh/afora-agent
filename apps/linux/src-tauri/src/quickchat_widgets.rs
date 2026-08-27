@@ -653,7 +653,7 @@ fn validate_widget_url(raw: &str) -> Result<Url, String> {
         .collect::<Result<Vec<_>, String>>()?;
     let Some(capability_index) = segments
         .windows(2)
-        .rposition(|pair| pair == ["__openclaw__", "cap"])
+        .rposition(|pair| pair == ["__afora__", "cap"])
     else {
         return Err("Quick Chat widget URL is missing its capability scope.".to_string());
     };
@@ -661,7 +661,7 @@ fn validate_widget_url(raw: &str) -> Result<Url, String> {
     if segments
         .get(capability_index + 2)
         .is_none_or(String::is_empty)
-        || segments.get(document_index).map(String::as_str) != Some("__openclaw__")
+        || segments.get(document_index).map(String::as_str) != Some("__afora__")
         || segments.get(document_index + 1).map(String::as_str) != Some("canvas")
         || segments.get(document_index + 2).map(String::as_str) != Some("documents")
         || segments.len() < document_index + 5
@@ -821,28 +821,28 @@ mod tests {
     fn layout_requires_a_scoped_canvas_document() {
         let valid = test_widget(
             "status",
-            "https://gateway.example/base/__openclaw__/cap/fixture-capability/__openclaw__/canvas/documents/status/index.html",
+            "https://gateway.example/base/__afora__/cap/fixture-capability/__afora__/canvas/documents/status/index.html",
             "scripts",
         );
         assert!(validate_widget_layout(&valid).is_ok());
         assert!(validate_widget_layout(&test_widget(
             "local",
-            "http://127.0.0.1:18789/__openclaw__/cap/fixture-capability/__openclaw__/canvas/documents/local/index.html",
+            "http://127.0.0.1:18789/__afora__/cap/fixture-capability/__afora__/canvas/documents/local/index.html",
             "scripts",
         ))
         .is_ok());
         assert!(validate_widget_layout(&test_widget(
             "local-v6",
-            "http://[::1]:18789/__openclaw__/cap/fixture-capability/__openclaw__/canvas/documents/local-v6/index.html",
+            "http://[::1]:18789/__afora__/cap/fixture-capability/__afora__/canvas/documents/local-v6/index.html",
             "scripts",
         ))
         .is_ok());
 
         for url in [
             "https://evil.example/widget.html",
-            "http://gateway.example/__openclaw__/cap/fixture-capability/__openclaw__/canvas/documents/status/index.html",
-            "https://gateway.example/__openclaw__/canvas/documents/status/index.html",
-            "https://gateway.example/__openclaw__/cap/fixture-capability/__openclaw__/canvas/documents/%252e%252e/private-file",
+            "http://gateway.example/__afora__/cap/fixture-capability/__afora__/canvas/documents/status/index.html",
+            "https://gateway.example/__afora__/canvas/documents/status/index.html",
+            "https://gateway.example/__afora__/cap/fixture-capability/__afora__/canvas/documents/%252e%252e/private-file",
         ] {
             assert!(validate_widget_layout(&test_widget("status", url, "scripts")).is_err());
         }
@@ -855,12 +855,12 @@ mod tests {
     fn labels_preserve_existing_instances_when_siblings_append() {
         let first = test_widget(
             "first",
-            "https://gateway.example/__openclaw__/cap/fixture-capability/__openclaw__/canvas/documents/first/index.html",
+            "https://gateway.example/__afora__/cap/fixture-capability/__afora__/canvas/documents/first/index.html",
             "scripts",
         );
         let second = test_widget(
             "second",
-            "https://gateway.example/__openclaw__/cap/fixture-capability/__openclaw__/canvas/documents/second/index.html",
+            "https://gateway.example/__afora__/cap/fixture-capability/__afora__/canvas/documents/second/index.html",
             "scripts",
         );
         let first_label = widget_view_label(&first);
@@ -879,15 +879,15 @@ mod tests {
     #[test]
     fn navigation_stays_on_the_original_document() {
         let allowed = Url::parse(
-            "https://gateway.example/__openclaw__/cap/fixture-capability/__openclaw__/canvas/documents/status/index.html?mode=compact",
+            "https://gateway.example/__afora__/cap/fixture-capability/__afora__/canvas/documents/status/index.html?mode=compact",
         )
         .expect("allowed URL");
         let fragment = Url::parse(
-            "https://gateway.example/__openclaw__/cap/fixture-capability/__openclaw__/canvas/documents/status/index.html?mode=compact#details",
+            "https://gateway.example/__afora__/cap/fixture-capability/__afora__/canvas/documents/status/index.html?mode=compact#details",
         )
         .expect("fragment URL");
         let other = Url::parse(
-            "https://gateway.example/__openclaw__/cap/fixture-capability/__openclaw__/canvas/documents/other/index.html",
+            "https://gateway.example/__afora__/cap/fixture-capability/__afora__/canvas/documents/other/index.html",
         )
         .expect("other URL");
         let mut userinfo_url = allowed.clone();

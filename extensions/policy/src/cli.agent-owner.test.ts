@@ -2,7 +2,7 @@ import { promises as fs } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Command } from "commander";
-import { clearConfigCache } from "openclaw/plugin-sdk/runtime-config-snapshot";
+import { clearConfigCache } from "afora-agent/plugin-sdk/runtime-config-snapshot";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { registerPolicyCli } from "./cli.js";
 
@@ -28,7 +28,7 @@ async function runPolicyCli(args: readonly string[]) {
   const previousExitCode = process.exitCode;
   process.exitCode = undefined;
   try {
-    const program = new Command().name("openclaw");
+    const program = new Command().name("afora");
     registerPolicyCli(program);
     await program.parseAsync(["policy", ...args], { from: "user" });
     const lastOutput = output.at(-1) ?? "";
@@ -52,8 +52,8 @@ async function writeExplicitFleetConfig(): Promise<{
     fs.mkdir(alphaWorkspace, { recursive: true }),
     fs.mkdir(betaWorkspace, { recursive: true }),
   ]);
-  const configPath = join(workspaceDir, "openclaw.jsonc");
-  vi.stubEnv("OPENCLAW_CONFIG_PATH", configPath);
+  const configPath = join(workspaceDir, "afora.jsonc");
+  vi.stubEnv("AFORA_CONFIG_PATH", configPath);
   await writeFixture(configPath, {
     agents: {
       ownership: "explicit",
@@ -75,7 +75,7 @@ async function writeExplicitFleetConfig(): Promise<{
 describe("policy CLI agent ownership", () => {
   beforeEach(async () => {
     workspaceDir = await fs.mkdtemp(join(tmpdir(), "policy-cli-owner-"));
-    vi.stubEnv("OPENCLAW_WORKSPACE_DIR", workspaceDir);
+    vi.stubEnv("AFORA_WORKSPACE_DIR", workspaceDir);
   });
 
   afterEach(async () => {

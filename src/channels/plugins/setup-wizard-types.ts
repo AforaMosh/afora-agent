@@ -4,7 +4,7 @@
  * Defines status, credentials, prompts, group access, and finalization types for setup flows.
  */
 import type { DmPolicy } from "../../config/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import type { WizardPrompter } from "../../wizard/prompts.js";
 import type { ChannelOwnedSetupContract } from "./setup-contract.js";
@@ -31,21 +31,21 @@ export type ChannelSetupWizardStatus = {
   configuredScore?: number;
   unconfiguredScore?: number;
   resolveConfigured: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string;
   }) => boolean | Promise<boolean>;
   resolveStatusLines?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string;
     configured: boolean;
   }) => string[] | Promise<string[]>;
   resolveSelectionHint?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string;
     configured: boolean;
   }) => string | undefined | Promise<string | undefined>;
   resolveQuickstartScore?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string;
     configured: boolean;
   }) => number | undefined | Promise<number | undefined>;
@@ -66,7 +66,7 @@ type ChannelSetupWizardNote = {
   title: string;
   lines: string[];
   shouldShow?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
     credentialValues: ChannelSetupWizardCredentialValues;
   }) => boolean | Promise<boolean>;
@@ -76,11 +76,11 @@ type ChannelSetupWizardNote = {
 type ChannelSetupWizardEnvShortcut = {
   prompt: string;
   preferredEnvVar?: string;
-  isAvailable: (params: { cfg: OpenClawConfig; accountId: string }) => boolean;
+  isAvailable: (params: { cfg: AforaConfig; accountId: string }) => boolean;
   apply: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
-  }) => OpenClawConfig | Promise<OpenClawConfig>;
+  }) => AforaConfig | Promise<AforaConfig>;
 };
 
 /** Declarative secret/input step for a channel account credential. */
@@ -95,29 +95,29 @@ export type ChannelSetupWizardCredential = {
   envPrompt: string;
   keepPrompt: string;
   inputPrompt: string;
-  allowEnv?: (params: { cfg: OpenClawConfig; accountId: string }) => boolean;
+  allowEnv?: (params: { cfg: AforaConfig; accountId: string }) => boolean;
   inspect: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
   }) => ChannelSetupWizardCredentialState;
   shouldPrompt?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
     credentialValues: ChannelSetupWizardCredentialValues;
     currentValue?: string;
     state: ChannelSetupWizardCredentialState;
   }) => boolean | Promise<boolean>;
   applyUseEnv?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
-  }) => OpenClawConfig | Promise<OpenClawConfig>;
+  }) => AforaConfig | Promise<AforaConfig>;
   applySet?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
     credentialValues: ChannelSetupWizardCredentialValues;
     value: unknown;
     resolvedValue: string;
-  }) => OpenClawConfig | Promise<OpenClawConfig>;
+  }) => AforaConfig | Promise<AforaConfig>;
 };
 
 /** Declarative text step that can depend on resolved credentials. */
@@ -135,17 +135,17 @@ export type ChannelSetupWizardTextInput = {
   confirmCurrentValue?: boolean;
   keepPrompt?: string | ((value: string) => string);
   currentValue?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
     credentialValues: ChannelSetupWizardCredentialValues;
   }) => string | undefined | Promise<string | undefined>;
   initialValue?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
     credentialValues: ChannelSetupWizardCredentialValues;
   }) => string | undefined | Promise<string | undefined>;
   shouldPrompt?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
     credentialValues: ChannelSetupWizardCredentialValues;
     currentValue?: string;
@@ -153,21 +153,21 @@ export type ChannelSetupWizardTextInput = {
   applyCurrentValue?: boolean;
   validate?: (params: {
     value: string;
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
     credentialValues: ChannelSetupWizardCredentialValues;
   }) => string | undefined;
   normalizeValue?: (params: {
     value: string;
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
     credentialValues: ChannelSetupWizardCredentialValues;
   }) => string;
   applySet?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
     value: string;
-  }) => OpenClawConfig | Promise<OpenClawConfig>;
+  }) => AforaConfig | Promise<AforaConfig>;
 };
 
 export type ChannelSetupWizardAllowFromEntry = {
@@ -187,16 +187,16 @@ type ChannelSetupWizardAllowFrom = {
   parseInputs?: (raw: string) => string[];
   parseId: (raw: string) => string | null;
   resolveEntries: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
     credentialValues: ChannelSetupWizardCredentialValues;
     entries: string[];
   }) => Promise<ChannelSetupWizardAllowFromEntry[]>;
   apply: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
     allowFrom: string[];
-  }) => OpenClawConfig | Promise<OpenClawConfig>;
+  }) => AforaConfig | Promise<AforaConfig>;
 };
 
 /** Declarative group/DM access policy step used by interactive setup. */
@@ -206,31 +206,31 @@ type ChannelSetupWizardGroupAccess = {
   helpTitle?: string;
   helpLines?: string[];
   skipAllowlistEntries?: boolean;
-  currentPolicy: (params: { cfg: OpenClawConfig; accountId: string }) => ChannelAccessPolicy;
-  currentEntries: (params: { cfg: OpenClawConfig; accountId: string }) => string[];
-  updatePrompt: (params: { cfg: OpenClawConfig; accountId: string }) => boolean;
+  currentPolicy: (params: { cfg: AforaConfig; accountId: string }) => ChannelAccessPolicy;
+  currentEntries: (params: { cfg: AforaConfig; accountId: string }) => string[];
+  updatePrompt: (params: { cfg: AforaConfig; accountId: string }) => boolean;
   setPolicy: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
     policy: ChannelAccessPolicy;
-  }) => OpenClawConfig;
+  }) => AforaConfig;
   resolveAllowlist?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
     credentialValues: ChannelSetupWizardCredentialValues;
     entries: string[];
     prompter: Pick<WizardPrompter, "note">;
   }) => Promise<unknown>;
   applyAllowlist?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
     resolved: unknown;
-  }) => OpenClawConfig;
+  }) => AforaConfig;
 };
 
 /** Optional pre-step hook for deriving helper config or credential values. */
 type ChannelSetupWizardPrepare = (params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   credentialValues: ChannelSetupWizardCredentialValues;
   runtime: ChannelSetupConfigureContext["runtime"];
@@ -238,18 +238,18 @@ type ChannelSetupWizardPrepare = (params: {
   options?: ChannelSetupConfigureContext["options"];
 }) =>
   | {
-      cfg?: OpenClawConfig;
+      cfg?: AforaConfig;
       credentialValues?: ChannelSetupWizardCredentialValues;
     }
   | void
   | Promise<{
-      cfg?: OpenClawConfig;
+      cfg?: AforaConfig;
       credentialValues?: ChannelSetupWizardCredentialValues;
     } | void>;
 
 /** Optional post-step hook for final validation, writes, or post prompts. */
 type ChannelSetupWizardFinalize = (params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   credentialValues: ChannelSetupWizardCredentialValues;
   runtime: ChannelSetupConfigureContext["runtime"];
@@ -258,12 +258,12 @@ type ChannelSetupWizardFinalize = (params: {
   forceAllowFrom: boolean;
 }) =>
   | {
-      cfg?: OpenClawConfig;
+      cfg?: AforaConfig;
       credentialValues?: ChannelSetupWizardCredentialValues;
     }
   | void
   | Promise<{
-      cfg?: OpenClawConfig;
+      cfg?: AforaConfig;
       credentialValues?: ChannelSetupWizardCredentialValues;
     } | void>;
 
@@ -274,7 +274,7 @@ export type ChannelSetupWizard = {
   introNote?: ChannelSetupWizardNote;
   envShortcut?: ChannelSetupWizardEnvShortcut;
   resolveAccountIdForConfigure?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     prompter: WizardPrompter;
     options?: ChannelSetupConfigureContext["options"];
     accountOverride?: string;
@@ -283,7 +283,7 @@ export type ChannelSetupWizard = {
     defaultAccountId: string;
   }) => string | Promise<string>;
   resolveShouldPromptAccountIds?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     options?: ChannelSetupConfigureContext["options"];
     shouldPromptAccountIds: boolean;
   }) => boolean;
@@ -296,7 +296,7 @@ export type ChannelSetupWizard = {
   dmPolicy?: ChannelSetupDmPolicy;
   allowFrom?: ChannelSetupWizardAllowFrom;
   groupAccess?: ChannelSetupWizardGroupAccess;
-  disable?: (cfg: OpenClawConfig) => OpenClawConfig;
+  disable?: (cfg: AforaConfig) => AforaConfig;
   onAccountRecorded?: ChannelSetupWizardAdapter["onAccountRecorded"];
 };
 
@@ -332,11 +332,11 @@ export type SetupChannelsOptions = {
 };
 
 export type PromptAccountIdParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   prompter: WizardPrompter;
   label: string;
   currentId?: string;
-  listAccountIds: (cfg: OpenClawConfig) => string[];
+  listAccountIds: (cfg: AforaConfig) => string[];
   defaultAccountId: string;
 };
 
@@ -352,14 +352,14 @@ export type ChannelSetupStatus = {
 
 /** Shared context for status checks before channel selection. */
 export type ChannelSetupStatusContext = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   options?: SetupChannelsOptions;
   accountOverrides: Partial<Record<ChannelId, string>>;
 };
 
 /** Shared context for applying setup changes for a selected channel. */
 type ChannelSetupConfigureContext = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   runtime: RuntimeEnv;
   prompter: WizardPrompter;
   options?: SetupChannelsOptions;
@@ -370,8 +370,8 @@ type ChannelSetupConfigureContext = {
 
 /** Context passed after setup has written config to disk. */
 type ChannelOnboardingPostWriteContext = {
-  previousCfg: OpenClawConfig;
-  cfg: OpenClawConfig;
+  previousCfg: AforaConfig;
+  cfg: AforaConfig;
   accountId: string;
   runtime: RuntimeEnv;
 };
@@ -380,17 +380,17 @@ type ChannelOnboardingPostWriteContext = {
 export type ChannelOnboardingPostWriteHook = {
   channel: ChannelId;
   accountId: string;
-  run: (ctx: { cfg: OpenClawConfig; runtime: RuntimeEnv }) => Promise<void> | void;
+  run: (ctx: { cfg: AforaConfig; runtime: RuntimeEnv }) => Promise<void> | void;
 };
 
 export type ChannelSetupResult =
   | {
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       accountId?: string;
       completion?: "configured";
     }
   | {
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       /** Paused setup is persisted without configured-account hooks or routing. */
       completion: "paused";
       accountId?: never;
@@ -410,16 +410,16 @@ export type ChannelSetupDmPolicy = {
   policyKey: string;
   allowFromKey: string;
   resolveConfigKeys?: (
-    cfg: OpenClawConfig,
+    cfg: AforaConfig,
     accountId?: string,
   ) => { policyKey: string; allowFromKey: string };
-  getCurrent: (cfg: OpenClawConfig, accountId?: string) => DmPolicy;
-  setPolicy: (cfg: OpenClawConfig, policy: DmPolicy, accountId?: string) => OpenClawConfig;
+  getCurrent: (cfg: AforaConfig, accountId?: string) => DmPolicy;
+  setPolicy: (cfg: AforaConfig, policy: DmPolicy, accountId?: string) => AforaConfig;
   promptAllowFrom?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     prompter: WizardPrompter;
     accountId?: string;
-  }) => Promise<OpenClawConfig>;
+  }) => Promise<AforaConfig>;
 };
 
 /** Imperative adapter consumed by onboarding and setup flows. */
@@ -436,5 +436,5 @@ export type ChannelSetupWizardAdapter = {
   afterConfigWritten?: (ctx: ChannelOnboardingPostWriteContext) => Promise<void> | void;
   dmPolicy?: ChannelSetupDmPolicy;
   onAccountRecorded?: (accountId: string, options?: SetupChannelsOptions) => void;
-  disable?: (cfg: OpenClawConfig) => OpenClawConfig;
+  disable?: (cfg: AforaConfig) => AforaConfig;
 };

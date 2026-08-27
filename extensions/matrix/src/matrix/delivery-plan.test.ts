@@ -4,7 +4,7 @@ import path from "node:path";
 import {
   resetPluginBlobStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { installMatrixTestRuntime } from "../test-runtime.js";
 import {
@@ -118,7 +118,7 @@ function reconciliationContext(queueId = "queue-1") {
 
 describe("Matrix durable delivery plans", () => {
   beforeEach(() => {
-    stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-matrix-plan-"));
+    stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-matrix-plan-"));
     installMatrixTestRuntime({ stateDir });
     client.getTransactionScopeId.mockReset().mockResolvedValue("scope-1");
     client.getMessageWireEventType.mockReset().mockResolvedValue("m.room.message");

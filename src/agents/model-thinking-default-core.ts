@@ -1,8 +1,8 @@
-import { resolveClaudeOpus5ModelIdentity } from "@openclaw/llm-core";
+import { resolveClaudeOpus5ModelIdentity } from "@afora/llm-core";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import {
   resolveSupportedThinkingLevel,
   resolveThinkingDefaultForModel,
@@ -12,14 +12,14 @@ import {
   resolveThinkingDefaultForModelCore,
   type ThinkLevel,
 } from "../auto-reply/thinking.shared.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { ModelCatalogEntry } from "./model-catalog.types.js";
 import { legacyModelKey, modelKey, normalizeProviderId } from "./model-ref-shared.js";
 import { normalizeModelSelection } from "./model-selection-resolve.js";
 import { buildConfiguredModelCatalog } from "./model-selection-shared.js";
 
 type ThinkingDefaultParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   provider: string;
   model: string;
   catalog?: ModelCatalogEntry[];
@@ -27,7 +27,7 @@ type ThinkingDefaultParams = {
 };
 
 export function resolveConfiguredThinkingDefaultCore(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   provider: string;
   model: string;
 }): ThinkLevel | undefined {

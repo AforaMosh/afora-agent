@@ -1,6 +1,6 @@
 // Browser-safe redaction for tool details rendered by the Control UI.
-import { isSensitiveUrlQueryParamName } from "@openclaw/net-policy/redact-sensitive-url";
-import { sliceUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { isSensitiveUrlQueryParamName } from "@afora/net-policy/redact-sensitive-url";
+import { sliceUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { DEFAULT_REDACT_PATTERNS } from "../../../src/logging/redact-patterns.js";
 
 const URL_QUERY_PAIR_RE = /([?&])([^=&#\s]+)=([^&#\s"'<>]+)/gu;

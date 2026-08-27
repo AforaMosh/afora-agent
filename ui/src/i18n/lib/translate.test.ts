@@ -67,7 +67,7 @@ describe("I18nManager pending locale retry", () => {
 
     const { manager } = createManager();
     await manager.setLocale("en");
-    expect(storage.getItem("openclaw.i18n.locale")).toBe("en");
+    expect(storage.getItem("afora.i18n.locale")).toBe("en");
   });
 
   it("applies and notifies when a failed locale load is retried after recovery", async () => {
@@ -157,7 +157,7 @@ describe("I18nManager pending locale retry", () => {
   it("lets the latest System request clear persistence during a shared load", async () => {
     const { loadTranslation, manager } = createManager();
     vi.stubGlobal("navigator", { language: "de-DE" } as Navigator);
-    localStorage.setItem("openclaw.i18n.locale", "es");
+    localStorage.setItem("afora.i18n.locale", "es");
     const localeLoad = deferred<TranslationMap | null>();
     loadTranslation.mockReturnValueOnce(localeLoad.promise);
 
@@ -169,7 +169,7 @@ describe("I18nManager pending locale retry", () => {
     await Promise.all([explicit, system]);
 
     expect(manager.getLocale()).toBe("de");
-    expect(localStorage.getItem("openclaw.i18n.locale")).toBeNull();
+    expect(localStorage.getItem("afora.i18n.locale")).toBeNull();
   });
 
   it("lets the latest explicit request persist during a shared System load", async () => {
@@ -186,7 +186,7 @@ describe("I18nManager pending locale retry", () => {
     await Promise.all([system, explicit]);
 
     expect(manager.getLocale()).toBe("de");
-    expect(localStorage.getItem("openclaw.i18n.locale")).toBe("de");
+    expect(localStorage.getItem("afora.i18n.locale")).toBe("de");
   });
 
   it("clears an abandoned pending target after another locale succeeds", async () => {
@@ -231,7 +231,7 @@ describe("I18nManager pending locale retry", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const persistedLocalesAtHook: Array<string | null> = [];
     const onUnrecoverableLocaleLoad = vi.fn(() => {
-      persistedLocalesAtHook.push(localStorage.getItem("openclaw.i18n.locale"));
+      persistedLocalesAtHook.push(localStorage.getItem("afora.i18n.locale"));
     });
     manager.setLocaleLoadRecovery({
       isUnrecoverableError: (error) =>
@@ -251,7 +251,7 @@ describe("I18nManager pending locale retry", () => {
 
     expect(onUnrecoverableLocaleLoad).toHaveBeenCalledExactlyOnceWith("fr");
     expect(persistedLocalesAtHook).toEqual(["fr"]);
-    expect(localStorage.getItem("openclaw.i18n.locale")).toBe("fr");
+    expect(localStorage.getItem("afora.i18n.locale")).toBe("fr");
     expect(internals.pendingLocale).toBe("fr");
   });
 
@@ -259,7 +259,7 @@ describe("I18nManager pending locale retry", () => {
     const { internals, loadTranslation, manager } = createManager();
     vi.spyOn(console, "error").mockImplementation(() => {});
     vi.stubGlobal("navigator", { language: "de-DE" } as Navigator);
-    localStorage.setItem("openclaw.i18n.locale", "es");
+    localStorage.setItem("afora.i18n.locale", "es");
     loadTranslation.mockRejectedValueOnce(new Error("gateway unavailable"));
     loadTranslation.mockResolvedValueOnce(german);
 
@@ -268,20 +268,20 @@ describe("I18nManager pending locale retry", () => {
     expect(manager.getLocale()).toBe("en");
     expect(internals.pendingLocale).toBe("de");
     expect(internals.pendingLocaleShouldPersist).toBe(false);
-    expect(localStorage.getItem("openclaw.i18n.locale")).toBeNull();
+    expect(localStorage.getItem("afora.i18n.locale")).toBeNull();
 
     manager.retryPendingLocale();
     await vi.waitFor(() => expect(manager.getLocale()).toBe("de"));
 
     expect(internals.pendingLocale).toBeNull();
-    expect(localStorage.getItem("openclaw.i18n.locale")).toBeNull();
+    expect(localStorage.getItem("afora.i18n.locale")).toBeNull();
   });
 
   it("does not persist a system locale for repeated import-failure recovery", async () => {
     const { internals, loadTranslation, manager } = createManager();
     vi.spyOn(console, "error").mockImplementation(() => {});
     vi.stubGlobal("navigator", { language: "de-DE" } as Navigator);
-    localStorage.setItem("openclaw.i18n.locale", "es");
+    localStorage.setItem("afora.i18n.locale", "es");
     const onUnrecoverableLocaleLoad = vi.fn();
     manager.setLocaleLoadRecovery({
       isUnrecoverableError: (error) =>
@@ -300,7 +300,7 @@ describe("I18nManager pending locale retry", () => {
     await vi.waitFor(() => expect(loadTranslation).toHaveBeenCalledTimes(2));
 
     expect(onUnrecoverableLocaleLoad).toHaveBeenCalledExactlyOnceWith("de");
-    expect(localStorage.getItem("openclaw.i18n.locale")).toBeNull();
+    expect(localStorage.getItem("afora.i18n.locale")).toBeNull();
     expect(internals.pendingLocale).toBe("de");
     expect(internals.pendingLocaleShouldPersist).toBe(false);
   });

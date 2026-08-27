@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Official installer E2E harness for Docker.
 #
-# Installs OpenClaw through the public one-liner, verifies the resolved npm
+# Installs Afora through the public one-liner, verifies the resolved npm
 # version, then exercises onboard + local embedded agent tool turns for the
 # configured model providers. Keep this script package-install based: it should
 # validate the installed npm artifact, not repo sources.
@@ -47,19 +47,19 @@ read_boolean_env() {
   esac
 }
 
-INSTALL_URL="${OPENCLAW_INSTALL_URL:-https://openclaw.bot/install.sh}"
-MODELS_MODE="${OPENCLAW_E2E_MODELS:-both}" # both|openai|anthropic
-INSTALL_TAG="${OPENCLAW_INSTALL_TAG:-latest}"
-E2E_PREVIOUS_VERSION="${OPENCLAW_INSTALL_E2E_PREVIOUS:-}"
-SKIP_PREVIOUS="${OPENCLAW_INSTALL_E2E_SKIP_PREVIOUS:-0}"
+INSTALL_URL="${AFORA_INSTALL_URL:-https://afora.bot/install.sh}"
+MODELS_MODE="${AFORA_E2E_MODELS:-both}" # both|openai|anthropic
+INSTALL_TAG="${AFORA_INSTALL_TAG:-latest}"
+E2E_PREVIOUS_VERSION="${AFORA_INSTALL_E2E_PREVIOUS:-}"
+SKIP_PREVIOUS="${AFORA_INSTALL_E2E_SKIP_PREVIOUS:-0}"
 OPENAI_API_KEY="${OPENAI_API_KEY:-}"
 ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-}"
 ANTHROPIC_API_TOKEN="${ANTHROPIC_API_TOKEN:-}"
-AGENT_TURN_TIMEOUT_SECONDS="$(read_positive_int_env OPENCLAW_INSTALL_E2E_AGENT_TURN_TIMEOUT_SECONDS 300)"
-AGENT_TURNS_PARALLEL="$(read_boolean_env OPENCLAW_INSTALL_E2E_AGENT_TURNS_PARALLEL 1)"
-AGENT_TOOL_SMOKE="$(read_boolean_env OPENCLAW_INSTALL_E2E_AGENT_TOOL_SMOKE 1)"
-OPENAI_AGENT_MODEL="${OPENCLAW_INSTALL_E2E_OPENAI_MODEL:-openai/gpt-5.6-luna}"
-OPENAI_PROVIDER_TIMEOUT_SECONDS="$(read_positive_int_env OPENCLAW_INSTALL_E2E_OPENAI_PROVIDER_TIMEOUT_SECONDS "$AGENT_TURN_TIMEOUT_SECONDS")"
+AGENT_TURN_TIMEOUT_SECONDS="$(read_positive_int_env AFORA_INSTALL_E2E_AGENT_TURN_TIMEOUT_SECONDS 300)"
+AGENT_TURNS_PARALLEL="$(read_boolean_env AFORA_INSTALL_E2E_AGENT_TURNS_PARALLEL 1)"
+AGENT_TOOL_SMOKE="$(read_boolean_env AFORA_INSTALL_E2E_AGENT_TOOL_SMOKE 1)"
+OPENAI_AGENT_MODEL="${AFORA_INSTALL_E2E_OPENAI_MODEL:-openai/gpt-5.6-luna}"
+OPENAI_PROVIDER_TIMEOUT_SECONDS="$(read_positive_int_env AFORA_INSTALL_E2E_OPENAI_PROVIDER_TIMEOUT_SECONDS "$AGENT_TURN_TIMEOUT_SECONDS")"
 
 time_phase() {
   local name="$1"
@@ -101,37 +101,37 @@ mkdir -p "$NPM_CONFIG_PREFIX"
 export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
 
 if [[ "$MODELS_MODE" != "both" && "$MODELS_MODE" != "openai" && "$MODELS_MODE" != "anthropic" ]]; then
-  echo "ERROR: OPENCLAW_E2E_MODELS must be one of: both|openai|anthropic" >&2
+  echo "ERROR: AFORA_E2E_MODELS must be one of: both|openai|anthropic" >&2
   exit 2
 fi
 
 if [[ "$MODELS_MODE" == "both" ]]; then
   if [[ -z "$OPENAI_API_KEY" ]]; then
-    echo "ERROR: OPENCLAW_E2E_MODELS=both requires OPENAI_API_KEY." >&2
+    echo "ERROR: AFORA_E2E_MODELS=both requires OPENAI_API_KEY." >&2
     exit 2
   fi
   if [[ -z "$ANTHROPIC_API_TOKEN" && -z "$ANTHROPIC_API_KEY" ]]; then
-    echo "ERROR: OPENCLAW_E2E_MODELS=both requires ANTHROPIC_API_TOKEN or ANTHROPIC_API_KEY." >&2
+    echo "ERROR: AFORA_E2E_MODELS=both requires ANTHROPIC_API_TOKEN or ANTHROPIC_API_KEY." >&2
     exit 2
   fi
 elif [[ "$MODELS_MODE" == "openai" && -z "$OPENAI_API_KEY" ]]; then
-  echo "ERROR: OPENCLAW_E2E_MODELS=openai requires OPENAI_API_KEY." >&2
+  echo "ERROR: AFORA_E2E_MODELS=openai requires OPENAI_API_KEY." >&2
   exit 2
 elif [[ "$MODELS_MODE" == "anthropic" && -z "$ANTHROPIC_API_TOKEN" && -z "$ANTHROPIC_API_KEY" ]]; then
-  echo "ERROR: OPENCLAW_E2E_MODELS=anthropic requires ANTHROPIC_API_TOKEN or ANTHROPIC_API_KEY." >&2
+  echo "ERROR: AFORA_E2E_MODELS=anthropic requires ANTHROPIC_API_TOKEN or ANTHROPIC_API_KEY." >&2
   exit 2
 fi
 
 resolve_npm_versions() {
-  EXPECTED_VERSION="$(quiet_npm view "openclaw@${INSTALL_TAG}" version)"
+  EXPECTED_VERSION="$(quiet_npm view "afora@${INSTALL_TAG}" version)"
   if [[ -z "$EXPECTED_VERSION" || "$EXPECTED_VERSION" == "undefined" || "$EXPECTED_VERSION" == "null" ]]; then
-    echo "ERROR: unable to resolve openclaw@${INSTALL_TAG} version" >&2
+    echo "ERROR: unable to resolve afora@${INSTALL_TAG} version" >&2
     return 2
   fi
   if [[ -n "$E2E_PREVIOUS_VERSION" ]]; then
     PREVIOUS_VERSION="$E2E_PREVIOUS_VERSION"
   else
-    PREVIOUS_VERSION="$(VERSIONS_JSON="$(quiet_npm view openclaw versions --json)" node - <<'NODE'
+    PREVIOUS_VERSION="$(VERSIONS_JSON="$(quiet_npm view afora versions --json)" node - <<'NODE'
 const versions = JSON.parse(process.env.VERSIONS_JSON || "[]");
 if (!Array.isArray(versions) || versions.length === 0) process.exit(1);
 process.stdout.write(versions.length >= 2 ? versions[versions.length - 2] : versions[0]);
@@ -143,10 +143,10 @@ NODE
 
 preinstall_previous_version() {
   if [[ "$SKIP_PREVIOUS" == "1" ]]; then
-    echo "Skip preinstall previous (OPENCLAW_INSTALL_E2E_SKIP_PREVIOUS=1)"
+    echo "Skip preinstall previous (AFORA_INSTALL_E2E_SKIP_PREVIOUS=1)"
   else
     echo "Preinstall previous (forces installer upgrade path; avoids read() prompt)"
-    quiet_npm install -g "openclaw@${PREVIOUS_VERSION}"
+    quiet_npm install -g "afora@${PREVIOUS_VERSION}"
   fi
 }
 
@@ -158,20 +158,20 @@ run_official_installer() (
 
   curl -fsSL --connect-timeout 10 --max-time 120 "$INSTALL_URL" -o "$installer" || return
   if [[ "$INSTALL_TAG" == "beta" ]]; then
-    OPENCLAW_BETA=1 bash "$installer"
+    AFORA_BETA=1 bash "$installer"
   elif [[ "$INSTALL_TAG" != "latest" ]]; then
-    OPENCLAW_VERSION="$INSTALL_TAG" bash "$installer"
+    AFORA_VERSION="$INSTALL_TAG" bash "$installer"
   else
     bash "$installer"
   fi
 )
 
 verify_installed_version() {
-  INSTALLED_VERSION="$(openclaw --version 2>/dev/null | head -n 1 | tr -d '\r')"
-  INSTALLED_VERSION="$(extract_openclaw_semver "$INSTALLED_VERSION")"
+  INSTALLED_VERSION="$(afora --version 2>/dev/null | head -n 1 | tr -d '\r')"
+  INSTALLED_VERSION="$(extract_afora_semver "$INSTALLED_VERSION")"
   echo "installed=$INSTALLED_VERSION expected=$EXPECTED_VERSION"
   if [[ "$INSTALLED_VERSION" != "$EXPECTED_VERSION" ]]; then
-    echo "ERROR: expected openclaw@$EXPECTED_VERSION, got openclaw@$INSTALLED_VERSION" >&2
+    echo "ERROR: expected afora@$EXPECTED_VERSION, got afora@$INSTALLED_VERSION" >&2
     return 1
   fi
 }
@@ -186,7 +186,7 @@ set_image_model() {
   shift
   local candidate
   for candidate in "$@"; do
-    if openclaw --profile "$profile" models set-image "$candidate" >/dev/null 2>&1; then
+    if afora --profile "$profile" models set-image "$candidate" >/dev/null 2>&1; then
       echo "$candidate"
       return 0
     fi
@@ -200,7 +200,7 @@ set_agent_model() {
   local candidate
   shift
   for candidate in "$@"; do
-    if openclaw --profile "$profile" models set "$candidate" >/dev/null 2>&1; then
+    if afora --profile "$profile" models set "$candidate" >/dev/null 2>&1; then
       echo "$candidate"
       return 0
     fi
@@ -288,7 +288,7 @@ run_agent_turn() {
   # in the isolated container and already covered by gateway-specific lanes.
   set +e
   timeout --kill-after=15s "${AGENT_TURN_TIMEOUT_SECONDS}s" \
-    openclaw --profile "$profile" agent \
+    afora --profile "$profile" agent \
     --local \
     --session-id "$session_id" \
     --message "$prompt" \
@@ -490,14 +490,14 @@ dump_profile_debug() {
     fi
   fi
 
-  echo "---- openclaw processes ($profile) ----"
+  echo "---- afora processes ($profile) ----"
   for cmdline in /proc/[0-9]*/cmdline; do
     [[ -r "$cmdline" ]] || continue
     local pid
     pid="$(basename "$(dirname "$cmdline")")"
     local command
     command="$(tr '\0' ' ' <"$cmdline" | sed 's/[[:space:]]*$//')"
-    if [[ "$command" == *openclaw* || "$command" == *node* ]]; then
+    if [[ "$command" == *afora* || "$command" == *node* ]]; then
       echo "$pid $command"
     fi
   done
@@ -584,7 +584,7 @@ assert_session_used_tools() {
   if [[ ! -f "$jsonl" ]]; then
     export_workspace="$(mktemp -d)"
     local export_status=0
-    openclaw --profile "$profile" sessions export-trajectory \
+    afora --profile "$profile" sessions export-trajectory \
       --session-key "agent:main:explicit:${session_id}" \
       --agent main \
       --workspace "$export_workspace" \
@@ -594,7 +594,7 @@ assert_session_used_tools() {
       rm -rf "$export_workspace"
       return "$export_status"
     fi
-    jsonl="$export_workspace/.openclaw/trajectory-exports/scan/events.jsonl"
+    jsonl="$export_workspace/.afora/trajectory-exports/scan/events.jsonl"
   fi
   local scan_status=0
   node - <<'NODE' "$jsonl" "$@" || scan_status="$?"
@@ -628,10 +628,10 @@ function readPositiveIntEnv(name, fallback) {
   }
   return Number(raw);
 }
-const maxBytes = readPositiveIntEnv("OPENCLAW_INSTALL_E2E_SESSION_SCAN_BYTES", 16 * 1024 * 1024);
-const maxLineBytes = readPositiveIntEnv("OPENCLAW_INSTALL_E2E_SESSION_LINE_BYTES", 1024 * 1024);
-const maxDepth = readPositiveIntEnv("OPENCLAW_INSTALL_E2E_SESSION_SCAN_DEPTH", 64);
-const maxNodes = readPositiveIntEnv("OPENCLAW_INSTALL_E2E_SESSION_SCAN_NODES", 100000);
+const maxBytes = readPositiveIntEnv("AFORA_INSTALL_E2E_SESSION_SCAN_BYTES", 16 * 1024 * 1024);
+const maxLineBytes = readPositiveIntEnv("AFORA_INSTALL_E2E_SESSION_LINE_BYTES", 1024 * 1024);
+const maxDepth = readPositiveIntEnv("AFORA_INSTALL_E2E_SESSION_SCAN_DEPTH", 64);
+const maxNodes = readPositiveIntEnv("AFORA_INSTALL_E2E_SESSION_SCAN_NODES", 100000);
 
 function missingTools() {
   return [...required].filter((t) => !seen.has(t));
@@ -787,7 +787,7 @@ NODE
 session_jsonl_path() {
   local profile="$1"
   local session_id="$2"
-  echo "$HOME/.openclaw-${profile}/agents/main/sessions/${session_id}.jsonl"
+  echo "$HOME/.afora-${profile}/agents/main/sessions/${session_id}.jsonl"
 }
 
 run_profile() {
@@ -799,7 +799,7 @@ run_profile() {
 
   phase_mark_start "Onboard ($profile)"
 	  if [[ "$agent_model_provider" == "openai" ]]; then
-	    openclaw --profile "$profile" onboard \
+	    afora --profile "$profile" onboard \
 	      --non-interactive \
 	      --accept-risk \
 	      --flow quickstart \
@@ -811,7 +811,7 @@ run_profile() {
       --workspace "$workspace" \
       --skip-health
 	  elif [[ -n "$ANTHROPIC_API_KEY" ]]; then
-	    openclaw --profile "$profile" onboard \
+	    afora --profile "$profile" onboard \
 	      --non-interactive \
 	      --accept-risk \
 	      --flow quickstart \
@@ -823,7 +823,7 @@ run_profile() {
       --workspace "$workspace" \
       --skip-health
 	  elif [[ -n "$ANTHROPIC_API_TOKEN" ]]; then
-	    openclaw --profile "$profile" onboard \
+	    afora --profile "$profile" onboard \
 	      --non-interactive \
 	      --accept-risk \
 	      --flow quickstart \
@@ -836,7 +836,7 @@ run_profile() {
       --workspace "$workspace" \
       --skip-health
 	  else
-	    openclaw --profile "$profile" onboard \
+	    afora --profile "$profile" onboard \
 	      --non-interactive \
 	      --accept-risk \
 	      --flow quickstart \
@@ -869,7 +869,7 @@ run_profile() {
       "$OPENAI_AGENT_MODEL" \
       "openai/gpt-5.5" \
       "openai/gpt-5.4-mini")"
-    openclaw --profile "$profile" config set models.providers.openai "{\"baseUrl\":\"https://api.openai.com/v1\",\"models\":[],\"timeoutSeconds\":${OPENAI_PROVIDER_TIMEOUT_SECONDS},\"agentRuntime\":{\"id\":\"openclaw\"}}" --strict-json >/dev/null
+    afora --profile "$profile" config set models.providers.openai "{\"baseUrl\":\"https://api.openai.com/v1\",\"models\":[],\"timeoutSeconds\":${OPENAI_PROVIDER_TIMEOUT_SECONDS},\"agentRuntime\":{\"id\":\"afora\"}}" --strict-json >/dev/null
     image_model="$(set_image_model "$profile" \
       "openai/gpt-5.4-image-2")"
   else
@@ -901,7 +901,7 @@ run_profile() {
 
   phase_mark_start "Start gateway ($profile)"
   GATEWAY_LOG="$workspace/gateway.log"
-  openclaw --profile "$profile" gateway --port "$port" --bind loopback >"$GATEWAY_LOG" 2>&1 &
+  afora --profile "$profile" gateway --port "$port" --bind loopback >"$GATEWAY_LOG" 2>&1 &
   GATEWAY_PID="$!"
   cleanup_profile() {
     if kill -0 "$GATEWAY_PID" 2>/dev/null; then
@@ -921,12 +921,12 @@ run_profile() {
 
   phase_mark_start "Wait for health ($profile)"
   for _ in $(seq 1 240); do
-    if openclaw --profile "$profile" health --timeout 5000 --json >/dev/null 2>&1; then
+    if afora --profile "$profile" health --timeout 5000 --json >/dev/null 2>&1; then
       break
     fi
     sleep 0.25
   done
-  if ! openclaw --profile "$profile" health --timeout 60000 --json >"$HEALTH_JSON" 2>&1; then
+  if ! afora --profile "$profile" health --timeout 60000 --json >"$HEALTH_JSON" 2>&1; then
     echo "ERROR: gateway health failed ($profile, output=$HEALTH_JSON)" >&2
     dump_profile_debug "$profile" "$HEALTH_JSON" >&2 || true
     return 1
@@ -934,7 +934,7 @@ run_profile() {
   phase_mark_passed "Wait for health ($profile)"
 
   if [[ "$AGENT_TOOL_SMOKE" == "0" ]]; then
-    echo "Skip agent tool smoke ($profile, OPENCLAW_INSTALL_E2E_AGENT_TOOL_SMOKE=0)"
+    echo "Skip agent tool smoke ($profile, AFORA_INSTALL_E2E_AGENT_TOOL_SMOKE=0)"
     cleanup_profile
     trap - EXIT
     return 0
@@ -1068,11 +1068,11 @@ run_profile() {
 }
 
 if [[ "$MODELS_MODE" == "openai" || "$MODELS_MODE" == "both" ]]; then
-  run_profile "e2e-openai" "18789" "/tmp/openclaw-e2e-openai" "openai"
+  run_profile "e2e-openai" "18789" "/tmp/afora-e2e-openai" "openai"
 fi
 
 if [[ "$MODELS_MODE" == "anthropic" || "$MODELS_MODE" == "both" ]]; then
-  run_profile "e2e-anthropic" "18799" "/tmp/openclaw-e2e-anthropic" "anthropic"
+  run_profile "e2e-anthropic" "18799" "/tmp/afora-e2e-anthropic" "anthropic"
 fi
 
 echo "OK"

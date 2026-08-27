@@ -1,26 +1,26 @@
 // Secret input tests cover provider credential prompt normalization.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { resolveSetupSecretInputString } from "./setup.secret-input.js";
 
-function makeConfig(): OpenClawConfig {
+function makeConfig(): AforaConfig {
   return {
     secrets: {
       providers: {
         default: { source: "env" },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 describe("resolveSetupSecretInputString", () => {
   it("resolves env-template SecretInput strings", async () => {
     const resolved = await resolveSetupSecretInputString({
       config: makeConfig(),
-      value: "${OPENCLAW_GATEWAY_PASSWORD}",
+      value: "${AFORA_GATEWAY_PASSWORD}",
       path: "gateway.auth.password",
       env: {
-        OPENCLAW_GATEWAY_PASSWORD: "gateway-secret", // pragma: allowlist secret
+        AFORA_GATEWAY_PASSWORD: "gateway-secret", // pragma: allowlist secret
       },
     });
 
@@ -41,12 +41,12 @@ describe("resolveSetupSecretInputString", () => {
     await expect(
       resolveSetupSecretInputString({
         config: makeConfig(),
-        value: "${OPENCLAW_GATEWAY_PASSWORD}",
+        value: "${AFORA_GATEWAY_PASSWORD}",
         path: "gateway.auth.password",
         env: {},
       }),
     ).rejects.toThrow(
-      'gateway.auth.password: failed to resolve SecretRef "env:default:OPENCLAW_GATEWAY_PASSWORD"',
+      'gateway.auth.password: failed to resolve SecretRef "env:default:AFORA_GATEWAY_PASSWORD"',
     );
   });
 });

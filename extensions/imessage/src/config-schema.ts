@@ -11,7 +11,7 @@ import {
   isValidInboundPathRootPattern,
   requireAllowlistAllowFrom,
   requireOpenAllowFrom,
-} from "openclaw/plugin-sdk/channel-config-schema";
+} from "afora-agent/plugin-sdk/channel-config-schema";
 import { z } from "zod";
 import { iMessageChannelConfigUiHints } from "./config-ui-hints.js";
 

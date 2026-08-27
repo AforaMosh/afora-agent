@@ -26,7 +26,7 @@ describe("codex conversation turn input", () => {
 
   it("uses staged remote-cache paths for remote iMessage image attachments", () => {
     const rawPath = "/Users/demo/Library/Messages/Attachments/ab/cd/photo.jpg";
-    const stagedPath = "/tmp/openclaw-proof/.openclaw/media/remote-cache/imessage/photo.jpg";
+    const stagedPath = "/tmp/afora-proof/.afora/media/remote-cache/imessage/photo.jpg";
 
     const input = buildCodexConversationTurnInput({
       prompt: "what is this?",
@@ -96,14 +96,14 @@ describe("codex conversation turn input", () => {
           channel: "webchat",
           isGroup: false,
           metadata: {
-            mediaPath: "file:///tmp/OpenClaw%20QA/photo.png",
+            mediaPath: "file:///tmp/Afora%20QA/photo.png",
             mediaType: "image/png",
           },
         },
       }),
     ).toEqual([
       { type: "text", text: "look", text_elements: [] },
-      { type: "localImage", path: "/tmp/OpenClaw QA/photo.png" },
+      { type: "localImage", path: "/tmp/Afora QA/photo.png" },
     ]);
   });
 
@@ -133,7 +133,7 @@ describe("codex conversation turn input", () => {
           channel: "webchat",
           isGroup: false,
           metadata: {
-            mediaUrls: ["/tmp/staged-photo.png", "file:///tmp/OpenClaw%20QA/second.jpg"],
+            mediaUrls: ["/tmp/staged-photo.png", "file:///tmp/Afora%20QA/second.jpg"],
             mediaTypes: ["image/png", "image/jpeg"],
           },
         },
@@ -141,7 +141,7 @@ describe("codex conversation turn input", () => {
     ).toEqual([
       { type: "text", text: "look", text_elements: [] },
       { type: "localImage", path: "/tmp/staged-photo.png" },
-      { type: "localImage", path: "/tmp/OpenClaw QA/second.jpg" },
+      { type: "localImage", path: "/tmp/Afora QA/second.jpg" },
     ]);
   });
 
@@ -154,14 +154,14 @@ describe("codex conversation turn input", () => {
           channel: "webchat",
           isGroup: false,
           metadata: {
-            mediaUrl: "C:\\OpenClaw QA\\photo.png",
+            mediaUrl: "C:\\Afora QA\\photo.png",
             mediaType: "image/png",
           },
         },
       }),
     ).toEqual([
       { type: "text", text: "look", text_elements: [] },
-      { type: "localImage", path: "C:\\OpenClaw QA\\photo.png" },
+      { type: "localImage", path: "C:\\Afora QA\\photo.png" },
     ]);
   });
 });

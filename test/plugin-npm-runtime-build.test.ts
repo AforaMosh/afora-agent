@@ -37,7 +37,7 @@ function expectPluginNpmRuntimeBuildPlan(
 
 describe("plugin npm runtime build planning", () => {
   it("rejects a symlinked package dist root before building", async () => {
-    const syntheticRepoRoot = tempDirs.make("openclaw-plugin-runtime-output-root-");
+    const syntheticRepoRoot = tempDirs.make("afora-plugin-runtime-output-root-");
     const packageDir = path.join(syntheticRepoRoot, "extensions", "demo");
     mkdirSync(packageDir, { recursive: true });
     writeFileSync(
@@ -47,9 +47,9 @@ describe("plugin npm runtime build planning", () => {
     writeFileSync(
       path.join(packageDir, "package.json"),
       JSON.stringify({
-        name: "@openclaw/demo",
+        name: "@afora/demo",
         version: "1.0.0",
-        openclaw: {
+        afora: {
           compat: { pluginApi: "1.0.0" },
           extensions: ["./index.ts"],
           release: { publishToNpm: true },
@@ -92,10 +92,10 @@ describe("plugin npm runtime build planning", () => {
       expectDistRelativePaths(plan.runtimeExtensions);
       expectDistRelativePaths(plan.runtimeBuildOutputs);
       expect(plan.packageFiles).toContain("dist/**");
-      expect(plan.packagePeerMetadata.peerDependencies.openclaw).toBe(
-        plan.packageJson.openclaw?.compat?.pluginApi,
+      expect(plan.packagePeerMetadata.peerDependencies.afora).toBe(
+        plan.packageJson.afora?.compat?.pluginApi,
       );
-      expect(plan.packagePeerMetadata.peerDependenciesMeta.openclaw.optional).toBe(true);
+      expect(plan.packagePeerMetadata.peerDependenciesMeta.afora.optional).toBe(true);
     }
   });
 
@@ -112,7 +112,7 @@ describe("plugin npm runtime build planning", () => {
     });
     expect(diffsRuntimePlan.packageFiles).toEqual([
       "dist/**",
-      "openclaw.plugin.json",
+      "afora.plugin.json",
       "README.md",
       "skills/**",
     ]);
@@ -259,12 +259,12 @@ describe("plugin npm runtime build planning", () => {
   });
 
   it("detects unresolved side-effect host imports in built plugin runtimes", () => {
-    const outDir = tempDirs.make("openclaw-plugin-runtime-host-import-");
+    const outDir = tempDirs.make("afora-plugin-runtime-host-import-");
     writeFileSync(
       path.join(outDir, "index.js"),
       [
-        'import "openclaw/plugin-sdk/not-exported";',
-        'const runtime = __require("openclaw/plugin-sdk/not-exported-from-require");',
+        'import "afora-agent/plugin-sdk/not-exported";',
+        'const runtime = __require("afora-agent/plugin-sdk/not-exported-from-require");',
         "void runtime;",
         "",
       ].join("\n"),
@@ -277,14 +277,14 @@ describe("plugin npm runtime build planning", () => {
     );
 
     expect(listMissingPluginNpmRuntimeHostExports({ ...plan, outDir })).toEqual([
-      "openclaw/plugin-sdk/not-exported",
-      "openclaw/plugin-sdk/not-exported-from-require",
+      "afora-agent/plugin-sdk/not-exported",
+      "afora-agent/plugin-sdk/not-exported-from-require",
     ]);
   });
 
   it("does not require host metadata when the runtime has no host imports", () => {
-    const syntheticRepoRoot = tempDirs.make("openclaw-plugin-runtime-synthetic-repo-");
-    const outDir = tempDirs.make("openclaw-plugin-runtime-no-host-import-");
+    const syntheticRepoRoot = tempDirs.make("afora-plugin-runtime-synthetic-repo-");
+    const outDir = tempDirs.make("afora-plugin-runtime-no-host-import-");
     writeFileSync(path.join(outDir, "index.js"), "export default {};\n");
     const plan = expectPluginNpmRuntimeBuildPlan(
       resolvePluginNpmRuntimeBuildPlan({

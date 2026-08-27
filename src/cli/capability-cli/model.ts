@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { detectMime, normalizeMimeType } from "@openclaw/media-core/mime";
+import { detectMime, normalizeMimeType } from "@afora/media-core/mime";
 import {
   normalizeOptionalString,
   normalizeStringifiedOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import type { Command } from "commander";
 import {
   GATEWAY_CLIENT_MODES,
@@ -31,7 +31,7 @@ import {
 } from "../../agents/simple-completion-runtime.js";
 import { normalizeThinkLevel, type ThinkLevel } from "../../auto-reply/thinking.js";
 import { getRuntimeConfig } from "../../config/config.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { callGateway, randomIdempotencyKey } from "../../gateway/call.js";
 import { ADMIN_SCOPE } from "../../gateway/operator-scopes.js";
 import { convertHeicToJpeg } from "../../media/media-services.js";
@@ -55,10 +55,10 @@ import {
   resolveTransport,
 } from "./shared.js";
 
-const LOCAL_MODEL_RUN_SYSTEM_PROMPT = "You are a personal assistant running inside OpenClaw.";
+const LOCAL_MODEL_RUN_SYSTEM_PROMPT = "You are a personal assistant running inside Afora.";
 const HEIC_MODEL_RUN_MIMES = new Set(["image/heic", "image/heif"]);
 
-async function loadModelCatalogForInspection(cfg: OpenClawConfig, agentId?: string) {
+async function loadModelCatalogForInspection(cfg: AforaConfig, agentId?: string) {
   const prepared = await loadPreparedModelCatalog({ config: cfg, agentId, readOnly: true });
   const metadataSnapshot = loadManifestMetadataSnapshot({ config: cfg, env: process.env });
   const manifest = planEffectiveModelCatalogRows({
@@ -79,7 +79,7 @@ async function loadModelCatalogForInspection(cfg: OpenClawConfig, agentId?: stri
 
 async function canonicalizeModelRunRef(params: {
   raw: string | undefined;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   preserveAuthProfile: boolean;
 }): Promise<string | undefined> {
   return await canonicalizeCaseOnlyCatalogModelRef({

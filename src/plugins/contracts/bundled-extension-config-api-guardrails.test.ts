@@ -10,43 +10,43 @@ const REPO_ROOT = resolve(SRC_ROOT, "..");
 const BUNDLED_EXTENSION_CONFIG_IMPORT_GUARDS = [
   {
     path: "extensions/telegram/src/config-schema.ts",
-    allowedSpecifier: "openclaw/plugin-sdk/channel-config-schema",
-    forbiddenSpecifier: "openclaw/plugin-sdk/bundled-channel-config-schema",
+    allowedSpecifier: "afora-agent/plugin-sdk/channel-config-schema",
+    forbiddenSpecifier: "afora-agent/plugin-sdk/bundled-channel-config-schema",
   },
   {
     path: "extensions/discord/src/config-schema.ts",
-    allowedSpecifier: "openclaw/plugin-sdk/channel-config-schema",
-    forbiddenSpecifier: "openclaw/plugin-sdk/bundled-channel-config-schema",
+    allowedSpecifier: "afora-agent/plugin-sdk/channel-config-schema",
+    forbiddenSpecifier: "afora-agent/plugin-sdk/bundled-channel-config-schema",
   },
   {
     path: "extensions/slack/src/config-schema.ts",
-    allowedSpecifier: "openclaw/plugin-sdk/channel-config-schema",
-    forbiddenSpecifier: "openclaw/plugin-sdk/bundled-channel-config-schema",
+    allowedSpecifier: "afora-agent/plugin-sdk/channel-config-schema",
+    forbiddenSpecifier: "afora-agent/plugin-sdk/bundled-channel-config-schema",
   },
   {
     path: "extensions/signal/src/config-schema.ts",
-    allowedSpecifier: "openclaw/plugin-sdk/channel-config-schema",
-    forbiddenSpecifier: "openclaw/plugin-sdk/bundled-channel-config-schema",
+    allowedSpecifier: "afora-agent/plugin-sdk/channel-config-schema",
+    forbiddenSpecifier: "afora-agent/plugin-sdk/bundled-channel-config-schema",
   },
   {
     path: "extensions/imessage/src/config-schema.ts",
-    allowedSpecifier: "openclaw/plugin-sdk/channel-config-schema",
-    forbiddenSpecifier: "openclaw/plugin-sdk/bundled-channel-config-schema",
+    allowedSpecifier: "afora-agent/plugin-sdk/channel-config-schema",
+    forbiddenSpecifier: "afora-agent/plugin-sdk/bundled-channel-config-schema",
   },
   {
     path: "extensions/whatsapp/src/config-schema.ts",
     allowedSpecifier: "../config-api.js",
-    forbiddenSpecifier: "openclaw/plugin-sdk/channel-config-schema",
+    forbiddenSpecifier: "afora-agent/plugin-sdk/channel-config-schema",
   },
   {
     path: "extensions/googlechat/src/config-schema.ts",
     allowedSpecifier: "../config-api.js",
-    forbiddenSpecifier: "openclaw/plugin-sdk/channel-config-schema",
+    forbiddenSpecifier: "afora-agent/plugin-sdk/channel-config-schema",
   },
   {
     path: "extensions/msteams/src/config-schema.ts",
-    allowedSpecifier: "openclaw/plugin-sdk/channel-config-schema",
-    forbiddenSpecifier: "openclaw/plugin-sdk/bundled-channel-config-schema",
+    allowedSpecifier: "afora-agent/plugin-sdk/channel-config-schema",
+    forbiddenSpecifier: "afora-agent/plugin-sdk/bundled-channel-config-schema",
   },
 ] as const;
 

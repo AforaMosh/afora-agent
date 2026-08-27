@@ -170,7 +170,7 @@ describe("sandbox media container file URLs", () => {
   let bridge: SandboxFsBridge;
 
   beforeEach(async () => {
-    tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-sandbox-media-container-url-"));
+    tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-sandbox-media-container-url-"));
     workspace = path.join(tempRoot, "workspace");
     imagePath = path.join(workspace, "image.png");
     await fs.mkdir(workspace, { recursive: true });

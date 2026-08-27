@@ -1,5 +1,5 @@
 /** Session MCP runtime manager: get-or-create and requester-scoped install orchestration. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { BundleMcpServerConfig } from "../plugins/bundle-mcp.js";
 import {
   createCombinedSessionMcpRuntime,

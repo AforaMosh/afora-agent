@@ -1,5 +1,5 @@
 // Slack tests cover accounts plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import {
   listEnabledSlackAccounts,
@@ -53,7 +53,7 @@ describe("resolveSlackOperationToken", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       accountId: "work",
     });
 
@@ -72,7 +72,7 @@ describe("resolveSlackOperationToken", () => {
               userTokenReadOnly: true,
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
       });
 
       expect(resolveSlackOperationToken(account, operation)).toBe("test-user-token");
@@ -88,7 +88,7 @@ describe("resolveSlackOperationToken", () => {
             botToken: "test-bot-token",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
 
     expect(resolveSlackOperationToken(account, "read")).toBeUndefined();
@@ -137,7 +137,7 @@ describe("resolveSlackAccount allowFrom precedence", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(listSlackAccountIds(cfg)).toEqual(["default", "work"]);
     expect(resolveDefaultSlackAccountId(cfg)).toBe("default");
@@ -158,7 +158,7 @@ describe("resolveSlackAccount allowFrom precedence", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(listSlackAccountIds(cfg)).toEqual(["work"]);
     expect(resolveDefaultSlackAccountId(cfg)).toBe("work");
@@ -364,7 +364,7 @@ describe("resolveSlackAccount allowFrom precedence", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       accountId: "work",
     });
 
@@ -425,7 +425,7 @@ describe("resolveSlackAccount allowFrom precedence", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(resolveSlackAccountAllowFrom({ cfg, accountId: "work" })).toEqual(["account"]);
   });
@@ -443,7 +443,7 @@ describe("resolveSlackAccount allowFrom precedence", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     expect(resolveSlackAccountAllowFrom({ cfg, accountId: "work" })).toEqual(["12345"]);
   });
@@ -462,7 +462,7 @@ describe("resolveSlackAccount allowFrom precedence", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(resolveSlackAccountDmPolicy({ cfg, accountId: "work" })).toBe("allowlist");
   });
@@ -483,7 +483,7 @@ describe("resolveSlackAccount allowFrom precedence", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(resolveSlackAccountDmPolicy({ cfg, accountId: "work" })).toBe("allowlist");
     expect(resolveSlackAccountAllowFrom({ cfg, accountId: "work" })).toEqual(["U123"]);
@@ -503,7 +503,7 @@ describe("resolveSlackAccount active secret surfaces", () => {
         },
       },
     },
-  } as unknown as OpenClawConfig;
+  } as unknown as AforaConfig;
 
   it("throws when an enabled account still has an unresolved active bot token SecretRef", () => {
     expect(() =>
@@ -530,7 +530,7 @@ describe("resolveSlackAccount active secret surfaces", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       accountId: "default",
     });
 
@@ -559,7 +559,7 @@ describe("resolveSlackAccount active secret surfaces", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       accountId: "default",
     });
 
@@ -584,7 +584,7 @@ describe("resolveSlackAccount active secret surfaces", () => {
               },
             },
           },
-        } as unknown as OpenClawConfig,
+        } as unknown as AforaConfig,
         accountId: "default",
       }),
     ).toThrowError(/channels\.slack\.accounts\.default\.appToken/);

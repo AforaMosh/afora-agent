@@ -1,13 +1,13 @@
 // Telegram helper module supports setup surface.helpers behavior.
-import { createChannelDmPolicy } from "openclaw/plugin-sdk/channel-dm-policy";
+import { createChannelDmPolicy } from "afora-agent/plugin-sdk/channel-dm-policy";
 import {
   applySetupAccountConfigPatch,
   DEFAULT_ACCOUNT_ID,
-  type OpenClawConfig,
+  type AforaConfig,
   patchChannelConfigForAccount,
-} from "openclaw/plugin-sdk/setup";
-import { formatCliCommand, formatDocsLink } from "openclaw/plugin-sdk/setup-tools";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/setup";
+import { formatCliCommand, formatDocsLink } from "afora-agent/plugin-sdk/setup-tools";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   mergeTelegramAccountConfig,
   resolveDefaultTelegramAccountId,
@@ -18,9 +18,9 @@ import { promptTelegramAllowFromForAccount, telegramSetupAdapter } from "./setup
 const channel = "telegram" as const;
 
 export function ensureTelegramDefaultGroupMentionGate(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   accountId: string,
-): OpenClawConfig {
+): AforaConfig {
   const resolved = resolveTelegramAccount({ cfg, accountId });
   const wildcardGroup = resolved.config.groups?.["*"];
   if (wildcardGroup?.requireMention !== undefined) {
@@ -43,7 +43,7 @@ export function ensureTelegramDefaultGroupMentionGate(
   });
 }
 
-export function shouldShowTelegramDmAccessWarning(cfg: OpenClawConfig, accountId: string): boolean {
+export function shouldShowTelegramDmAccessWarning(cfg: AforaConfig, accountId: string): boolean {
   const merged = mergeTelegramAccountConfig(cfg, accountId);
   const policy = merged.dmPolicy ?? "pairing";
   const hasAllowFrom =
@@ -61,8 +61,8 @@ export function buildTelegramDmAccessWarningLines(accountId: string): string[] {
     "Your bot is using DM policy: pairing.",
     "Any Telegram user who discovers the bot can send pairing requests.",
     "For private use, configure an allowlist with your Telegram user id:",
-    "  " + formatCliCommand(`openclaw config set ${configBase}.dmPolicy "allowlist"`),
-    "  " + formatCliCommand(`openclaw config set ${configBase}.allowFrom '["YOUR_USER_ID"]'`),
+    "  " + formatCliCommand(`afora config set ${configBase}.dmPolicy "allowlist"`),
+    "  " + formatCliCommand(`afora config set ${configBase}.allowFrom '["YOUR_USER_ID"]'`),
     `Docs: ${formatDocsLink("/channels/pairing", "channels/pairing")}`,
   ];
 }

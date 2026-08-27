@@ -1,5 +1,5 @@
 // Google Meet injects device/URL labels into the shared node-side browser audio host.
-import { MeetingPlatformAdapter } from "openclaw/plugin-sdk/meeting-runtime";
+import { MeetingPlatformAdapter } from "afora-agent/plugin-sdk/meeting-runtime";
 import {
   DEFAULT_GOOGLE_MEET_AUDIO_INPUT_COMMAND,
   DEFAULT_GOOGLE_MEET_AUDIO_OUTPUT_COMMAND,
@@ -46,7 +46,7 @@ const googleMeetNodeHost = MeetingPlatformAdapter.createNodeHostHandler({
     buildProfileArgs: (profile) => ["--args", `--profile-directory=${profile}`],
     openedStatus: "chrome-opened",
     openedNotes: [
-      "Browser page control is handled by OpenClaw browser automation when using chrome-node.",
+      "Browser page control is handled by Afora browser automation when using chrome-node.",
     ],
   },
 });

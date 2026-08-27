@@ -1,19 +1,19 @@
-import { resolveChannelInboundRouteEnvelope } from "openclaw/plugin-sdk/channel-inbound";
+import { resolveChannelInboundRouteEnvelope } from "afora-agent/plugin-sdk/channel-inbound";
 // Nextcloud Talk plugin module implements inbound behavior.
 import {
   channelIngressRoutes,
   resolveStableChannelMessageIngress,
   type ChannelIngressContextBinding,
-} from "openclaw/plugin-sdk/channel-ingress-runtime";
+} from "afora-agent/plugin-sdk/channel-ingress-runtime";
 import {
   bindIngressLifecycleToReplyOptions,
   resolveChannelStreamingBlockEnabled,
-} from "openclaw/plugin-sdk/channel-outbound";
+} from "afora-agent/plugin-sdk/channel-outbound";
 import {
   normalizeOptionalString,
   normalizeStringEntries,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
-import { sanitizeAssistantVisibleText } from "openclaw/plugin-sdk/text-chunking";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { sanitizeAssistantVisibleText } from "afora-agent/plugin-sdk/text-chunking";
 import {
   GROUP_POLICY_BLOCKED_LABEL,
   resolveAllowlistProviderRuntimeGroupPolicy,
@@ -23,7 +23,7 @@ import {
   resolveDefaultGroupPolicy,
   warnMissingProviderGroupPolicyFallbackOnce,
   type GroupPolicy,
-  type OpenClawConfig,
+  type AforaConfig,
   type OutboundReplyPayload,
   type RuntimeEnv,
 } from "../runtime-api.js";
@@ -159,13 +159,13 @@ export async function handleNextcloudTalkInbound(params: {
   });
   const roomConfig = roomMatch.roomConfig;
   const allowTextCommands = core.channel.commands.shouldHandleTextCommands({
-    cfg: config as OpenClawConfig,
+    cfg: config as AforaConfig,
     surface: CHANNEL_ID,
   });
-  const hasControlCommand = core.channel.text.hasControlCommand(rawBody, config as OpenClawConfig);
+  const hasControlCommand = core.channel.text.hasControlCommand(rawBody, config as AforaConfig);
   const shouldRequireMention = isGroup
     ? resolveNextcloudTalkGroupRequireMention({
-        cfg: config as OpenClawConfig,
+        cfg: config as AforaConfig,
         accountId: account.accountId,
         groupId: roomToken,
       })
@@ -176,7 +176,7 @@ export async function handleNextcloudTalkInbound(params: {
         ((config.channels as Record<string, unknown> | undefined)?.[CHANNEL_ID] ?? undefined) !==
         undefined,
       groupPolicy: account.config.groupPolicy,
-      defaultGroupPolicy: resolveDefaultGroupPolicy(config as OpenClawConfig),
+      defaultGroupPolicy: resolveDefaultGroupPolicy(config as AforaConfig),
     });
   const allowFrom = normalizeStringEntries(account.config.allowFrom);
   const outerGroupAllowFrom = account.config.groupAllowFrom?.length
@@ -196,7 +196,7 @@ export async function handleNextcloudTalkInbound(params: {
         sensitivity: "pii",
         entryIdPrefix: "nextcloud-talk-entry",
       },
-      cfg: config as OpenClawConfig,
+      cfg: config as AforaConfig,
       readStoreAllowFrom: async () =>
         await pairing.readStoreForDmPolicy(CHANNEL_ID, account.accountId),
       subject: { stableId: senderId },
@@ -301,12 +301,12 @@ export async function handleNextcloudTalkInbound(params: {
     return;
   }
 
-  const mentionRegexes = core.channel.mentions.buildMentionRegexes(config as OpenClawConfig);
+  const mentionRegexes = core.channel.mentions.buildMentionRegexes(config as AforaConfig);
   const wasMentioned = mentionRegexes.length
     ? core.channel.mentions.matchesMentionPatterns(rawBody, mentionRegexes)
     : false;
   const { route, buildEnvelope } = resolveChannelInboundRouteEnvelope({
-    cfg: config as OpenClawConfig,
+    cfg: config as AforaConfig,
     channel: CHANNEL_ID,
     accountId: account.accountId,
     peer: {
@@ -373,7 +373,7 @@ export async function handleNextcloudTalkInbound(params: {
   });
 
   await core.channel.inbound.dispatch({
-    cfg: config as OpenClawConfig,
+    cfg: config as AforaConfig,
     channel: CHANNEL_ID,
     accountId: account.accountId,
     route: { agentId: route.agentId, sessionKey: route.sessionKey },

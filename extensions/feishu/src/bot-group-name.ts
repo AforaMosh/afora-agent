@@ -1,7 +1,7 @@
 import {
   asDateTimestampMs,
   resolveExpiresAtMsFromDurationMs,
-} from "openclaw/plugin-sdk/number-runtime";
+} from "afora-agent/plugin-sdk/number-runtime";
 import { feishuGroupNameCache } from "./bot-group-name-state.js";
 import { getChatInfo } from "./chat.js";
 import { createFeishuClient } from "./client.js";

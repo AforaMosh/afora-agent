@@ -18,7 +18,7 @@ import {
   maybeRepairOpenAICodexAuthConfig,
 } from "../doctor-auth-flat-profiles.js";
 import { maybeRepairLegacyOAuthSidecarProfiles } from "../doctor-auth-oauth-sidecar.js";
-import { maybeRepairPluginOpenClawHostLinks } from "../doctor-plugin-host-links.js";
+import { maybeRepairPluginAforaHostLinks } from "../doctor-plugin-host-links.js";
 import { maybeRepairStaleManagedNpmBundledPlugins } from "../doctor-plugin-registry.js";
 import { migrateLegacySkillWorkshopProposals } from "../doctor-skill-workshop-sqlite.js";
 import { maybeRepairGroupAllowFromFallback } from "./shared/allowfrom-fallback-migration.js";
@@ -161,7 +161,7 @@ export async function runDoctorRepairSequence(params: {
     env,
     prompter: { shouldRepair: true },
   });
-  const repairedPluginOpenClawHostLinks = await maybeRepairPluginOpenClawHostLinks({
+  const repairedPluginAforaHostLinks = await maybeRepairPluginAforaHostLinks({
     env,
     prompter: { shouldRepair: true },
   });
@@ -210,7 +210,7 @@ export async function runDoctorRepairSequence(params: {
   const repairedPluginIds = missingConfiguredPluginInstallRepair.repairedPluginIds ?? [];
   if (
     staleManagedNpmBundledPluginRepair ||
-    repairedPluginOpenClawHostLinks ||
+    repairedPluginAforaHostLinks ||
     missingConfiguredPluginInstallRepair.pluginInventoryChanged
   ) {
     // Inventory repair changes the authoritative plugin generation. Replace the

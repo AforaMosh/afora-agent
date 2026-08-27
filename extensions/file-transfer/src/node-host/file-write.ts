@@ -7,7 +7,7 @@ import {
   FsSafeError,
   resolveAbsolutePathForWrite,
   root,
-} from "openclaw/plugin-sdk/security-runtime";
+} from "afora-agent/plugin-sdk/security-runtime";
 import { inspectStrictBase64 } from "../shared/base64.js";
 
 const MAX_CONTENT_BYTES = 16 * 1024 * 1024; // 16 MB

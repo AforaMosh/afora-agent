@@ -2,7 +2,7 @@
 import os from "node:os";
 import path from "node:path";
 import type { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { createBoundedUtf8Tail, decodeBoundedUtf8Tail } from "./bounded-utf8-tail.js";
 import { redactCdpErrorText } from "./cdp.helpers.js";
 import { CHROME_MCP_STDERR_MAX_BYTES } from "./chrome-mcp-contracts.js";

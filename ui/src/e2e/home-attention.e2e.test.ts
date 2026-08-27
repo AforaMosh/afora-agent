@@ -1,6 +1,6 @@
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
-import type { QuestionRecord } from "@openclaw/gateway-protocol";
+import type { QuestionRecord } from "@afora/gateway-protocol";
 import { expect, it } from "vitest";
 import type { GatewaySessionRow, SessionsListResult } from "../api/types.ts";
 import {
@@ -19,8 +19,8 @@ const suite = createControlUiE2eSuite({
 });
 
 const mainSessionKey = "agent:main:main";
-const captureUiProof = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
-const proofVariant = process.env.OPENCLAW_HOME_ATTENTION_PROOF_VARIANT || "candidate";
+const captureUiProof = process.env.AFORA_CAPTURE_UI_PROOF === "1";
+const proofVariant = process.env.AFORA_HOME_ATTENTION_PROOF_VARIANT || "candidate";
 const proofDir = path.join(
   process.cwd(),
   ".artifacts",

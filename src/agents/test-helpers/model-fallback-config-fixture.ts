@@ -3,9 +3,9 @@
  *
  * Builds a minimal config with primary and fallback models for model-selection tests.
  */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 
-export function makeModelFallbackCfg(overrides: Partial<OpenClawConfig> = {}): OpenClawConfig {
+export function makeModelFallbackCfg(overrides: Partial<AforaConfig> = {}): AforaConfig {
   return {
     agents: {
       defaults: {
@@ -16,5 +16,5 @@ export function makeModelFallbackCfg(overrides: Partial<OpenClawConfig> = {}): O
       },
     },
     ...overrides,
-  } as OpenClawConfig;
+  } as AforaConfig;
 }

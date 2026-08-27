@@ -1,5 +1,5 @@
 // Signal doctor resolves ambiguous shipped auto-mode endpoints once and persists a concrete kind.
-import type { ChannelDoctorAdapter } from "openclaw/plugin-sdk/channel-contract";
+import type { ChannelDoctorAdapter } from "afora-agent/plugin-sdk/channel-contract";
 import { normalizeCompatibilityConfig } from "../doctor-contract-api.js";
 import { migrateLegacySignalTransportConfig } from "./config-compat.js";
 

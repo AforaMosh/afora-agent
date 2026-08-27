@@ -39,7 +39,7 @@ describe("worker tunnel manager", () => {
       "session:one",
       7,
     );
-    const localPath = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-worker-sync-test-"));
+    const localPath = await fs.mkdtemp(path.join(os.tmpdir(), "afora-worker-sync-test-"));
     await fs.writeFile(path.join(localPath, ".worktreeinclude"), "cache/*.bin\n");
     await git(localPath, "init");
     await git(localPath, "config", "user.name", "Worker Sync Test");
@@ -86,7 +86,7 @@ describe("worker tunnel manager", () => {
       const transfer = outboundTransfers.at(-1);
       expect(transfer?.argv).toContain("--checksum");
       expect(transfer?.argv).toContain(`${localPath}/`);
-      expect(transfer?.argv.at(-1)).toBe("worker@worker.example.test:openclaw-rsync-destination");
+      expect(transfer?.argv.at(-1)).toBe("worker@worker.example.test:afora-rsync-destination");
       expect(transfer?.argv).not.toContain("--protect-args");
       expect(transfer?.argv.some((arg) => arg.startsWith("--files-from="))).toBe(true);
       const remoteShell = transfer?.argv[transfer.argv.indexOf("-e") + 1];
@@ -156,7 +156,7 @@ describe("worker tunnel manager", () => {
       1,
     );
     const manifestRef = `sha256:${"c".repeat(64)}`;
-    const localPath = tempDirs.make("openclaw-worker-fallback-sync-");
+    const localPath = tempDirs.make("afora-worker-fallback-sync-");
     await fs.writeFile(path.join(localPath, "artifact.txt"), "transfer me\n");
     const fake = fakeRunner((argv, options) => {
       if (
@@ -220,9 +220,9 @@ describe("worker tunnel manager", () => {
   });
 
   it("rejects an unrelated setup path before transfer", async () => {
-    const unrelated = await fs.realpath(tempDirs.make("openclaw-worker-unrelated-"));
+    const unrelated = await fs.realpath(tempDirs.make("afora-worker-unrelated-"));
     const remoteRelative = [
-      ".openclaw-worker/workspaces",
+      ".afora-worker/workspaces",
       stableWorkerPathComponent("worker:malformed-setup", 16),
       stableWorkerPathComponent("session:malformed", 32),
       "1",
@@ -231,14 +231,14 @@ describe("worker tunnel manager", () => {
     await fs.mkdir(attackerWorkspace, { recursive: true });
     const sentinel = path.join(attackerWorkspace, "sentinel.txt");
     await fs.writeFile(sentinel, "keep\n");
-    const localPath = tempDirs.make("openclaw-worker-malformed-setup-");
+    const localPath = tempDirs.make("afora-worker-malformed-setup-");
     await fs.writeFile(path.join(localPath, "local.txt"), "local\n");
     const fake = fakeRunner((_argv, options) =>
       typeof options.input === "string" &&
       options.input.includes("unsafe worker workspace directory")
         ? success(
             `${JSON.stringify({
-              tag: "openclaw-workspace-setup-v1",
+              tag: "afora-workspace-setup-v1",
               canonicalHome: "/home/worker",
               canonicalWorkspace: attackerWorkspace,
             })}\n`,
@@ -266,7 +266,7 @@ describe("worker tunnel manager", () => {
   it.skipIf(process.platform === "win32")(
     "serializes fallback reset behind the live remote receiver",
     async () => {
-      const root = tempDirs.make("openclaw-worker-convergent-sync-");
+      const root = tempDirs.make("afora-worker-convergent-sync-");
       const localPath = path.join(root, "local");
       const remoteHome = path.join(root, "remote-home");
       const bin = path.join(root, "bin");
@@ -290,7 +290,7 @@ describe("worker tunnel manager", () => {
       const fakeRsync = path.join(bin, "rsync");
       await fs.writeFile(
         fakeRsync,
-        '#!/bin/sh\nset -eu\nprintf \'%s\\n\' "$$" > "$OPENCLAW_TEST_RECEIVER_MARKER"\nread -r _ < "$OPENCLAW_TEST_RECEIVER_GATE"\nprintf \'late stale write\\n\' > "$OPENCLAW_TEST_RECEIVER_WORKSPACE/stale-late.txt"\n',
+        '#!/bin/sh\nset -eu\nprintf \'%s\\n\' "$$" > "$AFORA_TEST_RECEIVER_MARKER"\nread -r _ < "$AFORA_TEST_RECEIVER_GATE"\nprintf \'late stale write\\n\' > "$AFORA_TEST_RECEIVER_WORKSPACE/stale-late.txt"\n',
         { mode: 0o755 },
       );
 
@@ -352,10 +352,10 @@ describe("worker tunnel manager", () => {
             env: {
               ...process.env,
               HOME: canonicalRemoteHome,
-              OPENCLAW_TEST_RECEIVER_PATH: `${bin}:${process.env.PATH ?? ""}`,
-              OPENCLAW_TEST_RECEIVER_GATE: receiverGate,
-              OPENCLAW_TEST_RECEIVER_MARKER: receiverMarker,
-              OPENCLAW_TEST_RECEIVER_WORKSPACE: remoteWorkspaceDir,
+              AFORA_TEST_RECEIVER_PATH: `${bin}:${process.env.PATH ?? ""}`,
+              AFORA_TEST_RECEIVER_GATE: receiverGate,
+              AFORA_TEST_RECEIVER_MARKER: receiverMarker,
+              AFORA_TEST_RECEIVER_WORKSPACE: remoteWorkspaceDir,
             },
             stdio: ["ignore", "ignore", "pipe"],
           });
@@ -466,7 +466,7 @@ describe("worker tunnel manager", () => {
         await expect(
           fs.readFile(path.join(receiverWorkspace!, "current.txt"), "utf8"),
         ).resolves.toBe("current\n");
-        const manifestDirectory = path.join(remoteHome, ".openclaw-worker/manifests");
+        const manifestDirectory = path.join(remoteHome, ".afora-worker/manifests");
         const publishedManifests = await fs.readdir(manifestDirectory).catch((error: unknown) => {
           if ((error as NodeJS.ErrnoException).code === "ENOENT") {
             return [];
@@ -502,7 +502,7 @@ describe("worker tunnel manager", () => {
 
         const digest = result.manifestRef.slice("sha256:".length);
         const rawManifest = await fs.readFile(
-          path.join(remoteHome, ".openclaw-worker/manifests", `${digest}.json`),
+          path.join(remoteHome, ".afora-worker/manifests", `${digest}.json`),
           "utf8",
         );
         const manifest = parseWorkerWorkspaceManifest(rawManifest, result.manifestRef);
@@ -529,7 +529,7 @@ describe("worker tunnel manager", () => {
         }
         expect(fake.runs.some((entry) => entry.argv.at(-1)?.endsWith("'true'"))).toBe(false);
         const residue = (await fs.readdir(path.dirname(result.remoteWorkspaceDir))).filter((name) =>
-          name.startsWith(".openclaw-accepted-"),
+          name.startsWith(".afora-accepted-"),
         );
         expect(residue).toEqual([]);
       } finally {
@@ -553,7 +553,7 @@ describe("worker tunnel manager", () => {
   it.skipIf(process.platform === "win32")(
     "fails closed when the managed workspace owner drifts before fallback reset",
     async () => {
-      const root = tempDirs.make("openclaw-worker-retry-owner-");
+      const root = tempDirs.make("afora-worker-retry-owner-");
       const localPath = path.join(root, "local");
       const remoteHome = path.join(root, "remote-home");
       const unrelated = path.join(root, "unrelated");
@@ -643,7 +643,7 @@ describe("worker tunnel manager", () => {
       "session:three",
       3,
     );
-    const localPath = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-worker-head-probe-"));
+    const localPath = await fs.mkdtemp(path.join(os.tmpdir(), "afora-worker-head-probe-"));
     await fs.mkdir(path.join(localPath, ".git"));
     const fake = fakeRunner((argv, options) => {
       if (argv.includes("--show-toplevel")) {
@@ -685,7 +685,7 @@ describe("worker tunnel manager", () => {
       "session:four",
       4,
     );
-    const localPath = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-worker-root-probe-"));
+    const localPath = await fs.mkdtemp(path.join(os.tmpdir(), "afora-worker-root-probe-"));
     await fs.mkdir(path.join(localPath, ".git"));
     const fake = fakeRunner((argv, options) => {
       if (argv.includes("--show-toplevel")) {
@@ -721,7 +721,7 @@ describe("worker tunnel manager", () => {
   });
 
   it("materializes a large dirty git workspace as a credential-free commit-capable clone", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-worker-git-sync-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-worker-git-sync-"));
     const localPath = path.join(root, "local");
     const remoteHome = path.join(root, "remote-home");
     await Promise.all([
@@ -897,7 +897,7 @@ describe("worker tunnel manager", () => {
 
       const manifestPath = path.join(
         remoteHome,
-        ".openclaw-worker/manifests",
+        ".afora-worker/manifests",
         `${result.manifestRef.slice("sha256:".length)}.json`,
       );
       const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8")) as {
@@ -928,7 +928,7 @@ describe("worker tunnel manager", () => {
   }, 60_000);
 
   it("mirrors plain workspaces and rejects escaping symlinks in a git overlay", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-worker-sync-modes-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-worker-sync-modes-"));
     const plainPath = path.join(root, "plain");
     const gitPath = path.join(root, "git");
     const remoteHome = path.join(root, "remote-home");

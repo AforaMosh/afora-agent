@@ -139,14 +139,14 @@ describe("renderFileAttachmentOutcome", () => {
       outcome: {
         kind: "unsupported-format",
         mime: "application/msword",
-        localPath: "C:\\Users\\Operator\\AppData\\openclaw\\media inbound\\report.doc",
+        localPath: "C:\\Users\\Operator\\AppData\\afora\\media inbound\\report.doc",
       },
       expected: [
         "[Unsupported document format: application/msword. The approved local file path follows as external attachment metadata. Its text is not extracted automatically. Read the file yourself with your tools before answering; do not ask the user to paste the contents.]",
         '<<<EXTERNAL_UNTRUSTED_CONTENT id="<id>">>>',
         "Source: External",
         "---",
-        "C:\\Users\\Operator\\AppData\\openclaw\\media inbound\\report.doc",
+        "C:\\Users\\Operator\\AppData\\afora\\media inbound\\report.doc",
         '<<<END_EXTERNAL_UNTRUSTED_CONTENT id="<id>">>>',
       ].join("\n"),
     },

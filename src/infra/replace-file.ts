@@ -1,4 +1,4 @@
-// Wraps fs-safe atomic replacement and move helpers for OpenClaw install flows.
+// Wraps fs-safe atomic replacement and move helpers for Afora install flows.
 import "./fs-safe-defaults.js";
 import { replaceFileAtomic as replaceFileAtomicBase } from "@openclaw/fs-safe/atomic";
 

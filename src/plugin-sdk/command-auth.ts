@@ -5,7 +5,7 @@
  */
 
 import type { ChannelId } from "../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   expandAllowFromWithAccessGroups,
   type AccessGroupMembershipResolver,
@@ -108,10 +108,10 @@ export type { StoredModelOverride } from "../auto-reply/reply/stored-model-overr
  * Inputs for legacy sender command authorization.
  * Kept for plugins that still compose command auth from DM/group allowlists instead of channel ingress.
  *
- * @deprecated Use `resolveChannelMessageIngress` from `openclaw/plugin-sdk/channel-ingress-runtime`.
+ * @deprecated Use `resolveChannelMessageIngress` from `afora/plugin-sdk/channel-ingress-runtime`.
  */
 export type ResolveSenderCommandAuthorizationParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   rawBody: string;
   isGroup: boolean;
   dmPolicy: string;
@@ -123,7 +123,7 @@ export type ResolveSenderCommandAuthorizationParams = {
   accountId?: string;
   resolveAccessGroupMembership?: AccessGroupMembershipResolver;
   readAllowFromStore: () => Promise<string[]>;
-  shouldComputeCommandAuthorized: (rawBody: string, cfg: OpenClawConfig) => boolean;
+  shouldComputeCommandAuthorized: (rawBody: string, cfg: AforaConfig) => boolean;
   /** @deprecated Command authorization is resolved by channel ingress. Kept for runtime injection compatibility. */
   resolveCommandAuthorizedFromAuthorizers?: (params: {
     useAccessGroups: boolean;
@@ -134,10 +134,10 @@ export type ResolveSenderCommandAuthorizationParams = {
 /**
  * Injectable runtime hooks for legacy command authorization tests and channel adapters.
  *
- * @deprecated Use `resolveChannelMessageIngress` from `openclaw/plugin-sdk/channel-ingress-runtime`.
+ * @deprecated Use `resolveChannelMessageIngress` from `afora/plugin-sdk/channel-ingress-runtime`.
  */
 export type CommandAuthorizationRuntime = {
-  shouldComputeCommandAuthorized: (rawBody: string, cfg: OpenClawConfig) => boolean;
+  shouldComputeCommandAuthorized: (rawBody: string, cfg: AforaConfig) => boolean;
   resolveCommandAuthorizedFromAuthorizers: (params: {
     useAccessGroups: boolean;
     authorizers: Array<{ configured: boolean; allowed: boolean }>;
@@ -147,7 +147,7 @@ export type CommandAuthorizationRuntime = {
 /**
  * Legacy command authorization params with runtime hooks grouped for dependency injection.
  *
- * @deprecated Use `resolveChannelMessageIngress` from `openclaw/plugin-sdk/channel-ingress-runtime`.
+ * @deprecated Use `resolveChannelMessageIngress` from `afora/plugin-sdk/channel-ingress-runtime`.
  */
 export type ResolveSenderCommandAuthorizationWithRuntimeParams = Omit<
   ResolveSenderCommandAuthorizationParams,
@@ -159,7 +159,7 @@ export type ResolveSenderCommandAuthorizationWithRuntimeParams = Omit<
 /**
  * Classify direct-DM command handling after sender authorization has been computed.
  *
- * @deprecated Use `resolveChannelMessageIngress` from `openclaw/plugin-sdk/channel-ingress-runtime`.
+ * @deprecated Use `resolveChannelMessageIngress` from `afora/plugin-sdk/channel-ingress-runtime`.
  */
 export function resolveDirectDmAuthorizationOutcome(params: {
   isGroup: boolean;
@@ -181,7 +181,7 @@ export function resolveDirectDmAuthorizationOutcome(params: {
 /**
  * Resolve legacy command authorization using an injected runtime object.
  *
- * @deprecated Use `resolveChannelMessageIngress` from `openclaw/plugin-sdk/channel-ingress-runtime`.
+ * @deprecated Use `resolveChannelMessageIngress` from `afora/plugin-sdk/channel-ingress-runtime`.
  */
 export async function resolveSenderCommandAuthorizationWithRuntime(
   params: ResolveSenderCommandAuthorizationWithRuntimeParams,
@@ -197,7 +197,7 @@ export async function resolveSenderCommandAuthorizationWithRuntime(
  * Resolve whether a sender may run slash/control commands under legacy DM/group policy.
  * Returns effective allowlists so callers can report the exact source set used for authorization.
  *
- * @deprecated Use `resolveChannelMessageIngress` from `openclaw/plugin-sdk/channel-ingress-runtime`.
+ * @deprecated Use `resolveChannelMessageIngress` from `afora/plugin-sdk/channel-ingress-runtime`.
  */
 export async function resolveSenderCommandAuthorization(
   params: ResolveSenderCommandAuthorizationParams,

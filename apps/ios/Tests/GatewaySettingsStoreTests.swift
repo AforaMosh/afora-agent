@@ -1,8 +1,8 @@
 import Foundation
-import OpenClawKit
+import AforaKit
 import Security
 import Testing
-@testable import OpenClaw
+@testable import Afora
 
 private struct KeychainEntry: Hashable {
     let service: String
@@ -10,7 +10,7 @@ private struct KeychainEntry: Hashable {
 }
 
 private let gatewayService = GatewaySettingsStore._testGatewayService
-private let nodeService = "ai.openclawfoundation.app.node"
+private let nodeService = "ai.aforafoundation.app.node"
 private let instanceIdEntry = KeychainEntry(service: nodeService, account: "instanceId")
 private let preferredGatewayEntry = KeychainEntry(service: gatewayService, account: "preferredStableID")
 private let lastGatewayEntry = KeychainEntry(service: gatewayService, account: "lastDiscoveredStableID")
@@ -366,7 +366,7 @@ private func withLastGatewaySnapshot(_ body: () -> Void) {
 
     @Test func `shared tls certificate does not alias distinct routes`() {
         let instanceID = "tls-owner-\(UUID().uuidString)"
-        let discoveredID = "bonjour|_openclaw._tcp|local|gateway-\(UUID().uuidString)"
+        let discoveredID = "bonjour|_afora._tcp|local|gateway-\(UUID().uuidString)"
         let manualID = "manual|gateway-\(UUID().uuidString).local|443"
         let fingerprint = "AA:BB:CC:DD"
         defer {
@@ -695,7 +695,7 @@ private func withLastGatewaySnapshot(_ body: () -> Void) {
                 host: "z.example.com",
                 port: 443,
                 useTLS: true,
-                contextPath: "/openclaw-gateway",
+                contextPath: "/afora-gateway",
                 lastConnectedAtMs: nil)
             let gatewayA = GatewaySettingsStore.GatewayRegistryEntry(
                 stableID: "bonjour|alpha",
@@ -717,7 +717,7 @@ private func withLastGatewaySnapshot(_ body: () -> Void) {
             #expect(registry.connectedStableIDs == [gatewayB.stableID])
             #expect(GatewaySettingsStore.connectedGatewayEntries().map(\.stableID) == [gatewayB.stableID])
             #expect(registry.entries.last?.lastConnectedAtMs == 1234)
-            #expect(registry.entries.last?.contextPath == "/openclaw-gateway")
+            #expect(registry.entries.last?.contextPath == "/afora-gateway")
             #expect(GatewaySettingsStore.upsertGatewayRegistryEntry(gatewayA))
             #expect(KeychainStore.loadString(service: gatewayService, account: "gateway-registry") == firstJSON)
 

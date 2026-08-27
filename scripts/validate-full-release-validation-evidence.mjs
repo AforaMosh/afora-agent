@@ -241,7 +241,7 @@ export function validateFullReleaseValidationEvidence({
       targetSha: expectedTargetSha,
     });
     if (
-      strictEvidence?.schema !== "openclaw.release-validation-evidence/v3" ||
+      strictEvidence?.schema !== "afora.release-validation-evidence/v3" ||
       strictEvidence.valid !== true ||
       scalarString(strictEvidence.current?.runId) !== String(expectedRunId) ||
       strictEvidence.current?.targetSha !== expectedTargetSha ||

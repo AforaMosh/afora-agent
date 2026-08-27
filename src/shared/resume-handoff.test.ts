@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { decodeResumeHandoff, encodeResumeHandoff } from "./resume-handoff.js";
 
-const gatewayUrl = "wss://gateway.example/openclaw";
+const gatewayUrl = "wss://gateway.example/afora";
 const maxEncodedLength = 4096;
 
 function encodeBytes(bytes: Uint8Array): string {
@@ -26,7 +26,7 @@ function decodeText(encoded: string): string {
 describe("resume handoff contract", () => {
   it("round-trips hostile cross-shell fields through only the inert base64url alphabet", () => {
     const sessionKey = "agent:runner:hostile-'\"$&;|<>^()%![]{}\\`-%PATH%-��";
-    const hostileGatewayUrl = "wss://gateway.example/openclaw/$&;=()+,![]{}'`/%25PATH%25/%E2%98%83";
+    const hostileGatewayUrl = "wss://gateway.example/afora/$&;=()+,![]{}'`/%25PATH%25/%E2%98%83";
 
     const encoded = encodeResumeHandoff({ sessionKey, gatewayUrl: hostileGatewayUrl });
 
@@ -52,7 +52,7 @@ describe("resume handoff contract", () => {
     expect(decodeResumeHandoff(encoded)).toEqual({ version: 1, sessionKey, gatewayUrl });
   });
 
-  it.each(["WSS://gateway.example/openclaw", "WsS://gateway.example/openclaw"])(
+  it.each(["WSS://gateway.example/afora", "WsS://gateway.example/afora"])(
     "preserves a mixed-case WebSocket scheme: %s",
     (mixedCaseGatewayUrl) => {
       const sessionKey = "agent:main:mixed-case-scheme";

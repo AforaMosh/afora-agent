@@ -10,7 +10,7 @@ import {
   NODE_PAIRING_SETUP_BOOTSTRAP_PROFILE,
   PAIRING_SETUP_BOOTSTRAP_PROFILE,
 } from "../shared/device-bootstrap-profile.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { createTrackedTempDirs } from "../test-utils/tracked-temp-dirs.js";
 import {
   broadcastSetupHandoffCompletion,
@@ -24,7 +24,7 @@ import type { GatewayWsClient } from "./server/ws-types.js";
 const tempDirs = createTrackedTempDirs();
 
 afterEach(async () => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   await tempDirs.cleanup();
 });
 
@@ -34,7 +34,7 @@ describe("device pair setup completion", () => {
     ["limited", PAIRING_SETUP_BOOTSTRAP_PROFILE],
     ["node", NODE_PAIRING_SETUP_BOOTSTRAP_PROFILE],
   ] as const)("broadcasts authoritative %s completion metadata", async (access, profile) => {
-    const baseDir = await tempDirs.make(`openclaw-setup-completion-${access}-`);
+    const baseDir = await tempDirs.make(`afora-setup-completion-${access}-`);
     const paired: PairedDevice = {
       deviceId: "device-123",
       publicKey: "public-key-123",
@@ -91,7 +91,7 @@ describe("device pair setup completion", () => {
   // socket silently loses the only success frame, so the recorded completion
   // has to survive it or the operator sees expiry after a successful pairing.
   it("keeps the completion recoverable when a slow subscriber drops the frame", async () => {
-    const baseDir = await tempDirs.make("openclaw-setup-completion-slow-");
+    const baseDir = await tempDirs.make("afora-setup-completion-slow-");
     const slowSocket = {
       bufferedAmount: MAX_BUFFERED_BYTES + 1,
       send: vi.fn(),
@@ -145,7 +145,7 @@ describe("device pair setup completion", () => {
   });
 
   it("ignores generic bootstrap records without setup correlation", async () => {
-    const baseDir = await tempDirs.make("openclaw-setup-completion-generic-");
+    const baseDir = await tempDirs.make("afora-setup-completion-generic-");
     persistDeviceBootstrapTokenRecords(
       {
         generic: {

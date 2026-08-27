@@ -1,7 +1,7 @@
 // Covers assistant error formatting for streaming, sandbox, and context errors.
-import type { AssistantMessage } from "openclaw/plugin-sdk/llm";
+import type { AssistantMessage } from "afora-agent/plugin-sdk/llm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { MALFORMED_STREAMING_FRAGMENT_ERROR_MESSAGE } from "../../shared/assistant-error-format.js";
 import { makeAssistantMessageFixture } from "../test-helpers/assistant-message-fixtures.js";
 import { formatAssistantErrorText } from "./error-text.js";
@@ -60,7 +60,7 @@ describe("formatAssistantErrorText streaming JSON parse classification", () => {
   it("audits a sandbox tool-policy block once per assistant error", () => {
     // Formatting may be called multiple times for the same error; audit logs
     // should stay deduplicated per blocked assistant error.
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           sandbox: { mode: "non-main", scope: "agent" },

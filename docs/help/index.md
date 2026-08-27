@@ -12,7 +12,7 @@ Fastest path to unstuck, by symptom:
 - [Debugging](/help/debugging) - watch mode, raw streams, dev profile
 - [Install sanity](/install/node#troubleshooting) - Node / npm / PATH checks
 - [Gateway troubleshooting](/gateway/troubleshooting) - gateway-specific issues
-- [Doctor](/gateway/doctor) - `openclaw doctor`: health checks, config migrations, repair steps
+- [Doctor](/gateway/doctor) - `afora doctor`: health checks, config migrations, repair steps
 
 ## FAQ
 
@@ -22,7 +22,7 @@ Fastest path to unstuck, by symptom:
 
 ## Diagnostics
 
-- [Environment variables](/help/environment) - where OpenClaw loads env vars and precedence
+- [Environment variables](/help/environment) - where Afora loads env vars and precedence
 - [Diagnostics flags](/diagnostics/flags) - runtime diagnostics and verbose modes
 - [Node + tsx crash](/debug/node-issue) - specific Node / tsx runtime crash scenarios
 
@@ -34,6 +34,6 @@ Fastest path to unstuck, by symptom:
 
 ## Community and meta
 
-- [OpenClaw lore](/start/lore) - the story
+- [Afora lore](/start/lore) - the story
 - [Docs hubs](/start/hubs) - how this documentation is organized
 - [Docs directory](/start/docs-directory) - full file map

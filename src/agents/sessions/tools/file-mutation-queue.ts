@@ -8,7 +8,7 @@ import { resolve } from "node:path";
 import { resolveGlobalMap } from "../../../shared/global-singleton.js";
 
 const fileMutationTails = resolveGlobalMap<string, Promise<void>>(
-  Symbol.for("openclaw.fileMutationTails"),
+  Symbol.for("afora.fileMutationTails"),
   "close-only",
 );
 

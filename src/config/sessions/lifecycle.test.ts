@@ -3,10 +3,10 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  resolveOpenClawAgentSqlitePath,
-} from "../../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  resolveAforaAgentSqlitePath,
+} from "../../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import {
   hasTerminalMainSessionTranscriptNewerThanRegistry,
   hasTerminalMainSessionTranscriptNewerThanRegistrySync,
@@ -24,13 +24,13 @@ describe("terminal main session transcript freshness", () => {
   let storePath: string;
 
   beforeEach(() => {
-    stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-session-lifecycle-"));
+    stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-session-lifecycle-"));
     storePath = path.join(stateDir, "agents", "main", "sessions", "sessions.json");
   });
 
   afterEach(() => {
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     fs.rmSync(stateDir, { recursive: true, force: true });
   });
 
@@ -46,9 +46,9 @@ describe("terminal main session transcript freshness", () => {
     const sessionEntry = {
       sessionFile:
         params.sessionFile ??
-        `sqlite:main:${sessionId}:${resolveOpenClawAgentSqlitePath({
+        `sqlite:main:${sessionId}:${resolveAforaAgentSqlitePath({
           agentId: "main",
-          env: { OPENCLAW_STATE_DIR: stateDir },
+          env: { AFORA_STATE_DIR: stateDir },
         })}`,
       sessionId,
       updatedAt: params.updatedAt,

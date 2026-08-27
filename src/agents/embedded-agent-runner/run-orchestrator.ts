@@ -1,10 +1,10 @@
 /**
  * Embedded-agent run orchestration implementation.
  */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { SILENT_REPLY_TOKEN } from "../../auto-reply/tokens.js";
 import { getRuntimeConfigSnapshot } from "../../config/config.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { revokeMessageActionTurnCapability } from "../../gateway/message-action-turn-capability.js";
 import {
   captureAgentRunLifecycleGeneration,
@@ -74,7 +74,7 @@ import { assertAgentHarnessRunAdmission, backfillSessionKey } from "./run/sessio
 import { prepareEmbeddedSessionActiveProjectKeys } from "./session-prompt-state.js";
 import type { EmbeddedAgentRunResult } from "./types.js";
 
-const EMPTY_EMBEDDED_AGENT_CONFIG: OpenClawConfig = Object.freeze({});
+const EMPTY_EMBEDDED_AGENT_CONFIG: AforaConfig = Object.freeze({});
 
 export function runEmbeddedAgent(
   paramsInput: RunEmbeddedAgentParams,

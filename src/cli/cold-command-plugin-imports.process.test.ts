@@ -11,7 +11,7 @@ import {
 } from "../plugins/test-helpers/cold-plugin-fixtures.js";
 
 const execFileAsync = promisify(execFile);
-const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-cold-commands-"));
+const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-cold-commands-"));
 
 afterAll(() => {
   fs.rmSync(tempRoot, { recursive: true, force: true });
@@ -59,14 +59,14 @@ it.each(cases)(
       fs.writeFileSync(
         path.join(memoryOwnerDir, "package.json"),
         JSON.stringify({
-          name: "@example/openclaw-memory-owner",
+          name: "@example/afora-memory-owner",
           version: "1.0.0",
           type: "commonjs",
-          openclaw: { extensions: ["./index.cjs"] },
+          afora: { extensions: ["./index.cjs"] },
         }),
       );
       fs.writeFileSync(
-        path.join(memoryOwnerDir, "openclaw.plugin.json"),
+        path.join(memoryOwnerDir, "afora.plugin.json"),
         JSON.stringify({
           id: "memory-owner",
           name: "Memory Owner",
@@ -93,7 +93,7 @@ it.each(cases)(
       );
     }
     fs.mkdirSync(stateDir, { recursive: true });
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     fs.writeFileSync(
       configPath,
       JSON.stringify({
@@ -119,13 +119,13 @@ it.each(cases)(
           NODE_DISABLE_COMPILE_CACHE: "1",
           NODE_ENV: undefined,
           VITEST: undefined,
-          OPENCLAW_CONFIG_PATH: configPath,
+          AFORA_CONFIG_PATH: configPath,
           MEMORY_OWNER_MARKER: path.join(root, "memory-owner-loaded"),
-          OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-          OPENCLAW_DEV_SOURCE_ROOT: path.resolve("."),
-          OPENCLAW_HOME: path.join(root, "home"),
-          OPENCLAW_NO_RESPAWN: "1",
-          OPENCLAW_STATE_DIR: stateDir,
+          AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+          AFORA_DEV_SOURCE_ROOT: path.resolve("."),
+          AFORA_HOME: path.join(root, "home"),
+          AFORA_NO_RESPAWN: "1",
+          AFORA_STATE_DIR: stateDir,
         },
         maxBuffer: 4 * 1024 * 1024,
         timeout: 60_000,

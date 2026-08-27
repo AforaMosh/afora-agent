@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { isRecord } from "../utils.js";
 // Resolves a channel plugin's default account with strict or read-only diagnostics.
@@ -43,7 +43,7 @@ function formatContextDiagnostic(params: {
 /** Resolve default channel account state for commands that need enabled/configured checks. */
 export async function resolveDefaultChannelAccountContext(
   plugin: ChannelPlugin,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   options?: { mode?: ChannelAccountContextMode; commandName?: string },
 ): Promise<ChannelDefaultAccountContext> {
   const mode = options?.mode ?? "strict";

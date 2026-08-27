@@ -1,6 +1,6 @@
 // Slack plugin module implements token behavior.
 import type { AuthTestResponse } from "@slack/web-api";
-import { normalizeResolvedSecretInputString } from "openclaw/plugin-sdk/secret-input";
+import { normalizeResolvedSecretInputString } from "afora-agent/plugin-sdk/secret-input";
 
 export function formatSlackBotTokenIdentityWarning(params: {
   auth: Pick<AuthTestResponse, "bot_id" | "user_id">;

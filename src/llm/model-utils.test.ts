@@ -1,4 +1,4 @@
-import { clampThinkingLevel, getSupportedThinkingLevels } from "@openclaw/ai/internal/runtime";
+import { clampThinkingLevel, getSupportedThinkingLevels } from "@afora/ai/internal/runtime";
 import { describe, expect, it } from "vitest";
 import type { Model } from "./types.js";
 

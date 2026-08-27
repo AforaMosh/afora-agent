@@ -1,4 +1,4 @@
-import type { AgentPlanStep } from "openclaw/plugin-sdk/channel-outbound";
+import type { AgentPlanStep } from "afora-agent/plugin-sdk/channel-outbound";
 import type { CodexThreadItem, JsonValue } from "./protocol.js";
 import type { CodexRemoteWorkspaceFileReader } from "./remote-workspace-media.js";
 import type { CodexTrajectoryRecorder } from "./trajectory.js";

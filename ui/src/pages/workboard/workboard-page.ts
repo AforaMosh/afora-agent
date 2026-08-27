@@ -28,7 +28,7 @@ import {
   type WorkboardUiState,
   WORKBOARD_CHANGED_EVENT,
 } from "../../lib/workboard/index.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 import { matchesAgentScope } from "./agent-filter.ts";
 import { matchesBoardFilter, WORKBOARD_ALL_BOARDS_FILTER } from "./board-filter.ts";
@@ -52,7 +52,7 @@ function reconcileCardOverlays(
   }
 }
 
-class WorkboardPage extends OpenClawLightDomElement {
+class WorkboardPage extends AforaLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
   private context?: ApplicationContext;
 
@@ -423,6 +423,6 @@ class WorkboardPage extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-workboard-page")) {
-  customElements.define("openclaw-workboard-page", WorkboardPage);
+if (!customElements.get("afora-workboard-page")) {
+  customElements.define("afora-workboard-page", WorkboardPage);
 }

@@ -8,7 +8,7 @@ import {
   resolveConfigSnapshotHash,
 } from "../../config/config.js";
 import { extractDeliveryInfo } from "../../config/sessions.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   formatDoctorNonInteractiveHint,
   type RestartSentinelPayload,
@@ -54,7 +54,7 @@ function normalizeTrustedProxyAuthForCompare(auth: ReturnType<typeof resolveGate
 }
 
 /** Compares the effective shared Gateway auth surface that active clients use. */
-export function didSharedGatewayAuthChange(prev: OpenClawConfig, next: OpenClawConfig): boolean {
+export function didSharedGatewayAuthChange(prev: AforaConfig, next: AforaConfig): boolean {
   const prevResolvedAuth = resolveGatewayAuth({
     authConfig: prev.gateway?.auth,
     env: process.env,
@@ -133,9 +133,9 @@ function projectAuthoredValuesOntoRuntimeOverlay(params: {
 
 /** Compares against the active secrets-expanded config when one is available. */
 export function didActiveSharedGatewayAuthChange(params: {
-  fallbackPrev: OpenClawConfig;
-  fallbackSource?: OpenClawConfig;
-  next: OpenClawConfig;
+  fallbackPrev: AforaConfig;
+  fallbackSource?: AforaConfig;
+  next: AforaConfig;
 }): boolean {
   const active = getActiveSecretsRuntimeSnapshotState();
   if (!active) {
@@ -147,16 +147,16 @@ export function didActiveSharedGatewayAuthChange(params: {
   const fallbackGateway = params.fallbackPrev.gateway;
   const selectOwnedGatewayValue = <Key extends "auth" | "tailscale" | "trustedProxies">(
     key: Key,
-  ): NonNullable<OpenClawConfig["gateway"]>[Key] =>
+  ): NonNullable<AforaConfig["gateway"]>[Key] =>
     currentSourceGateway && Object.hasOwn(currentSourceGateway, key)
       ? (projectAuthoredValuesOntoRuntimeOverlay({
           source: currentSourceGateway[key],
           activeSource: activeSourceGateway?.[key],
           active: activeGateway?.[key],
           fallback: fallbackGateway?.[key],
-        }) as NonNullable<OpenClawConfig["gateway"]>[Key])
+        }) as NonNullable<AforaConfig["gateway"]>[Key])
       : fallbackGateway?.[key];
-  const activeSharedAuthConfig: OpenClawConfig = {
+  const activeSharedAuthConfig: AforaConfig = {
     ...params.fallbackPrev,
     gateway: {
       ...fallbackGateway,
@@ -183,7 +183,7 @@ function queueSharedGatewayAuthDisconnect(
 
 function queueSharedGatewayAuthGenerationRefresh(
   shouldRefresh: boolean,
-  nextConfig: OpenClawConfig,
+  nextConfig: AforaConfig,
   context?: GatewayRequestContext,
 ): void {
   if (!shouldRefresh) {
@@ -196,7 +196,7 @@ function queueSharedGatewayAuthGenerationRefresh(
 
 function resolveConfigRestartRequirement(params: {
   changedPaths: string[];
-  nextConfig: OpenClawConfig;
+  nextConfig: AforaConfig;
 }): { requiresRestart: boolean; scheduleDirectRestart: boolean } {
   const reloadSettings = resolveGatewayReloadSettings(params.nextConfig);
   const plan = buildGatewayReloadPlan(params.changedPaths, { candidateConfig: params.nextConfig });
@@ -281,12 +281,12 @@ async function tryWriteRestartSentinelPayload(payload: RestartSentinelPayload): 
 export async function commitGatewayConfigWrite(params: {
   snapshot: ConfigWriteSnapshot;
   writeOptions: ConfigWriteOptions;
-  nextConfig: OpenClawConfig;
+  nextConfig: AforaConfig;
   context?: GatewayRequestContext;
   disconnectSharedAuthClients?: boolean;
 }): Promise<{
   path: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   hash: string | null;
   queueFollowUp: () => void;
 }> {
@@ -330,7 +330,7 @@ export async function resolveGatewayConfigRestartWriteResult(params: {
   mode: "config.patch" | "config.apply";
   configPath: string;
   changedPaths: string[];
-  nextConfig: OpenClawConfig;
+  nextConfig: AforaConfig;
   actor: ControlPlaneActor;
   context?: GatewayRequestContext;
 }): Promise<{

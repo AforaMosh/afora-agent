@@ -1,15 +1,15 @@
 import {
   createChannelPartialDeliveryError,
   isChannelPartialDeliveryError,
-} from "openclaw/plugin-sdk/channel-inbound";
-import { normalizeMessagePresentation } from "openclaw/plugin-sdk/interactive-runtime";
+} from "afora-agent/plugin-sdk/channel-inbound";
+import { normalizeMessagePresentation } from "afora-agent/plugin-sdk/interactive-runtime";
 import {
   isFastModeAutoProgressPayload,
   isReplyPayloadNonTerminalToolErrorWarning,
   resolveSendableOutboundReplyParts,
   type ReplyPayload,
-} from "openclaw/plugin-sdk/reply-payload";
-import { danger } from "openclaw/plugin-sdk/runtime-env";
+} from "afora-agent/plugin-sdk/reply-payload";
+import { danger } from "afora-agent/plugin-sdk/runtime-env";
 import type { TelegramBotDeps } from "./bot-deps.js";
 import {
   applyTextToPayload,

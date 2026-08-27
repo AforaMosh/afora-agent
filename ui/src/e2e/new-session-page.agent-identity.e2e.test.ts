@@ -9,8 +9,8 @@ import {
 } from "./new-session-page.test-support.ts";
 
 const suite = createNewSessionPageE2eSuite();
-const captureProof = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
-const proofStage = process.env.OPENCLAW_AGENT_IDENTITY_PROOF_STAGE ?? "after";
+const captureProof = process.env.AFORA_CAPTURE_UI_PROOF === "1";
+const proofStage = process.env.AFORA_AGENT_IDENTITY_PROOF_STAGE ?? "after";
 const captureBefore = proofStage === "before";
 const proofDir = path.join(
   process.cwd(),
@@ -146,8 +146,8 @@ suite.define(() => {
         await gateway.waitForRequest("agent.identity.get");
 
         const hero = page.locator(".agent-chat__welcome h2");
-        const picker = page.locator(".new-session-page__select--agent openclaw-agent-select");
-        const sidebar = page.locator("openclaw-app-sidebar");
+        const picker = page.locator(".new-session-page__select--agent afora-agent-select");
+        const sidebar = page.locator("afora-app-sidebar");
         await pollLocatorText(sidebar.locator(".sidebar-agent-card__name")).toContain("Pacino");
         await hero.waitFor();
         await picker.locator(".agent-select__label").waitFor();

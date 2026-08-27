@@ -1,4 +1,4 @@
-import { buildControlUiSessionPath } from "openclaw/plugin-sdk/session-discussion";
+import { buildControlUiSessionPath } from "afora-agent/plugin-sdk/session-discussion";
 
 export function controlSessionUrl(
   baseUrl: string | undefined,

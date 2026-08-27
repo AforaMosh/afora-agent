@@ -9,13 +9,13 @@ export const CONTROL_UI_OWNER_BOOTSTRAP_PROFILE_HINT = "owner";
 export type ControlUiBootstrapProfileHint = typeof CONTROL_UI_OWNER_BOOTSTRAP_PROFILE_HINT;
 
 /** Authenticated same-origin prefix for plugin manifest/catalog icon bytes. */
-export const CONTROL_UI_PLUGIN_ICON_PATH_PREFIX = "/__openclaw__/plugin-icon";
+export const CONTROL_UI_PLUGIN_ICON_PATH_PREFIX = "/__afora__/plugin-icon";
 
 /** Authenticated same-origin prefix for allowlisted catalog icon bytes. */
-export const CONTROL_UI_CATALOG_ICON_PATH_PREFIX = "/__openclaw__/catalog-icon";
+export const CONTROL_UI_CATALOG_ICON_PATH_PREFIX = "/__afora__/catalog-icon";
 
 /** Authenticated same-origin prefix for a session workspace's own project icon. */
-export const CONTROL_UI_WORKSPACE_ICON_PATH_PREFIX = "/__openclaw__/workspace-icon";
+export const CONTROL_UI_WORKSPACE_ICON_PATH_PREFIX = "/__afora__/workspace-icon";
 
 /** Lifetime shared by server-minted plugin-tab grants and parent-side renewal. */
 export const CONTROL_UI_PLUGIN_AUTH_GRANT_TTL_MS = 5 * 60 * 1000;
@@ -28,18 +28,18 @@ export const CONTROL_UI_SESSION_PULL_REQUESTS_CHANGED_EVENT =
 export const CONTROL_UI_SESSION_PULL_REQUESTS_MAX_KEYS = 200;
 
 /** Reserved query key for the sandbox cookie capability probe. */
-export const CONTROL_UI_PLUGIN_AUTH_PROBE_QUERY = "__openclaw_plugin_frame_auth_probe";
+export const CONTROL_UI_PLUGIN_AUTH_PROBE_QUERY = "__afora_plugin_frame_auth_probe";
 
 /** Exact parent origin that may receive the successful probe message. */
-export const CONTROL_UI_PLUGIN_AUTH_PROBE_ORIGIN_QUERY = "__openclaw_plugin_frame_auth_origin";
+export const CONTROL_UI_PLUGIN_AUTH_PROBE_ORIGIN_QUERY = "__afora_plugin_frame_auth_origin";
 
 /** Message emitted only by a successful sandbox cookie capability probe. */
-export const CONTROL_UI_PLUGIN_AUTH_PROBE_MESSAGE = "openclaw-plugin-frame-auth-probe";
+export const CONTROL_UI_PLUGIN_AUTH_PROBE_MESSAGE = "afora-plugin-frame-auth-probe";
 
 /** Extracts the same-origin route pathname from a tab descriptor URL. */
 export function resolveControlUiPluginTabPathname(path: string): string | undefined {
   try {
-    const baseUrl = new URL("http://openclaw.invalid");
+    const baseUrl = new URL("http://afora.invalid");
     const tabUrl = new URL(path, baseUrl);
     return tabUrl.origin === baseUrl.origin ? tabUrl.pathname : undefined;
   } catch {
@@ -48,10 +48,10 @@ export function resolveControlUiPluginTabPathname(path: string): string | undefi
 }
 
 /** Carries the gateway-configured Control UI mount path into browser bootstrap. */
-export const CONTROL_UI_BASE_PATH_ATTRIBUTE = "data-openclaw-control-ui-base-path";
+export const CONTROL_UI_BASE_PATH_ATTRIBUTE = "data-afora-control-ui-base-path";
 
 /** Marks whether the served document CSP permits the terminal WASM runtime. */
-export const CONTROL_UI_TERMINAL_ENABLED_ATTRIBUTE = "data-openclaw-terminal-enabled";
+export const CONTROL_UI_TERMINAL_ENABLED_ATTRIBUTE = "data-afora-terminal-enabled";
 
 /** Sandbox policy for assistant-provided embed surfaces inside Control UI. */
 export type ControlUiEmbedSandboxMode = "strict" | "scripts" | "trusted";

@@ -44,13 +44,13 @@ const mocks = vi.hoisted(() => {
     resolveAmbientCredentials: vi.fn((..._args: unknown[]) => ({})),
     discoverAuthStorage: vi.fn((_agentDir?: string, _options?: unknown) => authStorage),
     discoverModels: vi.fn(() => modelRegistry),
-    ensureOpenClawModelsJson: vi.fn(
+    ensureAforaModelsJson: vi.fn(
       async (_config: unknown, _agentDir: unknown, _options?: unknown) => ({
         agentDir: "/tmp/agent",
         wrote: false,
       }),
     ),
-    planOpenClawModelsJsonSource: vi.fn(
+    planAforaModelsJsonSource: vi.fn(
       async (_config: unknown, agentDir: unknown, _options?: unknown) => ({
         agentDir: String(agentDir),
         modelsJsonContents: null,
@@ -187,8 +187,8 @@ vi.mock("./model-catalog.js", () => ({
 }));
 
 vi.mock("./models-config.js", () => ({
-  ensureOpenClawModelsJson: mocks.ensureOpenClawModelsJson,
-  planOpenClawModelsJsonSource: mocks.planOpenClawModelsJsonSource,
+  ensureAforaModelsJson: mocks.ensureAforaModelsJson,
+  planAforaModelsJsonSource: mocks.planAforaModelsJsonSource,
 }));
 
 vi.mock("./models-config.providers.implicit.js", () => ({
@@ -249,7 +249,7 @@ describe("prepared model runtime Gateway catalog mode", () => {
         staticCatalogProviderIds: ["anthropic", "local-runtime", "openai"],
       }),
     );
-    expect(mocks.planOpenClawModelsJsonSource).toHaveBeenCalledWith(
+    expect(mocks.planAforaModelsJsonSource).toHaveBeenCalledWith(
       config,
       "/tmp/prepared-static-agent",
       expect.objectContaining({
@@ -257,7 +257,7 @@ describe("prepared model runtime Gateway catalog mode", () => {
         providerDiscoveryProviderIds: ["anthropic", "local-runtime", "openai"],
       }),
     );
-    expect(mocks.ensureOpenClawModelsJson).not.toHaveBeenCalled();
+    expect(mocks.ensureAforaModelsJson).not.toHaveBeenCalled();
   });
 
   it("uses live provider catalogs for an explicit read-only list scope", async () => {
@@ -278,7 +278,7 @@ describe("prepared model runtime Gateway catalog mode", () => {
       ["anthropic"],
     );
 
-    expect(mocks.planOpenClawModelsJsonSource).toHaveBeenCalledWith(
+    expect(mocks.planAforaModelsJsonSource).toHaveBeenCalledWith(
       config,
       "/tmp/prepared-live-agent",
       expect.objectContaining({
@@ -286,12 +286,12 @@ describe("prepared model runtime Gateway catalog mode", () => {
         providerDiscoveryTimeoutMs: expect.any(Number),
       }),
     );
-    expect(mocks.planOpenClawModelsJsonSource).not.toHaveBeenCalledWith(
+    expect(mocks.planAforaModelsJsonSource).not.toHaveBeenCalledWith(
       expect.anything(),
       expect.anything(),
       expect.objectContaining({ providerDiscoveryEntriesOnly: true }),
     );
-    expect(mocks.ensureOpenClawModelsJson).not.toHaveBeenCalled();
+    expect(mocks.ensureAforaModelsJson).not.toHaveBeenCalled();
   });
 
   it("does not publish a static catalog generation superseded while its hook is running", async () => {
@@ -345,7 +345,7 @@ describe("prepared model runtime Gateway catalog mode", () => {
       agents: {
         defaults: {
           model: { primary: "openai/gpt-5.5" },
-          models: { "openai/gpt-5.5": { agentRuntime: { id: "openclaw" } } },
+          models: { "openai/gpt-5.5": { agentRuntime: { id: "afora" } } },
         },
       },
     };
@@ -361,13 +361,13 @@ describe("prepared model runtime Gateway catalog mode", () => {
       },
     });
 
-    expect(mocks.ensureOpenClawModelsJson).not.toHaveBeenCalled();
+    expect(mocks.ensureAforaModelsJson).not.toHaveBeenCalled();
     expect(mocks.loadAgentRuntimePluginRegistryHandle).toHaveBeenCalledTimes(2);
     expect(mocks.loadAgentRuntimePluginRegistryHandle.mock.calls[0]?.[0]).not.toHaveProperty(
       "selections",
     );
     expect(mocks.loadAgentRuntimePluginRegistryHandle.mock.calls[1]?.[0]).toMatchObject({
-      selections: [{ provider: "openai", modelId: "gpt-5.5", runtime: "openclaw" }],
+      selections: [{ provider: "openai", modelId: "gpt-5.5", runtime: "afora" }],
     });
     expect(mocks.prepareStaticCatalog).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -426,7 +426,7 @@ describe("prepared model runtime Gateway catalog mode", () => {
     expect(snapshot?.messageToolCatalog).toBeUndefined();
     expect(snapshot?.mediaCapabilityProviders).toBeDefined();
     await snapshot?.loadFullModelCatalog?.();
-    expect(mocks.ensureOpenClawModelsJson).not.toHaveBeenCalled();
+    expect(mocks.ensureAforaModelsJson).not.toHaveBeenCalled();
     expect(mocks.runPreparedModelCatalogWorker).toHaveBeenCalledOnce();
     expect(mocks.loadAgentRuntimePluginRegistryHandle).toHaveBeenCalledTimes(2);
 
@@ -434,7 +434,7 @@ describe("prepared model runtime Gateway catalog mode", () => {
       entries: [],
       routeVariants: [],
     });
-    expect(mocks.ensureOpenClawModelsJson).not.toHaveBeenCalled();
+    expect(mocks.ensureAforaModelsJson).not.toHaveBeenCalled();
     expect(mocks.runPreparedModelCatalogWorker).toHaveBeenCalledOnce();
     expect(snapshot?.readFullModelCatalog?.()).toEqual({ entries: [], routeVariants: [] });
 
@@ -554,8 +554,8 @@ describe("prepared model runtime Gateway catalog mode", () => {
     expect(mocks.discoverModels).toHaveBeenCalledOnce();
     expect(mocks.buildPreparedModelCatalogSnapshot).not.toHaveBeenCalled();
     expect(mocks.loadStaticCatalog).not.toHaveBeenCalled();
-    expect(mocks.planOpenClawModelsJsonSource).not.toHaveBeenCalled();
-    expect(mocks.ensureOpenClawModelsJson).not.toHaveBeenCalled();
+    expect(mocks.planAforaModelsJsonSource).not.toHaveBeenCalled();
+    expect(mocks.ensureAforaModelsJson).not.toHaveBeenCalled();
   });
 
   it("does not request a static provider hook when manifest facts resolve the configured model", async () => {

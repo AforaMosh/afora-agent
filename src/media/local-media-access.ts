@@ -1,7 +1,7 @@
 // Local media access helpers validate workspace-local media path access.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { resolveInboundPathRoot } from "@openclaw/media-core/inbound-path-policy";
+import { resolveInboundPathRoot } from "@afora/media-core/inbound-path-policy";
 import { readFileHandleBounded } from "../infra/fs-safe-advanced.js";
 import { FsSafeError, openLocalFileSafely } from "../infra/fs-safe.js";
 import { assertNoWindowsNetworkPath } from "../infra/local-file-access.js";

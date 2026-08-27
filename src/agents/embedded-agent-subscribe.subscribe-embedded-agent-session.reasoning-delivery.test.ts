@@ -1,5 +1,5 @@
 // Reasoning, commentary, and provider pre-tool narration delivery.
-import type { AssistantMessage } from "openclaw/plugin-sdk/llm";
+import type { AssistantMessage } from "afora-agent/plugin-sdk/llm";
 import { describe, expect, it, vi } from "vitest";
 import {
   THINKING_TAG_CASES,
@@ -330,7 +330,7 @@ describe("Chat Completions pre-tool narration", () => {
     const message = {
       role: "assistant",
       api: "openai-completions",
-      openclawDelivery: { textPhaseRequiresTerminal: true },
+      aforaDelivery: { textPhaseRequiresTerminal: true },
       content: [{ type: "text", text: "Interim text." }],
     } as unknown as AssistantMessage;
     emit({ type: "message_start", message });
@@ -384,7 +384,7 @@ describe("Chat Completions pre-tool narration", () => {
     const pendingMessage = {
       role: "assistant",
       api: "openai-completions",
-      openclawDelivery: { textPhaseRequiresTerminal: true },
+      aforaDelivery: { textPhaseRequiresTerminal: true },
       content: [{ type: "text", text: "Interim text." }],
     } as unknown as AssistantMessage;
     emit({ type: "message_start", message: pendingMessage });

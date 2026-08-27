@@ -1,4 +1,4 @@
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 // Covers retry backoff calculation and abortable sleep behavior.
 import { describe, expect, it, vi } from "vitest";
 import { computeBackoff, sleepWithAbort, type BackoffPolicy } from "./backoff.js";

@@ -189,7 +189,7 @@ describe("check-deadcode-exports", () => {
   });
 
   it("models the spawned system-agent MCP stdio entry", () => {
-    expect(knipConfig.workspaces["."].entry).toContain("src/mcp/openclaw-tools-serve.ts!");
+    expect(knipConfig.workspaces["."].entry).toContain("src/mcp/afora-tools-serve.ts!");
   });
 
   it("scans every nested bundled-plugin source file without broad entry masking", () => {

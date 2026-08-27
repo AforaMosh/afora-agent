@@ -2,4 +2,4 @@
 export {
   resolvePlannedMigrationTargets as resolveTargets,
   type PlannedMigrationTargets as PlannedTargets,
-} from "openclaw/plugin-sdk/migration-runtime";
+} from "afora-agent/plugin-sdk/migration-runtime";

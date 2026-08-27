@@ -8,7 +8,7 @@ import { resolveNodeHostExecutable } from "./node-host.js";
 const tempDirs: string[] = [];
 
 async function createNpmShimPair(executable: string) {
-  const binDir = await fs.mkdtemp(path.join(os.tmpdir(), `openclaw-node-host-${executable}-`));
+  const binDir = await fs.mkdtemp(path.join(os.tmpdir(), `afora-node-host-${executable}-`));
   tempDirs.push(binDir);
   const barePath = path.join(binDir, executable);
   const commandPath = path.join(binDir, `${executable}.cmd`);
@@ -21,7 +21,7 @@ async function createNpmShimPair(executable: string) {
 }
 
 async function createBareNativeHost(executable: string) {
-  const binDir = await fs.mkdtemp(path.join(os.tmpdir(), `openclaw-node-host-${executable}-`));
+  const binDir = await fs.mkdtemp(path.join(os.tmpdir(), `afora-node-host-${executable}-`));
   tempDirs.push(binDir);
   const barePath = path.join(binDir, executable);
   await fs.copyFile(process.execPath, barePath);

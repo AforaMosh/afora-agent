@@ -1,5 +1,5 @@
 import { WebClient } from "@slack/web-api";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { slackActionRuntime } from "./action-runtime.js";
 import {
@@ -13,7 +13,7 @@ type SlackReaction = NonNullable<SlackMessageSummary["reactions"]>[number];
 
 const slackConfig = {
   channels: { slack: { botToken: "xoxb-local-proof", groupPolicy: "open" } },
-} as OpenClawConfig;
+} as AforaConfig;
 
 function createSlackReactionClient(reactions: SlackReaction[]) {
   const calls: Array<{ method: string; body: URLSearchParams }> = [];
@@ -130,7 +130,7 @@ describe("Slack reaction user limits", () => {
             channels: { C_ALLOWED: { enabled: true } },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const { client, calls } = createSlackReactionClient([]);
       const reactionLookup = vi
         .spyOn(slackActionRuntime, "listSlackReactions")

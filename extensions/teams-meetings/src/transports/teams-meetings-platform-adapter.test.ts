@@ -1,4 +1,4 @@
-import { MeetingPlatformAdapter } from "openclaw/plugin-sdk/meeting-runtime";
+import { MeetingPlatformAdapter } from "afora-agent/plugin-sdk/meeting-runtime";
 import { describe, expect, it, vi } from "vitest";
 import { TEAMS_MEETINGS_PLATFORM_ADAPTER } from "./teams-meetings-platform-adapter.js";
 import {
@@ -265,7 +265,7 @@ describe("Microsoft Teams meeting platform adapter", () => {
     });
 
     expect(result.inCall).toBe(false);
-    expect(window).not.toHaveProperty("__openclawTeamsMeeting");
+    expect(window).not.toHaveProperty("__aforaTeamsMeeting");
   });
 
   it("verifies the consumer prejoin redirect from its encoded meeting coordinates", async () => {
@@ -399,7 +399,7 @@ describe("Microsoft Teams meeting platform adapter", () => {
     expect(result).toEqual({ departed: false, urlMatched: false });
     expect(currentLeave.clicks).toBe(0);
     expect(bridge.pause).not.toHaveBeenCalled();
-    expect(window["__openclawTeamsAudioOutputs"]).toHaveLength(1);
+    expect(window["__aforaTeamsAudioOutputs"]).toHaveLength(1);
   });
 
   it("does not use initiated-leave proof to act on a replacement SPA call", () => {
@@ -421,7 +421,7 @@ describe("Microsoft Teams meeting platform adapter", () => {
     expect(currentLeave.clicks).toBe(0);
   });
 
-  it("does not leave a call owned by a newer OpenClaw session", () => {
+  it("does not leave a call owned by a newer Afora session", () => {
     const leave = control({ label: "Leave" });
     const inCallUrl = "https://teams.microsoft.com/v2/";
     const { result } = runLeaveScript({
@@ -536,7 +536,7 @@ describe("Microsoft Teams meeting platform adapter", () => {
     expect(detachedSource.pause).toHaveBeenCalledOnce();
     expect(detachedSource.srcObject).toBeNull();
     expect(detachedBridge.remove).toHaveBeenCalledOnce();
-    expect(window["__openclawTeamsAudioOutputs"]).toEqual([foreignBridge]);
+    expect(window["__aforaTeamsAudioOutputs"]).toEqual([foreignBridge]);
   });
 
   it("does not unmute a replacement stream during leave cleanup", () => {
@@ -645,7 +645,7 @@ describe("Microsoft Teams meeting platform adapter", () => {
     expect(source.muted).toBe(false);
     expect(bridge.pause).toHaveBeenCalledOnce();
     expect(bridge.remove).toHaveBeenCalledOnce();
-    expect(window).not.toHaveProperty("__openclawTeamsAudioOutputs");
+    expect(window).not.toHaveProperty("__aforaTeamsAudioOutputs");
   });
 
   it.each([
@@ -758,7 +758,7 @@ describe("Microsoft Teams meeting platform adapter", () => {
 
   it.each([
     ["BlackHole 2ch", "BlackHole 2ch (Virtual)"],
-    ["OpenClaw Meeting Audio", "OpenClaw Meeting Audio"],
+    ["Afora Meeting Audio", "Afora Meeting Audio"],
   ])(
     "reports verified %s routes only after the exact input marker and output sink agree",
     async (deviceLabel, selectedInputLabel) => {
@@ -800,7 +800,7 @@ describe("Microsoft Teams meeting platform adapter", () => {
     },
   );
 
-  it.each(["OpenClaw Meeting Audio (Virtual)", "Monitor of OpenClaw Meeting Audio"])(
+  it.each(["Afora Meeting Audio (Virtual)", "Monitor of Afora Meeting Audio"])(
     "rejects the non-contract virtual audio label %s",
     async (deviceLabel) => {
       const { result } = await runStatusScript({
@@ -816,7 +816,7 @@ describe("Microsoft Teams meeting platform adapter", () => {
         audioInputRouted: false,
         manualAction: {
           message:
-            "Select the OpenClaw virtual audio device as the Teams microphone and verify it is selected before enabling talk-back.",
+            "Select the Afora virtual audio device as the Teams microphone and verify it is selected before enabling talk-back.",
           reason: "teams-audio-choice-required",
         },
       });
@@ -965,20 +965,20 @@ describe("Microsoft Teams meeting platform adapter", () => {
     expect(result.manualAction).toBeUndefined();
     expect(bridge.sinkId).toBe("blackhole-output");
     expect(source.muted).toBe(true);
-    expect(window).toHaveProperty("__openclawTeamsAudioOutputs");
-    expect((window["__openclawTeamsAudioOutputs"] as Array<{ bridge: PageMedia }>)[0]?.bridge).toBe(
+    expect(window).toHaveProperty("__aforaTeamsAudioOutputs");
+    expect((window["__aforaTeamsAudioOutputs"] as Array<{ bridge: PageMedia }>)[0]?.bridge).toBe(
       bridge,
     );
 
     const repeated = await runAudioStatusScript({
       bridgeMedia: bridge,
       media: [source, bridge],
-      priorAudioOutputs: window["__openclawTeamsAudioOutputs"] as unknown[],
+      priorAudioOutputs: window["__aforaTeamsAudioOutputs"] as unknown[],
       priorMeeting: window[MEETING_STATE_KEY] as Record<string, unknown>,
     });
     expect(repeated.result.audioOutputRouted).toBe(true);
     expect(
-      (repeated.window["__openclawTeamsAudioOutputs"] as Array<{ bridge: PageMedia }>)[0]?.bridge,
+      (repeated.window["__aforaTeamsAudioOutputs"] as Array<{ bridge: PageMedia }>)[0]?.bridge,
     ).toBe(bridge);
   });
 });

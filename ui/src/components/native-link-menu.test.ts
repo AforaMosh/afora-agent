@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { i18n } from "../i18n/index.ts";
 import { NativeLinkMenu, type NativeLinkMenuAction } from "./native-link-menu.ts";
 
-const NATIVE_LINK_MENU_ELEMENT_NAME = `test-openclaw-native-link-menu-${crypto.randomUUID()}`;
+const NATIVE_LINK_MENU_ELEMENT_NAME = `test-afora-native-link-menu-${crypto.randomUUID()}`;
 const containers: HTMLElement[] = [];
 type DropdownElement = HTMLElement & { readonly updateComplete: Promise<unknown> };
 

@@ -357,7 +357,7 @@ export const ENUM_EXPECTATIONS: Record<string, string[]> = {
   "gateway.bind": ['"auto"', '"lan"', '"loopback"', '"custom"', '"tailnet"'],
   "gateway.auth.mode": ['"none"', '"token"', '"password"', '"trusted-proxy"'],
   "gateway.tailscale.mode": ['"off"', '"serve"', '"funnel"'],
-  "browser.profiles.*.driver": ['"openclaw"', '"clawd"', '"existing-session"', '"extension"'],
+  "browser.profiles.*.driver": ['"afora"', '"clawd"', '"existing-session"', '"extension"'],
   "discovery.mdns.mode": ['"off"', '"minimal"', '"full"'],
   "diagnostics.otel.protocol": ['"http/protobuf"'],
   "diagnostics.otel.logsExporter": ['"otlp"', '"stdout"', '"both"'],

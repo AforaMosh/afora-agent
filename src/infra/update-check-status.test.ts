@@ -19,8 +19,8 @@ async function runGit(cwd: string, ...args: string[]): Promise<string> {
 async function initGitRepo(root: string): Promise<void> {
   await fs.mkdir(root, { recursive: true });
   await runGit(root, "init", "--initial-branch=main");
-  await runGit(root, "config", "user.name", "OpenClaw Test");
-  await runGit(root, "config", "user.email", "test@openclaw.invalid");
+  await runGit(root, "config", "user.name", "Afora Test");
+  await runGit(root, "config", "user.email", "test@afora.invalid");
 }
 
 async function commitGit(root: string, message: string): Promise<void> {
@@ -33,7 +33,7 @@ afterEach(() => {
 
 describe("checkUpdateStatus", () => {
   it("fetches a retained main upstream whose remote nickname contains a slash", async () => {
-    await withTestDir({ prefix: "openclaw-update-check-slash-remote-" }, async (base) => {
+    await withTestDir({ prefix: "afora-update-check-slash-remote-" }, async (base) => {
       const sourceRoot = path.join(base, "source");
       const localRoot = path.join(base, "local");
       await initGitRepo(sourceRoot);
@@ -70,7 +70,7 @@ describe("checkUpdateStatus", () => {
   });
 
   it("prefers a retained main branch's configured non-origin upstream", async () => {
-    await withTestDir({ prefix: "openclaw-update-check-configured-upstream-" }, async (base) => {
+    await withTestDir({ prefix: "afora-update-check-configured-upstream-" }, async (base) => {
       const sourceRoot = path.join(base, "source");
       const localRoot = path.join(base, "local");
       await initGitRepo(sourceRoot);
@@ -107,13 +107,13 @@ describe("checkUpdateStatus", () => {
   });
 
   it("resolves manager-style detached dev tracking before matching update receipts", async () => {
-    await withTestDir({ prefix: "openclaw-update-check-receipt-fallback-" }, async (base) => {
+    await withTestDir({ prefix: "afora-update-check-receipt-fallback-" }, async (base) => {
       const sourceRoot = path.join(base, "source");
       const localRoot = path.join(base, "local");
       await initGitRepo(sourceRoot);
       await fs.writeFile(
         path.join(sourceRoot, "package.json"),
-        JSON.stringify({ name: "openclaw", packageManager: "pnpm@10.0.0" }),
+        JSON.stringify({ name: "afora", packageManager: "pnpm@10.0.0" }),
       );
       await runGit(sourceRoot, "add", "package.json");
       await commitGit(sourceRoot, "base");
@@ -198,7 +198,7 @@ describe("checkUpdateStatus", () => {
   });
 
   it("does not treat stale remote refs as current when fetch fails", async () => {
-    await withTestDir({ prefix: "openclaw-update-check-fetch-failure-" }, async (base) => {
+    await withTestDir({ prefix: "afora-update-check-fetch-failure-" }, async (base) => {
       const remoteRoot = path.join(base, "remote");
       const localRoot = path.join(base, "local");
       await initGitRepo(remoteRoot);
@@ -227,7 +227,7 @@ describe("checkUpdateStatus", () => {
   });
 
   it("does not report divergence for unrelated histories", async () => {
-    await withTestDir({ prefix: "openclaw-update-check-unrelated-" }, async (base) => {
+    await withTestDir({ prefix: "afora-update-check-unrelated-" }, async (base) => {
       const localRoot = path.join(base, "local");
       const remoteRoot = path.join(base, "remote");
       await initGitRepo(localRoot);
@@ -263,7 +263,7 @@ describe("checkUpdateStatus", () => {
   });
 
   it("reports divergence only when shallow history retains a merge base", async () => {
-    await withTestDir({ prefix: "openclaw-update-check-shallow-" }, async (base) => {
+    await withTestDir({ prefix: "afora-update-check-shallow-" }, async (base) => {
       const sourceRoot = path.join(base, "source");
       await initGitRepo(sourceRoot);
       await commitGit(sourceRoot, "common base");
@@ -362,7 +362,7 @@ describe("checkUpdateStatus", () => {
   });
 
   it("detects package installs for non-git roots", async () => {
-    await withTestDir({ prefix: "openclaw-update-check-" }, async (root) => {
+    await withTestDir({ prefix: "afora-update-check-" }, async (root) => {
       await fs.writeFile(
         path.join(root, "package.json"),
         JSON.stringify({ packageManager: "npm@10.0.0" }),
@@ -387,7 +387,7 @@ describe("checkUpdateStatus", () => {
   });
 
   it("resolves a status registry channel after detecting the install kind", async () => {
-    await withTestDir({ prefix: "openclaw-update-check-registry-channel-" }, async (root) => {
+    await withTestDir({ prefix: "afora-update-check-registry-channel-" }, async (root) => {
       await fs.writeFile(
         path.join(root, "package.json"),
         JSON.stringify({ packageManager: "npm@10.0.0" }),
@@ -428,10 +428,10 @@ describe("checkUpdateStatus", () => {
       expectedLockfile: "bun.lock",
     },
   ])("reports dependency status for Bun's $name", async ({ lockfiles, expectedLockfile }) => {
-    await withTestDir({ prefix: "openclaw-update-check-bun-" }, async (root) => {
+    await withTestDir({ prefix: "afora-update-check-bun-" }, async (root) => {
       await fs.writeFile(
         path.join(root, "package.json"),
-        JSON.stringify({ name: "openclaw", packageManager: "bun@1.2.0" }),
+        JSON.stringify({ name: "afora", packageManager: "bun@1.2.0" }),
         "utf8",
       );
       for (const lockfile of lockfiles) {
@@ -463,18 +463,18 @@ describe("checkUpdateStatus", () => {
     { manager: "npm", expectedLockfile: "package-lock.json" },
     { manager: "bun", expectedLockfile: "bun.lockb" },
   ])(
-    "detects lockless OpenClaw $manager installs despite packed pnpm metadata",
+    "detects lockless Afora $manager installs despite packed pnpm metadata",
     async ({ manager, expectedLockfile }) => {
-      await withTestDir({ prefix: `openclaw-update-check-lockless-${manager}-` }, async (base) => {
+      await withTestDir({ prefix: `afora-update-check-lockless-${manager}-` }, async (base) => {
         const bunInstall = path.join(base, "custom-bun-home");
         const root =
           manager === "bun"
-            ? path.join(bunInstall, "install", "global", "node_modules", "openclaw")
-            : path.join(base, "prefix", "node_modules", "openclaw");
+            ? path.join(bunInstall, "install", "global", "node_modules", "afora")
+            : path.join(base, "prefix", "node_modules", "afora");
         await fs.mkdir(root, { recursive: true });
         await fs.writeFile(
           path.join(root, "package.json"),
-          JSON.stringify({ name: "openclaw", packageManager: "pnpm@11.2.2" }),
+          JSON.stringify({ name: "afora", packageManager: "pnpm@11.2.2" }),
           "utf8",
         );
 
@@ -500,10 +500,10 @@ describe("checkUpdateStatus", () => {
   );
 
   it("reports a missing dependency marker and accepts an older valid marker", async () => {
-    await withTestDir({ prefix: "openclaw-update-check-deps-" }, async (root) => {
+    await withTestDir({ prefix: "afora-update-check-deps-" }, async (root) => {
       await fs.writeFile(
         path.join(root, "package.json"),
-        JSON.stringify({ name: "openclaw", packageManager: "pnpm@11.2.2" }),
+        JSON.stringify({ name: "afora", packageManager: "pnpm@11.2.2" }),
         "utf8",
       );
       const lockfilePath = path.join(root, "pnpm-lock.yaml");
@@ -543,13 +543,13 @@ describe("checkUpdateStatus", () => {
   });
 
   it("treats symlinked git installs as git roots", async () => {
-    await withTestDir({ prefix: "openclaw-update-check-git-" }, async (base) => {
+    await withTestDir({ prefix: "afora-update-check-git-" }, async (base) => {
       const repoRoot = path.join(base, "repo");
-      const linkedRoot = path.join(base, "linked-openclaw");
+      const linkedRoot = path.join(base, "linked-afora");
       await fs.mkdir(repoRoot, { recursive: true });
       await fs.writeFile(
         path.join(repoRoot, "package.json"),
-        JSON.stringify({ name: "openclaw", packageManager: "pnpm@10.0.0" }),
+        JSON.stringify({ name: "afora", packageManager: "pnpm@10.0.0" }),
         "utf8",
       );
       await runCommandWithTimeout(["git", "init"], { cwd: repoRoot, timeoutMs: 1000 });

@@ -1,6 +1,6 @@
 // Installs a process-wide warning filter for dependency warnings that are known
 // noise in current toolchains.
-const warningFilterKey = Symbol.for("openclaw.warning-filter");
+const warningFilterKey = Symbol.for("afora.warning-filter");
 type EmitWarningArgs =
   | [warning: string | Error, ctor?: Function]
   | [warning: string | Error, type?: string, ctor?: Function]

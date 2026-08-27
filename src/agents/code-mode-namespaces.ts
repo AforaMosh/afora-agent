@@ -21,7 +21,7 @@ export type { CodeModeApiVirtualFile } from "./code-mode-mcp-api.js";
 
 const FORBIDDEN_NAMESPACE_PATH_SEGMENTS = new Set(["__proto__", "constructor", "prototype"]);
 const NAMESPACE_PATH_KEY_SEPARATOR = "\u0000";
-const CODE_MODE_NAMESPACE_TOOL_CALL = Symbol.for("openclaw.codeMode.namespaceToolCall");
+const CODE_MODE_NAMESPACE_TOOL_CALL = Symbol.for("afora.codeMode.namespaceToolCall");
 const RESERVED_NAMESPACE_GLOBALS = new Set([
   "ALL_TOOLS",
   "agents",

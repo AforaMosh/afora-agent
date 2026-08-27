@@ -35,7 +35,7 @@ const mockPrompter: WizardPrompter = {
   confirm: mockPromptConfirm,
   note: mockPromptNote,
 } as unknown as WizardPrompter;
-const originalEnvToken = process.env.OPENCLAW_TWITCH_ACCESS_TOKEN;
+const originalEnvToken = process.env.AFORA_TWITCH_ACCESS_TOKEN;
 
 const mockAccount: TwitchAccountConfig = {
   username: "testbot",
@@ -74,9 +74,9 @@ describe("setup surface helpers", () => {
 
   afterEach(() => {
     if (originalEnvToken === undefined) {
-      delete process.env.OPENCLAW_TWITCH_ACCESS_TOKEN;
+      delete process.env.AFORA_TWITCH_ACCESS_TOKEN;
     } else {
-      process.env.OPENCLAW_TWITCH_ACCESS_TOKEN = originalEnvToken;
+      process.env.AFORA_TWITCH_ACCESS_TOKEN = originalEnvToken;
     }
     // Don't restoreAllMocks as it breaks module-level mocks
   });
@@ -341,7 +341,7 @@ describe("setup surface helpers", () => {
     });
 
     it("reports env-token default account setup as configured", async () => {
-      process.env.OPENCLAW_TWITCH_ACCESS_TOKEN = "oauth:fromenv";
+      process.env.AFORA_TWITCH_ACCESS_TOKEN = "oauth:fromenv";
 
       const cfg = {
         channels: {
@@ -393,7 +393,7 @@ describe("setup surface helpers", () => {
 
     it("uses an environment-only token without sending it to wizard prompts", async () => {
       const envToken = "oauth:environment-only";
-      process.env.OPENCLAW_TWITCH_ACCESS_TOKEN = envToken;
+      process.env.AFORA_TWITCH_ACCESS_TOKEN = envToken;
       mockPromptConfirm.mockReset().mockResolvedValueOnce(true as never);
       mockPromptText
         .mockReset()
@@ -408,7 +408,7 @@ describe("setup surface helpers", () => {
         clientId: "env-client",
       });
       expect(mockPromptConfirm).toHaveBeenCalledWith({
-        message: "Twitch env var OPENCLAW_TWITCH_ACCESS_TOKEN detected. Use env token?",
+        message: "Twitch env var AFORA_TWITCH_ACCESS_TOKEN detected. Use env token?",
         initialValue: true,
       });
       expect(mockPromptText).toHaveBeenCalledTimes(2);
@@ -516,7 +516,7 @@ describe("setup surface helpers", () => {
     });
 
     it("persists a token instead of using env-token shortcut for non-default finalize", async () => {
-      process.env.OPENCLAW_TWITCH_ACCESS_TOKEN = "oauth:fromenv";
+      process.env.AFORA_TWITCH_ACCESS_TOKEN = "oauth:fromenv";
       mockPromptText
         .mockReset()
         .mockResolvedValueOnce("secondary-bot" as never)

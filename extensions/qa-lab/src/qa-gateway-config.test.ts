@@ -1,5 +1,5 @@
 // Qa Lab tests cover qa gateway config plugin behavior.
-import { OPENCLAW_VERSION } from "openclaw/plugin-sdk/agent-harness-runtime";
+import { AFORA_VERSION } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import { describe, expect, it } from "vitest";
 import {
   buildQaGatewayConfig,
@@ -16,8 +16,8 @@ function createQaChannelTransportParams(baseUrl = "http://127.0.0.1:43124") {
         "qa-channel": {
           enabled: true,
           baseUrl,
-          botUserId: "openclaw",
-          botDisplayName: "OpenClaw QA",
+          botUserId: "afora",
+          botDisplayName: "Afora QA",
           allowFrom: ["*"],
           pollTimeoutMs: 250,
         },
@@ -25,7 +25,7 @@ function createQaChannelTransportParams(baseUrl = "http://127.0.0.1:43124") {
       messages: {
         visibleReplies: "automatic",
         groupChat: {
-          mentionPatterns: ["\\b@?openclaw\\b"],
+          mentionPatterns: ["\\b@?afora\\b"],
           visibleReplies: "automatic",
         },
       },
@@ -60,7 +60,7 @@ function expectQaLabPluginEnabled(cfg: ReturnType<typeof buildQaGatewayConfig>) 
 }
 
 describe("buildQaGatewayConfig", () => {
-  it("stamps fresh QA configs with the current OpenClaw version", () => {
+  it("stamps fresh QA configs with the current Afora version", () => {
     const cfg = buildQaGatewayConfig({
       bind: "loopback",
       gatewayPort: 18789,
@@ -69,7 +69,7 @@ describe("buildQaGatewayConfig", () => {
       ...createQaChannelTransportParams(),
     });
 
-    expect(cfg.meta).toEqual({ lastTouchedVersion: OPENCLAW_VERSION });
+    expect(cfg.meta).toEqual({ lastTouchedVersion: AFORA_VERSION });
     expect(cfg.plugins?.allow).toEqual(["acpx", "memory-core", "qa-lab", "qa-channel"]);
     expect(getPrimaryModel(cfg.agents?.defaults?.model)).toBe("mock-openai/gpt-5.6-luna");
     expect(cfg.agents?.entries?.qa).not.toHaveProperty("default");
@@ -120,7 +120,7 @@ describe("buildQaGatewayConfig", () => {
       enabled: true,
       config: {
         pluginToolsMcpBridge: true,
-        openClawToolsMcpBridge: true,
+        aforaToolsMcpBridge: true,
       },
     });
     expect(cfg.plugins?.entries?.["memory-core"]).toEqual({ enabled: true });
@@ -132,7 +132,7 @@ describe("buildQaGatewayConfig", () => {
     expect(cfg.channels?.["qa-channel"]?.baseUrl).toBe("http://127.0.0.1:43124");
     expect(cfg.channels?.["qa-channel"]?.pollTimeoutMs).toBe(250);
     expect(cfg.messages?.visibleReplies).toBe("automatic");
-    expect(cfg.messages?.groupChat?.mentionPatterns).toEqual(["\\b@?openclaw\\b"]);
+    expect(cfg.messages?.groupChat?.mentionPatterns).toEqual(["\\b@?afora\\b"]);
     expect(cfg.messages?.groupChat?.visibleReplies).toBe("automatic");
   });
 
@@ -338,7 +338,7 @@ describe("buildQaGatewayConfig", () => {
     expect(cfg.plugins?.entries?.anthropic).toEqual({ enabled: true });
   });
 
-  it("keeps forced Codex cells free of OpenClaw request params", () => {
+  it("keeps forced Codex cells free of Afora request params", () => {
     const cfg = buildQaGatewayConfig({
       bind: "loopback",
       gatewayPort: 18789,
@@ -569,12 +569,12 @@ describe("buildQaGatewayConfig", () => {
       gatewayPort: 18789,
       gatewayToken: "token",
       workspaceDir: "/tmp/qa-workspace",
-      controlUiRoot: "/tmp/openclaw/dist/control-ui",
+      controlUiRoot: "/tmp/afora/dist/control-ui",
       ...createQaChannelTransportParams(),
     });
 
     expect(cfg.gateway?.controlUi?.enabled).toBe(true);
-    expect(cfg.gateway?.controlUi?.root).toBe("/tmp/openclaw/dist/control-ui");
+    expect(cfg.gateway?.controlUi?.root).toBe("/tmp/afora/dist/control-ui");
   });
 
   it("merges dynamic qa-lab origins without dropping the built control ui root", () => {
@@ -588,12 +588,12 @@ describe("buildQaGatewayConfig", () => {
       gatewayPort: 18789,
       gatewayToken: "token",
       workspaceDir: "/tmp/qa-workspace",
-      controlUiRoot: "/tmp/openclaw/dist/control-ui",
+      controlUiRoot: "/tmp/afora/dist/control-ui",
       controlUiAllowedOrigins: ["http://127.0.0.1:60196"],
       ...createQaChannelTransportParams(),
     });
 
-    expect(cfg.gateway?.controlUi?.root).toBe("/tmp/openclaw/dist/control-ui");
+    expect(cfg.gateway?.controlUi?.root).toBe("/tmp/afora/dist/control-ui");
     expect(cfg.gateway?.controlUi?.allowedOrigins).toEqual([
       ...DEFAULT_QA_CONTROL_UI_ALLOWED_ORIGINS,
       "http://127.0.0.1:60196",

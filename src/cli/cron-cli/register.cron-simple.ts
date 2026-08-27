@@ -3,7 +3,7 @@ import {
   parseStrictPositiveInteger,
   resolvePositiveTimerTimeoutMs,
   resolveTimerTimeoutMs,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 import type { Command } from "commander";
 import { defaultRuntime } from "../../runtime.js";
 import { sleep } from "../../utils/sleep.js";
@@ -115,7 +115,7 @@ function registerCronToggleCommand(params: {
           printCronJson(res);
           if (!params.enabled && process.stderr.isTTY) {
             process.stderr.write(
-              `Note: 'openclaw cron list' hides disabled jobs by default. Use 'openclaw cron list --all' to see this job, or 'openclaw cron enable <id>' to re-enable it.\n`,
+              `Note: 'afora cron list' hides disabled jobs by default. Use 'afora cron list --all' to see this job, or 'afora cron enable <id>' to re-enable it.\n`,
             );
           }
           await warnIfCronSchedulerDisabled(opts);

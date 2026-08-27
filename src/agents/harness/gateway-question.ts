@@ -43,7 +43,7 @@ type PendingAgentQuestion = {
 };
 
 const pendingAgentQuestions = resolveGlobalMap<string, PendingAgentQuestion>(
-  Symbol.for("openclaw.pendingAgentQuestions"),
+  Symbol.for("afora.pendingAgentQuestions"),
   (questions) => {
     const error = new Error("gateway lifecycle ended before question registration completed");
     for (const state of questions.values()) {

@@ -1,6 +1,6 @@
 // Line tests cover how the bot resolves the inbound media cap it hands to the handlers.
 import type { webhook } from "@line/bot-sdk";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 type DeliverFn = (
@@ -28,7 +28,7 @@ const { createLineBot } = await import("./bot.js");
 
 const MB = 1024 * 1024;
 
-function configWith(mediaMaxMb?: number): OpenClawConfig {
+function configWith(mediaMaxMb?: number): AforaConfig {
   return {
     channels: {
       line: {
@@ -38,7 +38,7 @@ function configWith(mediaMaxMb?: number): OpenClawConfig {
         ...(mediaMaxMb === undefined ? {} : { mediaMaxMb }),
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 // The bot only reveals the resolved cap by handing it to the handlers, so drive

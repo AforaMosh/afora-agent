@@ -22,9 +22,9 @@ type JsonRecord = Record<string, unknown>;
 
 export type PluginPackageJson = JsonRecord & {
   dependencies?: JsonRecord;
-  openclaw?: {
+  afora?: {
     assetScripts?: { build?: unknown };
-    build?: { bundledDist?: unknown; openclawVersion?: unknown; runtimeFormat?: unknown };
+    build?: { bundledDist?: unknown; aforaVersion?: unknown; runtimeFormat?: unknown };
     compat?: { pluginApi?: unknown };
     release?: {
       bundleRuntimeDependencies?: unknown;
@@ -51,8 +51,8 @@ function readJsonFile(filePath: string) {
 /** Return whether a plugin package publishes through an artifact release workflow. */
 function isPublishablePluginPackage(packageJson: PluginPackageJson) {
   return (
-    packageJson.openclaw?.release?.publishToNpm === true ||
-    packageJson.openclaw?.release?.publishToClawHub === true
+    packageJson.afora?.release?.publishToNpm === true ||
+    packageJson.afora?.release?.publishToClawHub === true
   );
 }
 
@@ -65,7 +65,7 @@ function isTypeScriptEntry(entry: string) {
 }
 
 function resolveRuntimeBuildFormat(packageJson: PluginPackageJson): RuntimeBuildFormat {
-  return packageJson.openclaw?.build?.runtimeFormat === "cjs" ? "cjs" : "esm";
+  return packageJson.afora?.build?.runtimeFormat === "cjs" ? "cjs" : "esm";
 }
 
 function runtimeBuildExtension(runtimeFormat: RuntimeBuildFormat) {
@@ -105,7 +105,7 @@ function getRecord(value: unknown) {
 function createNeverBundleDependencyMatcher(packageJson: PluginPackageJson) {
   const externalDependencies = collectExternalDependencyNames(packageJson);
   return (id: string) => {
-    if (id === "openclaw" || id.startsWith("openclaw/")) {
+    if (id === "afora" || id.startsWith("afora-agent/")) {
       return true;
     }
     for (const dependency of externalDependencies) {
@@ -118,7 +118,7 @@ function createNeverBundleDependencyMatcher(packageJson: PluginPackageJson) {
 }
 
 const HOST_PLUGIN_SDK_IMPORT_RE =
-  /(?:\bfrom\s+|\bimport\s*(?:\(\s*)?|\b(?:require|_+require\d*)\(\s*)["'](openclaw\/plugin-sdk\/[^"']+)["']/gu;
+  /(?:\bfrom\s+|\bimport\s*(?:\(\s*)?|\b(?:require|_+require\d*)\(\s*)["'](afora\/plugin-sdk\/[^"']+)["']/gu;
 
 function listRuntimeJavaScriptFiles(rootDir: string): string[] {
   if (!fs.existsSync(rootDir)) {
@@ -158,7 +158,7 @@ export function listMissingPluginNpmRuntimeHostExports(plan: { repoRoot: string;
   const hostPackageJson = readJsonFile(path.join(plan.repoRoot, "package.json"));
   const hostExports = new Set(Object.keys(hostPackageJson.exports ?? {}));
   return [...hostImports]
-    .filter((specifier) => !hostExports.has(specifier.replace(/^openclaw/u, ".")))
+    .filter((specifier) => !hostExports.has(specifier.replace(/^afora/u, ".")))
     .toSorted((left, right) => left.localeCompare(right));
 }
 
@@ -247,8 +247,8 @@ function resolvePluginNpmRuntimePackageFiles(plan: {
       : [],
   );
   merged.add("dist/**");
-  if (packageRelativePathExists(plan.packageDir, "openclaw.plugin.json")) {
-    merged.add("openclaw.plugin.json");
+  if (packageRelativePathExists(plan.packageDir, "afora.plugin.json")) {
+    merged.add("afora.plugin.json");
   }
   if (packageRelativePathExists(plan.packageDir, "README.md")) {
     merged.add("README.md");
@@ -262,7 +262,7 @@ function resolvePluginNpmRuntimePackageFiles(plan: {
   return [...merged];
 }
 
-function normalizeOpenClawPeerRange(value: unknown) {
+function normalizeAforaPeerRange(value: unknown) {
   const normalized = normalizePackageEntry(value);
   if (!normalized) {
     return "";
@@ -272,43 +272,43 @@ function normalizeOpenClawPeerRange(value: unknown) {
     : `>=${normalized}`;
 }
 
-function resolveOpenClawPeerRange(
+function resolveAforaPeerRange(
   packageJson: PluginPackageJson,
   rootPackageJson: PluginPackageJson | undefined,
 ) {
   return (
-    normalizeOpenClawPeerRange(packageJson.openclaw?.compat?.pluginApi) ||
-    normalizeOpenClawPeerRange(packageJson.peerDependencies?.openclaw) ||
-    normalizeOpenClawPeerRange(packageJson.openclaw?.build?.openclawVersion) ||
-    normalizeOpenClawPeerRange(rootPackageJson?.version) ||
-    normalizeOpenClawPeerRange(packageJson.version)
+    normalizeAforaPeerRange(packageJson.afora?.compat?.pluginApi) ||
+    normalizeAforaPeerRange(packageJson.peerDependencies?.afora) ||
+    normalizeAforaPeerRange(packageJson.afora?.build?.aforaVersion) ||
+    normalizeAforaPeerRange(rootPackageJson?.version) ||
+    normalizeAforaPeerRange(packageJson.version)
   );
 }
 
-/** Resolve package peer dependency metadata for the OpenClaw plugin API. */
+/** Resolve package peer dependency metadata for the Afora plugin API. */
 function resolvePluginNpmRuntimePackagePeerMetadata(plan: {
   packageJson: PluginPackageJson;
   rootPackageJson: PluginPackageJson | undefined;
   pluginDir: string;
 }) {
-  const openclawPeerRange = resolveOpenClawPeerRange(plan.packageJson, plan.rootPackageJson);
-  if (!openclawPeerRange) {
+  const aforaPeerRange = resolveAforaPeerRange(plan.packageJson, plan.rootPackageJson);
+  if (!aforaPeerRange) {
     throw new Error(
-      `cannot infer openclaw peerDependency range for ${plan.pluginDir}; set openclaw.compat.pluginApi or package version`,
+      `cannot infer afora peerDependency range for ${plan.pluginDir}; set afora.compat.pluginApi or package version`,
     );
   }
   const existingPeerDependencies = getStringRecord(plan.packageJson.peerDependencies);
   const existingPeerDependenciesMeta = getRecord(plan.packageJson.peerDependenciesMeta);
-  const existingOpenClawMeta = getRecord(existingPeerDependenciesMeta.openclaw);
+  const existingAforaMeta = getRecord(existingPeerDependenciesMeta.afora);
   return {
     peerDependencies: {
       ...existingPeerDependencies,
-      openclaw: openclawPeerRange,
+      afora: aforaPeerRange,
     },
     peerDependenciesMeta: {
       ...existingPeerDependenciesMeta,
-      openclaw: {
-        ...existingOpenClawMeta,
+      afora: {
+        ...existingAforaMeta,
         optional: true,
       },
     },
@@ -352,7 +352,7 @@ export function resolvePluginNpmRuntimeBuildPlan(params: PluginNpmRuntimeBuildPa
       path.join(packageDir, sourceEntry.replace(/^\.\//u, "")),
     ]),
   );
-  const setupEntry = normalizePackageEntry(packageJson.openclaw?.setupEntry);
+  const setupEntry = normalizePackageEntry(packageJson.afora?.setupEntry);
 
   const plan = {
     repoRoot,
@@ -364,8 +364,8 @@ export function resolvePluginNpmRuntimeBuildPlan(params: PluginNpmRuntimeBuildPa
     entry,
     outDir: path.join(packageDir, "dist"),
     runtimeFormat,
-    runtimeExtensions: (Array.isArray(packageJson.openclaw?.extensions)
-      ? packageJson.openclaw.extensions
+    runtimeExtensions: (Array.isArray(packageJson.afora?.extensions)
+      ? packageJson.afora.extensions
       : []
     )
       .map(normalizePackageEntry)
@@ -415,7 +415,7 @@ export async function buildPluginNpmRuntime(params: PluginNpmRuntimeBuildParams)
   const missingHostExports = listMissingPluginNpmRuntimeHostExports(plan);
   if (missingHostExports.length > 0) {
     throw new Error(
-      `${plan.pluginDir} runtime imports missing OpenClaw host exports: ${missingHostExports.join(", ")}`,
+      `${plan.pluginDir} runtime imports missing Afora host exports: ${missingHostExports.join(", ")}`,
     );
   }
   rewriteCommonJsRuntimeSpecifiers(plan);

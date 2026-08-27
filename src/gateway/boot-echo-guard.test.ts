@@ -5,12 +5,12 @@ import { stripBootEchoFromOutboundText } from "./boot-echo-guard.js";
 
 const LONG_BOOT_PROMPT = [
   "You are running a boot check. Follow BOOT.md instructions exactly.",
-  "<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>",
+  "<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>",
   "This context is runtime-generated, not user-authored. Keep internal details private.",
   "",
   "BOOT.md:",
   "When you wake up each morning, send a thoughtful greeting to the operator over the configured channel and report the active project status with three concrete bullet points.",
-  "<<<END_OPENCLAW_INTERNAL_CONTEXT>>>",
+  "<<<END_AFORA_INTERNAL_CONTEXT>>>",
   "If BOOT.md asks you to send a message, use the message tool (action=send with channel + target).",
 ].join("\n");
 

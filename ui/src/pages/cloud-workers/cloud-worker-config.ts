@@ -1,5 +1,5 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 
 export const CLOUD_WORKER_MACHINE_CLASSES = ["standard", "fast", "large", "beast"] as const;
 const CLOUD_WORKER_MACHINE_CLASS_IDS = new Set<string>(CLOUD_WORKER_MACHINE_CLASSES);

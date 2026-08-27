@@ -1,5 +1,5 @@
 // Reset boundaries project a logical message window without rewriting raw cursor positions.
-import type { SessionTreeEntry } from "@openclaw/agent-core";
+import type { SessionTreeEntry } from "@afora/agent-core";
 import { sql } from "kysely";
 import { selectResetKeptEntries } from "../../../packages/agent-core/src/harness/session/tool-result-pairing.js";
 import {
@@ -8,14 +8,14 @@ import {
   getNodeSqliteKysely,
 } from "../../infra/kysely-sync.js";
 import { pruneMapToMaxSize } from "../../infra/map-size.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
-import type { OpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
+import type { DB as AforaAgentKyselyDatabase } from "../../state/afora-agent-db.generated.js";
+import type { AforaAgentDatabase } from "../../state/afora-agent-db.js";
 import type { TranscriptEvent } from "./session-accessor.sqlite-contract.js";
 import { resolveSqliteTranscriptReadScope } from "./session-accessor.sqlite-scope.js";
 import type { SessionTranscriptProjectionState } from "./session-transcript-index.js";
 
 type ResetWindowDatabase = Pick<
-  OpenClawAgentKyselyDatabase,
+  AforaAgentKyselyDatabase,
   | "session_transcript_active_events"
   | "transcript_rewrite_watermarks"
   | "transcript_event_identities"
@@ -23,7 +23,7 @@ type ResetWindowDatabase = Pick<
 >;
 
 type ResetWindowProjection = {
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   resolved: ReturnType<typeof resolveSqliteTranscriptReadScope>;
   state: SessionTranscriptProjectionState;
 };
@@ -59,7 +59,7 @@ type ResetMessageWindowCacheEntry = {
 const resetMessageWindowCache = new Map<string, ResetMessageWindowCacheEntry>();
 const MAX_RESET_MESSAGE_WINDOW_CACHE = 64;
 
-function getResetWindowKysely(database: OpenClawAgentDatabase) {
+function getResetWindowKysely(database: AforaAgentDatabase) {
   return getNodeSqliteKysely<ResetWindowDatabase>(database.db);
 }
 

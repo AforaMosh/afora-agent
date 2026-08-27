@@ -4,10 +4,10 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SessionEntry } from "../../config/sessions.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-  type OpenClawStateDatabase,
-} from "../../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+  type AforaStateDatabase,
+} from "../../state/afora-state-db.js";
 import type { WorkerConnectionIdentity } from "./connection-identity.js";
 import {
   createWorkerSessionPlacementStore,
@@ -111,7 +111,7 @@ const GRANDCHILD = {
 
 describe("worker session tool topology", () => {
   let root: string;
-  let database: OpenClawStateDatabase;
+  let database: AforaStateDatabase;
   let placements: WorkerSessionPlacementStore;
   let identity: WorkerConnectionIdentity;
   let execute: ReturnType<typeof createWorkerSessionToolExecutor>;
@@ -120,8 +120,8 @@ describe("worker session tool topology", () => {
   let spawnOrder: string[];
 
   beforeEach(async () => {
-    root = await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()), "openclaw-worker-tools-"));
-    database = openOpenClawStateDatabase({ env: { OPENCLAW_STATE_DIR: root } });
+    root = await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()), "afora-worker-tools-"));
+    database = openAforaStateDatabase({ env: { AFORA_STATE_DIR: root } });
     placements = createWorkerSessionPlacementStore({ database });
     activate(SOURCE);
     activate(TARGET);
@@ -230,7 +230,7 @@ describe("worker session tool topology", () => {
   });
 
   afterEach(async () => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await fs.rm(root, { recursive: true, force: true });
   });
 

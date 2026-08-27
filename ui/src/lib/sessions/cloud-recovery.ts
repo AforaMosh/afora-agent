@@ -1,5 +1,5 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { hasNonEmptyString as isNonEmptyString } from "@openclaw/normalization-core/string-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { hasNonEmptyString as isNonEmptyString } from "@afora/normalization-core/string-coerce";
 import {
   cloudSessionRecoveryExactStorageKey,
   cloudSessionRecoveryLegacyStorageKey,

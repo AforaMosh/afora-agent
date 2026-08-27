@@ -2,7 +2,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { capturePluginRegistration } from "openclaw/plugin-sdk/plugin-test-runtime";
+import { capturePluginRegistration } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { describe, expect, it, vi } from "vitest";
 import plugin from "./index.js";
 
@@ -32,7 +32,7 @@ describe("litellm plugin", () => {
   it("honors --custom-base-url in non-interactive API-key setup", async () => {
     const provider = registerProvider();
     const auth = provider?.auth?.[0];
-    const agentDir = mkdtempSync(join(tmpdir(), "openclaw-litellm-auth-"));
+    const agentDir = mkdtempSync(join(tmpdir(), "afora-litellm-auth-"));
     const resolveApiKey = vi.fn(async () => ({ key: "litellm-test-key", source: "flag" as const }));
     const toApiKeyCredential = vi.fn(({ provider: providerId, resolved }) => ({
       type: "api_key" as const,

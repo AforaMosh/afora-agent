@@ -110,7 +110,7 @@ export async function prepareCandidate(params: {
 }
 
 export function resolvePackageCandidatePackCommand(sourceDir: string, packDir: string) {
-  const packageHelper = join(sourceDir, "scripts", "package-openclaw-for-docker.mjs");
+  const packageHelper = join(sourceDir, "scripts", "package-afora-for-docker.mjs");
   if (existsSync(packageHelper)) {
     return {
       args: [packageHelper, "--skip-build", "--output-dir", packDir],
@@ -141,7 +141,7 @@ function resolvePackedCandidateFromOutput(params: {
     const packedTarball = resolvePackDestinationTarball(
       packOutputLines.at(-1),
       params.packDir,
-      "package-openclaw-for-docker",
+      "package-afora-for-docker",
     );
     return {
       fileName: packedTarball.fileName,
@@ -563,7 +563,7 @@ export async function runBundledPluginPostinstall(params: LaneCommandParams) {
   const installEnv = {
     ...params.env,
   };
-  delete installEnv.OPENCLAW_DISABLE_BUNDLED_PLUGIN_POSTINSTALL;
+  delete installEnv.AFORA_DISABLE_BUNDLED_PLUGIN_POSTINSTALL;
   delete installEnv.NPM_CONFIG_PREFIX;
   delete installEnv.npm_config_global;
   delete installEnv.npm_config_location;
@@ -582,24 +582,24 @@ export function shouldRunWindowsInstalledBrowserOverrideImportSmoke(platform = p
 }
 
 export function buildInstalledBrowserOverrideImportProbeScript(
-  runtimeModuleSpecifier = "openclaw/plugin-sdk/plugin-runtime",
+  runtimeModuleSpecifier = "afora-agent/plugin-sdk/plugin-runtime",
 ) {
   return `
 import { existsSync } from "node:fs";
 import { startLazyPluginServiceModule } from ${JSON.stringify(runtimeModuleSpecifier)};
 
-const startedPath = process.env.OPENCLAW_BROWSER_OVERRIDE_STARTED_PATH;
-const stoppedPath = process.env.OPENCLAW_BROWSER_OVERRIDE_STOPPED_PATH;
+const startedPath = process.env.AFORA_BROWSER_OVERRIDE_STARTED_PATH;
+const stoppedPath = process.env.AFORA_BROWSER_OVERRIDE_STOPPED_PATH;
 
-if (!process.env.OPENCLAW_BROWSER_CONTROL_MODULE) {
-  throw new Error("Missing OPENCLAW_BROWSER_CONTROL_MODULE.");
+if (!process.env.AFORA_BROWSER_CONTROL_MODULE) {
+  throw new Error("Missing AFORA_BROWSER_CONTROL_MODULE.");
 }
 if (!startedPath || !stoppedPath) {
   throw new Error("Missing browser override sentinel path env.");
 }
 
 const handle = await startLazyPluginServiceModule({
-  overrideEnvVar: "OPENCLAW_BROWSER_CONTROL_MODULE",
+  overrideEnvVar: "AFORA_BROWSER_CONTROL_MODULE",
   validateOverrideSpecifier: (specifier) => specifier,
   loadDefaultModule: async () => {
     throw new Error("Default browser control service should not load during override probe.");
@@ -630,11 +630,11 @@ function buildBrowserOverrideProbeServiceModule() {
 import { writeFileSync } from "node:fs";
 
 export async function startBrowserControlService() {
-  writeFileSync(process.env.OPENCLAW_BROWSER_OVERRIDE_STARTED_PATH, "started\\n", "utf8");
+  writeFileSync(process.env.AFORA_BROWSER_OVERRIDE_STARTED_PATH, "started\\n", "utf8");
 }
 
 export async function stopBrowserControlService() {
-  writeFileSync(process.env.OPENCLAW_BROWSER_OVERRIDE_STOPPED_PATH, "stopped\\n", "utf8");
+  writeFileSync(process.env.AFORA_BROWSER_OVERRIDE_STOPPED_PATH, "stopped\\n", "utf8");
 }
 `.trim();
 }
@@ -669,9 +669,9 @@ export async function runInstalledBrowserOverrideImportSmoke(
     cwd: packageRoot,
     env: {
       ...params.env,
-      OPENCLAW_BROWSER_CONTROL_MODULE: pathToFileURL(overridePath).href,
-      OPENCLAW_BROWSER_OVERRIDE_STARTED_PATH: startedPath,
-      OPENCLAW_BROWSER_OVERRIDE_STOPPED_PATH: stoppedPath,
+      AFORA_BROWSER_CONTROL_MODULE: pathToFileURL(overridePath).href,
+      AFORA_BROWSER_OVERRIDE_STARTED_PATH: startedPath,
+      AFORA_BROWSER_OVERRIDE_STOPPED_PATH: stoppedPath,
     },
     logPath: params.logPath,
     timeoutMs: 60_000,
@@ -824,12 +824,12 @@ export function resolveInstalledPackageRootFromCliPath(
 
 function installedPackageRoot(prefixDir: string, platform = process.platform) {
   return platform === "win32"
-    ? join(prefixDir, "node_modules", "openclaw")
-    : join(prefixDir, "lib", "node_modules", "openclaw");
+    ? join(prefixDir, "node_modules", "afora")
+    : join(prefixDir, "lib", "node_modules", "afora");
 }
 
 export function installedEntryPath(prefixDir: string) {
-  return join(installedPackageRoot(prefixDir), "openclaw.mjs");
+  return join(installedPackageRoot(prefixDir), "afora.mjs");
 }
 
 function npmShimPath(prefixDir: string) {

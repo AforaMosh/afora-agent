@@ -44,7 +44,7 @@ export function buildRemoteProtectedSkillMounts(params: {
       localRoot: path.join(materializedSkillsWorkspaceDir, "skills"),
       containerRoot: path.posix.join(
         params.workspaceContainerRoot,
-        ".openclaw",
+        ".afora",
         "sandbox-skills",
         "skills",
       ),
@@ -73,7 +73,7 @@ export function buildRemoteProtectedSkillMounts(params: {
         localRoot: path.join(materializedSkillsWorkspaceDir, "skills"),
         containerRoot: path.posix.join(
           params.agentContainerRoot,
-          ".openclaw",
+          ".afora",
           "sandbox-skills",
           "skills",
         ),
@@ -109,13 +109,13 @@ export function buildRemoteProtectedSkillRoots(params: {
   const roots = [
     path.posix.join(params.workspaceContainerRoot, "skills"),
     path.posix.join(params.workspaceContainerRoot, ".agents", "skills"),
-    path.posix.join(params.workspaceContainerRoot, ".openclaw", "sandbox-skills", "skills"),
+    path.posix.join(params.workspaceContainerRoot, ".afora", "sandbox-skills", "skills"),
   ];
   if (params.includeAgentMount) {
     roots.push(
       path.posix.join(params.agentContainerRoot, "skills"),
       path.posix.join(params.agentContainerRoot, ".agents", "skills"),
-      path.posix.join(params.agentContainerRoot, ".openclaw", "sandbox-skills", "skills"),
+      path.posix.join(params.agentContainerRoot, ".afora", "sandbox-skills", "skills"),
     );
   }
   return roots;

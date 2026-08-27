@@ -37,13 +37,13 @@ import {
   resolveUiKnownSelectedGlobalAgentId,
 } from "../lib/sessions/session-key.ts";
 import { isTerminalAvailable } from "../lib/terminal-availability.ts";
-import { OpenClawLightDomElement } from "../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../lit/afora-element.ts";
 import { SubscriptionsController } from "../lit/subscriptions-controller.ts";
 import type { ChatPage } from "../pages/chat/chat-page.ts";
 import { deleteStoredChatSessionSnapshots } from "../pages/chat/session-snapshot-invalidation.runtime.ts";
 import type { NewSessionTarget } from "../pages/new-session/location.ts";
 import { selectShellRouteState, type ShellRouteState } from "./app-host-route-state.ts";
-import { OpenClawApp } from "./app-root.ts";
+import { AforaApp } from "./app-root.ts";
 import {
   isBrowserPanelAvailable,
   isDesktopPanelAvailable,
@@ -113,8 +113,8 @@ function equalShellRouteState(previous: ShellRouteState, next: ShellRouteState):
   );
 }
 
-class OpenClawShell
-  extends OpenClawLightDomElement
+class AforaShell
+  extends AforaLightDomElement
   implements
     ShellChromeHost,
     ShellGatewayHost,
@@ -137,15 +137,15 @@ class OpenClawShell
   readonly desktopPanelElement = DESKTOP_PANEL_ELEMENT;
   readonly custodianPanelElement = CUSTODIAN_PANEL_ELEMENT;
   readonly execApprovalElement = EXEC_APPROVAL_ELEMENT;
-  @query("openclaw-command-palette") commandPalette: CommandPaletteElement | undefined;
-  @query("openclaw-exec-approval")
+  @query("afora-command-palette") commandPalette: CommandPaletteElement | undefined;
+  @query("afora-exec-approval")
   approvalOverlay: (HTMLElement & { show(): void; dialogOpen?: boolean }) | undefined;
   commandPaletteTarget: CommandPaletteTargetDetail | undefined;
   navDrawerTrigger: HTMLElement | null = null;
   // Desktop and modal navigation are two slots for the same live sidebar.
   // Moving its element preserves session controllers and the resident pet
   // instead of resetting their lifecycle at every responsive breakpoint.
-  readonly navigationSidebar = document.createElement("openclaw-app-sidebar") as AppSidebarElement;
+  readonly navigationSidebar = document.createElement("afora-app-sidebar") as AppSidebarElement;
   // Where "Back to app" / Escape leaves the settings takeover; falls back to
   // chat (the app default route) when settings was the entry point.
   lastWorkspaceLocation: { routeId: RouteId; pathname: string; search: string } | null = null;
@@ -555,7 +555,7 @@ class OpenClawShell
     if (isSessionRouteId(routeId) && this.activeSessionKey) {
       primaryContext = this.chatTitleContext(context, outboxScopeHost) || primaryContext;
     } else if (routeId === "custodian") {
-      primaryContext = t("nav.askOpenClaw");
+      primaryContext = t("nav.askAfora");
     }
     const title = formatDocumentTitle({
       context: primaryContext,
@@ -570,7 +570,7 @@ class OpenClawShell
 
   override updated() {
     this.syncDocumentTitle();
-    const chatPage = this.querySelector<ChatPage>("openclaw-chat-page");
+    const chatPage = this.querySelector<ChatPage>("afora-chat-page");
     if (chatPage) {
       chatPage.navDrawerOpen = this.navDrawerOpen && !this.onboardingMode;
     }
@@ -593,7 +593,7 @@ class OpenClawShell
       if (desktopAvailable) {
         preloadOptionalElement(this, this.desktopPanelElement);
       }
-      if (isGatewayMethodAdvertised(gatewaySnapshot, "openclaw.chat") === true) {
+      if (isGatewayMethodAdvertised(gatewaySnapshot, "afora.chat") === true) {
         preloadOptionalElement(this, this.custodianPanelElement);
       }
     }
@@ -667,9 +667,9 @@ class OpenClawShell
     return renderApplicationShell(this);
   }
 }
-if (!customElements.get("openclaw-app")) {
-  customElements.define("openclaw-app", OpenClawApp);
+if (!customElements.get("afora-app")) {
+  customElements.define("afora-app", AforaApp);
 }
-if (!customElements.get("openclaw-app-shell")) {
-  customElements.define("openclaw-app-shell", OpenClawShell);
+if (!customElements.get("afora-app-shell")) {
+  customElements.define("afora-app-shell", AforaShell);
 }

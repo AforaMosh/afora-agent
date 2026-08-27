@@ -9,9 +9,9 @@ import {
 } from "../config/sessions/archive-compression.js";
 import type { TranscriptEvent } from "../config/sessions/session-accessor.sqlite-contract.js";
 import { resolveSqliteTranscriptArchiveDirectory } from "../config/sessions/session-accessor.sqlite-scope.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../state/openclaw-agent-db.generated.js";
-import { SESSION_TRANSCRIPT_ARCHIVES_TABLE } from "../state/openclaw-agent-session-transcript-archive-schema.js";
-import { OPENCLAW_SQLITE_BUSY_TIMEOUT_MS } from "../state/openclaw-state-db.js";
+import type { DB as AforaAgentKyselyDatabase } from "../state/afora-agent-db.generated.js";
+import { SESSION_TRANSCRIPT_ARCHIVES_TABLE } from "../state/afora-agent-session-transcript-archive-schema.js";
+import { AFORA_SQLITE_BUSY_TIMEOUT_MS } from "../state/afora-state-db.js";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
@@ -24,7 +24,7 @@ import { transformHistoricalTranscriptEvent } from "./state-migrations.transcrip
 export const TRANSCRIPT_DIRECTIVE_MIGRATION_BATCH_SIZE = 32;
 
 type TranscriptArchiveMigrationDatabase = Pick<
-  OpenClawAgentKyselyDatabase,
+  AforaAgentKyselyDatabase,
   "session_transcript_archives"
 >;
 
@@ -324,7 +324,7 @@ export function migrateTranscriptDirectiveArchives(params: {
         params.database,
         () => rewriteArchiveRow(params.database, planned),
         {
-          busyTimeoutMs: OPENCLAW_SQLITE_BUSY_TIMEOUT_MS,
+          busyTimeoutMs: AFORA_SQLITE_BUSY_TIMEOUT_MS,
           databaseLabel: params.pathname,
           operationLabel: "historical-transcript-archive-directives",
         },
@@ -342,7 +342,7 @@ export function migrateTranscriptDirectiveArchives(params: {
             writeCursor: params.writeCursor,
           }),
         {
-          busyTimeoutMs: OPENCLAW_SQLITE_BUSY_TIMEOUT_MS,
+          busyTimeoutMs: AFORA_SQLITE_BUSY_TIMEOUT_MS,
           databaseLabel: params.pathname,
           operationLabel: "historical-transcript-archive-cursor",
         },

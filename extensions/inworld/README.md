@@ -1,12 +1,12 @@
-# OpenClaw Inworld Plugin
+# Afora Inworld Plugin
 
-Official OpenClaw plugin for Inworld.
+Official Afora plugin for Inworld.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/inworld-speech
-openclaw gateway restart
+afora plugins install @afora/inworld-speech
+afora gateway restart
 ```
 
-See <https://docs.openclaw.ai/providers/inworld> for setup and configuration.
+See <https://docs.afora.ai/providers/inworld> for setup and configuration.

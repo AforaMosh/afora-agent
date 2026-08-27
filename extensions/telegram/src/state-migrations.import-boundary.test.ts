@@ -3,7 +3,7 @@ import path from "node:path";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-// Doctor enumeration cold-loads this closure for every operator running `openclaw
+// Doctor enumeration cold-loads this closure for every operator running `afora
 // doctor` or a startup migration scan, so it must reach only leaf modules. Each
 // runtime store below owns the same rows but also value-loads the plugin runtime
 // slot, the logger graph, or the ACP/session-binding graphs; the row shapes and

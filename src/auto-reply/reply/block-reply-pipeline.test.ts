@@ -1,5 +1,5 @@
 /** Tests block reply pipeline buffering, dedupe, and final flush behavior. */
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getReplyPayloadMetadata, setReplyPayloadMetadata } from "../reply-payload.js";
 import { createBlockReplyContentKey, createBlockReplyPipeline } from "./block-reply-pipeline.js";

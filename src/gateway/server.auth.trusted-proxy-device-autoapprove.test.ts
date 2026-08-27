@@ -38,12 +38,12 @@ const TRUSTED_PROXY_HEADERS = {
 function trustedProxyHeaders(declaredScopes?: string): Record<string, string> {
   return {
     ...TRUSTED_PROXY_HEADERS,
-    ...(declaredScopes === undefined ? {} : { "x-openclaw-scopes": declaredScopes }),
+    ...(declaredScopes === undefined ? {} : { "x-afora-scopes": declaredScopes }),
   };
 }
 
 function deviceIdentityPath(label: string): string {
-  return path.join(os.tmpdir(), `openclaw-${label}-${randomUUID()}.sqlite`);
+  return path.join(os.tmpdir(), `afora-${label}-${randomUUID()}.sqlite`);
 }
 
 async function openBrowserWs(port: number, headers: Record<string, string>): Promise<WebSocket> {

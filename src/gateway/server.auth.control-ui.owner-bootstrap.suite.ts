@@ -27,7 +27,7 @@ export function registerControlUiOwnerBootstrapSuite(): void {
     const { server, port, prevToken } = await startProxiedControlUiServer("secret");
 
     const { identityPath, identity } = await createOperatorIdentityFixture(
-      "openclaw-bootstrap-control-ui-",
+      "afora-bootstrap-control-ui-",
     );
 
     try {
@@ -141,7 +141,7 @@ export function registerControlUiOwnerBootstrapSuite(): void {
     testState.gatewayControlUi = { allowedOrigins: ["https://localhost"] };
     const { server, port, prevToken } = await startProxiedControlUiServer("secret");
     const { identityPath, identity } = await createOperatorIdentityFixture(
-      "openclaw-bootstrap-control-ui-bounded-",
+      "afora-bootstrap-control-ui-bounded-",
     );
 
     try {
@@ -200,7 +200,7 @@ export function registerControlUiOwnerBootstrapSuite(): void {
     const { CONTROL_UI_OWNER_BOOTSTRAP_OPERATOR_SCOPES, CONTROL_UI_OWNER_BOOTSTRAP_PROFILE } =
       await import("../shared/device-bootstrap-profile.js");
     const { identity, identityPath } = await seedApprovedOperatorReadPairing({
-      identityPrefix: "openclaw-control-ui-owner-upgrade-",
+      identityPrefix: "afora-control-ui-owner-upgrade-",
       clientId: CONTROL_UI_CLIENT.id,
       clientMode: CONTROL_UI_CLIENT.mode,
       displayName: "control-ui-owner-upgrade",
@@ -215,7 +215,7 @@ export function registerControlUiOwnerBootstrapSuite(): void {
     testState.gatewayControlUi = { allowedOrigins: ["https://localhost"] };
     const { server, port, prevToken } = await startProxiedControlUiServer("secret");
     const { identityPath: secondIdentityPath } = await createOperatorIdentityFixture(
-      "openclaw-control-ui-owner-upgrade-second-browser-",
+      "afora-control-ui-owner-upgrade-second-browser-",
     );
 
     try {
@@ -308,7 +308,7 @@ export function registerControlUiOwnerBootstrapSuite(): void {
     const { server, port, prevToken } = await startProxiedControlUiServer("secret");
 
     const { identityPath, identity } = await createOperatorIdentityFixture(
-      "openclaw-bootstrap-control-ui-missing-purpose-",
+      "afora-bootstrap-control-ui-missing-purpose-",
     );
 
     try {
@@ -353,7 +353,7 @@ export function registerControlUiOwnerBootstrapSuite(): void {
     const { server, port, prevToken } = await startProxiedControlUiServer("secret");
 
     const { identityPath, identity } = await createOperatorIdentityFixture(
-      "openclaw-bootstrap-control-ui-node-profile-",
+      "afora-bootstrap-control-ui-node-profile-",
     );
 
     try {

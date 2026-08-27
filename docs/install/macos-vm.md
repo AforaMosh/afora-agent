@@ -1,7 +1,7 @@
 ---
-summary: "Run OpenClaw in a sandboxed macOS VM (local or hosted) when you need isolation or iMessage"
+summary: "Run Afora in a sandboxed macOS VM (local or hosted) when you need isolation or iMessage"
 read_when:
-  - You want OpenClaw isolated from your main macOS environment
+  - You want Afora isolated from your main macOS environment
   - You want iMessage integration in a sandbox
   - You want a resettable macOS environment you can clone
   - You want to compare local vs hosted macOS VM options
@@ -20,7 +20,7 @@ Use a macOS VM only when you specifically need macOS-only capabilities such as i
 
 ### Local VM on your Apple Silicon Mac (Lume)
 
-Run OpenClaw in a sandboxed macOS VM on your existing Apple Silicon Mac using [Lume](https://cua.ai/docs/lume). This gives you:
+Run Afora in a sandboxed macOS VM on your existing Apple Silicon Mac using [Lume](https://cua.ai/docs/lume). This gives you:
 
 - Full macOS environment in isolation (your host stays clean)
 - iMessage support via `imsg`; the default local path is impossible on Linux/Windows
@@ -34,15 +34,15 @@ If you want macOS in the cloud, hosted Mac providers work too:
 - [MacStadium](https://www.macstadium.com/) (hosted Macs)
 - Other hosted Mac vendors also work; follow their VM + SSH docs
 
-Once you have SSH access to a macOS VM, continue at [Install OpenClaw](#6-install-openclaw) below.
+Once you have SSH access to a macOS VM, continue at [Install Afora](#6-install-afora) below.
 
 ## Quick path (Lume, experienced users)
 
 1. Install Lume.
-2. `lume create openclaw --os macos --ipsw latest`
+2. `lume create afora --os macos --ipsw latest`
 3. Complete Setup Assistant, enable Remote Login (SSH).
-4. `lume run openclaw --no-display`
-5. SSH in, install OpenClaw, configure channels.
+4. `lume run afora --no-display`
+5. SSH in, install Afora, configure channels.
 6. Done.
 
 ## What you need (Lume)
@@ -75,7 +75,7 @@ Docs: [Lume Installation](https://cua.ai/docs/lume/guide/getting-started/install
 ## 2) Create the macOS VM
 
 ```bash
-lume create openclaw --os macos --ipsw latest
+lume create afora --os macos --ipsw latest
 ```
 
 This downloads macOS and creates the VM. A VNC window opens automatically.
@@ -101,7 +101,7 @@ After setup completes:
 ## 4) Get the VM IP address
 
 ```bash
-lume get openclaw
+lume get afora
 ```
 
 Look for the IP address (usually `192.168.64.x`).
@@ -114,14 +114,14 @@ ssh youruser@192.168.64.X
 
 Replace `youruser` with the account you created, and the IP with your VM's IP.
 
-## 6) Install OpenClaw
+## 6) Install Afora
 
 Inside the VM, use the following command on npm 12 or npm 11.16+. On npm 11.12
-and earlier, omit `--allow-scripts=openclaw`; upgrade npm 11.13–11.15 first.
+and earlier, omit `--allow-scripts=afora`; upgrade npm 11.13–11.15 first.
 
 ```bash
-npm install -g openclaw@latest --allow-scripts=openclaw
-openclaw onboard --install-daemon
+npm install -g afora@latest --allow-scripts=afora
+afora onboard --install-daemon
 ```
 
 Follow the onboarding prompts to set up your model provider (Anthropic, OpenAI, etc.).
@@ -129,21 +129,21 @@ Follow the onboarding prompts to set up your model provider (Anthropic, OpenAI, 
 ## 7) Configure channels
 
 Keep the Telegram token in the Gateway environment rather than copying it into
-`openclaw.json`. Add `TELEGRAM_BOT_TOKEN=<bot-token>` to
-`~/.openclaw/.env`, then load it in the current shell and add the channel:
+`afora.json`. Add `TELEGRAM_BOT_TOKEN=<bot-token>` to
+`~/.afora/.env`, then load it in the current shell and add the channel:
 
 ```bash
 export TELEGRAM_BOT_TOKEN="<bot-token>"
-openclaw channels add --channel telegram --use-env
+afora channels add --channel telegram --use-env
 ```
 
 The managed Gateway reads the same state-directory `.env` after restart. For
 WhatsApp, configure your allowlist and then scan the login QR code:
 
 ```bash
-openclaw config set channels.whatsapp.dmPolicy allowlist
-openclaw config set channels.whatsapp.allowFrom '["+15551234567"]' --strict-json
-openclaw channels login --channel whatsapp
+afora config set channels.whatsapp.dmPolicy allowlist
+afora config set channels.whatsapp.allowFrom '["+15551234567"]' --strict-json
+afora channels login --channel whatsapp
 ```
 
 ## 8) Run the VM headlessly
@@ -151,28 +151,28 @@ openclaw channels login --channel whatsapp
 Stop the VM and restart without display:
 
 ```bash
-lume stop openclaw
-lume run openclaw --no-display
+lume stop afora
+lume run afora --no-display
 ```
 
-The VM runs in the background; OpenClaw's daemon keeps the gateway running. To check status:
+The VM runs in the background; Afora's daemon keeps the gateway running. To check status:
 
 ```bash
-ssh youruser@192.168.64.X "openclaw status"
+ssh youruser@192.168.64.X "afora status"
 ```
 
 ## Bonus: iMessage integration
 
-This is the killer feature of running on macOS. Use [iMessage](/channels/imessage) with `imsg` to add Messages to OpenClaw.
+This is the killer feature of running on macOS. Use [iMessage](/channels/imessage) with `imsg` to add Messages to Afora.
 
 Inside the VM:
 
 1. Sign in to Messages.
 2. Install `imsg`.
-3. Grant Full Disk Access and Automation permission for the process running OpenClaw/`imsg`.
+3. Grant Full Disk Access and Automation permission for the process running Afora/`imsg`.
 4. Verify RPC support with `imsg rpc --help`.
 
-Add to your OpenClaw config:
+Add to your Afora config:
 
 ```json5
 {
@@ -193,16 +193,16 @@ Restart the gateway. Your agent can now send and receive iMessages. Full setup d
 Before customizing further, snapshot your clean state:
 
 ```bash
-lume stop openclaw
-lume clone openclaw openclaw-golden
+lume stop afora
+lume clone afora afora-golden
 ```
 
 Reset anytime:
 
 ```bash
-lume stop openclaw && lume delete openclaw
-lume clone openclaw-golden openclaw
-lume run openclaw --no-display
+lume stop afora && lume delete afora
+lume clone afora-golden afora
+lume run afora --no-display
 ```
 
 ## Running 24/7
@@ -220,9 +220,9 @@ For true always-on, consider a dedicated Mac mini or a small VPS. See [VPS hosti
 | Problem                  | Solution                                                                            |
 | ------------------------ | ----------------------------------------------------------------------------------- |
 | Cannot SSH into VM       | Check "Remote Login" is enabled in the VM's System Settings                         |
-| VM IP not showing        | Wait for VM to fully boot, run `lume get openclaw` again                            |
+| VM IP not showing        | Wait for VM to fully boot, run `lume get afora` again                            |
 | Lume command not found   | Add `~/.local/bin` to your PATH                                                     |
-| WhatsApp QR not scanning | Ensure you are logged into the VM (not host) when running `openclaw channels login` |
+| WhatsApp QR not scanning | Ensure you are logged into the VM (not host) when running `afora channels login` |
 
 ## Related docs
 

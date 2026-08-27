@@ -41,7 +41,7 @@ function buildCiDispatchArgs(record) {
 }
 
 function listCiRuns(headRefOid) {
-  return execGhJson(workflowRunsApiArgs("openclaw/openclaw", headRefOid, "workflow_dispatch", 20), {
+  return execGhJson(workflowRunsApiArgs("AforaMosh/afora-agent", headRefOid, "workflow_dispatch", 20), {
     stdio: ["ignore", "pipe", "pipe"],
   }).workflow_runs;
 }
@@ -163,7 +163,7 @@ async function main(argv = process.argv.slice(2)) {
       "run_url=pending (GitHub accepted the dispatch, but Actions has not indexed it yet)",
     );
     console.log(
-      `inspect_with=gh api --method GET repos/openclaw/openclaw/actions/workflows/ci.yml/runs -f event=workflow_dispatch -f head_sha=${record.headRefOid} -f per_page=20`,
+      `inspect_with=gh api --method GET repos/AforaMosh/afora-agent/actions/workflows/ci.yml/runs -f event=workflow_dispatch -f head_sha=${record.headRefOid} -f per_page=20`,
     );
   }
 }

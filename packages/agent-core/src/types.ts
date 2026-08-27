@@ -9,7 +9,7 @@ import type {
   TextContent,
   Tool,
   ToolResultMessage,
-} from "@openclaw/llm-core";
+} from "@afora/llm-core";
 // Agent Core type module defines shared TypeScript contracts.
 import type { Static, TSchema } from "typebox";
 
@@ -60,7 +60,7 @@ export interface BeforeToolCallResult {
 export interface InternalToolBatchCall {
   toolCall: AgentToolCall;
   args: unknown;
-  /** Resolved tool identity for OpenClaw-owned argument canonicalization. */
+  /** Resolved tool identity for Afora-owned argument canonicalization. */
   tool?: AgentTool;
 }
 
@@ -75,14 +75,14 @@ export interface ToolLoopIntervention {
   reason: string;
 }
 
-/** Context for OpenClaw-owned whole-batch tool admission. */
+/** Context for Afora-owned whole-batch tool admission. */
 export interface InternalBeforeToolBatchContext {
   assistantMessage: AssistantMessage;
   calls: InternalToolBatchCall[];
   context: AgentContext;
 }
 
-/** Result of OpenClaw-owned whole-batch tool admission. */
+/** Result of Afora-owned whole-batch tool admission. */
 export interface InternalBeforeToolBatchResult {
   intervention?: ToolLoopIntervention;
 }
@@ -343,7 +343,7 @@ export interface AgentLoopConfig extends SimpleStreamOptions {
     signal?: AbortSignal,
   ) => Promise<BeforeToolCallResult | undefined>;
 
-  /** @internal OpenClaw-owned batch admission. Not a plugin or session SDK hook. */
+  /** @internal Afora-owned batch admission. Not a plugin or session SDK hook. */
   beforeToolBatch?: (
     context: InternalBeforeToolBatchContext,
     signal?: AbortSignal,
@@ -393,7 +393,7 @@ export interface AgentLoopConfig extends SimpleStreamOptions {
 /**
  * Thinking/reasoning level for models that support it.
  * Note: "xhigh" is only supported by selected model families. Use model thinking-level metadata
- * from openclaw/plugin-sdk/llm to detect support for a concrete model.
+ * from afora/plugin-sdk/llm to detect support for a concrete model.
  */
 export type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
 

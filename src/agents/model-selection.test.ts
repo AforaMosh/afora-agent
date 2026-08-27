@@ -1,6 +1,6 @@
 // Exercises core model selection, aliases, thinking defaults, and visibility policy.
 import { afterEach, describe, it, expect, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { resetLogger, setLoggerOverride } from "../logging/logger.js";
 import { createWarnLogCapture } from "../logging/test-helpers/warn-log-capture.js";
 import { resolveAgentHarnessPolicy } from "./harness/policy.js";
@@ -156,7 +156,7 @@ const EXPLICIT_ALLOWLIST_CONFIG = {
       modelPolicy: { allow: ["anthropic/claude-sonnet-4-6"] },
     },
   },
-} as OpenClawConfig;
+} as AforaConfig;
 
 const BUNDLED_ALLOWLIST_CATALOG = [
   { provider: "anthropic", id: "claude-sonnet-4-6", name: "Claude Sonnet 4.5" },
@@ -172,7 +172,7 @@ const ANTHROPIC_OPUS_CATALOG = [
   },
 ];
 
-function resolveAnthropicOpusThinking(cfg: OpenClawConfig) {
+function resolveAnthropicOpusThinking(cfg: AforaConfig) {
   // Helper keeps thinking-default assertions focused on config differences
   // while using the same catalog metadata shape as production selection.
   return resolveThinkingDefault({
@@ -215,7 +215,7 @@ function createAgentFallbackConfig(params: {
           }
         : {}),
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 function createProviderWithModelsConfig(provider: string, models: Array<Record<string, unknown>>) {
@@ -228,7 +228,7 @@ function createProviderWithModelsConfig(provider: string, models: Array<Record<s
         },
       },
     },
-  } as Partial<OpenClawConfig>;
+  } as Partial<AforaConfig>;
 }
 
 function createConfiguredModelRefConfig(params: {
@@ -248,7 +248,7 @@ function createConfiguredModelRefConfig(params: {
         }
       : {}),
     ...(params.providers ? { models: { providers: params.providers } } : {}),
-  } as unknown as OpenClawConfig;
+  } as unknown as AforaConfig;
 }
 
 function createSubagentSelectionConfig(params: {
@@ -268,7 +268,7 @@ function createSubagentSelectionConfig(params: {
       },
       ...(params.agents ? { list: params.agents } : {}),
     },
-  } as unknown as OpenClawConfig;
+  } as unknown as AforaConfig;
 }
 
 function createProviderInferenceAllowlistConfig(...modelRefs: string[]) {
@@ -278,7 +278,7 @@ function createProviderInferenceAllowlistConfig(...modelRefs: string[]) {
         models: Object.fromEntries(modelRefs.map((modelRef) => [modelRef, {}])),
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 function createProviderInferenceCatalogConfig(providers: Record<string, string[]>) {
@@ -291,12 +291,12 @@ function createProviderInferenceCatalogConfig(providers: Record<string, string[]
         ]),
       ),
     },
-  } as unknown as OpenClawConfig;
+  } as unknown as AforaConfig;
 }
 
-function resolveConfiguredRefForTest(cfg: Partial<OpenClawConfig>) {
+function resolveConfiguredRefForTest(cfg: Partial<AforaConfig>) {
   return resolveConfiguredModelRef({
-    cfg: cfg as OpenClawConfig,
+    cfg: cfg as AforaConfig,
     defaultProvider: "openai",
     defaultModel: "gpt-5.4",
   });
@@ -306,7 +306,7 @@ describe("model-selection", () => {
   it("shares the lightweight runtime resolver with the public selection facade", () => {
     expect(getModelRefStatus).toBe(getNarrowModelRefStatus);
     const params = {
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       catalog: [],
       raw: "anthropic/claude-sonnet-4-6",
       defaultProvider: "anthropic",
@@ -797,7 +797,7 @@ describe("model-selection", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       const model = buildConfiguredModelCatalog({ cfg }).find(
         (entry) => entry.provider === "vllm" && entry.id === "Qwen/Qwen3-8B",
@@ -823,7 +823,7 @@ describe("model-selection", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       const model = buildConfiguredModelCatalog({ cfg }).find(
         (entry) => entry.provider === "amazon-bedrock" && entry.id === "company-fable",
@@ -848,7 +848,7 @@ describe("model-selection", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       const model = buildConfiguredModelCatalog({ cfg }).find(
         (entry) => entry.provider === "custom" && entry.id === "custom-reasoning",
@@ -860,7 +860,7 @@ describe("model-selection", () => {
 
   describe("buildModelAliasIndex", () => {
     it("should build alias index from config", () => {
-      const cfg: Partial<OpenClawConfig> = {
+      const cfg: Partial<AforaConfig> = {
         agents: {
           defaults: {
             models: {
@@ -872,7 +872,7 @@ describe("model-selection", () => {
       };
 
       const index = buildModelAliasIndex({
-        cfg: cfg as OpenClawConfig,
+        cfg: cfg as AforaConfig,
         defaultProvider: "anthropic",
       });
 
@@ -894,7 +894,7 @@ describe("model-selection", () => {
             },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
 
       const index = buildModelAliasIndex({ cfg, defaultProvider: "openai" });
 
@@ -913,7 +913,7 @@ describe("model-selection", () => {
       const models = Object.fromEntries(
         Array.from({ length: 25 }, (_, index) => [`openai/gpt-5.5-aliasless-${index}`, {}]),
       );
-      const cfg: Partial<OpenClawConfig> = {
+      const cfg: Partial<AforaConfig> = {
         agents: {
           defaults: {
             models: {
@@ -925,7 +925,7 @@ describe("model-selection", () => {
       };
 
       const index = buildModelAliasIndex({
-        cfg: cfg as OpenClawConfig,
+        cfg: cfg as AforaConfig,
         defaultProvider: "openai",
       });
 
@@ -960,7 +960,7 @@ describe("model-selection", () => {
     });
 
     it("overlays configured provider metadata and alias onto matching catalog entries", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           defaults: {
             model: { primary: "openai/gpt-test-z" },
@@ -985,7 +985,7 @@ describe("model-selection", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       const result = buildAllowedModelSet({
         cfg,
@@ -1007,7 +1007,7 @@ describe("model-selection", () => {
     });
 
     it("keeps compat catalog-owned while overlaying metadata after manifest normalization", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         models: {
           providers: {
             nvidia: {
@@ -1023,7 +1023,7 @@ describe("model-selection", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       const result = buildAllowedModelSet({
         cfg,
@@ -1043,7 +1043,7 @@ describe("model-selection", () => {
     });
 
     it("keeps configured provider models visible when the catalog is otherwise allow-any", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           defaults: {
             model: { primary: "ollama/existing" },
@@ -1065,7 +1065,7 @@ describe("model-selection", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       const result = buildAllowedModelSet({
         cfg,
@@ -1094,7 +1094,7 @@ describe("model-selection", () => {
     });
 
     it("allows every discovered catalog model for provider wildcard entries", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           defaults: {
             models: {
@@ -1104,7 +1104,7 @@ describe("model-selection", () => {
             modelPolicy: { allow: ["openai/*", "vllm/*"] },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       const result = buildAllowedModelSet({
         cfg,
@@ -1133,7 +1133,7 @@ describe("model-selection", () => {
     });
 
     it("preserves provider wildcard intent when catalog rows are unavailable", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           defaults: {
             models: {
@@ -1142,7 +1142,7 @@ describe("model-selection", () => {
             modelPolicy: { allow: ["openai/*"] },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       const result = buildAllowedModelSet({
         cfg,
@@ -1158,7 +1158,7 @@ describe("model-selection", () => {
     });
 
     it("exposes wildcard allow and visible catalog behavior through one policy", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           defaults: {
             models: {
@@ -1168,7 +1168,7 @@ describe("model-selection", () => {
             modelPolicy: { allow: ["openai/*", "anthropic/claude-sonnet-4-6"] },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       const policy = createModelVisibilityPolicy({
         cfg,
@@ -1199,7 +1199,7 @@ describe("model-selection", () => {
     });
 
     it("keeps exact same-provider entries visible beside wildcard catalog rows", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           defaults: {
             models: {
@@ -1209,7 +1209,7 @@ describe("model-selection", () => {
             modelPolicy: { allow: ["vllm/*", "vllm/manual"] },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       const policy = createModelVisibilityPolicy({
         cfg,
@@ -1230,7 +1230,7 @@ describe("model-selection", () => {
     });
 
     it("does not re-add a default outside mixed wildcard and exact filters", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           defaults: {
             models: {
@@ -1240,7 +1240,7 @@ describe("model-selection", () => {
             modelPolicy: { allow: ["openai/*", "google/gemini-test"] },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       const result = buildAllowedModelSet({
         cfg,
@@ -1262,7 +1262,7 @@ describe("model-selection", () => {
     });
 
     it("unions exact model entries with provider wildcard entries", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           defaults: {
             models: {
@@ -1272,7 +1272,7 @@ describe("model-selection", () => {
             modelPolicy: { allow: ["anthropic/claude-sonnet-4-6", "openai/*"] },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       const result = buildAllowedModelSet({
         cfg,
@@ -1296,7 +1296,7 @@ describe("model-selection", () => {
     });
 
     it("matches allowlisted catalog entries with normalized provider and model ids", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           defaults: {
             models: {
@@ -1305,7 +1305,7 @@ describe("model-selection", () => {
             modelPolicy: { allow: ["modelscope/Qwen/Qwen3.5-35B-A3B"] },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       const result = buildAllowedModelSet({
         cfg,
@@ -1328,7 +1328,7 @@ describe("model-selection", () => {
     });
 
     it("applies configured provider metadata and alias to synthetic allowlist entries", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           defaults: {
             model: { primary: "nvidia/moonshotai/kimi-k2.5" },
@@ -1354,7 +1354,7 @@ describe("model-selection", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       const result = buildAllowedModelSet({
         cfg,
@@ -1442,7 +1442,7 @@ describe("model-selection", () => {
       {
         name: "keeps deprecated catalog refs selectable",
         params: {
-          cfg: {} as OpenClawConfig,
+          cfg: {} as AforaConfig,
           catalog: [
             {
               provider: "openai",
@@ -1488,7 +1488,7 @@ describe("model-selection", () => {
                 },
               },
             },
-          } as OpenClawConfig,
+          } as AforaConfig,
           catalog: BUNDLED_ALLOWLIST_CATALOG,
           raw: "claude-cli/claude-sonnet-4-6",
           defaultProvider: "anthropic",
@@ -1510,7 +1510,7 @@ describe("model-selection", () => {
                 },
               },
             },
-          } as unknown as OpenClawConfig,
+          } as unknown as AforaConfig,
           catalog: [],
           raw: "openai/@cf/openai/gpt-oss-20b@cf:default",
           defaultProvider: "anthropic",
@@ -1533,7 +1533,7 @@ describe("model-selection", () => {
                 },
               },
             },
-          } as OpenClawConfig,
+          } as AforaConfig,
           catalog: [],
           raw: "kimi-k2.6",
           defaultProvider: "openai",
@@ -1556,7 +1556,7 @@ describe("model-selection", () => {
                 },
               },
             },
-          } as OpenClawConfig,
+          } as AforaConfig,
           catalog: [],
           raw: "xiaomi/mimo-v2-pro-mit",
           defaultProvider: "openai",
@@ -1609,7 +1609,7 @@ describe("model-selection", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         defaultProvider: "openai",
       });
 
@@ -1759,7 +1759,7 @@ describe("model-selection", () => {
             },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
 
       const result = resolveConfiguredModelRef({
         cfg,
@@ -1771,9 +1771,9 @@ describe("model-selection", () => {
     });
 
     it("should fall back to the configured default provider and warn if provider is missing for non-alias", async () => {
-      const warnLogs = createWarnLogCapture("openclaw-model-selection-test");
+      const warnLogs = createWarnLogCapture("afora-model-selection-test");
       try {
-        const cfg: Partial<OpenClawConfig> = {
+        const cfg: Partial<AforaConfig> = {
           agents: {
             defaults: {
               model: { primary: "claude-3-5-sonnet" },
@@ -1782,7 +1782,7 @@ describe("model-selection", () => {
         };
 
         const result = resolveConfiguredModelRef({
-          cfg: cfg as OpenClawConfig,
+          cfg: cfg as AforaConfig,
           defaultProvider: "google",
           defaultModel: "gemini-pro",
         });
@@ -1799,9 +1799,9 @@ describe("model-selection", () => {
     });
 
     it("sanitizes control characters in providerless-model warnings", async () => {
-      const warnLogs = createWarnLogCapture("openclaw-model-selection-test");
+      const warnLogs = createWarnLogCapture("afora-model-selection-test");
       try {
-        const cfg: Partial<OpenClawConfig> = {
+        const cfg: Partial<AforaConfig> = {
           agents: {
             defaults: {
               model: { primary: "\u001B[31mclaude-3-5-sonnet\nspoof" },
@@ -1810,7 +1810,7 @@ describe("model-selection", () => {
         };
 
         const result = resolveConfiguredModelRef({
-          cfg: cfg as OpenClawConfig,
+          cfg: cfg as AforaConfig,
           defaultProvider: "google",
           defaultModel: "gemini-pro",
         });
@@ -1841,7 +1841,7 @@ describe("model-selection", () => {
               },
             },
           },
-        } as OpenClawConfig;
+        } as AforaConfig;
 
         const result = resolveConfiguredModelRef({
           cfg,
@@ -1872,7 +1872,7 @@ describe("model-selection", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       const result = resolveConfiguredModelRef({
         cfg,
@@ -2012,7 +2012,7 @@ describe("model-selection", () => {
             models,
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
 
       const result = resolveConfiguredModelRef({
         cfg,
@@ -2027,9 +2027,9 @@ describe("model-selection", () => {
     });
 
     it("should use default provider/model if config is empty", () => {
-      const cfg: Partial<OpenClawConfig> = {};
+      const cfg: Partial<AforaConfig> = {};
       const result = resolveConfiguredModelRef({
-        cfg: cfg as OpenClawConfig,
+        cfg: cfg as AforaConfig,
         defaultProvider: "openai",
         defaultModel: "gpt-4",
       });
@@ -2073,7 +2073,7 @@ describe("model-selection", () => {
             },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
 
       expect(
         resolveConfiguredModelRef({
@@ -2161,9 +2161,9 @@ describe("model-selection", () => {
     });
 
     it("should warn when specified model cannot be resolved and falls back to default", async () => {
-      const warnLogs = createWarnLogCapture("openclaw-model-selection-test");
+      const warnLogs = createWarnLogCapture("afora-model-selection-test");
       try {
-        const cfg: Partial<OpenClawConfig> = {
+        const cfg: Partial<AforaConfig> = {
           agents: {
             defaults: {
               model: { primary: "openai/" },
@@ -2172,7 +2172,7 @@ describe("model-selection", () => {
         };
 
         const result = resolveConfiguredModelRef({
-          cfg: cfg as OpenClawConfig,
+          cfg: cfg as AforaConfig,
           defaultProvider: "openai",
           defaultModel: "gpt-5.4",
         });
@@ -2195,7 +2195,7 @@ describe("model-selection", () => {
             model: { primary: "openrouter:auto" },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
 
       const result = resolveConfiguredModelRef({
         cfg,
@@ -2216,7 +2216,7 @@ describe("model-selection", () => {
             },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
 
       const result = resolveConfiguredModelRef({
         cfg,
@@ -2255,7 +2255,7 @@ describe("model-selection", () => {
             },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
 
       const result = resolveConfiguredModelRef({
         cfg,
@@ -2278,7 +2278,7 @@ describe("model-selection", () => {
             },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
 
       const catalog = [
         {
@@ -2331,7 +2331,7 @@ describe("model-selection", () => {
             },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
 
       const catalog = [
         {
@@ -2382,7 +2382,7 @@ describe("model-selection", () => {
             },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
 
       expect(resolveAnthropicOpusThinking(cfg)).toBe(thinking);
     });
@@ -2398,7 +2398,7 @@ describe("model-selection", () => {
             },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
 
       expect(
         resolveThinkingDefault({
@@ -2427,7 +2427,7 @@ describe("model-selection", () => {
             },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
 
       expect(
         resolveThinkingDefault({
@@ -2488,7 +2488,7 @@ describe("model-selection", () => {
     });
 
     it("uses provider policy thinking defaults when no explicit config overrides them", () => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
 
       expect(resolveAnthropicOpusThinking(cfg)).toBe("adaptive");
       expect(
@@ -2509,7 +2509,7 @@ describe("model-selection", () => {
     });
 
     it("falls back to medium when no provider thinking policy is active", () => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
 
       expect(
         resolveThinkingDefault({
@@ -2549,7 +2549,7 @@ describe("model-selection", () => {
             },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
 
       expect(
         resolveThinkingDefault({
@@ -2580,7 +2580,7 @@ describe("resolveDefaultModelForAgent", () => {
           },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveDefaultModelForAgent({ cfg, agentId: "main" })).toEqual({
       provider: "openai",
@@ -2655,7 +2655,7 @@ describe("resolveSubagentConfiguredModelSelection", () => {
         },
         list: [{ id: "research", model: "anthropic/claude-opus-4-7" }],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const resolved = resolveSubagentConfiguredModelSelection({ cfg, agentId: "research" });
 

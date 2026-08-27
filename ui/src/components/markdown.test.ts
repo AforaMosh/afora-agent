@@ -21,7 +21,7 @@ function escapedCodeBlockCopyAttribute(value: string): string {
 
 function withControlUiBasePath<T>(basePath: string, fn: () => T): T {
   const testWindow = window as Window & typeof globalThis & { [key: string]: unknown };
-  Object.defineProperty(window, "__OPENCLAW_CONTROL_UI_BASE_PATH__", {
+  Object.defineProperty(window, "__AFORA_CONTROL_UI_BASE_PATH__", {
     value: basePath,
     writable: true,
     configurable: true,
@@ -29,7 +29,7 @@ function withControlUiBasePath<T>(basePath: string, fn: () => T): T {
   try {
     return fn();
   } finally {
-    delete testWindow["__OPENCLAW_CONTROL_UI_BASE_PATH__"];
+    delete testWindow["__AFORA_CONTROL_UI_BASE_PATH__"];
   }
 }
 
@@ -52,10 +52,10 @@ describe("toSanitizedMarkdownHtml", () => {
 
   it("does not stamp presentation classes on links whose href contains 'tail'", () => {
     const fragment = htmlFragment(
-      toSanitizedMarkdownHtml("[tailscale docs](https://docs.openclaw.ai/tailscale)"),
+      toSanitizedMarkdownHtml("[tailscale docs](https://docs.afora.ai/tailscale)"),
     );
     const link = fragment.querySelector("a");
-    expect(link?.getAttribute("href")).toBe("https://docs.openclaw.ai/tailscale");
+    expect(link?.getAttribute("href")).toBe("https://docs.afora.ai/tailscale");
     expect(link?.classList.contains("chat-link-tail-blur")).toBe(false);
   });
 
@@ -628,7 +628,7 @@ PY
 
     it("strips href from host-local absolute file paths", () => {
       const html = toSanitizedMarkdownHtml(
-        "[report.docx](/Users/test/.openclaw/data/skills/output/report.docx)",
+        "[report.docx](/Users/test/.afora/data/skills/output/report.docx)",
       );
       expect(html).toBe("<p><a>report.docx</a></p>\n");
     });
@@ -643,18 +643,18 @@ PY
         "[workspace](/concepts/agent-workspace) [hooks](/automation/hooks#session-memory) [telegram](/channels/telegram?tab=setup) [shortlink](/telegram) [openai](/openai) [images](/images) [groups](/groups) [camera](/nodes/camera) [macOS](/platforms/macos) [cliSessions](/cli/sessions) [toolSkills](/tools/skills) [pluginDocs](/plugins/reference/diffs) [prose](/prose) [access](/channels/access-groups)",
       );
       expect(html).toBe(
-        '<p><a href="https://docs.openclaw.ai/concepts/agent-workspace" rel="noreferrer noopener" target="_blank">workspace</a> <a href="https://docs.openclaw.ai/automation/hooks#session-memory" rel="noreferrer noopener" target="_blank">hooks</a> <a href="https://docs.openclaw.ai/channels/telegram?tab=setup" rel="noreferrer noopener" target="_blank">telegram</a> <a href="https://docs.openclaw.ai/telegram" rel="noreferrer noopener" target="_blank">shortlink</a> <a href="https://docs.openclaw.ai/openai" rel="noreferrer noopener" target="_blank">openai</a> <a href="https://docs.openclaw.ai/images" rel="noreferrer noopener" target="_blank">images</a> <a href="https://docs.openclaw.ai/groups" rel="noreferrer noopener" target="_blank">groups</a> <a href="https://docs.openclaw.ai/nodes/camera" rel="noreferrer noopener" target="_blank">camera</a> <a href="https://docs.openclaw.ai/platforms/macos" rel="noreferrer noopener" target="_blank">macOS</a> <a href="https://docs.openclaw.ai/cli/sessions" rel="noreferrer noopener" target="_blank">cliSessions</a> <a href="https://docs.openclaw.ai/tools/skills" rel="noreferrer noopener" target="_blank">toolSkills</a> <a href="https://docs.openclaw.ai/plugins/reference/diffs" rel="noreferrer noopener" target="_blank">pluginDocs</a> <a href="https://docs.openclaw.ai/prose" rel="noreferrer noopener" target="_blank">prose</a> <a href="https://docs.openclaw.ai/channels/access-groups" rel="noreferrer noopener" target="_blank">access</a></p>\n',
+        '<p><a href="https://docs.afora.ai/concepts/agent-workspace" rel="noreferrer noopener" target="_blank">workspace</a> <a href="https://docs.afora.ai/automation/hooks#session-memory" rel="noreferrer noopener" target="_blank">hooks</a> <a href="https://docs.afora.ai/channels/telegram?tab=setup" rel="noreferrer noopener" target="_blank">telegram</a> <a href="https://docs.afora.ai/telegram" rel="noreferrer noopener" target="_blank">shortlink</a> <a href="https://docs.afora.ai/openai" rel="noreferrer noopener" target="_blank">openai</a> <a href="https://docs.afora.ai/images" rel="noreferrer noopener" target="_blank">images</a> <a href="https://docs.afora.ai/groups" rel="noreferrer noopener" target="_blank">groups</a> <a href="https://docs.afora.ai/nodes/camera" rel="noreferrer noopener" target="_blank">camera</a> <a href="https://docs.afora.ai/platforms/macos" rel="noreferrer noopener" target="_blank">macOS</a> <a href="https://docs.afora.ai/cli/sessions" rel="noreferrer noopener" target="_blank">cliSessions</a> <a href="https://docs.afora.ai/tools/skills" rel="noreferrer noopener" target="_blank">toolSkills</a> <a href="https://docs.afora.ai/plugins/reference/diffs" rel="noreferrer noopener" target="_blank">pluginDocs</a> <a href="https://docs.afora.ai/prose" rel="noreferrer noopener" target="_blank">prose</a> <a href="https://docs.afora.ai/channels/access-groups" rel="noreferrer noopener" target="_blank">access</a></p>\n',
       );
     });
 
     it("keeps app and resource routes instead of treating them as docs roots", () => {
       const html = withControlUiBasePath("/control", () =>
         toSanitizedMarkdownHtml(
-          "[channels](/channels) [automation](/automation) [workshop](/skills/workshop) [chat](/chat) [baseChat](/control/chat/main) [baseSessions](/control/sessions) [health](/healthz) [pluginDynamic](/googlechat) [asset](/api/files/1) [baseApi](/control/api/files/1) [baseAvatar](/control/avatar/main) [plugin](/plugins/diffs/view/id/token) [basePlugin](/control/plugins/diffs/view/id/token) [artifact](/__openclaw__/canvas/documents/x/index.html) [baseArtifact](/control/__openclaw__/canvas/x)",
+          "[channels](/channels) [automation](/automation) [workshop](/skills/workshop) [chat](/chat) [baseChat](/control/chat/main) [baseSessions](/control/sessions) [health](/healthz) [pluginDynamic](/googlechat) [asset](/api/files/1) [baseApi](/control/api/files/1) [baseAvatar](/control/avatar/main) [plugin](/plugins/diffs/view/id/token) [basePlugin](/control/plugins/diffs/view/id/token) [artifact](/__afora__/canvas/documents/x/index.html) [baseArtifact](/control/__afora__/canvas/x)",
         ),
       );
       expect(html).toBe(
-        '<p><a href="/channels">channels</a> <a href="/automation">automation</a> <a href="/skills/workshop">workshop</a> <a href="/chat">chat</a> <a href="/control/chat/main">baseChat</a> <a href="/control/sessions">baseSessions</a> <a href="/healthz" rel="noreferrer noopener" target="_blank">health</a> <a href="/googlechat" rel="noreferrer noopener" target="_blank">pluginDynamic</a> <a href="/api/files/1" rel="noreferrer noopener" target="_blank">asset</a> <a href="/control/api/files/1" rel="noreferrer noopener" target="_blank">baseApi</a> <a href="/control/avatar/main" rel="noreferrer noopener" target="_blank">baseAvatar</a> <a href="/plugins/diffs/view/id/token" rel="noreferrer noopener" target="_blank">plugin</a> <a href="/control/plugins/diffs/view/id/token" rel="noreferrer noopener" target="_blank">basePlugin</a> <a href="/__openclaw__/canvas/documents/x/index.html" rel="noreferrer noopener" target="_blank">artifact</a> <a href="/control/__openclaw__/canvas/x" rel="noreferrer noopener" target="_blank">baseArtifact</a></p>\n',
+        '<p><a href="/channels">channels</a> <a href="/automation">automation</a> <a href="/skills/workshop">workshop</a> <a href="/chat">chat</a> <a href="/control/chat/main">baseChat</a> <a href="/control/sessions">baseSessions</a> <a href="/healthz" rel="noreferrer noopener" target="_blank">health</a> <a href="/googlechat" rel="noreferrer noopener" target="_blank">pluginDynamic</a> <a href="/api/files/1" rel="noreferrer noopener" target="_blank">asset</a> <a href="/control/api/files/1" rel="noreferrer noopener" target="_blank">baseApi</a> <a href="/control/avatar/main" rel="noreferrer noopener" target="_blank">baseAvatar</a> <a href="/plugins/diffs/view/id/token" rel="noreferrer noopener" target="_blank">plugin</a> <a href="/control/plugins/diffs/view/id/token" rel="noreferrer noopener" target="_blank">basePlugin</a> <a href="/__afora__/canvas/documents/x/index.html" rel="noreferrer noopener" target="_blank">artifact</a> <a href="/control/__afora__/canvas/x" rel="noreferrer noopener" target="_blank">baseArtifact</a></p>\n',
       );
     });
   });

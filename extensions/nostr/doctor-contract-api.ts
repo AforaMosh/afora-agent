@@ -5,8 +5,8 @@ import path from "node:path";
 import {
   archiveLegacyStateSource,
   type PluginDoctorStateMigration,
-} from "openclaw/plugin-sdk/runtime-doctor-migrations";
-import { asFiniteNumber } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/runtime-doctor-migrations";
+import { asFiniteNumber } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { normalizeNostrStateAccountId } from "./src/state-account-id.js";
 
 type NostrBusState = {

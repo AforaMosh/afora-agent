@@ -1,15 +1,15 @@
-// Talk Voice plugin entrypoint registers its OpenClaw integration.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { parseStrictPositiveInteger } from "openclaw/plugin-sdk/number-runtime";
-import type { SpeechVoiceOption } from "openclaw/plugin-sdk/speech";
+// Talk Voice plugin entrypoint registers its Afora integration.
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { parseStrictPositiveInteger } from "afora-agent/plugin-sdk/number-runtime";
+import type { SpeechVoiceOption } from "afora-agent/plugin-sdk/speech";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
-import { resolveActiveTalkProviderConfig } from "openclaw/plugin-sdk/talk-config-runtime";
-import { definePluginEntry, type OpenClawPluginApi } from "./api.js";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { resolveActiveTalkProviderConfig } from "afora-agent/plugin-sdk/talk-config-runtime";
+import { definePluginEntry, type AforaPluginApi } from "./api.js";
 
 function mask(s: string, keep = 6): string {
   const trimmed = s.trim();
@@ -125,7 +125,7 @@ export default definePluginEntry({
   id: "talk-voice",
   name: "Talk Voice",
   description: "Command helpers for managing Talk voice configuration",
-  register(api: OpenClawPluginApi) {
+  register(api: AforaPluginApi) {
     api.registerCommand({
       name: "voice",
       nativeNames: {
@@ -140,7 +140,7 @@ export default definePluginEntry({
         const tokens = args.split(/\s+/).filter(Boolean);
         const action = normalizeLowercaseStringOrEmpty(tokens[0] ?? "status");
 
-        const cfg = api.runtime.config.current() as OpenClawConfig;
+        const cfg = api.runtime.config.current() as AforaConfig;
         const active = resolveActiveTalkProviderConfig(cfg.talk);
         if (!active) {
           return {

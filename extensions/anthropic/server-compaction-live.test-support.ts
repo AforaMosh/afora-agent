@@ -1,4 +1,4 @@
-export const ANTHROPIC_COMPACTION_LIVE_ENV = "OPENCLAW_LIVE_ANTHROPIC_COMPACTION";
+export const ANTHROPIC_COMPACTION_LIVE_ENV = "AFORA_LIVE_ANTHROPIC_COMPACTION";
 
 type AnthropicCompactionLiveSettings =
   | { enabled: false }
@@ -31,7 +31,7 @@ export function resolveAnthropicCompactionLiveSettings(
     return { enabled: false };
   }
   if (!liveEnabled) {
-    throw new Error(`${ANTHROPIC_COMPACTION_LIVE_ENV}=1 also requires OPENCLAW_LIVE_TEST=1`);
+    throw new Error(`${ANTHROPIC_COMPACTION_LIVE_ENV}=1 also requires AFORA_LIVE_TEST=1`);
   }
   const apiKey = env.ANTHROPIC_API_KEY?.trim();
   if (!apiKey) {
@@ -40,7 +40,7 @@ export function resolveAnthropicCompactionLiveSettings(
   return {
     enabled: true,
     apiKey,
-    modelId: env.OPENCLAW_LIVE_ANTHROPIC_COMPACTION_MODEL?.trim() || "claude-sonnet-4-6",
+    modelId: env.AFORA_LIVE_ANTHROPIC_COMPACTION_MODEL?.trim() || "claude-sonnet-4-6",
     compactThreshold: 50_000,
     denseTurnChars: 180_000,
     maxDenseTurns: 3,

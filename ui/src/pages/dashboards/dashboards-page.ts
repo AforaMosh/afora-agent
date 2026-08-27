@@ -2,12 +2,12 @@ import { consume } from "@lit/context";
 import type { PropertyValues } from "lit";
 import { property } from "lit/decorators.js";
 import { applicationContext, type ApplicationContext } from "../../app/context.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 import { dashboardSessionListQuery, dashboardsRouteData } from "./route.ts";
 import { renderDashboards, type DashboardsRouteData } from "./view.ts";
 
-class DashboardsPage extends OpenClawLightDomElement {
+class DashboardsPage extends AforaLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
   private context?: ApplicationContext;
 
@@ -80,6 +80,6 @@ class DashboardsPage extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-dashboards-page")) {
-  customElements.define("openclaw-dashboards-page", DashboardsPage);
+if (!customElements.get("afora-dashboards-page")) {
+  customElements.define("afora-dashboards-page", DashboardsPage);
 }

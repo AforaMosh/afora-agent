@@ -17,7 +17,7 @@ type AbortTestApi = {
 };
 
 function getTestApi(): AbortTestApi {
-  const api = (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.abortTestApi")];
+  const api = (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.abortTestApi")];
   if (!api) {
     throw new Error("abort test API is unavailable");
   }

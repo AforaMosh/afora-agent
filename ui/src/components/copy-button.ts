@@ -74,7 +74,7 @@ export async function handleCopyButton(event: Event, text: string, idleLabel: st
 function createCopyButton(options: CopyButtonOptions): TemplateResult {
   const idleLabel = options.label ?? copyMarkdownLabel();
   return html`
-    <openclaw-tooltip .content=${idleLabel}>
+    <afora-tooltip .content=${idleLabel}>
       <button
         class=${options.bare ? "chat-copy-btn" : "btn btn--xs chat-copy-btn"}
         type="button"
@@ -86,7 +86,7 @@ function createCopyButton(options: CopyButtonOptions): TemplateResult {
           <span class="chat-copy-btn__icon-check">${icons.check}</span>
         </span>
       </button>
-    </openclaw-tooltip>
+    </afora-tooltip>
   `;
 }
 

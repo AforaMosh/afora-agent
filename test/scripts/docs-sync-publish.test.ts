@@ -36,7 +36,7 @@ function collectPages(entry: unknown, pages: string[] = []): string[] {
 
 describe("docs-sync-publish", () => {
   it("materializes the public docs map only in the publish tree", () => {
-    const targetDocsDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-docs-map-publish-"));
+    const targetDocsDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-docs-map-publish-"));
     try {
       const outputPath = writePublishedDocsMap(targetDocsDir);
       expect(fs.readFileSync(outputPath, "utf8")).toBe(
@@ -53,21 +53,21 @@ describe("docs-sync-publish", () => {
         "--target",
         "generated-docs",
         "--source-repo",
-        "openclaw/openclaw",
+        "AforaMosh/afora-agent",
         "--source-sha",
         "abc123",
         "--clawhub-repo",
         "../clawhub",
         "--clawhub-source-repo",
-        "openclaw/clawhub",
+        "afora-agent/clawhub",
         "--clawhub-source-sha",
         "def456",
       ]),
     ).toMatchObject({
       clawhubRepo: "../clawhub",
-      clawhubSourceRepo: "openclaw/clawhub",
+      clawhubSourceRepo: "afora-agent/clawhub",
       clawhubSourceSha: "def456",
-      sourceRepo: "openclaw/openclaw",
+      sourceRepo: "AforaMosh/afora-agent",
       sourceSha: "abc123",
       target: "generated-docs",
     });
@@ -91,7 +91,7 @@ describe("docs-sync-publish", () => {
   });
 
   it("defers orphan locale deletion to translation finalization", () => {
-    const docsDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-docs-sync-"));
+    const docsDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-docs-sync-"));
     const mirroredEnglish = path.join(docsDir, "clawhub", "api.md");
     const localizedMirror = path.join(docsDir, "de", "clawhub", "api.md");
     const orphan = path.join(docsDir, "de", "removed.md");

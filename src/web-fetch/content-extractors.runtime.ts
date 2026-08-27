@@ -1,5 +1,5 @@
 /** Runtime bridge for plugin-provided readable-content extractors used by web fetch. */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createConfigScopedPromiseLoader } from "../plugins/plugin-cache-primitives.js";
 import type {
   WebContentExtractionResult,
@@ -9,7 +9,7 @@ import { resolvePluginWebContentExtractors } from "../plugins/web-content-extrac
 
 // Runtime loader for plugin-provided readable-content extractors. The loader is
 // config-scoped so plugin registry results can be reused within a config view.
-const webContentExtractorLoader = createConfigScopedPromiseLoader((config?: OpenClawConfig) =>
+const webContentExtractorLoader = createConfigScopedPromiseLoader((config?: AforaConfig) =>
   resolvePluginWebContentExtractors(config ? { config } : undefined),
 );
 
@@ -18,7 +18,7 @@ export async function extractReadableContent(params: {
   html: string;
   url: string;
   extractMode: WebContentExtractMode;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): Promise<(WebContentExtractionResult & { extractor: string }) | null> {
   let extractors: Awaited<ReturnType<typeof webContentExtractorLoader.load>>;
   try {

@@ -1,7 +1,7 @@
 [
   {
-    "source": "OpenClaw",
-    "target": "OpenClaw"
+    "source": "Afora",
+    "target": "Afora"
   },
   {
     "source": "macOS platform notes",
@@ -168,8 +168,8 @@
     "target": "构建 Gateway 客户端"
   },
   {
-    "source": "Embedding OpenClaw",
-    "target": "嵌入 OpenClaw"
+    "source": "Embedding Afora",
+    "target": "嵌入 Afora"
   },
   {
     "source": "Secure file operations",
@@ -1308,12 +1308,12 @@
     "target": "Agent runtime architecture"
   },
   {
-    "source": "OpenClaw agent runtime workflow",
-    "target": "OpenClaw agent runtime workflow"
+    "source": "Afora agent runtime workflow",
+    "target": "Afora agent runtime workflow"
   },
   {
-    "source": "OpenClaw agent runtime architecture",
-    "target": "OpenClaw agent runtime architecture"
+    "source": "Afora agent runtime architecture",
+    "target": "Afora agent runtime architecture"
   },
   {
     "source": "Install and Configure Plugins",
@@ -1604,20 +1604,20 @@
     "target": "待处理的设备配对请求"
   },
   {
-    "source": "openclaw devices list",
-    "target": "openclaw devices list"
+    "source": "afora devices list",
+    "target": "afora devices list"
   },
   {
-    "source": "openclaw devices approve",
-    "target": "openclaw devices approve"
+    "source": "afora devices approve",
+    "target": "afora devices approve"
   },
   {
-    "source": "openclaw nodes pending",
-    "target": "openclaw nodes pending"
+    "source": "afora nodes pending",
+    "target": "afora nodes pending"
   },
   {
-    "source": "openclaw nodes approve",
-    "target": "openclaw nodes approve"
+    "source": "afora nodes approve",
+    "target": "afora nodes approve"
   },
   {
     "source": "Cloud workers plan",
@@ -1748,8 +1748,8 @@
     "target": "Gateway 远程访问"
   },
   {
-    "source": "Updating OpenClaw",
-    "target": "更新 OpenClaw"
+    "source": "Updating Afora",
+    "target": "更新 Afora"
   },
   {
     "source": "Connect a machine",

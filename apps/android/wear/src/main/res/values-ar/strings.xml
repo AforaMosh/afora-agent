@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"OpenClaw"</string>
+    <string name="app_name" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Afora"</string>
     <string name="chat" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"الدردشة"</string>
     <string name="session" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"الجلسة"</string>
     <string name="model" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"النموذج"</string>
@@ -39,7 +39,7 @@
     <string name="agent" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"الوكيل"</string>
     <string name="system" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"النظام"</string>
     <string name="start_conversation" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"بدء محادثة"</string>
-    <string name="start_conversation_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"تحدّث أو اكتب على ساعتك. يرسل الهاتف المقترن الرسالة عبر جلسة OpenClaw المصادق عليها."</string>
+    <string name="start_conversation_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"تحدّث أو اكتب على ساعتك. يرسل الهاتف المقترن الرسالة عبر جلسة Afora المصادق عليها."</string>
     <string name="current_session" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"الجلسة الحالية"</string>
     <string name="appearance" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"المظهر"</string>
     <string name="theme_dark" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"داكن"</string>
@@ -61,28 +61,28 @@
     <string name="phone_ready" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"الهاتف جاهز"</string>
     <string name="gateway_connected" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Gateway متصل"</string>
     <string name="gateway_offline" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Gateway غير متصل"</string>
-    <string name="gateway_offline_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"أعِد توصيل Gateway في OpenClaw على الهاتف المقترن."</string>
-    <string name="open_phone_app" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"افتح OpenClaw على الهاتف"</string>
+    <string name="gateway_offline_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"أعِد توصيل Gateway في Afora على الهاتف المقترن."</string>
+    <string name="open_phone_app" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"افتح Afora على الهاتف"</string>
     <string name="phone_not_ready_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"لا تبدأ الساعة تشغيل Gateway أو تصادق عليه بنفسها مطلقًا."</string>
     <string name="phone_unavailable" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"يتعذر الوصول إلى الهاتف"</string>
-    <string name="phone_unavailable_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"أبقِ الهاتف المقترن قريبًا وثبّت تطبيق OpenClaw المطابق."</string>
+    <string name="phone_unavailable_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"أبقِ الهاتف المقترن قريبًا وثبّت تطبيق Afora المطابق."</string>
     <string name="selection_not_found" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"لم يعد التحديد متاحًا"</string>
     <string name="message_not_sent" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"لم يتم قبول الإجراء"</string>
     <string name="something_went_wrong" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"حدث خطأ ما"</string>
     <string name="refresh_and_try_again" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"حدّث القوائم وحاول مرة أخرى."</string>
     <string name="try_again" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"حاول مرة أخرى من الساعة."</string>
     <string name="update_required" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"التحديث مطلوب"</string>
-    <string name="update_required_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"حدّث OpenClaw على كلٍ من الهاتف والساعة."</string>
+    <string name="update_required_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"حدّث Afora على كلٍ من الهاتف والساعة."</string>
     <string name="refresh" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"تحديث"</string>
     <string name="retry" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"إعادة المحاولة"</string>
-    <string name="notification_channel_name" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"ردود OpenClaw"</string>
+    <string name="notification_channel_name" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"ردود Afora"</string>
     <string name="notification_reply" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"رد"</string>
-    <string name="notification_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"رد OpenClaw"</string>
+    <string name="notification_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"رد Afora"</string>
     <string name="notification_reply_failed_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"لم يُرسل الرد"</string>
     <string name="notification_reply_failed_text" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"الهاتف غير متاح. اضغط على رد للمحاولة مرة أخرى."</string>
-    <string name="notification_phone_changed_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"افتح OpenClaw للرد"</string>
+    <string name="notification_phone_changed_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"افتح Afora للرد"</string>
     <string name="notification_phone_changed_text" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"تم تغيير هاتفك المفضل. افتح التطبيق لإعادة تحميل الجلسة قبل الرد."</string>
-    <string name="tile_label" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"OpenClaw"</string>
+    <string name="tile_label" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Afora"</string>
     <string name="tile_description" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"افتح الجلسات ورد عبر هاتفك المقترن"</string>
     <string name="tile_open" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"فتح"</string>
     <string name="tile_phone_proxy" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"وكيل الهاتف"</string>

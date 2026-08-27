@@ -1,7 +1,7 @@
 // Sessions access tests cover session-tool visibility policy, sandbox clamps,
 // and agent-to-agent allow rules.
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { GatewayCredentialsRequiredError } from "../../gateway/call.js";
 import { GatewayClientRequestError } from "../../gateway/client.js";
 import {
@@ -21,7 +21,7 @@ vi.mock("../../logger.js", async (importOriginal) => ({
   logWarn: loggerMocks.logWarn,
 }));
 
-function makeConfig(overrides: Partial<OpenClawConfig> = {}): OpenClawConfig {
+function makeConfig(overrides: Partial<AforaConfig> = {}): AforaConfig {
   return overrides;
 }
 
@@ -31,7 +31,7 @@ describe("resolveSessionToolsVisibility", () => {
     expect(
       resolveSessionToolsVisibility({
         tools: { sessions: { visibility: "invalid" } },
-      } as unknown as OpenClawConfig),
+      } as unknown as AforaConfig),
     ).toBe("tree");
   });
 
@@ -39,7 +39,7 @@ describe("resolveSessionToolsVisibility", () => {
     expect(
       resolveSessionToolsVisibility({
         tools: { sessions: { visibility: "ALL" } },
-      } as unknown as OpenClawConfig),
+      } as unknown as AforaConfig),
     ).toBe("all");
   });
 });
@@ -615,7 +615,7 @@ describe("createSessionVisibilityGuard", () => {
       allowed: false,
       status: "forbidden",
       error:
-        "Session history denied because spawned-session ownership lookup failed (transient); retry once, then ask the operator to inspect OpenClaw logs.",
+        "Session history denied because spawned-session ownership lookup failed (transient); retry once, then ask the operator to inspect Afora logs.",
     });
     expect(gateway).toHaveBeenCalledTimes(1);
   });
@@ -679,14 +679,14 @@ describe("createSessionVisibilityGuard", () => {
       target: "agent:codex:acp:child-1",
       visibility: "tree" as const,
       error:
-        "Session history denied because spawned-session ownership lookup failed (transient); retry once, then ask the operator to inspect OpenClaw logs.",
+        "Session history denied because spawned-session ownership lookup failed (transient); retry once, then ask the operator to inspect Afora logs.",
     },
     {
       name: "cross-agent ACP child under all visibility",
       target: "agent:codex:acp:child-1",
       visibility: "all" as const,
       error:
-        "Session history denied because spawned-session ownership lookup failed (transient); retry once, then ask the operator to inspect OpenClaw logs.",
+        "Session history denied because spawned-session ownership lookup failed (transient); retry once, then ask the operator to inspect Afora logs.",
     },
     {
       name: "malformed agent key",
@@ -760,7 +760,7 @@ describe("createSessionVisibilityGuard", () => {
       callGateway: vi.fn(async () => {
         throw new GatewayCredentialsRequiredError({
           method: "sessions.list",
-          configPath: "/tmp/openclaw.json",
+          configPath: "/tmp/afora.json",
         });
       }) as never,
     });
@@ -791,7 +791,7 @@ describe("createSessionVisibilityGuard", () => {
       allowed: false,
       status: "forbidden",
       error:
-        "Session history denied because spawned-session ownership lookup failed; ask the operator to inspect OpenClaw logs.",
+        "Session history denied because spawned-session ownership lookup failed; ask the operator to inspect Afora logs.",
     });
     expect(result.allowed ? "" : result.error).not.toMatch(/credentials|retry/i);
   });
@@ -809,7 +809,7 @@ describe("createSessionVisibilityGuard", () => {
       allowed: false,
       status: "forbidden",
       error:
-        "Session history denied because spawned-session ownership lookup failed; ask the operator to inspect OpenClaw logs.",
+        "Session history denied because spawned-session ownership lookup failed; ask the operator to inspect Afora logs.",
     });
   });
 });

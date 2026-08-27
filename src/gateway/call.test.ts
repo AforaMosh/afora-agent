@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { HelloOk } from "../../packages/gateway-protocol/src/schema/frames.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { resetConfigRuntimeState, setRuntimeConfigSnapshot } from "../config/runtime-snapshot.js";
 import type { DeviceIdentity } from "../infra/device-identity.js";
 import { createEmptyPluginRegistry } from "../plugins/registry-empty.js";
@@ -26,10 +26,10 @@ const gatewayConfigMocks = vi.hoisted(() => ({
   loadGatewayTlsRuntime: vi.fn(),
   resolveConfigPath: vi.fn(
     (env: NodeJS.ProcessEnv, stateDir: string) =>
-      env.OPENCLAW_CONFIG_PATH ?? `${stateDir}/openclaw.json`,
+      env.AFORA_CONFIG_PATH ?? `${stateDir}/afora.json`,
   ),
   resolveGatewayPort: vi.fn(),
-  resolveStateDir: vi.fn((env: NodeJS.ProcessEnv) => env.OPENCLAW_STATE_DIR ?? "/tmp/openclaw"),
+  resolveStateDir: vi.fn((env: NodeJS.ProcessEnv) => env.AFORA_STATE_DIR ?? "/tmp/afora"),
   useActualDispatchConfig: false,
 }));
 const getRuntimeConfig = gatewayConfigMocks.getRuntimeConfig;
@@ -370,15 +370,15 @@ function setGatewayNetworkDefaults(port = 18789) {
   pickPrimaryTailnetIPv4.mockReturnValue(undefined);
 }
 
-function setGatewayConfig(gateway: NonNullable<OpenClawConfig["gateway"]>) {
+function setGatewayConfig(gateway: NonNullable<AforaConfig["gateway"]>) {
   getRuntimeConfig.mockReturnValue({ gateway });
 }
 
-function setEnvSecretGatewayConfig(gateway: NonNullable<OpenClawConfig["gateway"]>) {
+function setEnvSecretGatewayConfig(gateway: NonNullable<AforaConfig["gateway"]>) {
   const config = {
     gateway,
     secrets: { providers: { default: { source: "env" } } },
-  } satisfies OpenClawConfig;
+  } satisfies AforaConfig;
   getRuntimeConfig.mockReturnValue(config);
 }
 
@@ -399,23 +399,23 @@ function makeRemotePasswordGatewayConfig(remotePassword: string, localPassword =
 
 describe("callGateway url resolution", () => {
   const envSnapshot = captureEnv([
-    "OPENCLAW_ALLOW_INSECURE_PRIVATE_WS",
-    "OPENCLAW_CONFIG_PATH",
-    "OPENCLAW_GATEWAY_PORT",
-    "OPENCLAW_GATEWAY_URL",
-    "OPENCLAW_GATEWAY_TOKEN",
-    "OPENCLAW_STATE_DIR",
+    "AFORA_ALLOW_INSECURE_PRIVATE_WS",
+    "AFORA_CONFIG_PATH",
+    "AFORA_GATEWAY_PORT",
+    "AFORA_GATEWAY_URL",
+    "AFORA_GATEWAY_TOKEN",
+    "AFORA_STATE_DIR",
   ]);
 
   beforeEach(() => {
     resetConfigRuntimeState();
     envSnapshot.restore();
-    deleteTestEnvValue("OPENCLAW_ALLOW_INSECURE_PRIVATE_WS");
-    deleteTestEnvValue("OPENCLAW_CONFIG_PATH");
-    deleteTestEnvValue("OPENCLAW_GATEWAY_PORT");
-    deleteTestEnvValue("OPENCLAW_GATEWAY_URL");
-    deleteTestEnvValue("OPENCLAW_GATEWAY_TOKEN");
-    deleteTestEnvValue("OPENCLAW_STATE_DIR");
+    deleteTestEnvValue("AFORA_ALLOW_INSECURE_PRIVATE_WS");
+    deleteTestEnvValue("AFORA_CONFIG_PATH");
+    deleteTestEnvValue("AFORA_GATEWAY_PORT");
+    deleteTestEnvValue("AFORA_GATEWAY_URL");
+    deleteTestEnvValue("AFORA_GATEWAY_TOKEN");
+    deleteTestEnvValue("AFORA_STATE_DIR");
     resetGatewayCallMocks();
   });
 
@@ -431,7 +431,7 @@ describe("callGateway url resolution", () => {
       false,
     );
 
-    process.env.OPENCLAW_GATEWAY_URL = "wss://gateway.example/ws";
+    process.env.AFORA_GATEWAY_URL = "wss://gateway.example/ws";
     await expect(isImplicitLocalGatewayTarget({})).resolves.toBe(false);
   });
 
@@ -658,14 +658,14 @@ describe("callGateway url resolution", () => {
   it("allows Tailscale-authenticated backend calls without client-side credentials", async () => {
     setGatewayConfig({
       mode: "remote",
-      remote: { url: "wss://openclaw.example.test" },
+      remote: { url: "wss://afora.example.test" },
       auth: { mode: "token", allowTailscale: true },
     });
     setGatewayNetworkDefaults();
 
     await callGateway({ method: "sessions.list" });
 
-    expect(lastClientOptions?.url).toBe("wss://openclaw.example.test");
+    expect(lastClientOptions?.url).toBe("wss://afora.example.test");
     expect(lastClientOptions?.token).toBeUndefined();
     expect(lastClientOptions?.password).toBeUndefined();
   });
@@ -673,7 +673,7 @@ describe("callGateway url resolution", () => {
   it("allows Tailscale Serve backend calls without explicit allowTailscale", async () => {
     setGatewayConfig({
       mode: "remote",
-      remote: { url: "wss://openclaw.example.test" },
+      remote: { url: "wss://afora.example.test" },
       auth: { mode: "token" },
       tailscale: { mode: "serve" },
     });
@@ -681,7 +681,7 @@ describe("callGateway url resolution", () => {
 
     await callGateway({ method: "sessions.list" });
 
-    expect(lastClientOptions?.url).toBe("wss://openclaw.example.test");
+    expect(lastClientOptions?.url).toBe("wss://afora.example.test");
     expect(lastClientOptions?.token).toBeUndefined();
     expect(lastClientOptions?.password).toBeUndefined();
   });
@@ -704,7 +704,7 @@ describe("callGateway url resolution", () => {
   it("keeps CLI device identity when an ambient token is inactive under auth mode none", async () => {
     setGatewayConfig({ mode: "local", bind: "loopback", auth: { mode: "none" } });
     setGatewayNetworkDefaults();
-    process.env.OPENCLAW_GATEWAY_TOKEN = "inactive-env-token";
+    process.env.AFORA_GATEWAY_TOKEN = "inactive-env-token";
 
     await callGatewayCli({ method: "health" });
 
@@ -757,12 +757,12 @@ describe("callGateway url resolution", () => {
     expect(lastClientOptions?.deviceIdentity).toBeNull();
   });
 
-  it("uses OPENCLAW_GATEWAY_URL env override in remote mode when remote URL is missing", async () => {
+  it("uses AFORA_GATEWAY_URL env override in remote mode when remote URL is missing", async () => {
     setGatewayConfig({ mode: "remote", bind: "loopback", remote: {} });
     resolveGatewayPort.mockReturnValue(18789);
     pickPrimaryTailnetIPv4.mockReturnValue(undefined);
-    process.env.OPENCLAW_GATEWAY_URL = "wss://gateway-in-container.internal:9443/ws";
-    process.env.OPENCLAW_GATEWAY_TOKEN = "env-token";
+    process.env.AFORA_GATEWAY_URL = "wss://gateway-in-container.internal:9443/ws";
+    process.env.AFORA_GATEWAY_TOKEN = "env-token";
 
     await callGateway({
       method: "health",
@@ -777,12 +777,12 @@ describe("callGateway url resolution", () => {
     setGatewayConfig({ mode: "local", bind: "loopback" });
     resolveGatewayPort.mockImplementation((_config?: unknown, env?: unknown) => {
       const candidateEnv = env as NodeJS.ProcessEnv | undefined;
-      return Number(candidateEnv?.OPENCLAW_GATEWAY_PORT ?? 18789);
+      return Number(candidateEnv?.AFORA_GATEWAY_PORT ?? 18789);
     });
     pickPrimaryTailnetIPv4.mockReturnValue(undefined);
-    process.env.OPENCLAW_GATEWAY_URL = "wss://gateway-in-container.internal:9443/ws";
-    process.env.OPENCLAW_GATEWAY_PORT = "19001";
-    process.env.OPENCLAW_GATEWAY_TOKEN = "env-token";
+    process.env.AFORA_GATEWAY_URL = "wss://gateway-in-container.internal:9443/ws";
+    process.env.AFORA_GATEWAY_PORT = "19001";
+    process.env.AFORA_GATEWAY_TOKEN = "env-token";
 
     await callGateway({
       method: "health",
@@ -804,8 +804,8 @@ describe("callGateway url resolution", () => {
     });
     resolveGatewayPort.mockReturnValue(18789);
     pickPrimaryTailnetIPv4.mockReturnValue(undefined);
-    process.env.OPENCLAW_GATEWAY_URL = "wss://gateway-in-container.internal:9443/ws";
-    process.env.OPENCLAW_GATEWAY_TOKEN = "env-token";
+    process.env.AFORA_GATEWAY_URL = "wss://gateway-in-container.internal:9443/ws";
+    process.env.AFORA_GATEWAY_TOKEN = "env-token";
 
     await callGateway({
       method: "health",
@@ -826,8 +826,8 @@ describe("callGateway url resolution", () => {
     });
     setGatewayNetworkDefaults(18789);
     pickPrimaryTailnetIPv4.mockReturnValue(undefined);
-    process.env.OPENCLAW_GATEWAY_URL = "wss://gateway-in-container.internal:9443/ws";
-    process.env.OPENCLAW_GATEWAY_TOKEN = "env-token";
+    process.env.AFORA_GATEWAY_URL = "wss://gateway-in-container.internal:9443/ws";
+    process.env.AFORA_GATEWAY_TOKEN = "env-token";
 
     await callGateway({
       method: "health",
@@ -1385,7 +1385,7 @@ describe("buildGatewayConnectionDetails", () => {
         bind: "loopback",
         tls: { enabled: true },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     resolveGatewayPort.mockReturnValue(18800);
     gatewayConfigMocks.loadGatewayTlsRuntime.mockResolvedValue({
       enabled: true,
@@ -1406,16 +1406,16 @@ describe("buildGatewayConnectionDetails", () => {
         mode: "local",
         bind: "loopback",
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     resolveGatewayPort.mockImplementation((_config?: unknown, env?: unknown) => {
       const candidateEnv = env as NodeJS.ProcessEnv | undefined;
-      return Number(candidateEnv?.OPENCLAW_GATEWAY_PORT ?? 18789);
+      return Number(candidateEnv?.AFORA_GATEWAY_PORT ?? 18789);
     });
-    const prevUrl = process.env.OPENCLAW_GATEWAY_URL;
-    const prevPort = process.env.OPENCLAW_GATEWAY_PORT;
+    const prevUrl = process.env.AFORA_GATEWAY_URL;
+    const prevPort = process.env.AFORA_GATEWAY_PORT;
     try {
-      process.env.OPENCLAW_GATEWAY_URL = "wss://env-gateway.example/ws";
-      process.env.OPENCLAW_GATEWAY_PORT = "19001";
+      process.env.AFORA_GATEWAY_URL = "wss://env-gateway.example/ws";
+      process.env.AFORA_GATEWAY_PORT = "19001";
 
       const details = await buildGatewayProbeConnectionDetails({
         config,
@@ -1426,14 +1426,14 @@ describe("buildGatewayConnectionDetails", () => {
       expect(details.urlSource).toBe("local loopback");
     } finally {
       if (prevUrl === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_URL;
+        delete process.env.AFORA_GATEWAY_URL;
       } else {
-        process.env.OPENCLAW_GATEWAY_URL = prevUrl;
+        process.env.AFORA_GATEWAY_URL = prevUrl;
       }
       if (prevPort === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_PORT;
+        delete process.env.AFORA_GATEWAY_PORT;
       } else {
-        process.env.OPENCLAW_GATEWAY_PORT = prevPort;
+        process.env.AFORA_GATEWAY_PORT = prevPort;
       }
     }
   });
@@ -1444,10 +1444,10 @@ describe("buildGatewayConnectionDetails", () => {
         mode: "remote",
         remote: { url: "wss://selected-gateway.example/ws" },
       },
-    } satisfies OpenClawConfig;
-    const prevUrl = process.env.OPENCLAW_GATEWAY_URL;
+    } satisfies AforaConfig;
+    const prevUrl = process.env.AFORA_GATEWAY_URL;
     try {
-      process.env.OPENCLAW_GATEWAY_URL = "wss://unrelated-gateway.example/ws";
+      process.env.AFORA_GATEWAY_URL = "wss://unrelated-gateway.example/ws";
 
       const details = await buildGatewayProbeConnectionDetails({
         config,
@@ -1458,9 +1458,9 @@ describe("buildGatewayConnectionDetails", () => {
       expect(details.urlSource).toBe("config gateway.remote.url");
     } finally {
       if (prevUrl === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_URL;
+        delete process.env.AFORA_GATEWAY_URL;
       } else {
-        process.env.OPENCLAW_GATEWAY_URL = prevUrl;
+        process.env.AFORA_GATEWAY_URL = prevUrl;
       }
     }
   });
@@ -1537,24 +1537,24 @@ describe("buildGatewayConnectionDetails", () => {
     expect(details.remoteFallbackNote).toBeUndefined();
   });
 
-  it("uses env OPENCLAW_GATEWAY_URL when set", () => {
+  it("uses env AFORA_GATEWAY_URL when set", () => {
     setGatewayConfig({ mode: "local", bind: "loopback" });
     resolveGatewayPort.mockReturnValue(18800);
     pickPrimaryTailnetIPv4.mockReturnValue(undefined);
-    const prevUrl = process.env.OPENCLAW_GATEWAY_URL;
+    const prevUrl = process.env.AFORA_GATEWAY_URL;
     try {
-      process.env.OPENCLAW_GATEWAY_URL = "wss://browser-gateway.local:9443/ws";
+      process.env.AFORA_GATEWAY_URL = "wss://browser-gateway.local:9443/ws";
 
       const details = buildGatewayConnectionDetails();
 
       expect(details.url).toBe("wss://browser-gateway.local:9443/ws");
-      expect(details.urlSource).toBe("env OPENCLAW_GATEWAY_URL");
+      expect(details.urlSource).toBe("env AFORA_GATEWAY_URL");
       expect(details.bindDetail).toBeUndefined();
     } finally {
       if (prevUrl === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_URL;
+        delete process.env.AFORA_GATEWAY_URL;
       } else {
-        process.env.OPENCLAW_GATEWAY_URL = prevUrl;
+        process.env.AFORA_GATEWAY_URL = prevUrl;
       }
     }
   });
@@ -1563,14 +1563,14 @@ describe("buildGatewayConnectionDetails", () => {
     setGatewayConfig({ mode: "local", bind: "loopback" });
     resolveGatewayPort.mockImplementation((_config?: unknown, env?: unknown) => {
       const candidateEnv = env as NodeJS.ProcessEnv | undefined;
-      return Number(candidateEnv?.OPENCLAW_GATEWAY_PORT ?? 18789);
+      return Number(candidateEnv?.AFORA_GATEWAY_PORT ?? 18789);
     });
     pickPrimaryTailnetIPv4.mockReturnValue(undefined);
-    const prevUrl = process.env.OPENCLAW_GATEWAY_URL;
-    const prevPort = process.env.OPENCLAW_GATEWAY_PORT;
+    const prevUrl = process.env.AFORA_GATEWAY_URL;
+    const prevPort = process.env.AFORA_GATEWAY_PORT;
     try {
-      process.env.OPENCLAW_GATEWAY_URL = "wss://browser-gateway.local:9443/ws";
-      process.env.OPENCLAW_GATEWAY_PORT = "19001";
+      process.env.AFORA_GATEWAY_URL = "wss://browser-gateway.local:9443/ws";
+      process.env.AFORA_GATEWAY_PORT = "19001";
 
       const details = buildGatewayConnectionDetails({ localPortOverride: 19082 });
 
@@ -1579,22 +1579,22 @@ describe("buildGatewayConnectionDetails", () => {
       expect(details.bindDetail).toBe("Bind: loopback");
     } finally {
       if (prevUrl === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_URL;
+        delete process.env.AFORA_GATEWAY_URL;
       } else {
-        process.env.OPENCLAW_GATEWAY_URL = prevUrl;
+        process.env.AFORA_GATEWAY_URL = prevUrl;
       }
       if (prevPort === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_PORT;
+        delete process.env.AFORA_GATEWAY_PORT;
       } else {
-        process.env.OPENCLAW_GATEWAY_PORT = prevPort;
+        process.env.AFORA_GATEWAY_PORT = prevPort;
       }
     }
   });
 
   it("uses the reduced dispatch config for default RPC loading", async () => {
     resetConfigRuntimeState();
-    const tempStateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-gateway-call-"));
-    const configPath = path.join(tempStateDir, "openclaw.json");
+    const tempStateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-gateway-call-"));
+    const configPath = path.join(tempStateDir, "afora.json");
     fs.writeFileSync(
       configPath,
       JSON.stringify({
@@ -1602,8 +1602,8 @@ describe("buildGatewayConnectionDetails", () => {
         channels: { telegram: { dmPolicy: 42 } },
       }),
     );
-    setTestEnvValue("OPENCLAW_STATE_DIR", tempStateDir);
-    setTestEnvValue("OPENCLAW_CONFIG_PATH", configPath);
+    setTestEnvValue("AFORA_STATE_DIR", tempStateDir);
+    setTestEnvValue("AFORA_CONFIG_PATH", configPath);
     try {
       gatewayConfigMocks.useActualDispatchConfig = true;
       deviceIdentityState.throwOnLoad = true;
@@ -1622,16 +1622,16 @@ describe("buildGatewayConnectionDetails", () => {
 
   it("keeps the active runtime snapshot authoritative for default RPC loading", async () => {
     resetConfigRuntimeState();
-    const tempStateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-gateway-call-"));
-    const configPath = path.join(tempStateDir, "openclaw.json");
+    const tempStateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-gateway-call-"));
+    const configPath = path.join(tempStateDir, "afora.json");
     fs.writeFileSync(
       configPath,
       JSON.stringify({
         gateway: { mode: "local", bind: "loopback", port: 18800, auth: { mode: "none" } },
       }),
     );
-    setTestEnvValue("OPENCLAW_STATE_DIR", tempStateDir);
-    setTestEnvValue("OPENCLAW_CONFIG_PATH", configPath);
+    setTestEnvValue("AFORA_STATE_DIR", tempStateDir);
+    setTestEnvValue("AFORA_CONFIG_PATH", configPath);
     setRuntimeConfigSnapshot({
       gateway: { mode: "local", bind: "loopback", port: 18801, auth: { mode: "none" } },
     });
@@ -1670,7 +1670,7 @@ describe("buildGatewayConnectionDetails", () => {
     expect((thrown as Error).message).toContain("plaintext ws://");
     expect((thrown as Error).message).toContain("wss://");
     expect((thrown as Error).message).toContain("Tailscale Serve/Funnel");
-    expect((thrown as Error).message).toContain("openclaw doctor --fix");
+    expect((thrown as Error).message).toContain("afora doctor --fix");
   });
 
   it("redacts credential-bearing target URLs from insecure ws:// errors", () => {
@@ -1707,18 +1707,18 @@ describe("buildGatewayConnectionDetails", () => {
     expect(details.urlSource).toBe("config gateway.remote.url");
   });
 
-  it("allows ws:// hostname remote URLs when OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=1", () => {
-    process.env.OPENCLAW_ALLOW_INSECURE_PRIVATE_WS = "1";
+  it("allows ws:// hostname remote URLs when AFORA_ALLOW_INSECURE_PRIVATE_WS=1", () => {
+    process.env.AFORA_ALLOW_INSECURE_PRIVATE_WS = "1";
     setGatewayConfig({
       mode: "remote",
       bind: "loopback",
-      remote: { url: "ws://openclaw-gateway.ai:18789" },
+      remote: { url: "ws://afora-gateway.ai:18789" },
     });
     resolveGatewayPort.mockReturnValue(18789);
 
     const details = buildGatewayConnectionDetails();
 
-    expect(details.url).toBe("ws://openclaw-gateway.ai:18789");
+    expect(details.url).toBe("ws://afora-gateway.ai:18789");
     expect(details.urlSource).toBe("config gateway.remote.url");
   });
 
@@ -1913,7 +1913,7 @@ describe("callGateway error details", () => {
       const message = (error as Error).message;
       expect(message).toContain(`Gateway not reachable at ws://127.0.0.1:18789 (${code}).`);
       expect(message).toContain(
-        "Start it with `openclaw gateway run` or check `openclaw gateway status`.",
+        "Start it with `afora gateway run` or check `afora gateway status`.",
       );
       expect(message).not.toContain(`connect ${code}`);
     },
@@ -2117,7 +2117,7 @@ describe("callGateway error details", () => {
       "Connection dropped without a close frame (retry; check network and gateway load)",
     );
     expect(message).not.toContain("crashed or was terminated unexpectedly");
-    expect(message).toContain("Run `openclaw doctor`");
+    expect(message).toContain("Run `afora doctor`");
   });
 
   it("formats typed request errors for CLI JSON output", () => {
@@ -2166,7 +2166,7 @@ describe("callGateway error details", () => {
       "configured credentials",
       new GatewayCredentialsRequiredError({
         method: "health",
-        configPath: "/tmp/openclaw.json",
+        configPath: "/tmp/afora.json",
       }),
       "gateway health requires credentials before opening a websocket",
     ],
@@ -2244,9 +2244,9 @@ describe("callGateway error details", () => {
   });
 
   it("keeps the default wrapper timeout aligned with env handshake timeout", async () => {
-    const envSnapshot = captureEnv(["OPENCLAW_HANDSHAKE_TIMEOUT_MS"]);
+    const envSnapshot = captureEnv(["AFORA_HANDSHAKE_TIMEOUT_MS"]);
     try {
-      process.env.OPENCLAW_HANDSHAKE_TIMEOUT_MS = "30000";
+      process.env.AFORA_HANDSHAKE_TIMEOUT_MS = "30000";
       startMode = "silent";
       setLocalLoopbackGatewayConfig();
 
@@ -2574,14 +2574,14 @@ describe("callGateway url override auth requirements", () => {
 
   beforeEach(() => {
     envSnapshot = captureEnv([
-      "OPENCLAW_GATEWAY_TOKEN",
-      "OPENCLAW_GATEWAY_PASSWORD",
-      "OPENCLAW_GATEWAY_URL",
+      "AFORA_GATEWAY_TOKEN",
+      "AFORA_GATEWAY_PASSWORD",
+      "AFORA_GATEWAY_URL",
     ]);
     resetGatewayCallMocks();
-    delete process.env.OPENCLAW_GATEWAY_TOKEN;
-    delete process.env.OPENCLAW_GATEWAY_PASSWORD;
-    delete process.env.OPENCLAW_GATEWAY_URL;
+    delete process.env.AFORA_GATEWAY_TOKEN;
+    delete process.env.AFORA_GATEWAY_PASSWORD;
+    delete process.env.AFORA_GATEWAY_URL;
     setGatewayNetworkDefaults(18789);
   });
 
@@ -2590,8 +2590,8 @@ describe("callGateway url override auth requirements", () => {
   });
 
   it("throws when url override is set without explicit credentials", async () => {
-    process.env.OPENCLAW_GATEWAY_TOKEN = "env-token";
-    process.env.OPENCLAW_GATEWAY_PASSWORD = "env-password";
+    process.env.AFORA_GATEWAY_TOKEN = "env-token";
+    process.env.AFORA_GATEWAY_PASSWORD = "env-password";
     setGatewayConfig({
       mode: "local",
       auth: { token: "local-token", password: "local-password" },
@@ -2603,14 +2603,14 @@ describe("callGateway url override auth requirements", () => {
   });
 
   it("throws when env URL override is set without env credentials", async () => {
-    process.env.OPENCLAW_GATEWAY_URL = "wss://override.example/ws";
+    process.env.AFORA_GATEWAY_URL = "wss://override.example/ws";
     setGatewayConfig({
       mode: "local",
       auth: { token: "local-token", password: "local-password" },
     });
 
     await expect(callGateway({ method: "health" })).rejects.toThrow(
-      /OPENCLAW_GATEWAY_TOKEN or OPENCLAW_GATEWAY_PASSWORD/i,
+      /AFORA_GATEWAY_TOKEN or AFORA_GATEWAY_PASSWORD/i,
     );
   });
 });
@@ -2621,7 +2621,7 @@ describe("callGateway password resolution", () => {
     {
       label: "password",
       authKey: "password", // pragma: allowlist secret
-      envKey: "OPENCLAW_GATEWAY_PASSWORD",
+      envKey: "AFORA_GATEWAY_PASSWORD",
       envValue: "from-env",
       configValue: "from-config",
       explicitValue: "explicit-password",
@@ -2629,7 +2629,7 @@ describe("callGateway password resolution", () => {
     {
       label: "token",
       authKey: "token", // pragma: allowlist secret
-      envKey: "OPENCLAW_GATEWAY_TOKEN",
+      envKey: "AFORA_GATEWAY_TOKEN",
       envValue: "env-token",
       configValue: "local-token",
       explicitValue: "explicit-token",
@@ -2638,16 +2638,16 @@ describe("callGateway password resolution", () => {
 
   beforeEach(() => {
     envSnapshot = captureEnv([
-      "OPENCLAW_GATEWAY_PASSWORD",
-      "OPENCLAW_GATEWAY_TOKEN",
+      "AFORA_GATEWAY_PASSWORD",
+      "AFORA_GATEWAY_TOKEN",
       "LOCAL_REMOTE_FALLBACK_TOKEN",
       "LOCAL_REF_PASSWORD",
       "REMOTE_REF_TOKEN",
       "REMOTE_REF_PASSWORD",
     ]);
     resetGatewayCallMocks();
-    delete process.env.OPENCLAW_GATEWAY_PASSWORD;
-    delete process.env.OPENCLAW_GATEWAY_TOKEN;
+    delete process.env.AFORA_GATEWAY_PASSWORD;
+    delete process.env.AFORA_GATEWAY_TOKEN;
     delete process.env.LOCAL_REMOTE_FALLBACK_TOKEN;
     delete process.env.LOCAL_REF_PASSWORD;
     delete process.env.REMOTE_REF_TOKEN;
@@ -2698,7 +2698,7 @@ describe("callGateway password resolution", () => {
     },
   ])("$label", async ({ envPassword, config, expectedPassword }) => {
     if (envPassword !== undefined) {
-      process.env.OPENCLAW_GATEWAY_PASSWORD = envPassword;
+      process.env.AFORA_GATEWAY_PASSWORD = envPassword;
     }
     getRuntimeConfig.mockReturnValue(config);
 
@@ -2724,7 +2724,7 @@ describe("callGateway password resolution", () => {
   });
 
   it("does not let env password mask an unresolved local password ref", async () => {
-    process.env.OPENCLAW_GATEWAY_PASSWORD = "from-env";
+    process.env.AFORA_GATEWAY_PASSWORD = "from-env";
     setEnvSecretGatewayConfig({
       mode: "local",
       bind: "loopback",

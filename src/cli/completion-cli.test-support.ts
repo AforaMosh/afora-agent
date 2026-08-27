@@ -10,7 +10,7 @@ import { quoteCliArg } from "./quote-cli-arg.js";
 
 export function createAliasedCompletionProgram(): Command {
   const program = new Command();
-  program.name("openclaw");
+  program.name("afora");
   program.option("--profile <name>", "Profile");
   const infer = program.command("infer").alias("capability").description("Run inference");
   infer.command("embed").description("Embed text").option("--model <id>", "Model id");
@@ -34,7 +34,7 @@ export function runGeneratedBashCompletion(program: Command, words: readonly str
       `${script}
 COMP_WORDS=(${words.map(quoteCliArg).join(" ")})
 COMP_CWORD=${words.length - 1}
-_openclaw_completion
+_afora_completion
 printf '%s\\n' "\${COMPREPLY[@]}"
 `,
     ],
@@ -88,7 +88,7 @@ export function runGeneratedFishCompletion(program: Command, commandLine: string
 function findPowerShell(): string | null {
   const executable = process.platform === "win32" ? "pwsh.exe" : "pwsh";
   const candidates = [
-    process.env.OPENCLAW_TEST_PWSH,
+    process.env.AFORA_TEST_PWSH,
     ...(process.env.PATH ?? "")
       .split(path.delimiter)
       .filter(Boolean)
@@ -129,7 +129,7 @@ while (($encodedRequest = [Console]::In.ReadLine()) -ne $null) {
     $request = $requestJson | ConvertFrom-Json
     $completionScript = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String([string]$request.script))
     $commandLine = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String([string]$request.commandLine))
-    Register-ArgumentCompleter -Native -CommandName openclaw -ScriptBlock $null
+    Register-ArgumentCompleter -Native -CommandName afora -ScriptBlock $null
     Invoke-Expression $completionScript | Out-Null
     $completions = @(
       [System.Management.Automation.CommandCompletion]::CompleteInput(
@@ -147,7 +147,7 @@ while (($encodedRequest = [Console]::In.ReadLine()) -ne $null) {
     }
     $response = @{ version = 1; id = $responseId; ok = $false; error = ($_ | Out-String).Trim() }
   } finally {
-    Register-ArgumentCompleter -Native -CommandName openclaw -ScriptBlock $null
+    Register-ArgumentCompleter -Native -CommandName afora -ScriptBlock $null
   }
   $responseJson = $response | ConvertTo-Json -Compress -Depth 5
   $encodedResponse = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($responseJson))
@@ -197,7 +197,7 @@ export class PowerShellCompletionRunner {
   private closing = false;
   private exitPromise: Promise<{ code: number | null; signal: NodeJS.Signals | null }> | undefined;
   private failure: Error | undefined;
-  private readonly framePrefix = `OPENCLAW_PWSH_V1:${randomBytes(8).toString("hex")}:`;
+  private readonly framePrefix = `AFORA_PWSH_V1:${randomBytes(8).toString("hex")}:`;
   private pending = new Map<string, PendingPowerShellCompletion>();
   private queue: Promise<void> = Promise.resolve();
   private readyPromise: Promise<void> | undefined;

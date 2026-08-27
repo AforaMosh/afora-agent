@@ -1,4 +1,4 @@
-// Implements maintenance commands for OpenClaw-backed session cleanup.
+// Implements maintenance commands for Afora-backed session cleanup.
 import { logVerbose } from "../../globals.js";
 import type { CommandHandler } from "./commands-types.js";
 
@@ -13,7 +13,7 @@ export const handleSystemAgentCommand: CommandHandler = async (params, allowText
   }
   if (!params.command.isAuthorizedSender) {
     logVerbose(
-      `Ignoring /openclaw from unauthorized sender: ${params.command.senderId || "<unknown>"}`,
+      `Ignoring /afora from unauthorized sender: ${params.command.senderId || "<unknown>"}`,
     );
     return { shouldContinue: false };
   }
@@ -27,7 +27,7 @@ export const handleSystemAgentCommand: CommandHandler = async (params, allowText
           commandBody: params.command.commandBodyNormalized,
           agentId: params.agentId,
           isGroup: params.isGroup,
-        })) ?? "OpenClaw did not find a rescue request.",
+        })) ?? "Afora did not find a rescue request.",
     },
   };
 };

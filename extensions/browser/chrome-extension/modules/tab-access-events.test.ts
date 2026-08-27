@@ -54,7 +54,7 @@ function createHarness(
     attachedAccessEpochs.delete(tabId);
   });
   const pauseTab = vi.fn(async () => undefined);
-  const removeTabFromOpenClawGroup = vi.fn(async () => undefined);
+  const removeTabFromAforaGroup = vi.fn(async () => undefined);
   const chromeApi = {
     debugger: {
       onEvent: {
@@ -102,7 +102,7 @@ function createHarness(
     scheduleTabsSync: vi.fn(),
     detachDebugger,
     pauseTab,
-    removeTabFromOpenClawGroup,
+    removeTabFromAforaGroup,
     runAccessMutation: vi.fn(async (task) => await task()),
   });
   if (
@@ -123,7 +123,7 @@ function createHarness(
     groupUpdatedListener,
     policy,
     pauseTab,
-    removeTabFromOpenClawGroup,
+    removeTabFromAforaGroup,
     send,
     setAccessible: (next: boolean) => {
       accessible = next;
@@ -143,13 +143,13 @@ describe("tab access event epochs", () => {
     harness.debuggerDetachListener({ tabId: 7 }, "canceled_by_user");
     expect(harness.policy.beginRevocation).toHaveBeenCalledWith(7);
     expect(harness.pauseTab).not.toHaveBeenCalled();
-    expect(harness.removeTabFromOpenClawGroup).not.toHaveBeenCalled();
+    expect(harness.removeTabFromAforaGroup).not.toHaveBeenCalled();
 
     harness.policy.mode = "all";
     ready.resolve();
     await vi.waitFor(() => expect(harness.pauseTab).toHaveBeenCalledWith(7));
 
-    expect(harness.removeTabFromOpenClawGroup).not.toHaveBeenCalled();
+    expect(harness.removeTabFromAforaGroup).not.toHaveBeenCalled();
     expect(harness.policy.endRevocation).toHaveBeenCalledOnce();
   });
 

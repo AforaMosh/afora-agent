@@ -24,22 +24,22 @@ describe("formatCliJsonFailure", () => {
     expect(formatCliJsonFailure(error, { env: {} }).error.message).toBe(
       "Promotion is not available.",
     );
-    expect(formatCliJsonFailure(error, { env: { OPENCLAW_DEBUG: "1" } }).error.message).toBe(
+    expect(formatCliJsonFailure(error, { env: { AFORA_DEBUG: "1" } }).error.message).toBe(
       "Promotion is not available. | ClawHub /api/v1/promotions/nope failed (404)",
     );
   });
 
   it.each([
     { label: "default output", env: {} },
-    { label: "debug output", env: { OPENCLAW_DEBUG: "1" } },
+    { label: "debug output", env: { AFORA_DEBUG: "1" } },
   ])("keeps the full parse guidance unchanged in $label", ({ env }) => {
     const error = Object.assign(
       new ExpectedCliError({
-        message: 'OpenClaw sessions has no command "lst".',
+        message: 'Afora sessions has no command "lst".',
         humanOutput:
-          '\u001B[31mOpenClaw sessions has no command "lst".\u001B[39m\nDid you mean this?\n  openclaw sessions list\nTry: openclaw sessions --help\nDocs: \u001B]8;;https://docs.openclaw.ai/cli\u0007docs.openclaw.ai/cli\u001B]8;;\u0007\n',
+          '\u001B[31mAfora sessions has no command "lst".\u001B[39m\nDid you mean this?\n  afora sessions list\nTry: afora sessions --help\nDocs: \u001B]8;;https://docs.afora.ai/cli\u0007docs.afora.ai/cli\u001B]8;;\u0007\n',
         machineOutput:
-          'OpenClaw sessions has no command "lst".\nDid you mean this?\n  openclaw sessions list\nTry: openclaw sessions --help\nDocs: https://docs.openclaw.ai/cli\n',
+          'Afora sessions has no command "lst".\nDid you mean this?\n  afora sessions list\nTry: afora sessions --help\nDocs: https://docs.afora.ai/cli\n',
       }),
       { cause: new Error("internal parse cause") },
     );
@@ -50,7 +50,7 @@ describe("formatCliJsonFailure", () => {
       error: {
         type: "cli_error",
         message:
-          'OpenClaw sessions has no command "lst".\nDid you mean this?\n  openclaw sessions list\nTry: openclaw sessions --help\nDocs: https://docs.openclaw.ai/cli',
+          'Afora sessions has no command "lst".\nDid you mean this?\n  afora sessions list\nTry: afora sessions --help\nDocs: https://docs.afora.ai/cli',
       },
     });
     expect(payload.error.message).not.toContain("internal parse cause");
@@ -58,7 +58,7 @@ describe("formatCliJsonFailure", () => {
 
   it("keeps plugin policy messages in the canonical JSON envelope", () => {
     const message =
-      'The `openclaw workboard` command is provided by the "workboard" plugin, but that bundled plugin is disabled by default. Run `openclaw plugins enable workboard` to enable that CLI surface.';
+      'The `afora workboard` command is provided by the "workboard" plugin, but that bundled plugin is disabled by default. Run `afora plugins enable workboard` to enable that CLI surface.';
 
     const error = new ExpectedCliError({
       message,
@@ -76,7 +76,7 @@ describe("formatCliJsonFailure", () => {
 describe("formatCliFailureLines", () => {
   it.each([
     { label: "default output", env: {} },
-    { label: "debug output", env: { OPENCLAW_DEBUG: "1" } },
+    { label: "debug output", env: { AFORA_DEBUG: "1" } },
   ])("emits expected guidance only when not already written in $label", ({ env }) => {
     const pending = new ExpectedCliError({
       message: "bad input",
@@ -103,16 +103,16 @@ describe("formatCliFailureLines", () => {
       error: new Error("config file is invalid", {
         cause: new Error("unexpected token at /internal/config.json:12"),
       }),
-      argv: ["node", "openclaw", "status"],
+      argv: ["node", "afora", "status"],
       env: {},
     });
 
     expect(lines).toEqual([
-      "[openclaw] Could not start the CLI.",
-      "[openclaw] Reason: config file is invalid",
-      "[openclaw] Debug: set OPENCLAW_DEBUG=1 to include the stack trace.",
-      "[openclaw] Try: openclaw doctor",
-      "[openclaw] Help: openclaw --help",
+      "[afora] Could not start the CLI.",
+      "[afora] Reason: config file is invalid",
+      "[afora] Debug: set AFORA_DEBUG=1 to include the stack trace.",
+      "[afora] Try: afora doctor",
+      "[afora] Help: afora --help",
     ]);
   });
 
@@ -120,14 +120,14 @@ describe("formatCliFailureLines", () => {
     const lines = formatCliFailureLines({
       title: "The CLI command failed.",
       error: new Error("boom"),
-      env: { OPENCLAW_DEBUG: "1" },
+      env: { AFORA_DEBUG: "1" },
     });
 
     expect(lines.slice(0, 4)).toEqual([
-      "[openclaw] The CLI command failed.",
-      "[openclaw] Reason: boom",
-      "[openclaw] Stack:",
-      "[openclaw] Error: boom",
+      "[afora] The CLI command failed.",
+      "[afora] Reason: boom",
+      "[afora] Stack:",
+      "[afora] Error: boom",
     ]);
     expect(lines.join("\n")).toContain("Error: boom");
   });
@@ -136,13 +136,13 @@ describe("formatCliFailureLines", () => {
     const lines = formatCliFailureLines({
       title: "The CLI command failed.",
       error: new Error("boom", { cause: new Error("transport detail") }),
-      argv: ["node", "openclaw", "proxy", "run", debugFlag],
+      argv: ["node", "afora", "proxy", "run", debugFlag],
       env: {},
     });
 
-    expect(lines).toContain("[openclaw] Reason: boom | transport detail");
-    expect(lines).toContain("[openclaw] Stack:");
-    expect(lines).toContain("[openclaw] Error: boom");
+    expect(lines).toContain("[afora] Reason: boom | transport detail");
+    expect(lines).toContain("[afora] Stack:");
+    expect(lines).toContain("[afora] Error: boom");
   });
 
   it.each(["--debug", "--verbose"])(
@@ -151,12 +151,12 @@ describe("formatCliFailureLines", () => {
       const lines = formatCliFailureLines({
         title: "The CLI command failed.",
         error: new Error("boom"),
-        argv: ["node", "openclaw", "proxy", "run", "--", "child", debugFlag],
+        argv: ["node", "afora", "proxy", "run", "--", "child", debugFlag],
         env: {},
       });
 
-      expect(lines).not.toContain("[openclaw] Stack:");
-      expect(lines).toContain("[openclaw] Debug: set OPENCLAW_DEBUG=1 to include the stack trace.");
+      expect(lines).not.toContain("[afora] Stack:");
+      expect(lines).toContain("[afora] Debug: set AFORA_DEBUG=1 to include the stack trace.");
     },
   );
 });

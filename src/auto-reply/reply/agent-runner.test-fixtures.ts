@@ -1,7 +1,7 @@
 // Shared fixtures for agent runner tests and temporary session files.
 import type { SessionEntry } from "../../config/sessions.js";
 import { replaceSessionEntry } from "../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { TemplateContext } from "../templating.js";
 import type { FollowupRun, QueueSettings } from "./queue.js";
 
@@ -56,11 +56,11 @@ export function createTestQueuedFollowupRun(fixture: FollowupRunFixture): Follow
 }
 
 export function withTestModelContextTokens(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   followupRun: FollowupRun;
   defaultModel: string;
   contextTokens?: number;
-}): OpenClawConfig {
+}): AforaConfig {
   if (params.contextTokens === undefined) {
     return params.cfg;
   }
@@ -84,7 +84,7 @@ export function withTestModelContextTokens(params: {
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 export async function writeTestSessionStore(

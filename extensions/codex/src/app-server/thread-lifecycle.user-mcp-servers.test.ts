@@ -2,7 +2,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams } from "openclaw/plugin-sdk/agent-harness-runtime";
+import type { EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   hashCodexAppServerBindingFingerprint,
@@ -25,7 +25,7 @@ describe("startOrResumeThread — user mcp.servers projection (regression: #8081
   let tempDir = "";
 
   beforeEach(async () => {
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-80814-"));
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-80814-"));
     // Bindings are keyed by session identity, not tempDir, so sibling tests
     // would otherwise leak resumable threads into fresh-start expectations.
     resetCodexTestBindingStore();
@@ -96,7 +96,7 @@ describe("startOrResumeThread — user mcp.servers projection (regression: #8081
                 transport: "stdio",
                 command: "node",
                 args: [
-                  `/opt/openclaw/mcp/server-${index}/dist/index.js`,
+                  `/opt/afora/mcp/server-${index}/dist/index.js`,
                   "--description",
                   "x".repeat(400),
                 ],

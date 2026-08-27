@@ -1,8 +1,8 @@
 /** Resolves plugin config contract metadata for scanners and secret/config policy checks. */
-import { normalizeSortedUniqueStringEntries } from "@openclaw/normalization-core/string-normalization";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { normalizeSortedUniqueStringEntries } from "@afora/normalization-core/string-normalization";
+import type { AforaConfig } from "../config/types.afora.js";
 import { findBundledPluginMetadataById } from "./bundled-plugin-metadata.js";
-import { discoverOpenClawPlugins, type PluginDiscoveryResult } from "./discovery.js";
+import { discoverAforaPlugins, type PluginDiscoveryResult } from "./discovery.js";
 import {
   loadPluginManifestRegistryCore,
   type PluginManifestRegistry,
@@ -21,7 +21,7 @@ type PluginConfigContractMetadata = {
 
 /** Resolve config contract metadata for plugin ids through the runtime registry and bundled fallback. */
 export function resolvePluginConfigContractsById(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   fallbackToBundledMetadata?: boolean;
@@ -48,7 +48,7 @@ export function resolvePluginConfigContractsById(params: {
     }
     const discovery =
       params.discovery ??
-      discoverOpenClawPlugins({
+      discoverAforaPlugins({
         workspaceDir: params.workspaceDir,
         env: params.env,
       });

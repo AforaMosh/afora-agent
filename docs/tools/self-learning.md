@@ -1,7 +1,7 @@
 ---
 summary: "Turn corrections and successful work into reusable skills through Skill Workshop"
 read_when:
-  - You want OpenClaw to learn reusable procedures from completed conversations
+  - You want Afora to learn reusable procedures from completed conversations
   - You are choosing between off, propose, and auto self-learning modes
   - You need to understand self-learning safety, cost, privacy, or troubleshooting
 title: "Self-learning"
@@ -14,7 +14,7 @@ follow. Every learned skill flows through [Skill Workshop](/tools/skill-workshop
 the same governed proposal, scan, apply, and lifecycle path used for explicit
 skill authoring.
 
-The default mode is `auto`. OpenClaw captures strong learning signals and applies
+The default mode is `auto`. Afora captures strong learning signals and applies
 them through the normal scanner-gated Workshop service without asking for
 approval. Choose `propose` to review every capture before it becomes active, or
 `off` to disable autonomous capture.
@@ -41,7 +41,7 @@ is no template or pattern-matching path: content that reaches a proposal was
 written by the reviewer against the Workshop authoring standards, never copied
 from conversation text.
 
-After substantial work, OpenClaw can run one isolated background review to find
+After substantial work, Afora can run one isolated background review to find
 a reusable recovery technique or a stable procedure that would remove at least
 two future model or tool round trips. Deep turns the user interrupted qualify
 too: the wrong path and its correction are exactly the evidence worth keeping.
@@ -114,12 +114,12 @@ The reviewer should abstain for:
 Set the mode with the CLI:
 
 ```bash
-openclaw config set skills.workshop.autonomous.mode auto
-openclaw config set skills.workshop.autonomous.mode propose
-openclaw config set skills.workshop.autonomous.mode off
+afora config set skills.workshop.autonomous.mode auto
+afora config set skills.workshop.autonomous.mode propose
+afora config set skills.workshop.autonomous.mode off
 ```
 
-Or edit `~/.openclaw/openclaw.json`:
+Or edit `~/.AforaMosh/afora-agent.json`:
 
 ```json5
 {
@@ -166,22 +166,22 @@ Every learned skill receives these controls:
   descriptions, evidence-backed steps, and token-efficient language.
 - **Bounded failure:** an automatic apply is attempted once. A normal apply
   failure leaves the proposal pending, while a scanner-critical proposal is
-  quarantined. OpenClaw does not retry in a loop.
+  quarantined. Afora does not retry in a loop.
 
 Reject a pending miscapture with one command:
 
 ```bash
-openclaw skills workshop reject <proposal-id> --reason "Not reusable"
+afora skills workshop reject <proposal-id> --reason "Not reusable"
 ```
 
-Applied captures remain visible in `openclaw skills workshop list` and retain
+Applied captures remain visible in `afora skills workshop list` and retain
 their rollback metadata. The daily collection review can later improve, merge,
 or remove them. This makes
 approval-free learning reversible and observable rather than silent.
 
 Residual risk remains: learned content comes from conversation and tool output,
 and the scanner blocks recognized dangerous patterns, not every possible piece
-of bad advice. Review `openclaw skills workshop list` when in doubt.
+of bad advice. Review `afora skills workshop list` when in doubt.
 
 ## Runtime support
 
@@ -204,7 +204,7 @@ receives the bounded message window of those same-sender turns (at most 40
 messages); accumulation restarts whenever the sender, provider, model, or auth
 profile changes, so no turn is disclosed to a provider identity other than its
 own. Either way the rendered trajectory is limited to 60,000 characters; when
-the bundle is too large, OpenClaw keeps the first message and newest evidence
+the bundle is too large, Afora keeps the first message and newest evidence
 and marks the omitted middle.
 
 The reviewer reuses the foreground provider, model, and available auth identity,
@@ -241,15 +241,15 @@ transcript content into scan state.
 List and inspect every pending, applied, rejected, quarantined, or stale capture:
 
 ```bash
-openclaw skills workshop list
-openclaw skills workshop inspect <proposal-id>
+afora skills workshop list
+afora skills workshop inspect <proposal-id>
 ```
 
 Stop a pending capture from becoming active or quarantine it for safety review:
 
 ```bash
-openclaw skills workshop reject <proposal-id> --reason "Too specific"
-openclaw skills workshop quarantine <proposal-id> --reason "Needs security review"
+afora skills workshop reject <proposal-id> --reason "Too specific"
+afora skills workshop quarantine <proposal-id> --reason "Needs security review"
 ```
 
 Use `/learn` when you want an explicit proposal from the current conversation or
@@ -302,7 +302,7 @@ result when the evidence does not clear the reusable-procedure bar.
 
 ### Doctor reports that Workshop is hidden
 
-In `propose` and `auto` modes, `openclaw doctor` checks whether the default agent
+In `propose` and `auto` modes, `afora doctor` checks whether the default agent
 tool policy permits `skill_workshop`. Apply the reported `tools.allow` or
 `tools.alsoAllow` change, or set the autonomous mode to `off`.
 
@@ -311,7 +311,7 @@ tool policy permits `skill_workshop`. Apply the reported `tools.allow` or
 Automatic apply runs once. Inspect the proposal and its scanner state:
 
 ```bash
-openclaw skills workshop inspect <proposal-id>
+afora skills workshop inspect <proposal-id>
 ```
 
 A normal write or target failure leaves it pending for manual review. A critical
@@ -324,8 +324,8 @@ Switch to `propose` to review every capture, or `off` to disable autonomous
 capture:
 
 ```bash
-openclaw config set skills.workshop.autonomous.mode propose
-openclaw config set skills.workshop.autonomous.mode off
+afora config set skills.workshop.autonomous.mode propose
+afora config set skills.workshop.autonomous.mode off
 ```
 
 Existing proposals and applied skills remain visible after the mode changes.

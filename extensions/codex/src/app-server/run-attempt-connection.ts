@@ -4,14 +4,14 @@ import {
   resolveSessionAgentIds,
   resolveUserPath,
   type FastModeAutoProgressState,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import { resolveAgentDir } from "openclaw/plugin-sdk/agent-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { resolveAgentDir } from "afora-agent/plugin-sdk/agent-runtime";
 import {
   createDiagnosticTraceContextFromActiveScope,
   freezeDiagnosticTraceContext,
   resolveDiagnosticModelContentCapturePolicy,
-} from "openclaw/plugin-sdk/diagnostic-runtime";
-import { loadExecApprovals } from "openclaw/plugin-sdk/exec-approvals-runtime";
+} from "afora-agent/plugin-sdk/diagnostic-runtime";
+import { loadExecApprovals } from "afora-agent/plugin-sdk/exec-approvals-runtime";
 import { resolveCodexAppServerForModelProvider } from "./app-server-policy.js";
 import {
   resolveCodexAppServerAuthProfileId,
@@ -27,7 +27,7 @@ import {
   resolveCodexAppServerHomeScope,
   resolveCodexComputerUseConfig,
   resolveCodexModelBackedReviewerPolicyContext,
-  resolveOpenClawExecPolicyForCodexAppServer,
+  resolveAforaExecPolicyForCodexAppServer,
 } from "./config.js";
 import { createCodexDynamicToolBuildStageTracker } from "./dynamic-tool-build.js";
 import { resolveCodexNativeHookRelayEvents } from "./native-hook-relay.js";
@@ -100,7 +100,7 @@ export async function prepareCodexAttemptConnection({ params, options }: CodexRu
           workspaceDir: resolvedWorkspace,
         });
   preDynamicStartupStages.mark("sandbox");
-  const execPolicy = resolveOpenClawExecPolicyForCodexAppServer({
+  const execPolicy = resolveAforaExecPolicyForCodexAppServer({
     // The explicit session mode replaces legacy per-session execSecurity/execAsk.
     // Global/agent policy and approvals-file floors remain authoritative.
     execOverrides: params.execOverrides,
@@ -190,7 +190,7 @@ export async function prepareCodexAttemptConnection({ params, options }: CodexRu
       config: params.config,
       agentDir,
       requirementsToml,
-      openClawSandboxActive: sandbox?.enabled === true,
+      aforaSandboxActive: sandbox?.enabled === true,
       sessionPermissionMode: params.permissionMode,
     }).appServer;
   const initialStartupBindingHadInactiveThreadBootstrap =

@@ -1,6 +1,6 @@
 // Msteams plugin module implements graph behavior.
-import { responseWithRelease } from "openclaw/plugin-sdk/fetch-runtime";
-import { readProviderJsonResponse } from "openclaw/plugin-sdk/provider-http";
+import { responseWithRelease } from "afora-agent/plugin-sdk/fetch-runtime";
+import { readProviderJsonResponse } from "afora-agent/plugin-sdk/provider-http";
 import { fetchWithSsrFGuard, type MSTeamsConfig } from "../runtime-api.js";
 import { GRAPH_ROOT } from "./attachments/shared.js";
 import { resolveMSTeamsSdkCloudOptions } from "./cloud.js";

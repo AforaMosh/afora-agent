@@ -62,8 +62,8 @@ describe("readDraftNodes", () => {
     const issue = {
       code: "update-required",
       action: "update-and-reconnect",
-      updateCommand: "openclaw update",
-      headlessReconnectCommand: "openclaw node restart",
+      updateCommand: "afora update",
+      headlessReconnectCommand: "afora node restart",
     };
     expect(
       readDraftNodes([
@@ -93,8 +93,8 @@ describe("readDraftNodes", () => {
           {
             code: "update-required",
             action: "update-and-reconnect",
-            updateCommand: "openclaw update",
-            headlessReconnectCommand: "openclaw node restart",
+            updateCommand: "afora update",
+            headlessReconnectCommand: "afora node restart",
           },
         ],
       },

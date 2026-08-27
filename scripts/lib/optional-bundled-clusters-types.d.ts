@@ -1,4 +1,4 @@
-// Optional Bundled Clusters Types.D script supports OpenClaw repository automation.
+// Optional Bundled Clusters Types.D script supports Afora repository automation.
 export const optionalBundledClusterSet: Set<string>;
 export function shouldBuildBundledCluster(
   cluster: string,

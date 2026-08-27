@@ -1,5 +1,5 @@
 // Irc tests cover policy plugin behavior.
-import { resolveChannelGroupPolicy } from "openclaw/plugin-sdk/channel-policy";
+import { resolveChannelGroupPolicy } from "afora-agent/plugin-sdk/channel-policy";
 import { describe, expect, it } from "vitest";
 import {
   resolveIrcGroupMatch,

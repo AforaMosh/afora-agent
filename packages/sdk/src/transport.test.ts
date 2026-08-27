@@ -1,4 +1,4 @@
-// OpenClaw SDK tests cover transport behavior.
+// Afora SDK tests cover transport behavior.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GatewayClientTransport } from "./transport.js";
 
@@ -16,7 +16,7 @@ const gatewayClientMocks = vi.hoisted(() => ({
   instances: [] as MockGatewayClientInstance[],
 }));
 
-vi.mock("@openclaw/gateway-client", () => ({
+vi.mock("@afora/gateway-client", () => ({
   GatewayClient: class {
     readonly opts: MockGatewayClientInstance["opts"];
     readonly request = vi.fn();

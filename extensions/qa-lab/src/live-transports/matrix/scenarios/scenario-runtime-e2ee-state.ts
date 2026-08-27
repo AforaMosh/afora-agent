@@ -1,11 +1,11 @@
 // QA Lab Matrix destructive E2EE state-loss helpers.
 import { access, mkdir, readdir, readFile, rm } from "node:fs/promises";
 import path from "node:path";
-import type { OpenKeyedStoreOptions } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { OpenKeyedStoreOptions } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import {
   createPluginStateSyncKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { loadMatrixQaE2eeRuntime } from "../substrate/e2ee-client.js";
 import { requestMatrixJson } from "../substrate/request.js";
 import type { MatrixQaCliRuntime } from "./scenario-runtime-e2ee-destructive-recovery.js";
@@ -46,7 +46,7 @@ async function findMatrixQaCliAccountRoot(params: {
 }) {
   const storageMetadataRuntime = await loadMatrixQaE2eeRuntime();
   const sqlitePaths = await findFilesByName({
-    filename: "openclaw.sqlite",
+    filename: "afora.sqlite",
     rootDir: params.runtime.stateDir,
   });
   const legacyMetadataPaths = await findFilesByName({
@@ -66,7 +66,7 @@ async function findMatrixQaCliAccountRoot(params: {
   for (const accountRoot of [...accountRoots].toSorted()) {
     let metadata: { deviceId?: unknown; userId?: unknown } | null = null;
     try {
-      await access(path.join(accountRoot, "state", "openclaw.sqlite"));
+      await access(path.join(accountRoot, "state", "afora.sqlite"));
       try {
         const store = createPluginStateSyncKeyedStoreForTests<unknown>(
           "matrix",

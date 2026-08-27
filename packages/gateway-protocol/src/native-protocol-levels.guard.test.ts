@@ -1,7 +1,7 @@
 // Gateway Protocol tests cover native protocol levels.guard behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, it } from "vitest";
 import { ProtocolSchemas } from "./schema/protocol-schemas.js";
 import {
@@ -124,7 +124,7 @@ describe("native Gateway protocol levels", () => {
     }
 
     const swiftGeneratedPath =
-      "apps/shared/OpenClawKit/Sources/OpenClawProtocol/GatewayModels.swift";
+      "apps/shared/AforaKit/Sources/AforaProtocol/GatewayModels.swift";
     const swiftGenerated = await readRepoFile(swiftGeneratedPath);
     assertLevelsMatch(swiftGeneratedPath, {
       min: extractInteger(
@@ -159,7 +159,7 @@ describe("native Gateway protocol levels", () => {
       expectedNodeLevels,
     );
 
-    const androidPath = "apps/android/app/src/main/java/ai/openclaw/app/gateway/GatewayProtocol.kt";
+    const androidPath = "apps/android/app/src/main/java/ai/afora/app/gateway/GatewayProtocol.kt";
     const android = await readRepoFile(androidPath);
     assertLevelsMatch(
       androidPath,
@@ -182,7 +182,7 @@ describe("native Gateway protocol levels", () => {
   });
 
   it("uses the min constant for native connect compatibility ranges", async () => {
-    const swiftChannelPath = "apps/shared/OpenClawKit/Sources/OpenClawKit/GatewayChannel.swift";
+    const swiftChannelPath = "apps/shared/AforaKit/Sources/AforaKit/GatewayChannel.swift";
     const swiftChannel = await readRepoFile(swiftChannelPath);
     assertPattern(
       swiftChannel,
@@ -218,7 +218,7 @@ describe("native Gateway protocol levels", () => {
       "Watch node connects must advertise GATEWAY_PROTOCOL_VERSION as maxProtocol.",
     );
 
-    const swiftWizardPath = "apps/macos/Sources/OpenClawMacCLI/WizardCommand.swift";
+    const swiftWizardPath = "apps/macos/Sources/AforaMacCLI/WizardCommand.swift";
     const swiftWizard = await readRepoFile(swiftWizardPath);
     assertPattern(
       swiftWizard,
@@ -233,7 +233,7 @@ describe("native Gateway protocol levels", () => {
       "operator connects must advertise GATEWAY_PROTOCOL_VERSION as maxProtocol.",
     );
 
-    const androidPath = "apps/android/app/src/main/java/ai/openclaw/app/gateway/GatewaySession.kt";
+    const androidPath = "apps/android/app/src/main/java/ai/afora/app/gateway/GatewaySession.kt";
     const android = await readRepoFile(androidPath);
     assertPattern(
       android,
@@ -282,7 +282,7 @@ describe("native Gateway protocol levels", () => {
 
   it("emits named string-literal unions as Swift enums", async () => {
     const swiftGeneratedPath =
-      "apps/shared/OpenClawKit/Sources/OpenClawProtocol/GatewayModels.swift";
+      "apps/shared/AforaKit/Sources/AforaProtocol/GatewayModels.swift";
     const swiftGenerated = await readRepoFile(swiftGeneratedPath);
 
     for (const [name, schema] of Object.entries(ProtocolSchemas)) {
@@ -311,7 +311,7 @@ describe("native Gateway protocol levels", () => {
 
   it("emits the session approval event as a discriminated Swift union", async () => {
     const swiftGeneratedPath =
-      "apps/shared/OpenClawKit/Sources/OpenClawProtocol/GatewayModels.swift";
+      "apps/shared/AforaKit/Sources/AforaProtocol/GatewayModels.swift";
     const swiftGenerated = await readRepoFile(swiftGeneratedPath);
 
     assertPattern(
@@ -336,7 +336,7 @@ describe("native Gateway protocol levels", () => {
 
   it("emits the scope upgrade result as a discriminated Swift union", async () => {
     const swiftGeneratedPath =
-      "apps/shared/OpenClawKit/Sources/OpenClawProtocol/GatewayModels.swift";
+      "apps/shared/AforaKit/Sources/AforaProtocol/GatewayModels.swift";
     const swiftGenerated = await readRepoFile(swiftGeneratedPath);
 
     assertPattern(

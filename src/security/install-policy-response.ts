@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { truncateWithMarker } from "@openclaw/normalization-core/utf16-slice";
+import { truncateWithMarker } from "@afora/normalization-core/utf16-slice";
 import { z } from "zod";
 import { formatErrorMessage } from "../infra/errors.js";
 

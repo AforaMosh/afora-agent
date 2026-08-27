@@ -3,7 +3,7 @@
  *
  * Defines setup/allowlist approval hooks used by pairing flows.
  */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { RuntimeEnv } from "../../runtime.js";
 
 /**
@@ -18,7 +18,7 @@ export type ChannelPairingAdapter = {
     meta?: Record<string, string>;
   }) => string | null | undefined;
   notifyApproval?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     id: string;
     accountId?: string;
     meta?: Record<string, string>;

@@ -179,9 +179,9 @@ function mockCallArg(
 describe("matrix message actions", () => {
   it("preserves workspace media access through the shared Matrix send helper", async () => {
     const mediaAccess = {
-      localRoots: ["/tmp/openclaw-matrix-test"],
+      localRoots: ["/tmp/afora-matrix-test"],
       readFile: async () => Buffer.from("chart"),
-      workspaceDir: "/tmp/openclaw-matrix-test",
+      workspaceDir: "/tmp/afora-matrix-test",
     };
     const sendSpy = vi.spyOn(sendModule, "sendMessageMatrix").mockResolvedValue({
       messageId: "$sent",
@@ -871,7 +871,7 @@ describe("matrix message actions", () => {
     expect(getEvent).toHaveBeenCalledWith("!room:example.org", "$thread-root");
     expect(result.messages.map((message) => message.eventId)).toEqual(["$thread-root"]);
     expect(result.nextBatch).toEqual(
-      expect.stringContaining("openclaw.matrix.thread-relations-start:"),
+      expect.stringContaining("afora.matrix.thread-relations-start:"),
     );
 
     const next = await readMatrixMessages("room:!room:example.org", {
@@ -897,7 +897,7 @@ describe("matrix message actions", () => {
     [
       "extra payload field",
       (cursor: string) => {
-        const prefix = "openclaw.matrix.thread-relations-start:";
+        const prefix = "afora.matrix.thread-relations-start:";
         const payload = Buffer.from(
           JSON.stringify({ v: 1, threadId: "$thread-root", extra: true }),
           "utf8",

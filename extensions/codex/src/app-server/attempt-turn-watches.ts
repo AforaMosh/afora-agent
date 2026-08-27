@@ -2,8 +2,8 @@
  * Idle-watch controller for Codex app-server turn progress, completion, and
  * terminal-event gaps.
  */
-import { embeddedAgentLog } from "openclaw/plugin-sdk/agent-harness-runtime";
-import { resolveTimerTimeoutMs } from "openclaw/plugin-sdk/number-runtime";
+import { embeddedAgentLog } from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { resolveTimerTimeoutMs } from "afora-agent/plugin-sdk/number-runtime";
 
 type Timer = ReturnType<typeof setTimeout>;
 type WatchTimerKind = "completion" | "assistant" | "attempt" | "terminal";

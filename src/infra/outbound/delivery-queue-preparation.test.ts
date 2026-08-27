@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import { getDeliveryQueueEntryStatus } from "../delivery-queue-sqlite.js";
 import { OUTBOUND_DELIVERY_PREPARATION_QUEUE_NAME } from "./delivery-queue-media-staging.js";
 import { withStableDeliveryPreparation } from "./delivery-queue-preparation.js";
@@ -9,14 +9,14 @@ describe("stable delivery preparation", () => {
   let stateDir = "";
   const tempDirs = useAutoCleanupTempDirTracker((cleanup) => {
     afterEach(() => {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       cleanup();
     });
   });
 
   beforeEach(() => {
-    closeOpenClawStateDatabaseForTest();
-    stateDir = tempDirs.make("openclaw-stable-preparation-");
+    closeAforaStateDatabaseForTest();
+    stateDir = tempDirs.make("afora-stable-preparation-");
   });
 
   it("admits only one modifier owner for a stable intent", async () => {

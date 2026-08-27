@@ -15,7 +15,7 @@ import {
 
 const chromiumExecutablePath = resolvePlaywrightChromiumExecutablePath(chromium.executablePath());
 const chromiumAvailable = canRunPlaywrightChromium(chromiumExecutablePath);
-const allowMissingChromium = process.env.OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
+const allowMissingChromium = process.env.AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
 const describeControlUiE2e = chromiumAvailable || !allowMissingChromium ? describe : describe.skip;
 const sessionKey = "agent:main:board-mcp-app";
 
@@ -93,20 +93,20 @@ async function waitForMountedApp(page: Page): Promise<void> {
 async function captureBoardIdentity(page: Page): Promise<void> {
   await page.evaluate(() => {
     const surface = document.querySelector<HTMLElement>(".board-session-surface");
-    const board = surface?.querySelector("openclaw-board-view");
-    const cell = board?.querySelector("openclaw-board-widget-cell");
+    const board = surface?.querySelector("afora-board-view");
+    const cell = board?.querySelector("afora-board-widget-cell");
     const appView = cell?.querySelector("mcp-app-view");
     const iframe = appView?.shadowRoot?.querySelector("iframe");
     if (!surface || !board || !cell || !appView || !iframe) {
       throw new Error("Board MCP App identity is incomplete");
     }
-    Reflect.set(window, "__openclawBoardIdentity", { surface, board, cell, appView, iframe });
+    Reflect.set(window, "__aforaBoardIdentity", { surface, board, cell, appView, iframe });
   });
 }
 
 async function readBoardIdentity(page: Page) {
   return await page.evaluate(() => {
-    const stored = Reflect.get(window, "__openclawBoardIdentity") as {
+    const stored = Reflect.get(window, "__aforaBoardIdentity") as {
       surface: HTMLElement;
       board: Element;
       cell: Element;
@@ -114,8 +114,8 @@ async function readBoardIdentity(page: Page) {
       iframe: Element;
     };
     const surface = document.querySelector<HTMLElement>(".board-session-surface");
-    const board = surface?.querySelector("openclaw-board-view");
-    const cell = board?.querySelector("openclaw-board-widget-cell");
+    const board = surface?.querySelector("afora-board-view");
+    const cell = board?.querySelector("afora-board-widget-cell");
     const appView = cell?.querySelector("mcp-app-view");
     const iframe = appView?.shadowRoot?.querySelector("iframe");
     return {
@@ -155,7 +155,7 @@ async function expectRetainedBoardMode(
 async function waitForCachedBoardFace(page: Page, face: "chat" | "dashboard"): Promise<void> {
   await page.waitForFunction(
     ({ key, expectedFace }) => {
-      const chatPage = document.querySelector("openclaw-chat-page");
+      const chatPage = document.querySelector("afora-chat-page");
       const context = chatPage ? Reflect.get(chatPage, "context") : undefined;
       const sessions = context?.sessions?.state?.result?.sessions;
       return (

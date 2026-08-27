@@ -2,7 +2,7 @@
  * Tests pending-node gateway method responses and state filtering.
  */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { nodePendingWorkHandlers } from "./nodes.pending-work.js";
 

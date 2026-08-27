@@ -1,37 +1,37 @@
 ---
-summary: "How OpenClaw separates model providers, models, channels, and agent runtimes"
+summary: "How Afora separates model providers, models, channels, and agent runtimes"
 title: "Agent runtimes"
 read_when:
-  - You are choosing between OpenClaw, Codex, ACP, or another native agent runtime
+  - You are choosing between Afora, Codex, ACP, or another native agent runtime
   - You are confused by provider/model/runtime labels in status or config
   - You are documenting support parity for a native harness
 ---
 
 An **agent runtime** owns one prepared model loop: it receives the prompt,
 drives model output, handles native tool calls, and returns the finished turn
-to OpenClaw.
+to Afora.
 
 Runtimes are easy to confuse with providers because both show up near model
 configuration. They are different layers:
 
 | Layer         | Examples                                     | Meaning                                                             |
 | ------------- | -------------------------------------------- | ------------------------------------------------------------------- |
-| Provider      | `anthropic`, `github-copilot`, `openai`      | How OpenClaw authenticates, discovers models, and names model refs. |
+| Provider      | `anthropic`, `github-copilot`, `openai`      | How Afora authenticates, discovers models, and names model refs. |
 | Model         | `claude-opus-4-6`, `gpt-5.6-sol`             | The model selected for the agent turn.                              |
-| Agent runtime | `claude-cli`, `codex`, `copilot`, `openclaw` | The low-level loop or backend that executes the prepared turn.      |
-| Channel       | Discord, Slack, Telegram, WhatsApp           | Where messages enter and leave OpenClaw.                            |
+| Agent runtime | `claude-cli`, `codex`, `copilot`, `afora` | The low-level loop or backend that executes the prepared turn.      |
+| Channel       | Discord, Slack, Telegram, WhatsApp           | Where messages enter and leave Afora.                            |
 
 A **harness** is the implementation that provides an agent runtime (code
 term). For example, the bundled Codex harness implements the `codex` runtime.
 Public config uses `agentRuntime.id` on provider or model entries; whole-agent
-runtime keys are legacy and ignored. `openclaw doctor --fix` removes old
+runtime keys are legacy and ignored. `afora doctor --fix` removes old
 whole-agent runtime pins and rewrites legacy runtime model refs to canonical
 provider/model refs plus model-scoped runtime policy where needed.
 
 Two runtime families:
 
-- **Embedded harnesses** run inside OpenClaw's prepared agent loop: the
-  built-in `openclaw` runtime, plus registered plugin harnesses such as
+- **Embedded harnesses** run inside Afora's prepared agent loop: the
+  built-in `afora` runtime, plus registered plugin harnesses such as
   `codex` and `copilot`.
 - **CLI backends** run a local CLI process while keeping the model ref
   canonical. For example, `anthropic/claude-opus-5` with a model-scoped
@@ -47,7 +47,7 @@ the user-facing decision between PI, Codex, and GitHub Copilot agent runtime.
 
 Several surfaces share the Codex name:
 
-| Surface                                          | OpenClaw name/config                 | What it does                                                                                                   |
+| Surface                                          | Afora name/config                 | What it does                                                                                                   |
 | ------------------------------------------------ | ------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
 | Native Codex app-server runtime                  | `openai/*` model refs                | Runs OpenAI embedded agent turns through Codex app-server. This is the usual ChatGPT/Codex subscription setup. |
 | Codex OAuth auth profiles                        | `openai` OAuth profiles              | Stores ChatGPT/Codex subscription auth that the Codex app-server harness consumes.                             |
@@ -56,7 +56,7 @@ Several surfaces share the Codex name:
 | OpenAI Platform API route for non-agent surfaces | `openai/*` plus API-key auth         | Direct OpenAI APIs such as images, embeddings, speech, and realtime.                                           |
 
 These surfaces are intentionally independent. Enabling the `codex` plugin
-makes native app-server features available; `openclaw doctor --fix` owns
+makes native app-server features available; `afora doctor --fix` owns
 legacy Codex route repair and stale session pin cleanup. Selecting `openai/*`
 for an agent model now means "run this through Codex" unless a non-agent
 OpenAI API surface is being used.
@@ -74,10 +74,10 @@ keeps the model ref as `openai/*` and selects the `codex` runtime:
 }
 ```
 
-That means OpenClaw selects an OpenAI model ref, then asks the Codex
+That means Afora selects an OpenAI model ref, then asks the Codex
 app-server runtime to run the embedded agent turn. It does not mean "use API
 billing," and it does not mean the channel, model provider catalog, or
-OpenClaw session store becomes Codex.
+Afora session store becomes Codex.
 
 When the bundled `codex` plugin is enabled, use the native `/codex` command
 surface (`/codex bind`, `/codex threads`, `/codex resume`, `/codex steer`,
@@ -90,8 +90,8 @@ Decision tree:
 
 1. **Codex bind/control/thread/resume/steer/stop** -> native `/codex` command surface when the bundled `codex` plugin is enabled.
 2. **Codex as the embedded runtime** or the normal subscription-backed Codex agent experience -> `openai/<model>`.
-3. **OpenClaw explicitly chosen for an OpenAI model** -> keep the model ref as `openai/<model>` and set provider/model runtime policy to `agentRuntime.id: "openclaw"`. A selected `openai` OAuth profile is routed internally through OpenClaw's Codex-auth transport.
-4. **Legacy Codex model refs in config** -> repair with `openclaw doctor --fix` to `openai/<model>`; doctor keeps the Codex auth route by adding provider/model-scoped `agentRuntime.id: "codex"` where the old model ref implied it. Legacy **`codex-cli/*`** model refs repair to the same `openai/<model>` Codex app-server route; OpenClaw no longer keeps a bundled Codex CLI backend.
+3. **Afora explicitly chosen for an OpenAI model** -> keep the model ref as `openai/<model>` and set provider/model runtime policy to `agentRuntime.id: "afora"`. A selected `openai` OAuth profile is routed internally through Afora's Codex-auth transport.
+4. **Legacy Codex model refs in config** -> repair with `afora doctor --fix` to `openai/<model>`; doctor keeps the Codex auth route by adding provider/model-scoped `agentRuntime.id: "codex"` where the old model ref implied it. Legacy **`codex-cli/*`** model refs repair to the same `openai/<model>` Codex app-server route; Afora no longer keeps a bundled Codex CLI backend.
 5. **ACP, acpx, or Codex ACP adapter explicitly requested** -> `runtime: "acp"` and `agentId: "codex"`.
 6. **Claude Code, Gemini CLI, OpenCode, Cursor, Droid, or another external harness** -> ACP/acpx, not the native sub-agent runtime.
 
@@ -110,25 +110,25 @@ contract, see [Codex harness runtime](/plugins/codex-harness-runtime#v1-support-
 
 Different runtimes own different amounts of the loop:
 
-| Surface                     | OpenClaw embedded                              | Codex app-server                                                            |
+| Surface                     | Afora embedded                              | Codex app-server                                                            |
 | --------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------- |
-| Model loop owner            | OpenClaw, through the OpenClaw embedded runner | Codex app-server                                                            |
-| Canonical thread state      | OpenClaw transcript                            | Codex thread, plus OpenClaw transcript mirror                               |
-| OpenClaw dynamic tools      | Native OpenClaw tool loop                      | Bridged through the Codex adapter                                           |
-| Native shell and file tools | OpenClaw path                                  | Codex-native tools, bridged through native hooks where supported            |
-| Context engine              | Native OpenClaw context assembly               | OpenClaw projects assembled context into the Codex turn                     |
-| Compaction                  | OpenClaw or selected context engine            | Codex-native compaction, with OpenClaw notifications and mirror maintenance |
-| Channel delivery            | OpenClaw                                       | OpenClaw                                                                    |
+| Model loop owner            | Afora, through the Afora embedded runner | Codex app-server                                                            |
+| Canonical thread state      | Afora transcript                            | Codex thread, plus Afora transcript mirror                               |
+| Afora dynamic tools      | Native Afora tool loop                      | Bridged through the Codex adapter                                           |
+| Native shell and file tools | Afora path                                  | Codex-native tools, bridged through native hooks where supported            |
+| Context engine              | Native Afora context assembly               | Afora projects assembled context into the Codex turn                     |
+| Compaction                  | Afora or selected context engine            | Codex-native compaction, with Afora notifications and mirror maintenance |
+| Channel delivery            | Afora                                       | Afora                                                                    |
 
-Design rule: if OpenClaw owns the surface, it can provide normal plugin hook
-behavior. If the native runtime owns the surface, OpenClaw needs runtime
+Design rule: if Afora owns the surface, it can provide normal plugin hook
+behavior. If the native runtime owns the surface, Afora needs runtime
 events or native hooks. If the native runtime owns canonical thread state,
-OpenClaw mirrors and projects context rather than rewriting unsupported
+Afora mirrors and projects context rather than rewriting unsupported
 internals.
 
 ## Runtime selection
 
-OpenClaw resolves an embedded runtime after provider and model resolution, in
+Afora resolves an embedded runtime after provider and model resolution, in
 this order:
 
 1. **Model-scoped runtime policy** wins. This lives in a configured provider
@@ -139,20 +139,20 @@ this order:
    share one runtime without overriding exact per-model exceptions.
 2. **Provider-scoped runtime policy**: `models.providers.<provider>.agentRuntime`.
 3. **`auto` mode**: registered plugin runtimes can claim supported provider/model pairs.
-4. If nothing claims the turn in `auto` mode, OpenClaw falls back to
-   `openclaw` as the compatibility runtime. Use an explicit runtime id when
+4. If nothing claims the turn in `auto` mode, Afora falls back to
+   `afora` as the compatibility runtime. Use an explicit runtime id when
    the run must be strict.
 
-Whole-session and whole-agent runtime pins are ignored: `OPENCLAW_AGENT_RUNTIME`,
+Whole-session and whole-agent runtime pins are ignored: `AFORA_AGENT_RUNTIME`,
 session `agentHarnessId`/`agentRuntimeOverride` state, `agents.defaults.agentRuntime`,
-and `agents.entries.*.agentRuntime`. Run `openclaw doctor --fix` to remove stale
+and `agents.entries.*.agentRuntime`. Run `afora doctor --fix` to remove stale
 whole-agent runtime config and convert legacy runtime model refs where intent
 can be preserved.
 
 Explicit provider/model plugin runtimes fail closed: `agentRuntime.id: "codex"`
 on a provider or model means Codex, or a clear selection/runtime error - it is
-never silently routed back to OpenClaw. Only `auto` may route an unmatched
-turn to OpenClaw.
+never silently routed back to Afora. Only `auto` may route an unmatched
+turn to Afora.
 
 CLI backend aliases differ from embedded harness ids. Preferred Claude CLI form:
 
@@ -181,20 +181,20 @@ CLI backend.
 
 `auto` mode is intentionally conservative for most providers. OpenAI agent
 models are the exception: unset runtime and `auto` both resolve to the Codex
-harness. Explicit OpenClaw runtime config remains an opt-in compatibility
+harness. Explicit Afora runtime config remains an opt-in compatibility
 route for `openai/*` agent turns; when paired with a selected `openai` OAuth
-profile, OpenClaw routes that path internally through the Codex-auth
+profile, Afora routes that path internally through the Codex-auth
 transport while keeping the public model ref as `openai/*`. Stale OpenAI
 runtime session pins are ignored by runtime selection and can be cleaned with
-`openclaw doctor --fix`.
+`afora doctor --fix`.
 
-If `openclaw doctor` warns that the `codex` plugin is enabled while legacy
+If `afora doctor` warns that the `codex` plugin is enabled while legacy
 Codex model refs remain in config, treat that as legacy route state and run
-`openclaw doctor --fix` to rewrite it to `openai/*` with the Codex runtime.
+`afora doctor --fix` to rewrite it to `openai/*` with the Codex runtime.
 
 ## GitHub Copilot agent runtime
 
-The external `@openclaw/copilot` plugin registers an opt-in `copilot` runtime
+The external `@afora/copilot` plugin registers an opt-in `copilot` runtime
 backed by the GitHub Copilot CLI (`@github/copilot-sdk`). It claims the
 canonical subscription `github-copilot` provider and is **never** selected by
 `auto`. Opt in per-model or per-provider via `agentRuntime.id`:
@@ -215,26 +215,26 @@ canonical subscription `github-copilot` provider and is **never** selected by
 ```
 
 The plugin manifest declares the harness provider, runtime, CLI session key,
-and auth profile prefix without requiring `openclaw doctor` to load plugin
+and auth profile prefix without requiring `afora doctor` to load plugin
 code. For configuration, auth, transcript mirroring, compaction, the
 declarative doctor contract, and the broader PI vs Codex vs Copilot SDK
 decision, see [GitHub Copilot agent runtime](/plugins/copilot).
 
 ## Compatibility contract
 
-When a runtime is not OpenClaw, its docs should state which OpenClaw surfaces
+When a runtime is not Afora, its docs should state which Afora surfaces
 it supports:
 
 | Question                               | Why it matters                                                                                    |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | Who owns the model loop?               | Determines where retries, tool continuation, and final answer decisions happen.                   |
-| Who owns canonical thread history?     | Determines whether OpenClaw can edit history or only mirror it.                                   |
-| Do OpenClaw dynamic tools work?        | Messaging, sessions, cron, and OpenClaw-owned tools rely on this.                                 |
-| Do dynamic tool hooks work?            | Plugins expect `before_tool_call`, `after_tool_call`, and middleware around OpenClaw-owned tools. |
+| Who owns canonical thread history?     | Determines whether Afora can edit history or only mirror it.                                   |
+| Do Afora dynamic tools work?        | Messaging, sessions, cron, and Afora-owned tools rely on this.                                 |
+| Do dynamic tool hooks work?            | Plugins expect `before_tool_call`, `after_tool_call`, and middleware around Afora-owned tools. |
 | Do native tool hooks work?             | Shell, patch, and runtime-owned tools need native hook support for policy and observation.        |
 | Does the context engine lifecycle run? | Memory and context plugins depend on assemble, ingest, after-turn, and compaction lifecycle.      |
 | What compaction data is exposed?       | Some plugins only need notifications; others need kept/dropped metadata.                          |
-| What is intentionally unsupported?     | Users should not assume OpenClaw equivalence where the native runtime owns more state.            |
+| What is intentionally unsupported?     | Users should not assume Afora equivalence where the native runtime owns more state.            |
 
 The Codex runtime support contract is documented in
 [Codex harness runtime](/plugins/codex-harness-runtime#v1-support-contract).

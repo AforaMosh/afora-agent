@@ -1,5 +1,5 @@
 // Model probe gateway method reuses the CLI auth-probe engine behind an admin-scoped RPC.
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import {
   ErrorCodes,
   errorShape,
@@ -15,7 +15,7 @@ import {
   redactAuthProbeError,
   runAuthProbes,
 } from "../../commands/models/list.probe.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { formatForLog } from "../ws-log.js";
 import { modelAuthAgentScopeError, resolveModelAuthAgentScope } from "./model-auth-agent-scope.js";
 import type { GatewayRequestHandlers } from "./types.js";
@@ -87,7 +87,7 @@ function safeProbeTargetError(result: AuthProbeResult): string | undefined {
   );
 }
 
-function modelCandidatesFromConfig(cfg: OpenClawConfig): string[] {
+function modelCandidatesFromConfig(cfg: AforaConfig): string[] {
   const configured = cfg.agents?.defaults?.model;
   const primary = typeof configured === "string" ? configured : configured?.primary;
   const fallbacks = typeof configured === "string" ? [] : (configured?.fallbacks ?? []);

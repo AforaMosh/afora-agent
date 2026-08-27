@@ -5,9 +5,9 @@ import path from "node:path";
 import {
   addTimerTimeoutGraceMs,
   resolveNonNegativeIntegerOption,
-} from "openclaw/plugin-sdk/number-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+} from "afora-agent/plugin-sdk/number-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { resolvePreferredAforaTmpDir } from "../infra/tmp-afora-dir.js";
 import { resolveBrowserNavigationTimeoutMs } from "./act-policy.js";
 import {
   rethrowChromeMcpDocumentError,
@@ -35,7 +35,7 @@ import {
 import type { ChromeMcpSnapshotNode } from "./chrome-mcp.snapshot.js";
 
 async function withTempFile<T>(fn: (filePath: string) => Promise<T>): Promise<T> {
-  const dir = await fs.mkdtemp(path.join(resolvePreferredOpenClawTmpDir(), "openclaw-chrome-mcp-"));
+  const dir = await fs.mkdtemp(path.join(resolvePreferredAforaTmpDir(), "afora-chrome-mcp-"));
   const filePath = path.join(dir, randomUUID());
   try {
     return await fn(filePath);

@@ -5,7 +5,7 @@ import {
   readConfigFileSnapshotForWrite,
   replaceConfigFile,
 } from "../config/config.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { parseClawHubPluginSpec } from "../infra/clawhub-spec.js";
 import { resolveDefaultPluginExtensionsDir } from "../plugins/install-paths.js";
 import { withPluginLifecycleLease } from "../plugins/plugin-lifecycle-lease.js";
@@ -99,7 +99,7 @@ async function runPluginUninstallCommandUnlocked(
   );
   const { snapshot } = prepared;
   const mutationWriteOptions = selectInstallMutationWriteOptions(prepared.writeOptions);
-  const sourceConfig = (snapshot.sourceConfig ?? snapshot.config) as OpenClawConfig;
+  const sourceConfig = (snapshot.sourceConfig ?? snapshot.config) as AforaConfig;
   const installRecords = await tracePluginLifecyclePhaseAsync(
     "install records load",
     () => loadInstalledPluginIndexInstallRecords(),
@@ -310,7 +310,7 @@ async function runPluginUninstallCommandUnlocked(
       );
       const refreshedSnapshot = refreshedPrepared.snapshot;
       const refreshedSourceConfig = (refreshedSnapshot.sourceConfig ??
-        refreshedSnapshot.config) as OpenClawConfig;
+        refreshedSnapshot.config) as AforaConfig;
       const refreshedPlan = planPluginUninstall(
         recordPluginPackageUninstallPlan(
           {

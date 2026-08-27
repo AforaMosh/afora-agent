@@ -1,5 +1,5 @@
 // Matrix helper module supports idb persistence helpers behavior.
-import { toErrorObject } from "openclaw/plugin-sdk/error-runtime";
+import { toErrorObject } from "afora-agent/plugin-sdk/error-runtime";
 
 export async function clearAllIndexedDbState(params?: { databasePrefix?: string }): Promise<void> {
   const databases = await indexedDB.databases();

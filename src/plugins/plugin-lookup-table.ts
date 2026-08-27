@@ -1,6 +1,6 @@
 /** Builds plugin lookup tables keyed by manifest ids, channels, providers, and commands. */
 import type { AmbientEnvTriggerPolicy } from "../channels/config-presence.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   createGatewayStartupMetadataPluginIdScope,
   isMetadataSnapshotScopedForGatewayStartup,
@@ -27,8 +27,8 @@ export type PluginLookUpTable = PluginMetadataSnapshot & {
 };
 
 type LoadPluginLookUpTableParams = {
-  config: OpenClawConfig;
-  activationSourceConfig?: OpenClawConfig;
+  config: AforaConfig;
+  activationSourceConfig?: AforaConfig;
   workspaceDir?: string;
   env: NodeJS.ProcessEnv;
   index?: PluginRegistrySnapshot;

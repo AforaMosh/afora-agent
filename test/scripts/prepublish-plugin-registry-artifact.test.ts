@@ -13,8 +13,8 @@ import {
 
 const SOURCE_SHA = "a".repeat(40);
 const VERSION = "2026.8.1-beta.1";
-const PACKAGE_NAME = "@openclaw/discord";
-const TARBALL = "openclaw-discord-2026.8.1-beta.1.tgz";
+const PACKAGE_NAME = "@afora/discord";
+const TARBALL = "afora-discord-2026.8.1-beta.1.tgz";
 const SCRIPT = path.resolve("scripts/prepublish-plugin-registry-artifact.mjs");
 const tempDirs: string[] = [];
 
@@ -29,7 +29,7 @@ function sha256(file: string): string {
 }
 
 function fixture() {
-  const root = mkdtempSync(path.join(tmpdir(), "openclaw-prepublish-plugin-registry-"));
+  const root = mkdtempSync(path.join(tmpdir(), "afora-prepublish-plugin-registry-"));
   tempDirs.push(root);
   const packageRoot = path.join(root, "package");
   const artifactDir = path.join(root, "artifact");
@@ -43,7 +43,7 @@ function fixture() {
   execFileSync("tar", ["-czf", tarballPath, "-C", root, "package"]);
   const manifestPath = path.join(artifactDir, PREPUBLISH_PLUGIN_REGISTRY_MANIFEST);
   const manifest = {
-    schema: "openclaw.prepublish-plugin-registry/v1",
+    schema: "afora.prepublish-plugin-registry/v1",
     schemaVersion: 1,
     sourceSha: SOURCE_SHA,
     candidateVersion: VERSION,
@@ -83,8 +83,8 @@ function firstPackage(paths: ReturnType<typeof fixture>) {
 }
 
 function addCompanionPackage(paths: ReturnType<typeof fixture>) {
-  const name = "@openclaw/feishu";
-  const tarball = "openclaw-feishu-2026.8.1-beta.1.tgz";
+  const name = "@afora/feishu";
+  const tarball = "afora-feishu-2026.8.1-beta.1.tgz";
   const archiveRoot = path.join(path.dirname(paths.artifactDir), "feishu-package");
   const packageRoot = path.join(archiveRoot, "package");
   mkdirSync(packageRoot, { recursive: true });
@@ -104,7 +104,7 @@ function addCompanionPackage(paths: ReturnType<typeof fixture>) {
 }
 
 function cliFixture() {
-  const repoRoot = mkdtempSync(path.join(tmpdir(), "openclaw-prepublish-plugin-cli-"));
+  const repoRoot = mkdtempSync(path.join(tmpdir(), "afora-prepublish-plugin-cli-"));
   tempDirs.push(repoRoot);
   const packageDir = path.join(repoRoot, "extensions", "discord");
   const scriptsDir = path.join(repoRoot, "scripts", "lib");
@@ -112,14 +112,14 @@ function cliFixture() {
   mkdirSync(scriptsDir, { recursive: true });
   writeFileSync(
     path.join(repoRoot, "package.json"),
-    `${JSON.stringify({ name: "openclaw", version: VERSION })}\n`,
+    `${JSON.stringify({ name: "afora", version: VERSION })}\n`,
   );
   writeFileSync(
     path.join(packageDir, "package.json"),
     `${JSON.stringify({
       name: PACKAGE_NAME,
       version: VERSION,
-      openclaw: { release: { publishToNpm: true } },
+      afora: { release: { publishToNpm: true } },
     })}\n`,
   );
   writeFileSync(
@@ -188,8 +188,8 @@ describe("prepublish plugin registry artifact", () => {
     addCompanionPackage(paths);
 
     expect(validate(paths).manifest.packages.map((entry) => entry.name)).toEqual([
-      "@openclaw/discord",
-      "@openclaw/feishu",
+      "@afora/discord",
+      "@afora/feishu",
     ]);
   });
 
@@ -202,13 +202,13 @@ describe("prepublish plugin registry artifact", () => {
         artifactDir: paths.artifactDir,
         candidateVersion: VERSION,
         manifestSha256: sha256(paths.manifestPath),
-        requiredPackages: ["@openclaw/feishu"],
+        requiredPackages: ["@afora/feishu"],
         sourceSha: SOURCE_SHA,
       }),
     ).toEqual([
       {
-        name: "@openclaw/feishu",
-        tarballPath: path.join(paths.artifactDir, "openclaw-feishu-2026.8.1-beta.1.tgz"),
+        name: "@afora/feishu",
+        tarballPath: path.join(paths.artifactDir, "afora-feishu-2026.8.1-beta.1.tgz"),
       },
     ]);
   });
@@ -238,11 +238,11 @@ describe("prepublish plugin registry artifact", () => {
   });
 
   it("refuses to create an artifact from tracked changes under the same HEAD", () => {
-    const repoRoot = mkdtempSync(path.join(tmpdir(), "openclaw-prepublish-plugin-source-"));
+    const repoRoot = mkdtempSync(path.join(tmpdir(), "afora-prepublish-plugin-source-"));
     tempDirs.push(repoRoot);
     writeFileSync(
       path.join(repoRoot, "package.json"),
-      `${JSON.stringify({ name: "openclaw", version: VERSION })}\n`,
+      `${JSON.stringify({ name: "afora", version: VERSION })}\n`,
     );
     execFileSync("git", ["init"], { cwd: repoRoot });
     execFileSync("git", ["config", "user.email", "release-test@example.invalid"], {
@@ -258,7 +258,7 @@ describe("prepublish plugin registry artifact", () => {
     }).trim();
     writeFileSync(
       path.join(repoRoot, "package.json"),
-      `${JSON.stringify({ name: "openclaw", version: `${VERSION}-dirty` })}\n`,
+      `${JSON.stringify({ name: "afora", version: `${VERSION}-dirty` })}\n`,
     );
 
     expect(() =>
@@ -313,7 +313,7 @@ describe("prepublish plugin registry artifact", () => {
     duplicate.manifest.packages.push({ ...firstPackage(duplicate) });
     duplicate.writeManifest();
     expect(() =>
-      validate(duplicate, { requiredPackages: [PACKAGE_NAME, "@openclaw/feishu"] }),
+      validate(duplicate, { requiredPackages: [PACKAGE_NAME, "@afora/feishu"] }),
     ).toThrow("duplicate package");
   });
 
@@ -333,9 +333,9 @@ describe("prepublish plugin registry artifact", () => {
     expect(() => validate(hash)).toThrow("tarball SHA-256 mismatch");
 
     const identity = fixture();
-    firstPackage(identity).name = "@openclaw/feishu";
+    firstPackage(identity).name = "@afora/feishu";
     identity.writeManifest();
-    expect(() => validate(identity, { requiredPackages: ["@openclaw/feishu"] })).toThrow(
+    expect(() => validate(identity, { requiredPackages: ["@afora/feishu"] })).toThrow(
       "tarball identity mismatch",
     );
 
@@ -350,7 +350,7 @@ describe("prepublish plugin registry artifact", () => {
     );
 
     const required = fixture();
-    expect(() => validate(required, { requiredPackages: ["@openclaw/feishu"] })).toThrow(
+    expect(() => validate(required, { requiredPackages: ["@afora/feishu"] })).toThrow(
       "missing Docker-plan package",
     );
   });

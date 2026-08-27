@@ -271,18 +271,18 @@ describe("CodexAppServerEventProjector commentary projection", () => {
     expect(result.assistantTexts).toEqual(["final answer"]);
     const commentary = result.messagesSnapshot.find(
       (message) =>
-        (message as { openclawStreamFallback?: { itemId?: unknown } }).openclawStreamFallback
+        (message as { aforaStreamFallback?: { itemId?: unknown } }).aforaStreamFallback
           ?.itemId === "msg-commentary",
     );
     expect(commentary).toMatchObject({
       role: "assistant",
       content: [{ type: "text", text: "Checking the app-server stream" }],
-      openclawStreamFallback: {
+      aforaStreamFallback: {
         replacementText: "Checking the app-server stream",
         source: "segment",
         itemId: "msg-commentary",
       },
-      __openclaw: { mirrorIdentity: `${TURN_ID}:commentary:msg-commentary` },
+      __afora: { mirrorIdentity: `${TURN_ID}:commentary:msg-commentary` },
     });
     expect((commentary as { phase?: unknown } | undefined)?.phase).toBeUndefined();
   });
@@ -309,7 +309,7 @@ describe("CodexAppServerEventProjector commentary projection", () => {
     expect(
       result.messagesSnapshot.some(
         (message) =>
-          (message as { openclawStreamFallback?: { itemId?: unknown } }).openclawStreamFallback
+          (message as { aforaStreamFallback?: { itemId?: unknown } }).aforaStreamFallback
             ?.itemId === "msg-commentary",
       ),
     ).toBe(false);
@@ -360,7 +360,7 @@ describe("CodexAppServerEventProjector commentary projection", () => {
 
     const result = projector.buildResult(buildEmptyToolTelemetry());
     const identities = result.messagesSnapshot.flatMap((message) => {
-      const identity = (message as { __openclaw?: { mirrorIdentity?: unknown } })["__openclaw"]
+      const identity = (message as { __afora?: { mirrorIdentity?: unknown } })["__afora"]
         ?.mirrorIdentity;
       return typeof identity === "string" &&
         (identity.includes(":commentary:") || identity.includes(":tool:"))

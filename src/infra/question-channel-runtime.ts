@@ -7,7 +7,7 @@ const log = createSubsystemLogger("gateway/questions");
 // Source-loaded plugin SDK chunks and Gateway chunks must share one delivery owner.
 // Clear its pending callbacks and retention timers when the Gateway closes or restarts.
 const questionChannelRuntime = resolveGlobalSingleton(
-  Symbol.for("openclaw.questionChannelRuntime"),
+  Symbol.for("afora.questionChannelRuntime"),
   () =>
     createQuestionChannelRuntime({
       onFinalizeError: (error, questionId, deliveryId) => {

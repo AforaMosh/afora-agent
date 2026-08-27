@@ -5,14 +5,14 @@ import path from "node:path";
 import {
   embeddedAgentLog,
   type EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
 import {
   clearMemoryPluginState,
   registerMemoryCapability,
-} from "openclaw/plugin-sdk/memory-host-core";
+} from "afora-agent/plugin-sdk/memory-host-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  buildCodexOpenClawPromptContext,
+  buildCodexAforaPromptContext,
   buildCodexWatchedSessionsContext,
   buildCodexWorkspaceBootstrapContext,
   buildCodexSystemPromptReport,
@@ -62,7 +62,7 @@ describe("Codex app-server attempt context", () => {
       },
       {
         type: "namespace",
-        name: "openclaw",
+        name: "afora",
         description: "",
         tools: [
           {
@@ -252,11 +252,11 @@ describe("Codex app-server attempt context", () => {
     });
   });
 
-  it("stitches watched-session context into the per-turn OpenClaw prompt context", () => {
+  it("stitches watched-session context into the per-turn Afora prompt context", () => {
     const attempt = { config: {} } as EmbeddedRunAttemptParams;
 
     expect(
-      buildCodexOpenClawPromptContext({
+      buildCodexAforaPromptContext({
         params: attempt,
         watchedSessionsContext: [
           "## Watched Sessions",

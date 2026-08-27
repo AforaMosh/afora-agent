@@ -11,7 +11,7 @@ import type { EmbeddedRunAttemptResult } from "../agents/embedded-agent-runner/r
 import { getPreparedModelCatalogOwnerSnapshot } from "../agents/prepared-model-catalog.js";
 import { getPreparedModelRuntimeAuthMaterializations } from "../agents/prepared-model-runtime-auth.js";
 import { refreshPreparedModelRuntimeSnapshots } from "../agents/prepared-model-runtime.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createGatewayChatMetadataLifecycle } from "./server-chat-metadata-lifecycle.js";
 import {
   buildModelsListResult,
@@ -30,7 +30,7 @@ const config = {
     },
     list: [{ id: "main", default: true }],
   },
-} as OpenClawConfig;
+} as AforaConfig;
 const model = {
   id: "gpt-5.4",
   name: "GPT-5.4",
@@ -72,7 +72,7 @@ function configureAuthFixture(kind: "secret-ref" | "external-oauth" | "unresolve
     routeVariants: [apiKeyModel],
   });
   mocks.authStorage.getAll.mockReturnValue({
-    openai: { type: "api_key", key: "openclaw-secret-ref-configured" },
+    openai: { type: "api_key", key: "afora-secret-ref-configured" },
   });
   mocks.preparedAuthStore = {
     version: 1,
@@ -89,7 +89,7 @@ function configureAuthFixture(kind: "secret-ref" | "external-oauth" | "unresolve
 
 function configureHarnessOwnedUnresolvedAuth() {
   mocks.authStorage.getAll.mockReturnValue({
-    openai: { type: "api_key", key: "openclaw-secret-ref-configured" },
+    openai: { type: "api_key", key: "afora-secret-ref-configured" },
   });
   mocks.preparedAuthStore = {
     version: 1,
@@ -236,7 +236,7 @@ describe("gateway chat metadata lifecycle composition", () => {
       pluginHarnessOwnsAuthBootstrap: true,
     });
 
-    expect(mocks.ensureOpenClawModelsJson).toHaveBeenCalledOnce();
+    expect(mocks.ensureAforaModelsJson).toHaveBeenCalledOnce();
     expect(mocks.preparedAuthMaterializations).toEqual([
       expect.objectContaining({
         provider: "openai",

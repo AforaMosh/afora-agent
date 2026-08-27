@@ -1,6 +1,6 @@
 // PDF runtime-abort coverage keeps prepared-runtime acquisition cancellable and leak-free.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import * as pdfExtractModule from "../../media/pdf-extract.js";
 import * as preparedModelRuntime from "../prepared-model-runtime.js";
 import { createPdfToolInfraStub, withTempPdfAgentDir } from "./pdf-tool.test-support.js";
@@ -30,7 +30,7 @@ describe("PDF tool prepared-runtime cancellation", () => {
       await stubPdfToolInfra(agentDir, { provider: "anthropic" });
       const cfg = {
         agents: { defaults: { pdfModel: { primary: "anthropic/claude-opus-4-6" } } },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const modelRegistry = createPdfModelRegistry(() => ({
         provider: "anthropic",
         api: "anthropic-messages",
@@ -90,7 +90,7 @@ describe("PDF tool prepared-runtime cancellation", () => {
       completeMock.mockImplementationOnce(() => new Promise(() => {}));
       const cfg = {
         agents: { defaults: { pdfModel: { primary: "openai/gpt-5.4-mini" } } },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const tool = (await import("./pdf-tool.js")).createPdfTool({ config: cfg, agentDir });
       if (!tool) {
         throw new Error("expected PDF tool");

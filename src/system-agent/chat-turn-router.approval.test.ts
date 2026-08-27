@@ -117,7 +117,7 @@ describe("SystemAgentChatEngine approval", () => {
       value: "19001",
       cliOptions: {},
     });
-    expect(applied?.text).toContain("[openclaw] done: config.set");
+    expect(applied?.text).toContain("[afora] done: config.set");
     expect(duplicate).toBeNull();
     expect(observedInputs[1]).toContain("[proposal-resolved]");
     expect(observedInputs[1]).toContain("was approved");
@@ -180,7 +180,7 @@ describe("SystemAgentChatEngine approval", () => {
     expect(pending.text).toContain("Approval pending");
     expect(runAgentTurn).not.toHaveBeenCalled();
     expect(runConfigSet).toHaveBeenCalledOnce();
-    expect(applied?.text).toContain("[openclaw] done: config.set");
+    expect(applied?.text).toContain("[afora] done: config.set");
     expect(engine.hasPendingProposal()).toBe(false);
   });
 
@@ -196,7 +196,7 @@ describe("SystemAgentChatEngine approval", () => {
     const reply = await engine.handle("yes");
     expect(runConfigSet).toHaveBeenCalledOnce();
     expect(reply.action).toBe("none");
-    expect(reply.text).toContain("[openclaw] done: config.set");
+    expect(reply.text).toContain("[afora] done: config.set");
     expect(engine.hasPendingProposal()).toBe(false);
   });
 
@@ -208,7 +208,7 @@ describe("SystemAgentChatEngine approval", () => {
       latencyMs: 100,
     }));
     const applySetup = vi.fn(async () => ({
-      configPath: "/tmp/openclaw.json",
+      configPath: "/tmp/afora.json",
       configHashBefore: "before",
       configHashAfter: "after",
       bootstrapPending: true,
@@ -239,14 +239,14 @@ describe("SystemAgentChatEngine approval", () => {
       agentDraft: "hatch",
     });
     expect(reply.text).toContain("Your agent is hatching");
-    expect(reply.text).toContain("Settings → Ask OpenClaw");
+    expect(reply.text).toContain("Settings → Ask Afora");
   });
 
   it.each([
     {
       origin: "custodian",
       requesterAgentId: undefined,
-      expectedCreatorAgentId: "openclaw",
+      expectedCreatorAgentId: "afora",
       expectedDescription: "create agent researcher with workspace /tmp/researcher",
     },
     {
@@ -312,7 +312,7 @@ describe("SystemAgentChatEngine approval", () => {
   it("stays in setup when an established workspace has no bootstrap pending", async () => {
     useTempStateDir();
     const applySetup = vi.fn(async () => ({
-      configPath: "/tmp/openclaw.json",
+      configPath: "/tmp/afora.json",
       configHashBefore: "before",
       configHashAfter: "after",
       bootstrapPending: false,
@@ -355,7 +355,7 @@ describe("SystemAgentChatEngine approval", () => {
     const applySetup = vi.fn(async () => {
       applied = true;
       return {
-        configPath: "/tmp/openclaw.json",
+        configPath: "/tmp/afora.json",
         configHashBefore: "before",
         configHashAfter: "after",
         bootstrapPending: true,
@@ -426,14 +426,14 @@ describe("SystemAgentChatEngine approval", () => {
     expect(reply.handoff).toBeUndefined();
     expect(reply.sensitive).toBeUndefined();
     expect(reply.text).toContain("replace the inference route powering this session");
-    // A gateway reader is in a browser or the app and cannot "exit OpenClaw"
+    // A gateway reader is in a browser or the app and cannot "exit Afora"
     // into a shell; the copy must name where the command runs instead.
-    expect(reply.text).toContain("`openclaw onboard`");
-    expect(reply.text).toContain("machine running OpenClaw");
-    expect(reply.text).toContain("Stop the OpenClaw host");
+    expect(reply.text).toContain("`afora onboard`");
+    expect(reply.text).toContain("machine running Afora");
+    expect(reply.text).toContain("Stop the Afora host");
     expect(reply.text).toContain("restart the host");
-    expect(reply.text).toContain("return to OpenClaw");
-    expect(reply.text).not.toContain("Exit OpenClaw");
+    expect(reply.text).toContain("return to Afora");
+    expect(reply.text).not.toContain("Exit Afora");
   });
 
   it("keeps the current inference route when model provider setup is declined", async () => {
@@ -558,7 +558,7 @@ describe("SystemAgentChatEngine approval", () => {
       latencyMs: 100,
     }));
     const applySetup = vi.fn(async () => ({
-      configPath: "/tmp/openclaw.json",
+      configPath: "/tmp/afora.json",
       configHashBefore: "before",
       configHashAfter: "after",
       bootstrapPending: false,
@@ -611,7 +611,7 @@ describe("SystemAgentChatEngine approval", () => {
   it("preserves the pending first-agent name when a planner adds the verified model", async () => {
     useTempStateDir();
     const applySetup = vi.fn(async () => ({
-      configPath: "/tmp/openclaw.json",
+      configPath: "/tmp/afora.json",
       configHashBefore: "before",
       configHashAfter: "after",
       bootstrapPending: false,
@@ -757,7 +757,7 @@ describe("SystemAgentChatEngine approval", () => {
 
     const applied = await engine.handle("yes");
     expect(runConfigSet).toHaveBeenCalledOnce();
-    expect(applied.text).toContain("[openclaw] done: config.set");
+    expect(applied.text).toContain("[afora] done: config.set");
   });
 
   it.each([

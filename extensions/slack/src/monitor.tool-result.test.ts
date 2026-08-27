@@ -1,8 +1,8 @@
 // Slack tests cover monitor.tool result plugin behavior.
-import { CURRENT_MESSAGE_MARKER } from "openclaw/plugin-sdk/channel-mention-gating";
-import { expectPairingReplyText } from "openclaw/plugin-sdk/channel-test-helpers";
-import { HISTORY_CONTEXT_MARKER } from "openclaw/plugin-sdk/reply-history";
-import { resetInboundDedupe } from "openclaw/plugin-sdk/reply-runtime";
+import { CURRENT_MESSAGE_MARKER } from "afora-agent/plugin-sdk/channel-mention-gating";
+import { expectPairingReplyText } from "afora-agent/plugin-sdk/channel-test-helpers";
+import { HISTORY_CONTEXT_MARKER } from "afora-agent/plugin-sdk/reply-history";
+import { resetInboundDedupe } from "afora-agent/plugin-sdk/reply-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   defaultSlackTestConfig,
@@ -430,7 +430,7 @@ describe("monitorSlackProvider tool results", () => {
     expect(latestCtx?.RawBody).toBe("caption\n\n[slack forwarded image unavailable]");
     expect(mockFetch).toHaveBeenCalledOnce();
 
-    if (process.env.OPENCLAW_SLACK_FORWARDED_IMAGE_PROOF === "1") {
+    if (process.env.AFORA_SLACK_FORWARDED_IMAGE_PROOF === "1") {
       console.log(
         JSON.stringify({
           verdict: "PASS",
@@ -509,7 +509,7 @@ describe("monitorSlackProvider tool results", () => {
   });
 
   async function expectMentionPatternMessageAccepted(text: string): Promise<void> {
-    setRequireMentionChannelConfig(["\\bopenclaw\\b"]);
+    setRequireMentionChannelConfig(["\\bafora\\b"]);
     replyMock.mockResolvedValue({ text: "hi" });
 
     await runSlackMessageOnce(monitorSlackProvider, {
@@ -524,11 +524,11 @@ describe("monitorSlackProvider tool results", () => {
   }
 
   it("accepts channel messages when mentionPatterns match", async () => {
-    await expectMentionPatternMessageAccepted("openclaw: hello");
+    await expectMentionPatternMessageAccepted("afora: hello");
   });
 
   it("accepts channel messages when mentionPatterns match even if another user is mentioned", async () => {
-    await expectMentionPatternMessageAccepted("openclaw: hello <@U2>");
+    await expectMentionPatternMessageAccepted("afora: hello <@U2>");
   });
 
   it("treats replies to bot threads as implicit mentions", async () => {

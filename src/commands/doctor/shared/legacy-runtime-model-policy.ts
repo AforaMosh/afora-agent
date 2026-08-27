@@ -1,6 +1,6 @@
 // Shared legacy runtime policy projection for selected canonical model refs.
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import { isRecord } from "./legacy-config-record-shared.js";
 
 /** Select canonical refs owned by a provider, preserving config order and duplicates. */

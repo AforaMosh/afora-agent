@@ -1,6 +1,6 @@
 // Discord API module exposes the plugin public contract.
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/channel-entry-contract";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/channel-entry-contract";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
 
 const loadDiscordSubagentHooksModule = createLazyRuntimeModule(
   () => import("./src/subagent-hooks.js"),
@@ -11,7 +11,7 @@ const loadDiscordSubagentProgressModule = createLazyRuntimeModule(
 
 // Subagent hooks live behind a dedicated barrel so the bundled entry can
 // register one stable hook wiring path while keeping the handler module lazy.
-export function registerDiscordSubagentHooks(api: OpenClawPluginApi): void {
+export function registerDiscordSubagentHooks(api: AforaPluginApi): void {
   api.on("gateway_start", async () => {
     const { recoverDiscordSubagentProgress } = await loadDiscordSubagentProgressModule();
     await recoverDiscordSubagentProgress(api);

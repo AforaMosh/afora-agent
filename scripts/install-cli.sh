@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# OpenClaw CLI installer (non-interactive, no onboarding)
-# Usage: curl -fsSL --proto '=https' --tlsv1.2 https://openclaw.ai/install-cli.sh | bash -s -- [--json] [--prefix <path>] [--version <ver>] [--node-version <ver>] [--onboard]
+# Afora CLI installer (non-interactive, no onboarding)
+# Usage: curl -fsSL --proto '=https' --tlsv1.2 https://afora.ai/install-cli.sh | bash -s -- [--json] [--prefix <path>] [--version <ver>] [--node-version <ver>] [--onboard]
 
 ensure_home_env() {
   if [[ -n "${HOME:-}" && "${HOME}" != "/" && -d "${HOME}" ]]; then
@@ -61,15 +61,15 @@ resolve_installer_path() {
   esac
 }
 
-OPENCLAW_EFFECTIVE_HOME="$(resolve_home_path "${OPENCLAW_HOME:-$HOME}")"
-PREFIX="${OPENCLAW_PREFIX:-${HOME}/.openclaw}"
-OPENCLAW_VERSION="${OPENCLAW_VERSION:-latest}"
+AFORA_EFFECTIVE_HOME="$(resolve_home_path "${AFORA_HOME:-$HOME}")"
+PREFIX="${AFORA_PREFIX:-${HOME}/.afora}"
+AFORA_VERSION="${AFORA_VERSION:-latest}"
 REQUIRED_COMPATIBLE_VERSION=""
 DEFAULT_NODE_VERSION="24.15.0"
 ARMV7_DEFAULT_NODE_VERSION="22.22.3"
-NODE_VERSION="${OPENCLAW_NODE_VERSION:-${DEFAULT_NODE_VERSION}}"
+NODE_VERSION="${AFORA_NODE_VERSION:-${DEFAULT_NODE_VERSION}}"
 NODE_VERSION_REQUESTED=0
-if [[ -n "${OPENCLAW_NODE_VERSION:-}" ]]; then
+if [[ -n "${AFORA_NODE_VERSION:-}" ]]; then
   NODE_VERSION_REQUESTED=1
 fi
 MIN_NODE_22_VERSION="22.22.3"
@@ -78,10 +78,10 @@ MIN_NODE_25_VERSION="25.9.0"
 SUPPORTED_NODE_VERSION_LABEL="Node 22.22.3+, Node 24.15.0+, or Node 25.9.0+"
 NODE_RELEASE_VERSION_CORE=""
 APK_NODE_BIN_DIR="/usr/bin"
-NPM_LOGLEVEL="${OPENCLAW_NPM_LOGLEVEL:-error}"
-INSTALL_METHOD="${OPENCLAW_INSTALL_METHOD:-npm}"
-GIT_DIR="${OPENCLAW_GIT_DIR:-${OPENCLAW_EFFECTIVE_HOME}/openclaw}"
-GIT_UPDATE="${OPENCLAW_GIT_UPDATE:-1}"
+NPM_LOGLEVEL="${AFORA_NPM_LOGLEVEL:-error}"
+INSTALL_METHOD="${AFORA_INSTALL_METHOD:-npm}"
+GIT_DIR="${AFORA_GIT_DIR:-${AFORA_EFFECTIVE_HOME}/afora}"
+GIT_UPDATE="${AFORA_GIT_UPDATE:-1}"
 JSON=0
 RUN_ONBOARD=0
 SET_NPM_PREFIX=0
@@ -92,26 +92,26 @@ print_usage() {
   cat <<EOF
 Usage: install-cli.sh [options]
   --json                              Emit NDJSON events (no human output)
-  --prefix <path>                     Install prefix (default: ~/.openclaw; use \$OPENCLAW_PREFIX to override)
+  --prefix <path>                     Install prefix (default: ~/.afora; use \$AFORA_PREFIX to override)
   --install-method, --method npm|git  Install via npm (default) or from a git checkout
   --npm                               Shortcut for --install-method npm
   --git, --github                     Shortcut for --install-method git
-  --git-dir, --dir <path>             Checkout directory (default: ~/openclaw, or \$OPENCLAW_HOME/openclaw)
-  --version <ver>                     OpenClaw version (default: latest)
+  --git-dir, --dir <path>             Checkout directory (default: ~/afora, or \$AFORA_HOME/afora)
+  --version <ver>                     Afora version (default: latest)
   --compatible-with <ver>             Refuse a CLI that cannot modify config written by <ver>
   --node-version <ver>                Node version (default: 24.15.0; 22.22.3 on Linux ARMv7)
-  --onboard                           Run "openclaw onboard" after install
+  --onboard                           Run "afora onboard" after install
   --no-onboard                        Skip onboarding (default)
   --set-npm-prefix                    Force npm prefix to ~/.npm-global if current prefix is not writable (Linux)
 
 Environment variables:
-  OPENCLAW_NPM_LOGLEVEL=error|warn|notice  Default: error (hide npm deprecation noise)
-  OPENCLAW_INSTALL_METHOD=git|npm
-  OPENCLAW_HOME=...
-  OPENCLAW_PREFIX=...
-  OPENCLAW_VERSION=latest|next|<semver>
-  OPENCLAW_GIT_DIR=...
-  OPENCLAW_GIT_UPDATE=0|1
+  AFORA_NPM_LOGLEVEL=error|warn|notice  Default: error (hide npm deprecation noise)
+  AFORA_INSTALL_METHOD=git|npm
+  AFORA_HOME=...
+  AFORA_PREFIX=...
+  AFORA_VERSION=latest|next|<semver>
+  AFORA_GIT_DIR=...
+  AFORA_GIT_UPDATE=0|1
 EOF
 }
 
@@ -152,7 +152,7 @@ download_file() {
 }
 
 cleanup_legacy_submodules() {
-  local repo_dir="${1:-${OPENCLAW_GIT_DIR:-${OPENCLAW_EFFECTIVE_HOME}/openclaw}}"
+  local repo_dir="${1:-${AFORA_GIT_DIR:-${AFORA_EFFECTIVE_HOME}/afora}}"
   local legacy_dir="${repo_dir}/Peekaboo"
   if [[ -d "$legacy_dir" ]]; then
     emit_json "{\"event\":\"step\",\"name\":\"legacy-submodule\",\"status\":\"start\",\"path\":\"${legacy_dir//\"/\\\"}\"}"
@@ -331,7 +331,7 @@ parse_args() {
         if [[ $# -lt 2 || "${2:-}" == --* ]]; then
           fail "Missing value for $1"
         fi
-        OPENCLAW_VERSION="$2"
+        AFORA_VERSION="$2"
         shift 2
         ;;
       --compatible-with)
@@ -786,24 +786,24 @@ to_lowercase_ascii() {
   printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]'
 }
 
-is_openclaw_source_package_install_spec() {
+is_afora_source_package_install_spec() {
   local value="${1:-}"
   local normalized_value=""
   normalized_value="$(to_lowercase_ascii "$value")"
-  normalized_value="${normalized_value#openclaw@}"
+  normalized_value="${normalized_value#afora@}"
 
   [[ "$normalized_value" == "main" ]] && return 0
-  [[ "$normalized_value" =~ ^github:openclaw/openclaw($|[#/]) ]] && return 0
+  [[ "$normalized_value" =~ ^github:AforaMosh/afora-agent($|[#/]) ]] && return 0
 
   normalized_value="${normalized_value#git+}"
-  [[ "$normalized_value" =~ ^https?://github\.com/openclaw/openclaw(\.git)?($|[?#]) ]] && return 0
-  [[ "$normalized_value" =~ ^ssh://git@github\.com[:/]openclaw/openclaw(\.git)?($|[?#]) ]] && return 0
-  [[ "$normalized_value" =~ ^git://github\.com/openclaw/openclaw(\.git)?($|[?#]) ]] && return 0
-  [[ "$normalized_value" =~ ^git@github\.com:openclaw/openclaw(\.git)?($|[?#]) ]] && return 0
+  [[ "$normalized_value" =~ ^https?://github\.com/AforaMosh/afora-agent(\.git)?($|[?#]) ]] && return 0
+  [[ "$normalized_value" =~ ^ssh://git@github\.com[:/]AforaMosh/afora-agent(\.git)?($|[?#]) ]] && return 0
+  [[ "$normalized_value" =~ ^git://github\.com/AforaMosh/afora-agent(\.git)?($|[?#]) ]] && return 0
+  [[ "$normalized_value" =~ ^git@github\.com:AforaMosh/afora-agent(\.git)?($|[?#]) ]] && return 0
   return 1
 }
 
-openclaw_version_is_compatible_with() {
+afora_version_is_compatible_with() {
   local candidate="$1"
   local config_writer="$2"
 
@@ -886,29 +886,29 @@ process.exit(compare(candidate, writer) < 0 ? 1 : 0);
 NODE
 }
 
-require_openclaw_version_compatible() {
+require_afora_version_compatible() {
   local candidate="$1"
   local config_writer="${REQUIRED_COMPATIBLE_VERSION:-}"
   if [[ -z "$config_writer" ]]; then
     return 0
   fi
 
-  if openclaw_version_is_compatible_with "$candidate" "$config_writer"; then
+  if afora_version_is_compatible_with "$candidate" "$config_writer"; then
     return 0
   fi
   local status="$?"
   if [[ "$status" -eq 2 ]]; then
-    fail "Cannot compare resolved OpenClaw version '${candidate}' with config writer '${config_writer}'."
+    fail "Cannot compare resolved Afora version '${candidate}' with config writer '${config_writer}'."
   fi
-  fail "OpenClaw ${candidate} is older than config writer ${config_writer}. Choose a newer CLI channel or retry after the channel is updated."
+  fail "Afora ${candidate} is older than config writer ${config_writer}. Choose a newer CLI channel or retry after the channel is updated."
 }
 
-resolve_npm_openclaw_version() {
+resolve_npm_afora_version() {
   local requested="$1"
-  "$(npm_bin)" view "openclaw@${requested}" version 2>/dev/null | awk 'NF { value = $0 } END { print value }'
+  "$(npm_bin)" view "afora@${requested}" version 2>/dev/null | awk 'NF { value = $0 } END { print value }'
 }
 
-resolve_git_checkout_openclaw_version() {
+resolve_git_checkout_afora_version() {
   local repo_dir="$1"
   "$(node_bin)" -e '
     const fs = require("node:fs");
@@ -919,13 +919,13 @@ resolve_git_checkout_openclaw_version() {
   ' "$repo_dir"
 }
 
-resolve_git_openclaw_ref() {
-  local requested="${OPENCLAW_VERSION:-latest}"
+resolve_git_afora_ref() {
+  local requested="${AFORA_VERSION:-latest}"
   local resolved_version=""
 
   case "$requested" in
     ""|latest)
-      resolved_version="$("$(npm_bin)" view "openclaw" "dist-tags.${requested:-latest}" 2>/dev/null || true)"
+      resolved_version="$("$(npm_bin)" view "afora-agent" "dist-tags.${requested:-latest}" 2>/dev/null || true)"
       if [[ -n "$resolved_version" ]]; then
         echo "v${resolved_version}"
         return 0
@@ -934,7 +934,7 @@ resolve_git_openclaw_ref() {
       return 0
       ;;
     next|beta)
-      resolved_version="$("$(npm_bin)" view "openclaw" "dist-tags.${requested:-latest}" 2>/dev/null || true)"
+      resolved_version="$("$(npm_bin)" view "afora-agent" "dist-tags.${requested:-latest}" 2>/dev/null || true)"
       if [[ -n "$resolved_version" ]]; then
         echo "v${resolved_version}"
         return 0
@@ -961,7 +961,7 @@ resolve_git_openclaw_ref() {
   esac
 }
 
-checkout_git_openclaw_ref() {
+checkout_git_afora_ref() {
   local repo_dir="$1"
   local ref="$2"
 
@@ -1273,10 +1273,10 @@ npm_config_has_raw_key() {
   return 1
 }
 
-install_openclaw() {
-  local requested="${OPENCLAW_VERSION:-latest}"
-  if is_openclaw_source_package_install_spec "$requested"; then
-    fail "npm installs do not support OpenClaw GitHub source targets like '${requested}'. Use --install-method git --version main, latest, beta, an exact version, or a built .tgz package."
+install_afora() {
+  local requested="${AFORA_VERSION:-latest}"
+  if is_afora_source_package_install_spec "$requested"; then
+    fail "npm installs do not support Afora GitHub source targets like '${requested}'. Use --install-method git --version main, latest, beta, an exact version, or a built .tgz package."
   fi
   local freshness_flag="--min-release-age=0"
   local min_release_age=""
@@ -1298,38 +1298,38 @@ install_openclaw() {
   )
   local resolved_requested="$requested"
   if [[ -n "${REQUIRED_COMPATIBLE_VERSION:-}" ]]; then
-    resolved_requested="$(resolve_npm_openclaw_version "$requested")"
+    resolved_requested="$(resolve_npm_afora_version "$requested")"
     if [[ -z "$resolved_requested" ]]; then
-      fail "Could not resolve OpenClaw ${requested} before compatibility checking."
+      fail "Could not resolve Afora ${requested} before compatibility checking."
     fi
-    require_openclaw_version_compatible "$resolved_requested"
+    require_afora_version_compatible "$resolved_requested"
   fi
-  emit_json "{\"event\":\"step\",\"name\":\"openclaw\",\"status\":\"start\",\"version\":\"${requested}\"}"
-  log "Installing OpenClaw (${requested})..."
+  emit_json "{\"event\":\"step\",\"name\":\"afora\",\"status\":\"start\",\"version\":\"${requested}\"}"
+  log "Installing Afora (${requested})..."
   if [[ "$SET_NPM_PREFIX" -eq 1 ]]; then
     fix_npm_prefix_if_needed
   fi
 
   local installed_entry
-  installed_entry="$(node_dir)/lib/node_modules/openclaw/dist/entry.js"
-  if ! env -u NPM_CONFIG_BEFORE -u npm_config_before -u NPM_CONFIG_MIN_RELEASE_AGE -u npm_config_min_release_age -u npm_config_min-release-age "$(npm_bin)" install -g --prefix "$(node_dir)" "${npm_args[@]}" "openclaw@${resolved_requested}" || [[ ! -f "$installed_entry" ]]; then
-    log "npm install openclaw@${resolved_requested} did not produce a usable package; retrying once"
-    if ! env -u NPM_CONFIG_BEFORE -u npm_config_before -u NPM_CONFIG_MIN_RELEASE_AGE -u npm_config_min_release_age -u npm_config_min-release-age "$(npm_bin)" install -g --prefix "$(node_dir)" "${npm_args[@]}" "openclaw@${resolved_requested}" || [[ ! -f "$installed_entry" ]]; then
-      emit_json '{"event":"error","message":"npm install did not produce a usable OpenClaw package"}'
-      log "ERROR: npm install did not produce a usable OpenClaw package"
+  installed_entry="$(node_dir)/lib/node_modules/afora/dist/entry.js"
+  if ! env -u NPM_CONFIG_BEFORE -u npm_config_before -u NPM_CONFIG_MIN_RELEASE_AGE -u npm_config_min_release_age -u npm_config_min-release-age "$(npm_bin)" install -g --prefix "$(node_dir)" "${npm_args[@]}" "afora@${resolved_requested}" || [[ ! -f "$installed_entry" ]]; then
+    log "npm install afora@${resolved_requested} did not produce a usable package; retrying once"
+    if ! env -u NPM_CONFIG_BEFORE -u npm_config_before -u NPM_CONFIG_MIN_RELEASE_AGE -u npm_config_min_release_age -u npm_config_min-release-age "$(npm_bin)" install -g --prefix "$(node_dir)" "${npm_args[@]}" "afora@${resolved_requested}" || [[ ! -f "$installed_entry" ]]; then
+      emit_json '{"event":"error","message":"npm install did not produce a usable Afora package"}'
+      log "ERROR: npm install did not produce a usable Afora package"
       return 1
     fi
   fi
 
   mkdir -p "${PREFIX}/bin"
-  rm -f "${PREFIX}/bin/openclaw"
-  cat > "${PREFIX}/bin/openclaw" <<EOF
+  rm -f "${PREFIX}/bin/afora"
+  cat > "${PREFIX}/bin/afora" <<EOF
 #!/usr/bin/env bash
 set -euo pipefail
-exec "${PREFIX}/tools/node/bin/node" "$(node_dir)/lib/node_modules/openclaw/dist/entry.js" "\$@"
+exec "${PREFIX}/tools/node/bin/node" "$(node_dir)/lib/node_modules/afora/dist/entry.js" "\$@"
 EOF
-  chmod +x "${PREFIX}/bin/openclaw"
-  emit_json "{\"event\":\"step\",\"name\":\"openclaw\",\"status\":\"ok\",\"version\":\"${requested}\"}"
+  chmod +x "${PREFIX}/bin/afora"
+  emit_json "{\"event\":\"step\",\"name\":\"afora\",\"status\":\"ok\",\"version\":\"${requested}\"}"
 }
 
 ensure_pnpm_git_prepare_allowlist() {
@@ -1375,10 +1375,10 @@ clone_git_checkout_transactionally() {
   if [[ -d "$repo_dir" && -z "$(ls -A "$repo_dir" 2>/dev/null || true)" ]]; then
     preserve_repo_dir=1
     repo_dir="$(cd "$repo_dir" && pwd -P)"
-    staging_dir="$(mktemp -d "${repo_dir}/.openclaw-clone.XXXXXX")"
+    staging_dir="$(mktemp -d "${repo_dir}/.afora-clone.XXXXXX")"
   else
     repo_dir="${parent_dir}/$(basename "$repo_dir")"
-    staging_dir="$(mktemp -d "${parent_dir}/.openclaw-clone.XXXXXX")"
+    staging_dir="$(mktemp -d "${parent_dir}/.afora-clone.XXXXXX")"
   fi
   TMPFILES+=("$staging_dir")
 
@@ -1443,9 +1443,9 @@ NODE
   fi
 }
 
-install_openclaw_from_git() {
+install_afora_from_git() {
   local repo_dir="$1"
-  local repo_url="https://github.com/openclaw/openclaw.git"
+  local repo_url="https://github.com/AforaMosh/afora-agent.git"
   local fresh_checkout=0
 
   if [[ -z "$repo_dir" ]]; then
@@ -1458,11 +1458,11 @@ install_openclaw_from_git() {
     repo_dir="$(cd "$(dirname "$repo_dir")" && pwd -P)/$(basename "$repo_dir")"
   fi
 
-  emit_json "{\"event\":\"step\",\"name\":\"openclaw\",\"status\":\"start\",\"method\":\"git\",\"repo\":\"${repo_url//\"/\\\"}\"}"
+  emit_json "{\"event\":\"step\",\"name\":\"afora\",\"status\":\"start\",\"method\":\"git\",\"repo\":\"${repo_url//\"/\\\"}\"}"
   if [[ -d "$repo_dir/.git" ]]; then
-    log "Installing Openclaw from git checkout: ${repo_dir}"
+    log "Installing Afora from git checkout: ${repo_dir}"
   else
-    log "Installing Openclaw from GitHub (${repo_url})..."
+    log "Installing Afora from GitHub (${repo_url})..."
   fi
 
   emit_json '{"event":"step","name":"git-tools","status":"start"}'
@@ -1495,13 +1495,13 @@ install_openclaw_from_git() {
   fi
 
   local git_ref
-  git_ref="$(resolve_git_openclaw_ref)"
+  git_ref="$(resolve_git_afora_ref)"
   if [[ -z "$(git -C "$repo_dir" status --porcelain 2>/dev/null || true)" ]]; then
     log "Using git ref: ${git_ref}"
     if [[ "$fresh_checkout" -eq 0 ]]; then
       emit_json '{"event":"step","name":"git-update","status":"start"}'
     fi
-    checkout_git_openclaw_ref "$repo_dir" "$git_ref"
+    checkout_git_afora_ref "$repo_dir" "$git_ref"
     if [[ "$fresh_checkout" -eq 0 ]]; then
       emit_json '{"event":"step","name":"git-update","status":"ok"}'
     fi
@@ -1512,11 +1512,11 @@ install_openclaw_from_git() {
 
   if [[ -n "${REQUIRED_COMPATIBLE_VERSION:-}" ]]; then
     local resolved_version
-    resolved_version="$(resolve_git_checkout_openclaw_version "$repo_dir" 2>/dev/null || true)"
+    resolved_version="$(resolve_git_checkout_afora_version "$repo_dir" 2>/dev/null || true)"
     if [[ -z "$resolved_version" ]]; then
       fail "Could not resolve the Git checkout version before compatibility checking."
     fi
-    require_openclaw_version_compatible "$resolved_version"
+    require_afora_version_compatible "$resolved_version"
   fi
 
   cleanup_legacy_submodules "$repo_dir"
@@ -1541,13 +1541,13 @@ install_openclaw_from_git() {
   emit_json '{"event":"step","name":"cli-build","status":"ok"}'
 
   mkdir -p "${PREFIX}/bin"
-  cat > "${PREFIX}/bin/openclaw" <<EOF
+  cat > "${PREFIX}/bin/afora" <<EOF
 #!/usr/bin/env bash
 set -euo pipefail
 exec "${PREFIX}/tools/node/bin/node" "${repo_dir}/dist/entry.js" "\$@"
 EOF
-  chmod +x "${PREFIX}/bin/openclaw"
-  emit_json "{\"event\":\"step\",\"name\":\"openclaw\",\"status\":\"ok\",\"method\":\"git\"}"
+  chmod +x "${PREFIX}/bin/afora"
+  emit_json "{\"event\":\"step\",\"name\":\"afora\",\"status\":\"ok\",\"method\":\"git\"}"
 }
 
 is_gateway_daemon_loaded() {
@@ -1576,7 +1576,7 @@ try {
 }
 
 refresh_gateway_service_if_loaded() {
-  local claw="${PREFIX}/bin/openclaw"
+  local claw="${PREFIX}/bin/afora"
   if [[ ! -x "$claw" ]]; then
     return 0
   fi
@@ -1606,7 +1606,7 @@ main() {
   PREFIX="$(resolve_installer_path "$PREFIX")"
   GIT_DIR="$(resolve_installer_path "$GIT_DIR")"
 
-  if [[ "${OPENCLAW_NO_ONBOARD:-0}" == "1" ]]; then
+  if [[ "${AFORA_NO_ONBOARD:-0}" == "1" ]]; then
     RUN_ONBOARD=0
   fi
 
@@ -1620,32 +1620,32 @@ main() {
 
   install_node
   if [[ "$INSTALL_METHOD" == "git" ]]; then
-    install_openclaw_from_git "$GIT_DIR"
+    install_afora_from_git "$GIT_DIR"
   elif [[ "$INSTALL_METHOD" == "npm" ]]; then
     ensure_git
     if [[ "$SET_NPM_PREFIX" -eq 1 ]]; then
       fix_npm_prefix_if_needed
     fi
-    install_openclaw
+    install_afora
   else
     fail "Unknown install method: ${INSTALL_METHOD} (use npm or git)"
   fi
 
   local installed_version
-  if ! installed_version="$("${PREFIX}/bin/openclaw" --version 2>/dev/null | head -n 1 | tr -d '\r')" ||
+  if ! installed_version="$("${PREFIX}/bin/afora" --version 2>/dev/null | head -n 1 | tr -d '\r')" ||
     [[ -z "$installed_version" ]]; then
-    fail "Installed OpenClaw CLI did not return a version successfully from ${PREFIX}/bin/openclaw."
+    fail "Installed Afora CLI did not return a version successfully from ${PREFIX}/bin/afora."
   fi
 
   refresh_gateway_service_if_loaded
   emit_json "{\"event\":\"done\",\"ok\":true,\"version\":\"${installed_version//\"/\\\"}\"}"
-  log "OpenClaw installed (${installed_version})."
+  log "Afora installed (${installed_version})."
 
   if [[ "$RUN_ONBOARD" -eq 1 ]]; then
-    "${PREFIX}/bin/openclaw" onboard
+    "${PREFIX}/bin/afora" onboard
   fi
 }
 
-if [[ "${OPENCLAW_INSTALL_CLI_SH_NO_RUN:-0}" != "1" ]]; then
+if [[ "${AFORA_INSTALL_CLI_SH_NO_RUN:-0}" != "1" ]]; then
   main "$@"
 fi

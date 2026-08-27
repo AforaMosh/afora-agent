@@ -1,15 +1,15 @@
 // Telegram plugin module implements native plugin command behavior.
 import { randomUUID } from "node:crypto";
 import type { Bot, Context } from "grammy";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { PluginCommandNativeCandidate } from "openclaw/plugin-sdk/plugin-command-runtime";
-import { hasOutboundReplyContent } from "openclaw/plugin-sdk/reply-payload";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { PluginCommandNativeCandidate } from "afora-agent/plugin-sdk/plugin-command-runtime";
+import { hasOutboundReplyContent } from "afora-agent/plugin-sdk/reply-payload";
 import {
   formatSqliteSessionFileMarker,
   getSessionEntry,
   resolveStorePath,
-} from "openclaw/plugin-sdk/session-store-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/session-store-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import {
   prepareTelegramCommandDispatch,
@@ -31,7 +31,7 @@ import { recordSentMessage } from "./sent-message-cache.js";
 
 const EMPTY_RESPONSE_FALLBACK = "No response generated. Please try again.";
 
-type TelegramNativeReplyPayload = import("openclaw/plugin-sdk/plugin-entry").PluginCommandResult;
+type TelegramNativeReplyPayload = import("afora-agent/plugin-sdk/plugin-entry").PluginCommandResult;
 type TelegramNativeReplyChannelData = {
   buttons?: TelegramInlineButtons;
   pin?: boolean;
@@ -125,7 +125,7 @@ async function resolveTelegramPluginThreadParams(params: {
 }
 
 async function resolveTelegramCommandTranscriptContext(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   sessionKey: string;
 }): Promise<{ sessionId?: string; sessionFile?: string; authProfileId?: string }> {

@@ -1,10 +1,10 @@
 // Memory Core helper module supports test helpers behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { OpenKeyedStoreOptions } from "openclaw/plugin-sdk/plugin-state-runtime";
-import { createPluginStateKeyedStoreForTests } from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import { asOptionalRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
+import type { OpenKeyedStoreOptions } from "afora-agent/plugin-sdk/plugin-state-runtime";
+import { createPluginStateKeyedStoreForTests } from "afora-agent/plugin-sdk/plugin-state-test-runtime";
+import { asOptionalRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";
 import { afterAll, beforeAll } from "vitest";
 import {
   normalizeDailyIngestionState,
@@ -202,7 +202,7 @@ export function createMemoryCoreTestHarness() {
   beforeAll(async () => {
     await configureMemoryCoreDreamingStateForTests();
     fixtureRoot = await fs.mkdtemp(
-      path.join(resolvePreferredOpenClawTmpDir(), "memory-core-test-fixtures-"),
+      path.join(resolvePreferredAforaTmpDir(), "memory-core-test-fixtures-"),
     );
   });
 

@@ -1,6 +1,6 @@
 import fs from "node:fs";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalLowercaseString as normalizeString } from "@openclaw/normalization-core/string-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalLowercaseString as normalizeString } from "@afora/normalization-core/string-coerce";
 import { resolveAgentDir } from "../../../agents/agent-scope.js";
 import {
   areOAuthCredentialsEquivalent,
@@ -18,7 +18,7 @@ import {
 } from "../../../config/sessions/session-accessor.js";
 import { resolveAllAgentSessionStoreTargetsSync } from "../../../config/sessions/targets.js";
 import type { SessionEntry } from "../../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { loadJsonFileThroughSymlink } from "../../../infra/json-file.js";
 import {
   loadLegacySessionStore,
@@ -133,11 +133,11 @@ function preserveRepairedSessionRuntimeIntent(entry: SessionEntry): boolean {
   const harnessRuntime = normalizeRuntimeString(entry.agentHarnessId);
   const overrideRuntime = normalizeRuntimeString(entry.agentRuntimeOverride);
   let changed = false;
-  if (entry.agentHarnessId !== undefined && harnessRuntime !== "openclaw") {
+  if (entry.agentHarnessId !== undefined && harnessRuntime !== "afora") {
     delete entry.agentHarnessId;
     changed = true;
   }
-  if (overrideRuntime !== "openclaw" && entry.agentRuntimeOverride !== "codex") {
+  if (overrideRuntime !== "afora" && entry.agentRuntimeOverride !== "codex") {
     entry.agentRuntimeOverride = "codex";
     changed = true;
   }
@@ -254,7 +254,7 @@ function repairCodexSessionStoreRoutes(params: {
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
   (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.codexRouteSessionRepairTestApi")
+    Symbol.for("afora.codexRouteSessionRepairTestApi")
   ] = { repairCodexSessionStoreRoutes };
 }
 
@@ -322,7 +322,7 @@ function scanCodexSessionStoreRoutes(
 
 function resolveVerifiedSessionAuthProfileIdMap(params: {
   agentId: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   authProfileIdMap: ReadonlyMap<string, string> | undefined;
 }): ReadonlyMap<string, string> | undefined {
@@ -382,7 +382,7 @@ function resolveVerifiedSessionAuthProfileIdMap(params: {
 
 /** Scan or repair all configured agent session stores that still contain legacy Codex routes. */
 export async function maybeRepairCodexSessionRoutes(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   shouldRepair: boolean;
   codexRuntimeReady?: boolean;
@@ -454,7 +454,7 @@ export async function maybeRepairCodexSessionRoutes(params: {
               [
                 "- Legacy `codex/*` or `openai-codex/*` session route state detected.",
                 `- Affected sessions: ${stale.length}.`,
-                "- Run `openclaw doctor --fix` to rewrite stale session model/provider pins across all agent session stores.",
+                "- Run `afora doctor --fix` to rewrite stale session model/provider pins across all agent session stores.",
               ].join("\n"),
             ]
           : [],

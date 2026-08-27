@@ -70,9 +70,9 @@ vi.mock("./control-ui-assets.fs.runtime.js", async () => {
   return wrapped;
 });
 
-vi.mock("./openclaw-root.js", () => ({
-  resolveOpenClawPackageRoot: vi.fn(async () => null),
-  resolveOpenClawPackageRootSync: vi.fn(() => null),
+vi.mock("./afora-root.js", () => ({
+  resolveAforaPackageRoot: vi.fn(async () => null),
+  resolveAforaPackageRootSync: vi.fn(() => null),
 }));
 vi.mock("../process/exec.js", () => ({
   runCommandWithTimeout: state.runCommandWithTimeout,
@@ -84,7 +84,7 @@ let resolveControlUiDistIndexHealth: typeof import("./control-ui-assets.js").res
 let isPackageProvenControlUiRootSync: typeof import("./control-ui-assets.js").isPackageProvenControlUiRootSync;
 let resolveControlUiRootOverrideSync: typeof import("./control-ui-assets.js").resolveControlUiRootOverrideSync;
 let resolveControlUiRootSync: typeof import("./control-ui-assets.js").resolveControlUiRootSync;
-let openclawRoot: typeof import("./openclaw-root.js");
+let aforaRoot: typeof import("./afora-root.js");
 
 describe("control UI assets helpers (fs-mocked)", () => {
   beforeAll(async () => {
@@ -96,7 +96,7 @@ describe("control UI assets helpers (fs-mocked)", () => {
       resolveControlUiRootOverrideSync,
       resolveControlUiRootSync,
     } = await import("./control-ui-assets.js"));
-    openclawRoot = await import("./openclaw-root.js");
+    aforaRoot = await import("./afora-root.js");
   });
 
   beforeEach(() => {
@@ -104,7 +104,7 @@ describe("control UI assets helpers (fs-mocked)", () => {
     state.realpaths.clear();
     state.runCommandWithTimeout.mockReset();
     vi.clearAllMocks();
-    vi.mocked(openclawRoot.resolveOpenClawPackageRootSync).mockReset().mockReturnValue(null);
+    vi.mocked(aforaRoot.resolveAforaPackageRootSync).mockReset().mockReturnValue(null);
   });
 
   it("reports health for missing + existing dist assets", async () => {
@@ -175,10 +175,10 @@ describe("control UI assets helpers (fs-mocked)", () => {
     const root = abs("fixtures/build-failure");
     const argv1 = path.join(root, "src", "index.ts");
     const originalArgv1 = process.argv[1];
-    setFile(path.join(root, "package.json"), '{"name":"openclaw"}\n');
+    setFile(path.join(root, "package.json"), '{"name":"afora-agent"}\n');
     setFile(path.join(root, "ui", "vite.config.ts"), "export {};\n");
     setFile(path.join(root, "scripts", "ui.js"), "");
-    vi.mocked(openclawRoot.resolveOpenClawPackageRootSync).mockReturnValue(root);
+    vi.mocked(aforaRoot.resolveAforaPackageRootSync).mockReturnValue(root);
     state.runCommandWithTimeout.mockResolvedValueOnce({
       stdout: "",
       stderr: `${"y".repeat(238)}🚀xx`,
@@ -216,8 +216,8 @@ describe("control UI assets helpers (fs-mocked)", () => {
 
   it("recognizes macOS packaged assets without trying to build the unused dist root", async () => {
     const root = abs("fixtures/packaged-app");
-    const execPath = path.join(root, "OpenClaw.app", "Contents", "MacOS", "OpenClaw");
-    const bundledUiDir = path.join(root, "OpenClaw.app", "Contents", "Resources", "control-ui");
+    const execPath = path.join(root, "Afora.app", "Contents", "MacOS", "Afora");
+    const bundledUiDir = path.join(root, "Afora.app", "Contents", "Resources", "control-ui");
     state.realpaths.set(execPath, execPath);
     setFile(path.join(bundledUiDir, "index.html"), "<html>packaged</html>");
 
@@ -240,7 +240,7 @@ describe("control UI assets helpers (fs-mocked)", () => {
     ).resolves.toEqual({
       ok: false,
       built: false,
-      message: `Missing Control UI assets at ${indexPath}. Reinstall OpenClaw to restore bundled Control UI assets.`,
+      message: `Missing Control UI assets at ${indexPath}. Reinstall Afora to restore bundled Control UI assets.`,
     });
   });
 
@@ -252,7 +252,7 @@ describe("control UI assets helpers (fs-mocked)", () => {
     await expect(ensureControlUiAssetsBuilt(undefined, { root })).resolves.toEqual({
       ok: false,
       built: false,
-      message: `Incomplete Control UI assets at ${indexPath} (missing assets/startup.js). Reinstall OpenClaw to restore bundled Control UI assets.`,
+      message: `Incomplete Control UI assets at ${indexPath} (missing assets/startup.js). Reinstall Afora to restore bundled Control UI assets.`,
     });
     expect(state.runCommandWithTimeout).not.toHaveBeenCalled();
   });
@@ -297,7 +297,7 @@ describe("control UI assets helpers (fs-mocked)", () => {
     const indexPath = path.join(checkoutRoot, "dist", "control-ui", "index.html");
     setFile(path.join(checkoutRoot, "ui", "vite.config.ts"));
     setFile(path.join(checkoutRoot, "scripts", "ui.js"));
-    vi.mocked(openclawRoot.resolveOpenClawPackageRootSync).mockImplementation((options) =>
+    vi.mocked(aforaRoot.resolveAforaPackageRootSync).mockImplementation((options) =>
       options.moduleUrl ? packagedRoot : checkoutRoot,
     );
     state.runCommandWithTimeout.mockImplementationOnce(async () => {
@@ -470,9 +470,9 @@ describe("control UI assets helpers (fs-mocked)", () => {
   });
 
   it("resolves control-ui root for dist bundle argv1 and moduleUrl candidates", () => {
-    const pkgRoot = abs("fixtures/openclaw-bundle");
+    const pkgRoot = abs("fixtures/afora-bundle");
     (
-      openclawRoot.resolveOpenClawPackageRootSync as unknown as ReturnType<typeof vi.fn>
+      aforaRoot.resolveAforaPackageRootSync as unknown as ReturnType<typeof vi.fn>
     ).mockReturnValueOnce(pkgRoot);
 
     const uiDir = path.join(pkgRoot, "dist", "control-ui");
@@ -489,8 +489,8 @@ describe("control UI assets helpers (fs-mocked)", () => {
   });
 
   it("prefers packaged app Control UI assets in Contents/Resources", () => {
-    const execPath = abs("fixtures/OpenClaw.app/Contents/MacOS/OpenClaw");
-    const bundledUiDir = abs("fixtures/OpenClaw.app/Contents/Resources/control-ui");
+    const execPath = abs("fixtures/Afora.app/Contents/MacOS/Afora");
+    const bundledUiDir = abs("fixtures/Afora.app/Contents/Resources/control-ui");
     setFile(path.join(bundledUiDir, "index.html"), "<html></html>\n");
 
     state.realpaths.set(execPath, execPath);
@@ -499,8 +499,8 @@ describe("control UI assets helpers (fs-mocked)", () => {
   });
 
   it("resolves control-ui root for symlinked argv1 via realpath", () => {
-    const pkgRoot = abs("fixtures/bun-global/openclaw");
-    const wrapperArgv1 = abs("fixtures/bin/openclaw");
+    const pkgRoot = abs("fixtures/bun-global/afora");
+    const wrapperArgv1 = abs("fixtures/bin/afora");
     const realEntrypoint = path.join(pkgRoot, "dist", "index.js");
     const uiDir = path.join(pkgRoot, "dist", "control-ui");
 
@@ -511,12 +511,12 @@ describe("control UI assets helpers (fs-mocked)", () => {
   });
 
   it("detects package-proven control-ui roots", () => {
-    const pkgRoot = abs("fixtures/openclaw-package-root");
+    const pkgRoot = abs("fixtures/afora-package-root");
     const uiDir = path.join(pkgRoot, "dist", "control-ui");
     setDir(uiDir);
     setFile(path.join(uiDir, "index.html"), "<html></html>\n");
     (
-      openclawRoot.resolveOpenClawPackageRootSync as unknown as ReturnType<typeof vi.fn>
+      aforaRoot.resolveAforaPackageRootSync as unknown as ReturnType<typeof vi.fn>
     ).mockReturnValueOnce(pkgRoot);
 
     expect(
@@ -527,12 +527,12 @@ describe("control UI assets helpers (fs-mocked)", () => {
   });
 
   it("does not treat fallback roots as package-proven", () => {
-    const pkgRoot = abs("fixtures/openclaw-package-root");
+    const pkgRoot = abs("fixtures/afora-package-root");
     const fallbackRoot = abs("fixtures/fallback-root/dist/control-ui");
     setDir(fallbackRoot);
     setFile(path.join(fallbackRoot, "index.html"), "<html></html>\n");
     (
-      openclawRoot.resolveOpenClawPackageRootSync as unknown as ReturnType<typeof vi.fn>
+      aforaRoot.resolveAforaPackageRootSync as unknown as ReturnType<typeof vi.fn>
     ).mockReturnValueOnce(pkgRoot);
 
     expect(

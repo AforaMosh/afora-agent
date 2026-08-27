@@ -17,7 +17,7 @@ Key workflow:
 
 Operator workflows:
 
-- Use the `openclaw-qa-testing` skill for QA Lab live lanes, Convex credential
+- Use the `afora-qa-testing` skill for QA Lab live lanes, Convex credential
   pool operations, and WhatsApp live credential setup/replacement.
 
 Keep this folder in git. Add new scenarios here before wiring them into automation.

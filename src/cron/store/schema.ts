@@ -2,11 +2,11 @@
 import type { DatabaseSync } from "node:sqlite";
 import type { Insertable, Selectable } from "kysely";
 import { getNodeSqliteKysely } from "../../infra/kysely-sync.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../../state/afora-state-db.generated.js";
 
-type CronJobsTable = OpenClawStateKyselyDatabase["cron_jobs"];
+type CronJobsTable = AforaStateKyselyDatabase["cron_jobs"];
 type CronStoreDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "cron_job_scratch" | "cron_jobs" | "cron_store_epochs"
 >;
 

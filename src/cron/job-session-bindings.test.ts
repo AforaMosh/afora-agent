@@ -1,12 +1,12 @@
 import { describe, expect, test, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   disableCronJobsBoundToSessions,
   resolveCronJobBoundSessionKeys,
 } from "./job-session-bindings.js";
 import type { CronJob } from "./types.js";
 
-const cfg = {} as OpenClawConfig;
+const cfg = {} as AforaConfig;
 
 function bindingKeys(
   job: Parameters<typeof resolveCronJobBoundSessionKeys>[0],

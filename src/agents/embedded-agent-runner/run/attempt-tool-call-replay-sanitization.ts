@@ -1,5 +1,5 @@
 /** Sanitizes replayed tool calls and provider-specific transcript structure. */
-import { replaceCompactionReplayOwnerContent } from "@openclaw/ai/transports";
+import { replaceCompactionReplayOwnerContent } from "@afora/ai/transports";
 import { hasNonEmptyString as replayToolCallNonEmptyString } from "../../../../packages/normalization-core/src/string-coerce.js";
 import {
   downgradeOpenAIFunctionCallReasoningPairs,

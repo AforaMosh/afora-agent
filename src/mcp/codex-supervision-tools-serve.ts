@@ -9,7 +9,7 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { disposeRegisteredAgentHarnesses } from "../agents/harness/registry.js";
 import type { AnyAgentTool } from "../agents/tools/common.js";
 import { getRuntimeConfig } from "../config/config.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { routeLogsToStderr } from "../logging/console.js";
 import { normalizePluginTargetConfig } from "../plugins/config-state.js";
@@ -26,8 +26,8 @@ const LEGACY_TOOL_NAMES = [
 const LEGACY_TOOL_NAME_SET = new Set<string>(LEGACY_TOOL_NAMES);
 const TRUSTED_STANDALONE_MCP_OWNER_CONTEXT = { senderIsOwner: true as const };
 
-function withCodexSupervisionEnabled(config: OpenClawConfig): OpenClawConfig {
-  const next = structuredClone(normalizePluginTargetConfig(config, "codex")) as OpenClawConfig &
+function withCodexSupervisionEnabled(config: AforaConfig): AforaConfig {
+  const next = structuredClone(normalizePluginTargetConfig(config, "codex")) as AforaConfig &
     Record<string, unknown>;
   const plugins = (next.plugins ??= {}) as Record<string, unknown>;
   plugins.enabled = true;
@@ -46,16 +46,16 @@ function withCodexSupervisionEnabled(config: OpenClawConfig): OpenClawConfig {
   const codexConfig = (codex.config ??= {}) as Record<string, unknown>;
   const supervision = (codexConfig.supervision ??= {}) as Record<string, unknown>;
   supervision.enabled = true;
-  if (process.env.OPENCLAW_CODEX_SUPERVISOR_ALLOW_RAW_TRANSCRIPTS === "1") {
+  if (process.env.AFORA_CODEX_SUPERVISOR_ALLOW_RAW_TRANSCRIPTS === "1") {
     supervision.allowRawTranscripts = true;
   }
-  if (process.env.OPENCLAW_CODEX_SUPERVISOR_ALLOW_WRITE_CONTROLS === "1") {
+  if (process.env.AFORA_CODEX_SUPERVISOR_ALLOW_WRITE_CONTROLS === "1") {
     supervision.allowWriteControls = true;
   }
   return next;
 }
 
-function resolveCodexSupervisionTools(config: OpenClawConfig): AnyAgentTool[] {
+function resolveCodexSupervisionTools(config: AforaConfig): AnyAgentTool[] {
   const context = {
     config,
     runtimeConfig: config,
@@ -90,17 +90,17 @@ function requireCompleteCodexSupervisionToolSet(tools: readonly AnyAgentTool[]):
     return;
   }
   throw new Error(
-    `Codex supervision MCP could not load the official @openclaw/codex plugin tools (missing: ${missing.join(", ") || "none"}). Install or update @openclaw/codex, then enable Codex supervision.`,
+    `Codex supervision MCP could not load the official @afora/codex plugin tools (missing: ${missing.join(", ") || "none"}). Install or update @afora/codex, then enable Codex supervision.`,
   );
 }
 
 export function createCodexSupervisionToolsMcpServer(
-  params: { config?: OpenClawConfig; tools?: AnyAgentTool[] } = {},
+  params: { config?: AforaConfig; tools?: AnyAgentTool[] } = {},
 ): Server {
   const config = withCodexSupervisionEnabled(params.config ?? getRuntimeConfig());
   const tools = params.tools ?? resolveCodexSupervisionTools(config);
   requireCompleteCodexSupervisionToolSet(tools);
-  return createToolsMcpServer({ name: "openclaw-codex-supervisor", tools });
+  return createToolsMcpServer({ name: "afora-codex-supervisor", tools });
 }
 
 export async function serveCodexSupervisionToolsMcp(): Promise<void> {

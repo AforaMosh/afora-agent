@@ -1,4 +1,4 @@
-import { canonicalizeBase64 } from "@openclaw/media-core/base64";
+import { canonicalizeBase64 } from "@afora/media-core/base64";
 
 export function decodeMeetingAudioBase64(base64: string, action: string): Buffer {
   const canonicalBase64 = canonicalizeBase64(base64);

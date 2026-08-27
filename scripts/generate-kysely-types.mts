@@ -7,14 +7,14 @@ import { DatabaseSync } from "node:sqlite";
 
 const SCHEMAS = [
   {
-    name: "openclaw-state",
-    schema: "src/state/openclaw-state-schema.sql",
-    outFile: "src/state/openclaw-state-db.generated.d.ts",
+    name: "afora-state",
+    schema: "src/state/afora-state-schema.sql",
+    outFile: "src/state/afora-state-db.generated.d.ts",
   },
   {
-    name: "openclaw-agent",
-    schema: "src/state/openclaw-agent-schema.sql",
-    outFile: "src/state/openclaw-agent-db.generated.d.ts",
+    name: "afora-agent",
+    schema: "src/state/afora-agent-schema.sql",
+    outFile: "src/state/afora-agent-db.generated.d.ts",
   },
 ];
 

@@ -8,9 +8,9 @@ import {
   runExclusiveSqliteSessionWrite,
 } from "../config/sessions/session-accessor.sqlite-scope.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  listOpenClawAgentDatabasesForTest,
-} from "../state/openclaw-agent-db.js";
+  closeAforaAgentDatabasesForTest,
+  listAforaAgentDatabasesForTest,
+} from "../state/afora-agent-db.js";
 import { clearCronJobActive, markCronJobActive } from "./active-jobs.js";
 import { CronService } from "./service.js";
 import { setupCronServiceSuite } from "./service.test-harness.js";
@@ -20,7 +20,7 @@ const { logger, makeStorePath } = setupCronServiceSuite({
 });
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
 });
 
 describe("CronService.remove session cleanup", () => {
@@ -59,7 +59,7 @@ describe("CronService.remove session cleanup", () => {
 
     expect(fs.existsSync(databasePath)).toBe(false);
     expect(
-      listOpenClawAgentDatabasesForTest().some((database) => database.path === databasePath),
+      listAforaAgentDatabasesForTest().some((database) => database.path === databasePath),
     ).toBe(false);
   });
 

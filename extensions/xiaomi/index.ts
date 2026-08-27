@@ -1,14 +1,14 @@
-// Xiaomi plugin entrypoint registers its OpenClaw integration.
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+// Xiaomi plugin entrypoint registers its Afora integration.
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
 import type {
-  OpenClawConfig,
+  AforaConfig,
   ProviderAuthContext,
   ProviderAuthMethod,
   ProviderAuthMethodNonInteractiveContext,
   ProviderCatalogContext,
   ProviderAuthResult,
   ProviderRuntimeModel,
-} from "openclaw/plugin-sdk/plugin-entry";
+} from "afora-agent/plugin-sdk/plugin-entry";
 import {
   applyAuthProfileConfig,
   buildApiKeyCredential,
@@ -18,13 +18,13 @@ import {
   type SecretInput,
   upsertAuthProfileWithLockOrThrow,
   validateApiKeyInput,
-} from "openclaw/plugin-sdk/provider-auth-api-key";
-import { buildOpenAICompatibleLiveModelProviderConfig } from "openclaw/plugin-sdk/provider-catalog-live-runtime";
+} from "afora-agent/plugin-sdk/provider-auth-api-key";
+import { buildOpenAICompatibleLiveModelProviderConfig } from "afora-agent/plugin-sdk/provider-catalog-live-runtime";
 import {
   applyModelCompatPatch,
   buildProviderReplayFamilyHooks,
-} from "openclaw/plugin-sdk/provider-model-shared";
-import { PROVIDER_LABELS } from "openclaw/plugin-sdk/provider-usage";
+} from "afora-agent/plugin-sdk/provider-model-shared";
+import { PROVIDER_LABELS } from "afora-agent/plugin-sdk/provider-usage";
 import {
   applyXiaomiConfig,
   applyXiaomiTokenPlanConfig,
@@ -171,7 +171,7 @@ async function runXiaomiApiKeyAuth(
     promptMessage: string;
     expectedKind: "payg" | "token-plan";
     defaultModel: string;
-    applyConfig: (cfg: OpenClawConfig) => OpenClawConfig;
+    applyConfig: (cfg: AforaConfig) => AforaConfig;
   },
 ): Promise<ProviderAuthResult> {
   let capturedSecretInput: SecretInput | undefined;
@@ -237,7 +237,7 @@ async function runXiaomiApiKeyAuthNonInteractive(
     flagName: `--${string}`;
     envVar: string;
     expectedKind: "payg" | "token-plan";
-    applyConfig: (cfg: OpenClawConfig) => OpenClawConfig;
+    applyConfig: (cfg: AforaConfig) => AforaConfig;
   },
 ) {
   const resolved = await ctx.resolveApiKey({

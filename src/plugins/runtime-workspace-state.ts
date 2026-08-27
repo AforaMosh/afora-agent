@@ -4,7 +4,7 @@ import { resolveGlobalSingleton } from "../shared/global-singleton.js";
 import { PLUGIN_REGISTRY_STATE } from "./runtime-state-key.js";
 
 const PINNED_PLUGIN_REGISTRY_WORKSPACE_KEY = Symbol.for(
-  "openclaw.pinnedPluginRegistryWorkspaceDir",
+  "afora.pinnedPluginRegistryWorkspaceDir",
 );
 
 type GlobalRegistryWorkspaceState = typeof globalThis & {

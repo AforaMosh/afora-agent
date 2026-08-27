@@ -6,18 +6,18 @@ import {
   replaceRuntimeAuthProfileStoreSnapshots,
   resolveDefaultAgentDir,
   type AuthProfileStore,
-} from "openclaw/plugin-sdk/agent-runtime";
-import { getSessionBindingService } from "openclaw/plugin-sdk/conversation-binding-runtime";
-import { MODEL_SELECTION_LOCKED_MESSAGE } from "openclaw/plugin-sdk/model-session-runtime";
-import type { PluginCommandContext, PluginCommandResult } from "openclaw/plugin-sdk/plugin-entry";
+} from "afora-agent/plugin-sdk/agent-runtime";
+import { getSessionBindingService } from "afora-agent/plugin-sdk/conversation-binding-runtime";
+import { MODEL_SELECTION_LOCKED_MESSAGE } from "afora-agent/plugin-sdk/model-session-runtime";
+import type { PluginCommandContext, PluginCommandResult } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   clearSessionStoreCacheForTest,
   getSessionEntry,
   resolveStorePath,
   upsertSessionEntry,
-} from "openclaw/plugin-sdk/session-store-runtime";
+} from "afora-agent/plugin-sdk/session-store-runtime";
 // Codex tests cover commands plugin behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CODEX_CONTROL_METHODS } from "./app-server/capabilities.js";
 import {
@@ -370,8 +370,8 @@ function expectedDiagnosticsTargetBlock(params: {
   return [
     `Session ${params.index ?? 1}`,
     ...(params.channel ? [`Channel: ${params.channel}`] : []),
-    ...(params.sessionKey ? [`OpenClaw session key: \`${params.sessionKey}\``] : []),
-    ...(params.sessionId ? [`OpenClaw session id: \`${params.sessionId}\``] : []),
+    ...(params.sessionKey ? [`Afora session key: \`${params.sessionKey}\``] : []),
+    ...(params.sessionId ? [`Afora session id: \`${params.sessionId}\``] : []),
     `Codex thread id: \`${params.threadId}\``,
     `Inspect locally: \`codex resume ${params.threadId}\``,
   ];
@@ -380,8 +380,8 @@ function expectedDiagnosticsTargetBlock(params: {
 describe("codex command", () => {
   beforeEach(async () => {
     resetCodexTestBindingStore();
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-command-"));
-    vi.stubEnv("OPENCLAW_STATE_DIR", tempDir);
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-codex-command-"));
+    vi.stubEnv("AFORA_STATE_DIR", tempDir);
   });
 
   afterEach(async () => {
@@ -473,7 +473,7 @@ describe("codex command", () => {
     const result = await runCommand("plugins list", { codexPluginsManagementIo });
 
     expectResultTextContains(result, "ON   google-calendar");
-    expectResultTextContains(result, "openclaw.json");
+    expectResultTextContains(result, "afora.json");
   });
 
   it("routes owner-only plugin discovery through the native command boundary with its workspace", async () => {
@@ -580,13 +580,13 @@ describe("codex command", () => {
     const disabled = await runCommand("plugins disable google-calendar", {
       codexPluginsManagementIo,
     });
-    expectResultTextContains(disabled, "google-calendar: disabled in openclaw.json");
+    expectResultTextContains(disabled, "google-calendar: disabled in afora.json");
     expect(codexPluginsManagementIo.current()["google-calendar"]?.enabled).toBe(false);
 
     const enabled = await runCommand("plugins enable google-calendar", {
       codexPluginsManagementIo,
     });
-    expectResultTextContains(enabled, "google-calendar: enabled in openclaw.json");
+    expectResultTextContains(enabled, "google-calendar: enabled in afora.json");
     expect(codexPluginsManagementIo.currentConfig().enabled).toBe(true);
     expect(codexPluginsManagementIo.current()["google-calendar"]?.enabled).toBe(true);
   });
@@ -611,7 +611,7 @@ describe("codex command", () => {
     await expect(
       handleCodexCommand(createContext("resume thread-123", sessionFile), { deps }),
     ).resolves.toEqual({
-      text: "Attached this OpenClaw session to Codex thread thread-123.",
+      text: "Attached this Afora session to Codex thread thread-123.",
     });
 
     expect(requests).toEqual([
@@ -657,7 +657,7 @@ describe("codex command", () => {
     try {
       const result = await runCommand("resume thread-owned-resume", { codexControlRequest });
 
-      expect(result.text).toContain("Attached this OpenClaw session");
+      expect(result.text).toContain("Attached this Afora session");
       await expect(
         testCodexAppServerBindingStore.read({
           kind: "session",
@@ -797,7 +797,7 @@ describe("codex command", () => {
         expect(result.text).toContain(
           rejectOldRelease
             ? "previous manual owner unsubscribe failed"
-            : "Attached this OpenClaw session",
+            : "Attached this Afora session",
         );
         expect(operations).toEqual(
           rejectOldRelease
@@ -869,7 +869,7 @@ describe("codex command", () => {
       await expect(
         runCommand("resume thread-known-resume", { codexControlRequest }),
       ).resolves.toMatchObject({
-        text: "Attached this OpenClaw session to Codex thread thread-known-resume.",
+        text: "Attached this Afora session to Codex thread thread-known-resume.",
       });
       await expect(testCodexAppServerBindingStore.read(identity)).resolves.toMatchObject({
         dynamicToolsFingerprint: "known-dynamic-tools",
@@ -1037,13 +1037,13 @@ describe("codex command", () => {
 
     resolveResume(createThreadResumeResponse({ threadId: "thread-123" }));
     await expect(command).resolves.toEqual({
-      text: "Attached this OpenClaw session to Codex thread thread-123.",
+      text: "Attached this Afora session to Codex thread thread-123.",
     });
     await competingOwner;
     expect(order).toEqual(["resume-start", "resume-done", "competing-owner"]);
   });
 
-  it("rejects manual resume of a thread owned by another OpenClaw session", async () => {
+  it("rejects manual resume of a thread owned by another Afora session", async () => {
     const otherIdentity = {
       kind: "session" as const,
       agentId: "main",
@@ -1056,7 +1056,7 @@ describe("codex command", () => {
 
     const result = await runCommand("resume thread-owned", { codexControlRequest });
 
-    expect(result.text).toContain("owned by another OpenClaw session");
+    expect(result.text).toContain("owned by another Afora session");
     expect(codexControlRequest).not.toHaveBeenCalled();
     await expect(testCodexAppServerBindingStore.read(otherIdentity)).resolves.toMatchObject({
       threadId: "thread-owned",
@@ -1093,7 +1093,7 @@ describe("codex command", () => {
       { deps: createDeps({ codexControlRequest }) },
     );
 
-    expect(result.text).toBe("Attached this OpenClaw session to Codex thread thread-new.");
+    expect(result.text).toBe("Attached this Afora session to Codex thread thread-new.");
     expect(codexControlRequest).toHaveBeenCalledTimes(1);
     await expect(
       testCodexAppServerBindingStore.read({
@@ -1121,7 +1121,7 @@ describe("codex command", () => {
     expect(result.text).toContain(
       "Codex thread binding changed while attaching the resumed thread",
     );
-    expect(result.text).not.toContain("Attached this OpenClaw session");
+    expect(result.text).not.toContain("Attached this Afora session");
   });
 
   it("normalizes resumed bindings against the requesting agent auth store", async () => {
@@ -1274,7 +1274,7 @@ describe("codex command", () => {
     expect(result.text).toContain(
       "Codex-native /codex " +
         args.split(/\s+/u)[0] +
-        " is unavailable because OpenClaw sandboxing is active for this session.",
+        " is unavailable because Afora sandboxing is active for this session.",
     );
     expect(codexControlRequest).not.toHaveBeenCalled();
     expect(steerCodexConversationTurn).not.toHaveBeenCalled();
@@ -1317,7 +1317,7 @@ describe("codex command", () => {
     expect(result.text).toContain(
       "Codex-native /codex " +
         args.split(/\s+/u)[0] +
-        " is unavailable because OpenClaw exec host=node is active for this session.",
+        " is unavailable because Afora exec host=node is active for this session.",
     );
     expect(codexControlRequest).not.toHaveBeenCalled();
     expect(steerCodexConversationTurn).not.toHaveBeenCalled();
@@ -1336,7 +1336,7 @@ describe("codex command", () => {
     );
 
     expect(result.text).toContain(
-      "Codex-native /codex bind is unavailable because OpenClaw exec host=node is active for this session.",
+      "Codex-native /codex bind is unavailable because Afora exec host=node is active for this session.",
     );
   });
 
@@ -2827,7 +2827,7 @@ describe("codex command", () => {
       entry: {
         sessionId: "session-1",
         updatedAt: Date.now(),
-        agentHarnessId: "openclaw",
+        agentHarnessId: "afora",
       },
     });
     await writeTestBinding(
@@ -3226,7 +3226,7 @@ describe("codex command", () => {
         { deps: createDeps() },
       ),
     ).resolves.toEqual({
-      text: "No Codex thread is attached to this OpenClaw session yet.",
+      text: "No Codex thread is attached to this Afora session yet.",
     });
     expect(compactCurrent).not.toHaveBeenCalled();
   });
@@ -3345,7 +3345,7 @@ describe("codex command", () => {
         threadId: "thread-123",
         includeLogs: true,
         tags: {
-          source: "openclaw-diagnostics",
+          source: "afora-diagnostics",
           channel: "test",
         },
       },
@@ -3546,7 +3546,7 @@ describe("codex command", () => {
       [
         "Codex runtime thread detected.",
         "Approving diagnostics will also send this thread's feedback bundle to OpenAI servers.",
-        "The completed diagnostics reply will list the OpenClaw session ids and Codex thread ids that were sent.",
+        "The completed diagnostics reply will list the Afora session ids and Codex thread ids that were sent.",
         "Note: flaky tool call",
         "Included: Codex logs and spawned Codex subthreads when available.",
       ].join("\n"),
@@ -3608,7 +3608,7 @@ describe("codex command", () => {
         threadId: "thread-approved",
         includeLogs: true,
         tags: {
-          source: "openclaw-diagnostics",
+          source: "afora-diagnostics",
           channel: "test",
         },
       },
@@ -3678,11 +3678,11 @@ describe("codex command", () => {
     );
     const token = readDiagnosticsConfirmationToken(request);
     expect(request.text).toContain("Codex runtime threads detected.");
-    expect(request.text).toContain("OpenClaw session key: `agent:first:whatsapp:one`");
-    expect(request.text).toContain("OpenClaw session id: `session-one`");
+    expect(request.text).toContain("Afora session key: `agent:first:whatsapp:one`");
+    expect(request.text).toContain("Afora session id: `session-one`");
     expect(request.text).toContain("Codex thread id: `thread-111`");
-    expect(request.text).toContain("OpenClaw session key: `agent:second:discord:two`");
-    expect(request.text).toContain("OpenClaw session id: `session-two`");
+    expect(request.text).toContain("Afora session key: `agent:second:discord:two`");
+    expect(request.text).toContain("Afora session id: `session-two`");
     expect(request.text).toContain("Codex thread id: `thread-222`");
     expect(safeCodexControlRequest).not.toHaveBeenCalled();
 
@@ -3773,7 +3773,7 @@ describe("codex command", () => {
     );
 
     expect(request.text).toContain("Codex runtime thread detected.");
-    expect(request.text).toContain("OpenClaw session key: `global`");
+    expect(request.text).toContain("Afora session key: `global`");
     expect(request.text).toContain("Codex thread id: `thread-global`");
   });
 
@@ -4107,7 +4107,7 @@ describe("codex command", () => {
       threadId: "thread-789",
       includeLogs: true,
       tags: {
-        source: "openclaw-diagnostics",
+        source: "afora-diagnostics",
         channel: "test",
       },
     });
@@ -4386,7 +4386,7 @@ describe("codex command", () => {
     ).resolves.toEqual({
       text: [
         "Could not send Codex diagnostics:",
-        "- channel test, OpenClaw session session-1, Codex thread &lt;\uff20U123&gt;: bad??? &lt;\uff20U123&gt; \uff3btrusted\uff3d\uff08https://evil\uff09 \uff20here",
+        "- channel test, Afora session session-1, Codex thread &lt;\uff20U123&gt;: bad??? &lt;\uff20U123&gt; \uff3btrusted\uff3d\uff08https://evil\uff09 \uff20here",
         "Inspect locally:",
         "- run codex resume and paste the thread id shown above",
       ].join("\n"),
@@ -4415,7 +4415,7 @@ describe("codex command", () => {
     ).resolves.toEqual({
       text: [
         "Could not send Codex diagnostics:",
-        `- channel test, OpenClaw session session-1, Codex thread thread-error-boundary: ${expectedError}`,
+        `- channel test, Afora session session-1, Codex thread thread-error-boundary: ${expectedError}`,
         "Inspect locally:",
         "- `codex resume thread-error-boundary`",
       ].join("\n"),
@@ -4445,7 +4445,7 @@ describe("codex command", () => {
     ).resolves.toEqual({
       text: [
         "Could not send Codex diagnostics:",
-        "- channel test, OpenClaw session session-1, Codex thread thread-retry: temporary outage",
+        "- channel test, Afora session session-1, Codex thread thread-retry: temporary outage",
         "Inspect locally:",
         "- `codex resume thread-retry`",
       ].join("\n"),
@@ -4497,7 +4497,7 @@ describe("codex command", () => {
         "Codex diagnostics sent to OpenAI servers:",
         "Session 1",
         "Channel: test",
-        "OpenClaw session id: `session-1`",
+        "Afora session id: `session-1`",
         "Codex thread id: thread-123'\uff40???; echo bad",
         "Inspect locally: run codex resume and paste the thread id shown above",
         "Included Codex logs and spawned Codex subthreads when available.",
@@ -4512,7 +4512,7 @@ describe("codex command", () => {
       handleCodexCommand(createContext("diagnostics", sessionFile), { deps: createDeps() }),
     ).resolves.toEqual({
       text: [
-        "No Codex thread is attached to this OpenClaw session yet.",
+        "No Codex thread is attached to this Afora session yet.",
         "Use /codex threads to find a thread, then /codex resume <thread-id> before sending diagnostics.",
       ].join("\n"),
     });
@@ -6240,7 +6240,7 @@ describe("codex command", () => {
     expect(result.text).not.toContain("[trusted](https://evil)");
   });
 
-  it("reports a conversation-bound model without an OpenClaw session identity", async () => {
+  it("reports a conversation-bound model without an Afora session identity", async () => {
     await writeTestBinding(
       { kind: "conversation", bindingId: "binding-data-1" },
       { threadId: "thread-conversation", cwd: "/repo", model: "bound-model" },

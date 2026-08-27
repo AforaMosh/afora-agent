@@ -2,28 +2,28 @@
 import {
   dispatchChannelInboundTurn as dispatchChannelInboundTurnImpl,
   isChannelPartialDeliveryError as isChannelPartialDeliveryErrorImpl,
-} from "openclaw/plugin-sdk/channel-inbound";
-import { resolveConversationLabel as resolveConversationLabelImpl } from "openclaw/plugin-sdk/conversation-runtime";
-import { resolveMarkdownTableMode as resolveMarkdownTableModeImpl } from "openclaw/plugin-sdk/markdown-table-runtime";
+} from "afora-agent/plugin-sdk/channel-inbound";
+import { resolveConversationLabel as resolveConversationLabelImpl } from "afora-agent/plugin-sdk/conversation-runtime";
+import { resolveMarkdownTableMode as resolveMarkdownTableModeImpl } from "afora-agent/plugin-sdk/markdown-table-runtime";
 import {
   finalizeInboundContext as finalizeInboundContextImpl,
   resolveChunkMode as resolveChunkModeImpl,
-} from "openclaw/plugin-sdk/reply-runtime";
-import { resolveAgentRoute as resolveAgentRouteImpl } from "openclaw/plugin-sdk/routing";
+} from "afora-agent/plugin-sdk/reply-runtime";
+import { resolveAgentRoute as resolveAgentRouteImpl } from "afora-agent/plugin-sdk/routing";
 import { deliverSlackSlashReplies as deliverSlackSlashRepliesImpl } from "./replies.js";
 
-type ResolveChunkMode = typeof import("openclaw/plugin-sdk/reply-runtime").resolveChunkMode;
+type ResolveChunkMode = typeof import("afora-agent/plugin-sdk/reply-runtime").resolveChunkMode;
 type FinalizeInboundContext =
-  typeof import("openclaw/plugin-sdk/reply-runtime").finalizeInboundContext;
+  typeof import("afora-agent/plugin-sdk/reply-runtime").finalizeInboundContext;
 type DispatchChannelInboundTurn =
-  typeof import("openclaw/plugin-sdk/channel-inbound").dispatchChannelInboundTurn;
+  typeof import("afora-agent/plugin-sdk/channel-inbound").dispatchChannelInboundTurn;
 type IsChannelPartialDeliveryError =
-  typeof import("openclaw/plugin-sdk/channel-inbound").isChannelPartialDeliveryError;
+  typeof import("afora-agent/plugin-sdk/channel-inbound").isChannelPartialDeliveryError;
 type ResolveConversationLabel =
-  typeof import("openclaw/plugin-sdk/conversation-runtime").resolveConversationLabel;
+  typeof import("afora-agent/plugin-sdk/conversation-runtime").resolveConversationLabel;
 type ResolveMarkdownTableMode =
-  typeof import("openclaw/plugin-sdk/markdown-table-runtime").resolveMarkdownTableMode;
-type ResolveAgentRoute = typeof import("openclaw/plugin-sdk/routing").resolveAgentRoute;
+  typeof import("afora-agent/plugin-sdk/markdown-table-runtime").resolveMarkdownTableMode;
+type ResolveAgentRoute = typeof import("afora-agent/plugin-sdk/routing").resolveAgentRoute;
 type DeliverSlackSlashReplies = typeof import("./replies.js").deliverSlackSlashReplies;
 
 export function resolveChunkMode(

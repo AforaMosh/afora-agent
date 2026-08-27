@@ -1,5 +1,5 @@
 // Imported by agent.test.ts to keep its mocked suite in one Vitest module graph.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ErrorCodes } from "../../../packages/gateway-protocol/src/index.js";
 import {
@@ -227,7 +227,7 @@ describe("gateway agent handler", () => {
       userTurnTranscriptRecorder: {
         message: {
           provenance: { kind: "inter_session" },
-          __openclaw: { senderIsOwner: false },
+          __afora: { senderIsOwner: false },
         },
       },
     });
@@ -361,7 +361,7 @@ describe("gateway agent handler", () => {
 
     expect(await waitForAgentCommandCall()).toMatchObject({
       senderIsOwner: true,
-      userTurnTranscriptRecorder: { message: { __openclaw: { senderIsOwner: true } } },
+      userTurnTranscriptRecorder: { message: { __afora: { senderIsOwner: true } } },
     });
 
     mocks.agentCommand.mockClear();
@@ -380,7 +380,7 @@ describe("gateway agent handler", () => {
 
     expect(await waitForAgentCommandCall()).toMatchObject({
       senderIsOwner: false,
-      userTurnTranscriptRecorder: { message: { __openclaw: { senderIsOwner: false } } },
+      userTurnTranscriptRecorder: { message: { __afora: { senderIsOwner: false } } },
     });
   });
 
@@ -865,8 +865,8 @@ describe("gateway agent handler", () => {
     await invokeAgent(
       {
         message: [
-          "[Mon 2026-04-06 02:42 GMT+1] <<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>",
-          "OpenClaw runtime context (internal):",
+          "[Mon 2026-04-06 02:42 GMT+1] <<<BEGIN_AFORA_INTERNAL_CONTEXT>>>",
+          "Afora runtime context (internal):",
           "This context is runtime-generated, not user-authored. Keep internal details private.",
         ].join("\n"),
         sessionKey: "agent:main:main",

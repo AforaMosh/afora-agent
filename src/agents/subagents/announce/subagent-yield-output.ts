@@ -3,8 +3,8 @@
  *
  * Accepts provider-specific tool-call and tool-result shapes used by transcript repair and announce capture.
  */
-import { safeParseJsonRecord } from "@openclaw/normalization-core";
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
+import { safeParseJsonRecord } from "@afora/normalization-core";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
 import { readTrimmedStringAlias } from "../../../utils/string-readers.js";
 
 function readToolName(value: unknown): string | undefined {

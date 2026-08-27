@@ -3,7 +3,7 @@
  * This bypasses shared model runtime's content type system which does not have a "document" type.
  */
 
-import { resolveAnthropicMessagesUrl } from "@openclaw/ai/transports";
+import { resolveAnthropicMessagesUrl } from "@afora/ai/transports";
 import { readResponseBodySnippet } from "../../infra/http-error-body.js";
 import {
   postJsonRequest,

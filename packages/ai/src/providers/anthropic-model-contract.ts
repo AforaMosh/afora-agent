@@ -9,8 +9,8 @@ import {
   resolveClaudeSonnet5ModelIdentity,
   supportsClaudeNativeMaxEffort,
   supportsClaudeNativeXhighEffort,
-} from "@openclaw/llm-core";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+} from "@afora/llm-core";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { clampThinkingLevel } from "../model-utils.js";
 import type { AnthropicEffort } from "../provider-options.js";
 import type {
@@ -32,7 +32,7 @@ export {
   supportsClaudeAdaptiveThinking,
   supportsClaudeNativeMaxEffort,
   supportsClaudeNativeXhighEffort,
-} from "@openclaw/llm-core";
+} from "@afora/llm-core";
 
 export const ANTHROPIC_CLAUDE_CODE_VERSION = "2.1.75";
 export const ANTHROPIC_CLAUDE_CODE_BILLING_SYSTEM_BLOCK = `x-anthropic-billing-header: cc_version=${ANTHROPIC_CLAUDE_CODE_VERSION}; cc_entrypoint=sdk-cli;`;
@@ -55,7 +55,7 @@ function normalizeModelId(modelId?: string): string {
 
 function normalizeApi(api?: string): string {
   const normalized = normalizeLowercaseStringOrEmpty(api);
-  return normalized === "openclaw-anthropic-messages-transport" ? "anthropic-messages" : normalized;
+  return normalized === "afora-anthropic-messages-transport" ? "anthropic-messages" : normalized;
 }
 
 function hasConcreteResponseModel(ref: ReplayModelRef): boolean {

@@ -17,8 +17,8 @@ export async function initializeManagedWorktreeTestRepository(root: string): Pro
   const remote = path.join(root, "remote.git");
   await fs.mkdir(repo, { recursive: true });
   await git(repo, "init", "-b", "main");
-  await git(repo, "config", "user.name", "OpenClaw Test");
-  await git(repo, "config", "user.email", "openclaw-test@example.invalid");
+  await git(repo, "config", "user.name", "Afora Test");
+  await git(repo, "config", "user.email", "afora-test@example.invalid");
   await fs.writeFile(path.join(repo, "README.md"), "base\n");
   await git(repo, "add", "README.md");
   await git(repo, "commit", "-m", "initial");
@@ -57,7 +57,7 @@ export async function materializeManagedWorktreeFixture(params: {
 }): Promise<ManagedWorktreeRecord> {
   const repoFingerprint = "downstream-fixture";
   const worktreePath = path.join(params.stateDir, "worktrees", repoFingerprint, params.name);
-  const branch = `openclaw/${params.name}`;
+  const branch = `afora/${params.name}`;
   await fs.mkdir(path.dirname(worktreePath), { recursive: true });
   await git(params.repoRoot, "worktree", "add", "-b", branch, "--", worktreePath, "HEAD");
   const provisionedPaths = params.provisionedPaths ?? [];

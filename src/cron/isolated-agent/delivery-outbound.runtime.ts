@@ -3,7 +3,7 @@ import type { ReplyPayload } from "../../auto-reply/reply-payload.js";
 import { createChannelReplyTransform } from "../../channels/message/reply-transform.js";
 import { getLoadedChannelPluginForRead } from "../../channels/plugins/registry-loaded.js";
 import { normalizeAnyChannelId } from "../../channels/registry-normalize.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 
 export { createOutboundSendDeps } from "../../cli/outbound-send-deps.js";
 export {
@@ -17,7 +17,7 @@ export { enqueueSystemEvent } from "../../infra/system-events.js";
 
 export function resolveCronChannelReplyTransform(params: {
   channel: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string;
 }): { apply: (payload: ReplyPayload) => ReplyPayload | null } | undefined {
   const channelId = normalizeAnyChannelId(params.channel) ?? params.channel;

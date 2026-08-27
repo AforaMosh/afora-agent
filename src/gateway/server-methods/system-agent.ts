@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-// OpenClaw gateway methods host the setup/repair conversation for clients.
+// Afora gateway methods host the setup/repair conversation for clients.
 import {
   buildSystemAgentInferenceUnavailableErrorDetails,
   buildSystemAgentSessionInvalidatedErrorDetails,
@@ -71,8 +71,8 @@ import type {
 import { assertValidParams } from "./validation.js";
 
 /**
- * `openclaw.chat` lets clients (macOS app onboarding, future UIs) run the
- * same conversational setup as `openclaw setup`. Structured setup owns
+ * `afora.chat` lets clients (macOS app onboarding, future UIs) run the
+ * same conversational setup as `afora setup`. Structured setup owns
  * the pre-inference phase; a new chat session starts only after a live model
  * turn succeeds.
  *
@@ -117,12 +117,12 @@ function acknowledgeDeliveredSystemAgentWelcome(session: SystemAgentChatSession)
 
 async function runSystemAgentGatewayTask<T>(task: () => Promise<T>): Promise<T> {
   // Track every accepted RPC as active, never queued: restart draining snapshots
-  // active ids, so a queued OpenClaw request could otherwise outlive its socket.
+  // active ids, so a queued Afora request could otherwise outlive its socket.
   setCommandLaneConcurrency(CommandLane.SystemAgent, Number.MAX_SAFE_INTEGER);
   return await enqueueCommandInLane(CommandLane.SystemAgent, () =>
     // Bound expensive detection, activation, and agent turns without hiding
     // accepted work from restart draining. This also makes session eviction and
-    // setup writes atomic with respect to other OpenClaw gateway requests.
+    // setup writes atomic with respect to other Afora gateway requests.
     systemAgentGatewayExecutionQueue.enqueue(SYSTEM_AGENT_GATEWAY_EXECUTION_KEY, task),
   );
 }
@@ -201,11 +201,11 @@ function queueDelegatedApproval(params: {
   }
   const manager = params.context.systemAgentApprovalManager;
   if (!manager) {
-    throw new Error("OpenClaw approval registry unavailable");
+    throw new Error("Afora approval registry unavailable");
   }
   const description = describeSystemAgentPersistentOperation(params.proposal.operation);
   const request: SystemAgentApprovalRequestPayload = {
-    title: "OpenClaw change",
+    title: "Afora change",
     description,
     command: description,
     proposalHash: params.proposal.hash,
@@ -230,7 +230,7 @@ function queueDelegatedApproval(params: {
     decisionPromise,
     respond: () => undefined,
     context: params.context,
-    requestEventName: "openclaw.approval.requested",
+    requestEventName: "afora.approval.requested",
     requestEvent,
     twoPhase: true,
     deliverRequest: () => false,
@@ -249,7 +249,7 @@ function queueDelegatedApproval(params: {
           await params.session.engine.resolveOperatorApproval(decision, params.proposal.hash);
         }),
       ),
-    afterDecisionErrorLabel: "OpenClaw approval apply failed",
+    afterDecisionErrorLabel: "Afora approval apply failed",
   });
   return record.id;
 }
@@ -259,7 +259,7 @@ function respondRetryableSetupUnavailable(respond: RespondFn, message: string): 
 }
 
 export const systemAgentHandlers: GatewayRequestHandlers = {
-  "openclaw.approval.list": async ({ respond, client, context }) => {
+  "afora.approval.list": async ({ respond, client, context }) => {
     const manager = context.systemAgentApprovalManager;
     respond(
       true,
@@ -267,12 +267,12 @@ export const systemAgentHandlers: GatewayRequestHandlers = {
       undefined,
     );
   },
-  "openclaw.chat.history": ({ params, respond }) => {
+  "afora.chat.history": ({ params, respond }) => {
     if (
       !assertValidParams(
         params,
         validateSystemAgentChatHistoryParams,
-        "openclaw.chat.history",
+        "afora.chat.history",
         respond,
       )
     ) {
@@ -285,12 +285,12 @@ export const systemAgentHandlers: GatewayRequestHandlers = {
     );
   },
   /** Structured onboarding: list reusable AI access on this host. */
-  "openclaw.setup.detect": async ({ params, respond }) => {
+  "afora.setup.detect": async ({ params, respond }) => {
     if (
       !assertValidParams(
         params,
         validateSystemAgentSetupDetectParams,
-        "openclaw.setup.detect",
+        "afora.setup.detect",
         respond,
       )
     ) {
@@ -303,12 +303,12 @@ export const systemAgentHandlers: GatewayRequestHandlers = {
     respond(true, await detectSetupInferenceIsolated(params), undefined);
   },
   /** Re-run the exact current default-agent inference route without mutating setup. */
-  "openclaw.setup.verify": async ({ params, respond }) => {
+  "afora.setup.verify": async ({ params, respond }) => {
     if (
       !assertValidParams(
         params,
         validateSystemAgentSetupVerifyParams,
-        "openclaw.setup.verify",
+        "afora.setup.verify",
         respond,
       )
     ) {
@@ -320,12 +320,12 @@ export const systemAgentHandlers: GatewayRequestHandlers = {
     });
   },
   /** Start one provider-owned OAuth/device-code login over the shared wizard transport. */
-  "openclaw.setup.auth.start": async ({ params, respond, context }) => {
+  "afora.setup.auth.start": async ({ params, respond, context }) => {
     if (
       !assertValidParams(
         params,
         validateSystemAgentSetupAuthStartParams,
-        "openclaw.setup.auth.start",
+        "afora.setup.auth.start",
         respond,
       )
     ) {
@@ -373,12 +373,12 @@ export const systemAgentHandlers: GatewayRequestHandlers = {
     respond(true, { sessionId, done: false, status: "running" }, undefined);
   },
   /** Run one provider-owned prepare flow over the shared wizard transport. */
-  "openclaw.setup.prepare.start": async ({ params, respond, context }) => {
+  "afora.setup.prepare.start": async ({ params, respond, context }) => {
     if (
       !assertValidParams(
         params,
         validateSystemAgentSetupAuthStartParams,
-        "openclaw.setup.prepare.start",
+        "afora.setup.prepare.start",
         respond,
       )
     ) {
@@ -397,11 +397,11 @@ export const systemAgentHandlers: GatewayRequestHandlers = {
               const snapshot = await setupShared.readSetupConfigFileSnapshot();
               if (!snapshot.valid) {
                 throw new Error(
-                  "Config is invalid. Run `openclaw doctor` before preparing a model.",
+                  "Config is invalid. Run `afora doctor` before preparing a model.",
                 );
               }
               // Match the classic wizard: mutate the authored shape, not runtimeConfig,
-              // so setup never writes resolved runtime defaults into openclaw.json.
+              // so setup never writes resolved runtime defaults into afora.json.
               const baseConfig = snapshot.exists ? snapshot.sourceConfig : {};
               const workspaceDir = params.workspace?.trim()
                 ? resolveUserPath(params.workspace.trim())
@@ -429,7 +429,7 @@ export const systemAgentHandlers: GatewayRequestHandlers = {
               });
               if (!applied || applied.retrySelection) {
                 throw new Error(
-                  `Provider setup resolution failed for "${params.authChoice}". Run \`openclaw doctor --fix\`, restart the Gateway, and try again.`,
+                  `Provider setup resolution failed for "${params.authChoice}". Run \`afora doctor --fix\`, restart the Gateway, and try again.`,
                 );
               }
               signal.throwIfAborted();
@@ -461,12 +461,12 @@ export const systemAgentHandlers: GatewayRequestHandlers = {
    * queueing work that could outlive their RPC timeout. A failed attempt never
    * commits a broken model, managed plugin install, or setup state.
    */
-  "openclaw.setup.activate": async ({ params, respond }) => {
+  "afora.setup.activate": async ({ params, respond }) => {
     if (
       !assertValidParams(
         params,
         validateSystemAgentSetupActivateParams,
-        "openclaw.setup.activate",
+        "afora.setup.activate",
         respond,
       )
     ) {
@@ -504,9 +504,9 @@ export const systemAgentHandlers: GatewayRequestHandlers = {
       respondRetryableSetupUnavailable(respond, error.message);
     }
   },
-  "openclaw.chat": async ({ params: rawParams, respond, client, context }) => {
+  "afora.chat": async ({ params: rawParams, respond, client, context }) => {
     const params = sanitizeSystemAgentChatParams(rawParams);
-    if (!assertValidParams(params, validateSystemAgentChatParams, "openclaw.chat", respond)) {
+    if (!assertValidParams(params, validateSystemAgentChatParams, "afora.chat", respond)) {
       return;
     }
     const inputError = getSystemAgentChatInputError(params);
@@ -529,7 +529,7 @@ export const systemAgentHandlers: GatewayRequestHandlers = {
           respond(
             false,
             undefined,
-            errorShape(ErrorCodes.INVALID_REQUEST, "OpenClaw caller identity unavailable."),
+            errorShape(ErrorCodes.INVALID_REQUEST, "Afora caller identity unavailable."),
           );
           return;
         }
@@ -538,7 +538,7 @@ export const systemAgentHandlers: GatewayRequestHandlers = {
           respond(
             false,
             undefined,
-            errorShape(ErrorCodes.INVALID_REQUEST, "OpenClaw session belongs to another caller."),
+            errorShape(ErrorCodes.INVALID_REQUEST, "Afora session belongs to another caller."),
           );
           return;
         }
@@ -563,8 +563,8 @@ export const systemAgentHandlers: GatewayRequestHandlers = {
             errorShape(
               ErrorCodes.INVALID_REQUEST,
               params.wizardCancel !== undefined
-                ? "No active OpenClaw chat session is awaiting that wizard cancel."
-                : "No active OpenClaw chat session is awaiting that wizard answer.",
+                ? "No active Afora chat session is awaiting that wizard cancel."
+                : "No active Afora chat session is awaiting that wizard answer.",
               { details: buildSystemAgentSessionInvalidatedErrorDetails() },
             ),
           );
@@ -588,7 +588,7 @@ export const systemAgentHandlers: GatewayRequestHandlers = {
               undefined,
               errorShape(
                 ErrorCodes.UNAVAILABLE,
-                `OpenClaw requires working inference: ${inference.error}`,
+                `Afora requires working inference: ${inference.error}`,
                 {
                   details: buildSystemAgentInferenceUnavailableErrorDetails(),
                 },
@@ -705,7 +705,7 @@ export const systemAgentHandlers: GatewayRequestHandlers = {
             respond(
               false,
               undefined,
-              errorShape(ErrorCodes.INVALID_REQUEST, "OpenClaw chat input is missing."),
+              errorShape(ErrorCodes.INVALID_REQUEST, "Afora chat input is missing."),
             );
             return;
           }

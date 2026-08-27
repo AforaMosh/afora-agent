@@ -9,7 +9,7 @@ from gi.repository import Gtk  # noqa: E402
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="OpenClaw Linux X11 computer-use fixture")
+    parser = argparse.ArgumentParser(description="Afora Linux X11 computer-use fixture")
     parser.add_argument("--title", required=True)
     parser.add_argument("--text", required=True)
     args = parser.parse_args()

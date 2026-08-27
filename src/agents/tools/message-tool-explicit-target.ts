@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { PreparedMessageToolCatalog } from "../../channels/plugins/message-action-discovery.js";
 import type { ChannelMessageActionName } from "../../channels/plugins/types.public.js";
 import { MessageActionDeniedError } from "../../infra/outbound/message-action-denial.js";

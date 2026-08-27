@@ -3,10 +3,10 @@
  * Centralizes canonical SQLite display paths and cross-agent OAuth refresh lock paths.
  */
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { resolveStateDir } from "../../config/paths.js";
 import { readConfigMachineState } from "../../state/config-machine-state.js";
-import { resolveOpenClawStateSqlitePath } from "../../state/openclaw-state-db.paths.js";
+import { resolveAforaStateSqlitePath } from "../../state/afora-state-db.paths.js";
 import { resolveUserPath } from "../../utils.js";
 import { resolveSharedMainAuthAgentDir } from "./shared-main-dir.js";
 
@@ -21,12 +21,12 @@ const sharedAuthStoreOwnershipByDatabasePath = new Map<string, SharedAuthStoreOw
 
 class InvalidSharedAuthStoreOwnershipError extends Error {
   readonly code = "INVALID_SHARED_AUTH_STORE_OWNERSHIP" as const;
-  readonly action = "openclaw doctor --fix" as const;
+  readonly action = "afora doctor --fix" as const;
   readonly stateKey = SHARED_AUTH_STORE_STATE_KEY;
 
   constructor(value: unknown) {
     super(
-      `Config machine state ${SHARED_AUTH_STORE_STATE_KEY} has an invalid shared auth store location (${JSON.stringify(value)}); run openclaw doctor --fix.`,
+      `Config machine state ${SHARED_AUTH_STORE_STATE_KEY} has an invalid shared auth store location (${JSON.stringify(value)}); run afora doctor --fix.`,
     );
     this.name = "InvalidSharedAuthStoreOwnershipError";
   }
@@ -50,14 +50,14 @@ function parseSharedAuthStoreOwnership(value: unknown): SharedAuthStoreOwnership
 export function resolveSharedAuthStoreOwnership(
   env: NodeJS.ProcessEnv = process.env,
 ): SharedAuthStoreOwnership {
-  const databasePath = path.resolve(resolveOpenClawStateSqlitePath(env));
+  const databasePath = path.resolve(resolveAforaStateSqlitePath(env));
   const cached = sharedAuthStoreOwnershipByDatabasePath.get(databasePath);
   if (cached) {
     return cached;
   }
   if (sharedAuthStoreOwnershipByDatabasePath.size >= SHARED_AUTH_STORE_OWNERSHIP_CACHE_LIMIT) {
     throw new Error(
-      "Shared auth store ownership cache exceeded its process root limit; restart OpenClaw.",
+      "Shared auth store ownership cache exceeded its process root limit; restart Afora.",
     );
   }
   const ownership = parseSharedAuthStoreOwnership(
@@ -72,22 +72,22 @@ export function noteCommittedSharedAuthStoreOwnership(
   ownership: SharedAuthStoreOwnership,
   env: NodeJS.ProcessEnv = process.env,
 ): void {
-  const databasePath = path.resolve(resolveOpenClawStateSqlitePath(env));
+  const databasePath = path.resolve(resolveAforaStateSqlitePath(env));
   sharedAuthStoreOwnershipByDatabasePath.set(databasePath, ownership);
 }
 
 /** Resolve the canonical shared auth database path. */
 export function resolveSharedAuthStorePath(env: NodeJS.ProcessEnv = process.env): string {
   if (resolveSharedAuthStoreOwnership(env).location === "state-db") {
-    return resolveOpenClawStateSqlitePath(env);
+    return resolveAforaStateSqlitePath(env);
   }
-  return path.join(resolveSharedMainAuthAgentDir(env), "openclaw-agent.sqlite");
+  return path.join(resolveSharedMainAuthAgentDir(env), "afora-agent.sqlite");
 }
 
 /** Resolve the user-facing auth profile database path. */
 export function resolveAuthStorePathForDisplay(agentDir?: string): string {
   const pathname = agentDir
-    ? path.join(resolveUserPath(agentDir), "openclaw-agent.sqlite")
+    ? path.join(resolveUserPath(agentDir), "afora-agent.sqlite")
     : resolveSharedAuthStorePath();
   return pathname.startsWith("~") ? pathname : resolveUserPath(pathname);
 }
@@ -95,7 +95,7 @@ export function resolveAuthStorePathForDisplay(agentDir?: string): string {
 /** Resolve the user-facing auth state database path. */
 export function resolveAuthStatePathForDisplay(agentDir?: string): string {
   const pathname = agentDir
-    ? path.join(resolveUserPath(agentDir), "openclaw-agent.sqlite")
+    ? path.join(resolveUserPath(agentDir), "afora-agent.sqlite")
     : resolveSharedAuthStorePath();
   return pathname.startsWith("~") ? pathname : resolveUserPath(pathname);
 }

@@ -1,10 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { OpenKeyedStoreOptions } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { OpenKeyedStoreOptions } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import {
   createPluginStateKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createMemoryWikiSourceSyncStateStore,
@@ -67,16 +67,16 @@ describe("memory wiki source sync malformed human Notes", () => {
         "## Notes",
         ...(missingMarker === "opening" || missingMarker === "both"
           ? []
-          : ["<!-- openclaw:human:start -->"]),
+          : ["<!-- afora:human:start -->"]),
         "human annotations must survive malformed markers",
         ...(missingMarker === "closing" || missingMarker === "both"
           ? []
-          : ["<!-- openclaw:human:end -->"]),
+          : ["<!-- afora:human:end -->"]),
         "",
       ].join("\n");
       await fs.writeFile(pageAbsPath, pageContent, "utf8");
 
-      const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+      const env = { ...process.env, AFORA_STATE_DIR: stateDir };
       const store = createMemoryWikiSourceSyncStateStore(<T>(options: OpenKeyedStoreOptions) =>
         createPluginStateKeyedStoreForTests<T>("memory-wiki", { ...options, env }),
       );
@@ -88,8 +88,8 @@ describe("memory wiki source sync malformed human Notes", () => {
       setImportedSourceEntry({ state, syncKey: "sync-key", entry: updatedEntry });
       const expectedMissingMarker =
         missingMarker === "opening" || missingMarker === "both"
-          ? "<!-- openclaw:human:start -->"
-          : "<!-- openclaw:human:end -->";
+          ? "<!-- afora:human:start -->"
+          : "<!-- afora:human:end -->";
 
       await expect(
         pruneImportedSourceEntries({
@@ -128,7 +128,7 @@ describe("memory wiki source sync malformed human Notes", () => {
         "x".repeat(16 * 1024 * 1024),
         "```",
         "## Notes",
-        "<!-- openclaw:human:start -->",
+        "<!-- afora:human:start -->",
         "oversized annotations must survive malformed markers",
         "",
       ].join("\n"),
@@ -143,7 +143,7 @@ describe("memory wiki source sync malformed human Notes", () => {
         activeKeys: new Set(),
         state,
       }),
-    ).rejects.toThrow("<!-- openclaw:human:end -->");
+    ).rejects.toThrow("<!-- afora:human:end -->");
 
     expect(state.entries["sync-key"]).toBeDefined();
     await expect(fs.stat(pageAbsPath)).resolves.toSatisfy((stat) => stat.isFile());

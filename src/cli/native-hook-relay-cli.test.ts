@@ -28,14 +28,14 @@ describe("native hook relay CLI", () => {
       runNativeHookRelayCliFromArgv(
         [
           "node",
-          "openclaw.mjs",
+          "afora.mjs",
           "hooks",
           "relay",
           "--provider=codex",
           "--relay-id",
           "relay-1",
           "--state-db",
-          "/tmp/profile/state/openclaw.sqlite",
+          "/tmp/profile/state/afora.sqlite",
           "--generation",
           "generation-1",
           "--event",
@@ -56,7 +56,7 @@ describe("native hook relay CLI", () => {
       expect.objectContaining({
         provider: "codex",
         relayId: "relay-1",
-        stateDbPath: "/tmp/profile/state/openclaw.sqlite",
+        stateDbPath: "/tmp/profile/state/afora.sqlite",
         generation: "generation-1",
         event: "pre_tool_use",
         timeoutMs: expect.any(Number),
@@ -72,7 +72,7 @@ describe("native hook relay CLI", () => {
         {
           provider: "codex",
           relayId: "relay-1",
-          stateDb: "/tmp/profile/state/openclaw.sqlite",
+          stateDb: "/tmp/profile/state/afora.sqlite",
           generation: "generation-1",
           event: "post_tool_use",
         },
@@ -86,7 +86,7 @@ describe("native hook relay CLI", () => {
     expect(invokeBridge).toHaveBeenCalledWith(
       expect.objectContaining({
         relayId: "relay-1",
-        stateDbPath: "/tmp/profile/state/openclaw.sqlite",
+        stateDbPath: "/tmp/profile/state/afora.sqlite",
       }),
     );
   });

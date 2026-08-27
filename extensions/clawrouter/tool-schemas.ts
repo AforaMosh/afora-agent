@@ -2,9 +2,9 @@ import type {
   AnyAgentTool,
   ProviderNormalizeToolSchemasContext,
   ProviderToolSchemaDiagnostic,
-} from "openclaw/plugin-sdk/plugin-entry";
-import { findUnsupportedSchemaKeywords } from "openclaw/plugin-sdk/provider-tools";
-import { asOptionalRecord as readRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/plugin-entry";
+import { findUnsupportedSchemaKeywords } from "afora-agent/plugin-sdk/provider-tools";
+import { asOptionalRecord as readRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 const PERPLEXITY_UNSUPPORTED_SCHEMA_KEYWORDS = new Set([
   "patternProperties",

@@ -1,4 +1,4 @@
-// Crons module supports OpenClaw QA credential workflows.
+// Crons module supports Afora QA credential workflows.
 import { cronJobs } from "convex/server";
 import { internal } from "./_generated/api";
 

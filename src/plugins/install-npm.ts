@@ -210,7 +210,7 @@ export async function installPluginFromNpmSpec(
         ? "install"
         : targetMode;
 
-  const policyTempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-npm-policy-"));
+  const policyTempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-npm-policy-"));
   try {
     const policyMetadataPath = path.join(policyTempDir, "npm-package-metadata.json");
     await fs.writeFile(

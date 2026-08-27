@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import { asNullableRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNullableRecord as asRecord } from "@afora/normalization-core/record-coerce";
 import type { SystemRunApprovalPlan } from "../infra/exec-approvals.js";
 
 const MAX_ARG_COUNT = 128;

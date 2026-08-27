@@ -1,7 +1,7 @@
 // Voice Call plugin module implements store behavior.
 import { createHash, randomUUID } from "node:crypto";
 import path from "node:path";
-import type { PluginStateSyncKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { PluginStateSyncKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import { getOptionalVoiceCallStateRuntime } from "../runtime-state.js";
 import { CallRecordSchema, TerminalStates, type CallId, type CallRecord } from "../types.js";
 import {
@@ -63,7 +63,7 @@ export function resolveVoiceCallLegacyCallLogPath(storePath: string): string {
 
 /** Build env for plugin state stores rooted at the voice-call store path. */
 function resolvePluginStateEnv(storePath: string): NodeJS.ProcessEnv {
-  return { ...process.env, OPENCLAW_STATE_DIR: storePath };
+  return { ...process.env, AFORA_STATE_DIR: storePath };
 }
 
 /** Open the plugin state stores when the runtime is available. */

@@ -1,4 +1,4 @@
-import type { PluginRuntime } from "openclaw/plugin-sdk/core";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/core";
 // Whatsapp tests cover runtime injection across plugin registry reloads.
 import { describe, expect, it } from "vitest";
 import {

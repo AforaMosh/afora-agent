@@ -2,7 +2,7 @@
 import {
   ensureMemoryIndexSchema,
   requireNodeSqlite,
-} from "openclaw/plugin-sdk/memory-core-host-engine-storage";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
 import { describe, expect, it, vi } from "vitest";
 import {
   collectMemoryCachedEmbeddings,

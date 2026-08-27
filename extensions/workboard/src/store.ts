@@ -6,7 +6,7 @@ import type {
   WorkboardExecutionStatus,
   WorkboardStaleState,
   WorkboardStatus,
-} from "@openclaw/workboard-contract";
+} from "@afora/workboard-contract";
 import type {
   PersistedWorkboardAttachment,
   PersistedWorkboardBoard,

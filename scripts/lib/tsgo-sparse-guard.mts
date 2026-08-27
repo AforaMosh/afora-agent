@@ -29,7 +29,7 @@ const GUARDED_CONFIGS = new Set([
   ...CORE_TEST_CONFIGS,
   ...MANIFEST_TEST_SPARSE_ROOTS.keys(),
 ]);
-const TSGO_SPARSE_SKIP_ENV_KEY = "OPENCLAW_TSGO_SPARSE_SKIP";
+const TSGO_SPARSE_SKIP_ENV_KEY = "AFORA_TSGO_SPARSE_SKIP";
 const CORE_PROD_SPARSE_ROOTS = ["packages"];
 const UI_PROD_SPARSE_ROOTS = ["packages", "src", "ui/config", "ui/src"];
 const CORE_TEST_SPARSE_ROOTS = ["packages", "ui/config", "ui/src"];
@@ -63,7 +63,7 @@ const CORE_PROD_REQUIRED_PATHS = [
 
 const UI_PROD_REQUIRED_PATHS = [
   {
-    path: "apps/shared/OpenClawKit/Sources/OpenClawKit/Resources/tool-display.json",
+    path: "apps/shared/AforaKit/Sources/AforaKit/Resources/tool-display.json",
     whenPresent: "ui/src/lib/chat/tool-display.ts",
   },
 ];

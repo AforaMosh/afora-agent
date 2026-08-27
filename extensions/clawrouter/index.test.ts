@@ -1,13 +1,13 @@
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
-import { registerSingleProviderPlugin } from "openclaw/plugin-sdk/plugin-test-runtime";
-import { clearLiveCatalogCacheForTests } from "openclaw/plugin-sdk/provider-catalog-live-runtime";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
+import { registerSingleProviderPlugin } from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { clearLiveCatalogCacheForTests } from "afora-agent/plugin-sdk/provider-catalog-live-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const providerAuthRuntimeMocks = vi.hoisted(() => ({
   resolveApiKeyForProvider: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/provider-auth-runtime", () => providerAuthRuntimeMocks);
+vi.mock("afora-agent/plugin-sdk/provider-auth-runtime", () => providerAuthRuntimeMocks);
 
 import plugin from "./index.js";
 import { wrapClawRouterProviderStream } from "./stream.js";
@@ -86,7 +86,7 @@ describe("ClawRouter plugin", () => {
         } as never)
         ?.levels.map((level) => level.id);
 
-    expect(resolveLevels("openclaw")).toEqual([
+    expect(resolveLevels("afora")).toEqual([
       "off",
       "low",
       "medium",
@@ -122,7 +122,7 @@ describe("ClawRouter plugin", () => {
         ?.resolveThinkingProfile?.({
           provider: "clawrouter",
           modelId: "opaque-route-id",
-          agentRuntime: "openclaw",
+          agentRuntime: "afora",
           compat: {
             supportedReasoningEfforts: ["ultra", "custom", "none", "none", "max"],
           },
@@ -171,7 +171,7 @@ describe("ClawRouter plugin", () => {
 
     expect(calls[0]?.headers).toEqual({
       "x-request-id": "request-1",
-      "X-ClawRouter-Client": "openclaw",
+      "X-ClawRouter-Client": "afora",
       Authorization: "Bearer runtime-proxy-key",
     });
     expect(calls[0]?.id).toBe("claude-sonnet-4-6");
@@ -198,7 +198,7 @@ describe("ClawRouter plugin", () => {
         api: "openai-responses",
         id: "openai/gpt-5.5",
         headers: {
-          "x-clawrouter-client": "managed-openclaw",
+          "x-clawrouter-client": "managed-afora",
           "X-ClawRouter-Project-Id": "fakeco",
         },
       } as never,
@@ -233,7 +233,7 @@ describe("ClawRouter plugin", () => {
     );
 
     expect(calls[0]?.headers).toMatchObject({
-      "x-clawrouter-client": "managed-openclaw",
+      "x-clawrouter-client": "managed-afora",
       "X-ClawRouter-Agent-Id": "main",
       "X-ClawRouter-Project-Id": "fakeco",
       Authorization: "Bearer runtime-proxy-key",
@@ -385,7 +385,7 @@ describe("ClawRouter plugin", () => {
     );
 
     expect(calls[0]?.headers).toEqual({
-      "X-ClawRouter-Client": "openclaw",
+      "X-ClawRouter-Client": "afora",
       Authorization: "Bearer runtime-proxy-key",
     });
   });
@@ -493,11 +493,11 @@ describe("ClawRouter plugin", () => {
       id: "openai/gpt-5.5",
       provider: "clawrouter",
       api: "openai-responses",
-      baseUrl: "https://clawrouter.openclaw.ai/v1",
+      baseUrl: "https://clawrouter.afora.ai/v1",
       params: {
         clawrouterRoute: {
           api: "openai-responses",
-          baseUrl: "https://clawrouter.openclaw.ai/v1",
+          baseUrl: "https://clawrouter.afora.ai/v1",
         },
       },
     });

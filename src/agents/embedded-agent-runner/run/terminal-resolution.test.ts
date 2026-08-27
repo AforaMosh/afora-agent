@@ -49,7 +49,7 @@ function makeTerminalInput(overrides: TerminalInputOverrides = {}): TerminalInpu
     sessionId: "session:terminal-resolution",
     sessionKey: "agent:main:terminal-resolution",
     runId: "run:terminal-resolution",
-    agentDir: "/tmp/openclaw-terminal-resolution",
+    agentDir: "/tmp/afora-terminal-resolution",
     ...overrides.runParams,
   } as TerminalInput["runParams"];
   const base = {
@@ -94,7 +94,7 @@ function makeTerminalInput(overrides: TerminalInputOverrides = {}): TerminalInpu
     profileFailureStore: profileStore,
     attemptAuthProfileStore: profileStore,
     apiKeyInfo: null,
-    agentHarnessId: "builtin-openclaw",
+    agentHarnessId: "builtin-afora",
     settledTurnFinalizationOutcome: "not-attempted",
     pluginHarnessOwnsTransport: false,
     pluginHarnessOwnsAuthBootstrap: false,

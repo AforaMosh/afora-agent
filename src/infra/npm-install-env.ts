@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import fsSync from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 
 /** Options that scope npm config and cache paths for project-local installs. */
 export type NpmProjectInstallEnvOptions = {
@@ -256,7 +256,7 @@ function resolveNpmFreshnessBypassMode(
 }
 
 /**
- * Builds npm args that bypass host freshness policies for OpenClaw-managed installs.
+ * Builds npm args that bypass host freshness policies for Afora-managed installs.
  * Existing npmrc policy decides whether `before` or `min-release-age` is safer.
  */
 export function createNpmFreshnessBypassArgs(

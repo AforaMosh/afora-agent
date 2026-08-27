@@ -2,12 +2,12 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { recordChannelBotPairLoopAndCheckSuppression } from "openclaw/plugin-sdk/channel-inbound";
-import { MediaFetchError } from "openclaw/plugin-sdk/media-runtime";
+import { recordChannelBotPairLoopAndCheckSuppression } from "afora-agent/plugin-sdk/channel-inbound";
+import { MediaFetchError } from "afora-agent/plugin-sdk/media-runtime";
 import {
-  closeOpenClawStateDatabaseForTest,
+  closeAforaStateDatabaseForTest,
   createChannelIngressQueueForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ResolvedGoogleChatAccount } from "./accounts.js";
 import {
@@ -44,8 +44,8 @@ const inboundMocks = vi.hoisted(() => ({
   resolveChannelInboundRouteEnvelope: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/channel-inbound", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/channel-inbound")>();
+vi.mock("afora-agent/plugin-sdk/channel-inbound", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/channel-inbound")>();
   return {
     ...actual,
     resolveChannelInboundRouteEnvelope: inboundMocks.resolveChannelInboundRouteEnvelope,
@@ -496,7 +496,7 @@ describe("googlechat monitor inbound space classification", () => {
   });
 
   it("adopts an oversized attachment so the next message in its durable lane can run", async () => {
-    const created = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-googlechat-oversized-"));
+    const created = await fs.mkdtemp(path.join(os.tmpdir(), "afora-googlechat-oversized-"));
     const stateDir = await fs.realpath(created);
     const queue = createChannelIngressQueueForTests<{ version: 1; rawEvent: string }>({
       channelId: "googlechat",
@@ -562,7 +562,7 @@ describe("googlechat monitor inbound space classification", () => {
       expect(await queue.listClaims()).toEqual([]);
     } finally {
       await ingress.stop();
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       await fs.rm(stateDir, { recursive: true, force: true });
     }
   });
@@ -655,7 +655,7 @@ describe("googlechat monitor inbound space classification", () => {
     expect(apiMocks.sendGoogleChatMessage).toHaveBeenCalledWith({
       account,
       space: "spaces/CLASSIFY",
-      text: "_OpenClaw is typing..._",
+      text: "_Afora is typing..._",
       thread: expectedThread,
     });
   });
@@ -738,7 +738,7 @@ describe("googlechat monitor inbound space classification", () => {
     expect(apiMocks.sendGoogleChatMessage).toHaveBeenNthCalledWith(1, {
       account,
       space: "spaces/CLASSIFY",
-      text: "_OpenClaw is typing..._",
+      text: "_Afora is typing..._",
       thread: requestedThread,
     });
     expect(apiMocks.updateGoogleChatMessage).toHaveBeenCalledWith({
@@ -841,7 +841,7 @@ describe("googlechat monitor direct messages", () => {
           }),
         },
         session: {
-          resolveStorePath: () => "/tmp/openclaw-googlechat-test",
+          resolveStorePath: () => "/tmp/afora-googlechat-test",
           readSessionUpdatedAt: () => undefined,
           recordInboundSession: vi.fn(),
         },
@@ -890,7 +890,7 @@ describe("googlechat monitor direct messages", () => {
     expect(apiMocks.sendGoogleChatMessage).toHaveBeenCalledWith({
       account,
       space: "spaces/DM",
-      text: "_OpenClaw is typing..._",
+      text: "_Afora is typing..._",
       thread: undefined,
     });
     expect(runTurn).toHaveBeenCalledOnce();
@@ -910,7 +910,7 @@ describe("googlechat monitor direct messages", () => {
           }),
         },
         session: {
-          resolveStorePath: () => "/tmp/openclaw-googlechat-test",
+          resolveStorePath: () => "/tmp/afora-googlechat-test",
           readSessionUpdatedAt: () => undefined,
           recordInboundSession: vi.fn(),
         },
@@ -975,7 +975,7 @@ describe("googlechat monitor direct messages", () => {
     expect(apiMocks.sendGoogleChatMessage).toHaveBeenCalledWith({
       account,
       space: "spaces/DM",
-      text: "_OpenClaw is typing..._",
+      text: "_Afora is typing..._",
       thread: undefined,
     });
     expect(runTurn).toHaveBeenCalledOnce();
@@ -995,7 +995,7 @@ describe("googlechat monitor direct messages", () => {
           }),
         },
         session: {
-          resolveStorePath: () => "/tmp/openclaw-googlechat-test",
+          resolveStorePath: () => "/tmp/afora-googlechat-test",
           readSessionUpdatedAt: () => undefined,
           recordInboundSession: vi.fn(),
         },

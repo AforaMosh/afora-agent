@@ -29,7 +29,7 @@ type SystemAgentTurnTestApi = {
 
 function getTestApi(): SystemAgentTurnTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.systemAgentTurnTestApi")
+    Symbol.for("afora.systemAgentTurnTestApi")
   ] as SystemAgentTurnTestApi;
 }
 

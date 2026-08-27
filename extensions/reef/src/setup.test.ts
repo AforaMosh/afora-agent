@@ -1,12 +1,12 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { OpenKeyedStoreOptions } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { OpenKeyedStoreOptions } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import {
   createPluginStateSyncKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import { createPluginRuntimeMock } from "openclaw/plugin-sdk/plugin-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
+import { createPluginRuntimeMock } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setReefRuntime } from "./runtime.js";
 import { reefSetupWizard } from "./setup.js";
@@ -24,7 +24,7 @@ describe("Reef setup wizard identity binding", () => {
 
   beforeEach(() => {
     resetPluginStateStoreForTests();
-    stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-reef-setup-"));
+    stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-reef-setup-"));
   });
 
   afterEach(() => {
@@ -38,7 +38,7 @@ describe("Reef setup wizard identity binding", () => {
     runtime.state.openSyncKeyedStore = <T>(options: OpenKeyedStoreOptions) =>
       createPluginStateSyncKeyedStoreForTests<T>("reef", {
         ...options,
-        env: { OPENCLAW_STATE_DIR: stateDir },
+        env: { AFORA_STATE_DIR: stateDir },
       });
     runtime.state.resolveStateDir = () => stateDir;
     setReefRuntime(runtime);

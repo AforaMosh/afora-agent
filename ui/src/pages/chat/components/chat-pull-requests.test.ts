@@ -19,28 +19,28 @@ function pullRequest(
 ): ControlUiSessionPullRequest {
   return {
     number: 103469,
-    owner: "openclaw",
-    repo: "openclaw",
+    owner: "afora",
+    repo: "afora",
     branch: "claude/browser-tabs-tighter-header",
     title: "fix(macos): tighten the link-browser tab header",
-    url: "https://github.com/openclaw/openclaw/pull/103469",
+    url: "https://github.com/AforaMosh/afora-agent/pull/103469",
     state: "open",
     additions: 4,
     deletions: 3,
     checks: { state: "passing", passed: 5, failed: 0, skipped: 1, running: 0 },
-    checksUrl: "https://github.com/openclaw/openclaw/pull/103469/checks",
+    checksUrl: "https://github.com/AforaMosh/afora-agent/pull/103469/checks",
     ...overrides,
   };
 }
 
 function sessionBranch(overrides: Partial<ControlUiSessionBranch> = {}): ControlUiSessionBranch {
   return {
-    owner: "openclaw",
-    repo: "openclaw",
+    owner: "afora",
+    repo: "afora",
     branch: "claude/cloud-workers-live-events",
     additions: 2819,
     deletions: 205,
-    createUrl: "https://github.com/openclaw/openclaw/pull/new/claude/cloud-workers-live-events",
+    createUrl: "https://github.com/AforaMosh/afora-agent/pull/new/claude/cloud-workers-live-events",
     ...overrides,
   };
 }
@@ -111,7 +111,7 @@ describe("renderChatPullRequests", () => {
     const chip = container.querySelector(".chat-pr");
     expect(chip?.getAttribute("data-state")).toBe("open");
     expect(chip?.querySelector(".chat-pr__number")?.textContent).toBe("#103469");
-    expect(chip?.querySelector(".chat-pr__repo")?.textContent).toBe("openclaw");
+    expect(chip?.querySelector(".chat-pr__repo")?.textContent).toBe("afora");
     expect(chip?.querySelector(".chat-pr__branch")?.textContent).toBe(
       "claude/browser-tabs-tighter-header",
     );
@@ -120,7 +120,7 @@ describe("renderChatPullRequests", () => {
     const checks = chip?.querySelector<HTMLDetailsElement>(".chat-pr__checks");
     expect(checks?.getAttribute("data-checks")).toBe("passing");
     expect(chip?.querySelector(".chat-pr__link")?.getAttribute("href")).toBe(
-      "https://github.com/openclaw/openclaw/pull/103469",
+      "https://github.com/AforaMosh/afora-agent/pull/103469",
     );
     expect(chip?.querySelector(".chat-pr__warning")).toBeNull();
     expect(chip?.querySelector(".chat-pr__state")).toBeNull();
@@ -151,7 +151,7 @@ describe("renderChatPullRequests", () => {
     // Zero-count states stay out of the popover.
     expect(menu?.querySelector(".chat-pr__checks-row--running")).toBeNull();
     expect(menu?.querySelector<HTMLAnchorElement>("a")?.href).toBe(
-      "https://github.com/openclaw/openclaw/pull/103469/checks",
+      "https://github.com/AforaMosh/afora-agent/pull/103469/checks",
     );
     expect(container.querySelector(".chat-pr__checks")?.getAttribute("data-checks")).toBe(
       "failing",
@@ -254,7 +254,7 @@ describe("renderChatPullRequests", () => {
       container,
     );
     const row = container.querySelector('.chat-pr[data-state="branch"]');
-    expect(row?.querySelector(".chat-pr__repo")?.textContent).toBe("openclaw");
+    expect(row?.querySelector(".chat-pr__repo")?.textContent).toBe("afora");
     expect(row?.querySelector(".chat-pr__branch")?.textContent).toBe(
       "claude/cloud-workers-live-events",
     );
@@ -267,7 +267,7 @@ describe("renderChatPullRequests", () => {
     );
     const create = row?.querySelector<HTMLAnchorElement>(".chat-pr__create");
     expect(create?.getAttribute("href")).toBe(
-      "https://github.com/openclaw/openclaw/pull/new/claude/cloud-workers-live-events",
+      "https://github.com/AforaMosh/afora-agent/pull/new/claude/cloud-workers-live-events",
     );
     expect(create?.textContent?.trim()).toBe("Create PR");
     expect(row?.querySelector(".chat-pr__warning")).toBeNull();
@@ -389,7 +389,7 @@ describe("dismissed pull request storage", () => {
   });
 
   it("ignores malformed stored payloads", () => {
-    localStorage.setItem("openclaw.chat.dismissedPullRequests", "not json");
+    localStorage.setItem("afora.chat.dismissedPullRequests", "not json");
     expect(listDismissedChatPullRequests("agent:main:main").size).toBe(0);
   });
 });

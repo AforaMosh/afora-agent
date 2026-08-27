@@ -1,7 +1,7 @@
-import { resolveChannelStreamingBlockEnabled } from "openclaw/plugin-sdk/channel-outbound";
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-payload";
-import type { BlockReplyContext } from "openclaw/plugin-sdk/reply-runtime";
-import { createSubsystemLogger, logVerbose } from "openclaw/plugin-sdk/runtime-env";
+import { resolveChannelStreamingBlockEnabled } from "afora-agent/plugin-sdk/channel-outbound";
+import type { ReplyPayload } from "afora-agent/plugin-sdk/reply-payload";
+import type { BlockReplyContext } from "afora-agent/plugin-sdk/reply-runtime";
+import { createSubsystemLogger, logVerbose } from "afora-agent/plugin-sdk/runtime-env";
 import type {
   TelegramDispatchTurn as Turn,
   TelegramDispatchTurnConfig as TurnConfig,

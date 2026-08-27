@@ -65,18 +65,18 @@ suite.define(() => {
     if (webChrome) {
       await page.addInitScript(() => {
         const nativeWindow = window as Window & {
-          __OPENCLAW_NATIVE_WEB_CHROME__?: boolean;
-          __OPENCLAW_NATIVE_HISTORY__?: { canGoBack: boolean; canGoForward: boolean };
+          __AFORA_NATIVE_WEB_CHROME__?: boolean;
+          __AFORA_NATIVE_HISTORY__?: { canGoBack: boolean; canGoForward: boolean };
         };
-        nativeWindow["__OPENCLAW_NATIVE_WEB_CHROME__"] = true;
-        nativeWindow["__OPENCLAW_NATIVE_HISTORY__"] = {
+        nativeWindow["__AFORA_NATIVE_WEB_CHROME__"] = true;
+        nativeWindow["__AFORA_NATIVE_HISTORY__"] = {
           canGoBack: false,
           canGoForward: false,
         };
         const stamp = () =>
           document.documentElement.classList.add(
-            "openclaw-native-macos",
-            "openclaw-native-web-chrome",
+            "afora-native-macos",
+            "afora-native-web-chrome",
           );
         if (document.documentElement) {
           stamp();
@@ -98,7 +98,7 @@ suite.define(() => {
         .poll(() =>
           page
             .locator("html")
-            .evaluate((element) => element.classList.contains("openclaw-native-web-chrome")),
+            .evaluate((element) => element.classList.contains("afora-native-web-chrome")),
         )
         .toBe(webChrome);
       await captureSettingsSidebarUiProof(

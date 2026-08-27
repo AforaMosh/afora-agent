@@ -1,7 +1,7 @@
-// Keep the runtime class on the public package specifier so OpenClaw and
+// Keep the runtime class on the public package specifier so Afora and
 // external consumers share one constructor identity.
-import { EventStream as LlmEventStream } from "@openclaw/ai/event-stream";
-import { replaceCompactionReplayOwnerContent } from "@openclaw/ai/transports";
+import { EventStream as LlmEventStream } from "@afora/ai/event-stream";
+import { replaceCompactionReplayOwnerContent } from "@afora/ai/transports";
 import type {
   AssistantMessage,
   AssistantMessageEvent,
@@ -9,9 +9,9 @@ import type {
   EventStream,
   ToolResultMessage,
   EventStream as SourceEventStream,
-} from "@openclaw/llm-core";
-import { coerceErrorMessage } from "@openclaw/normalization-core/error-coercion";
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
+} from "@afora/llm-core";
+import { coerceErrorMessage } from "@afora/normalization-core/error-coercion";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
 import { TranscriptNotContinuableError } from "./errors.js";
 import { uuidv7 } from "./harness/session/uuid.js";
 import {
@@ -70,7 +70,7 @@ type AssistantMessageUpdateEvent = Extract<
 >;
 
 const TOOL_LOOP_RECOVERY_TERMINATED_MESSAGE =
-  "OpenClaw stopped this run because tool-loop recovery encountered another critical loop. No blocked tool action was executed.";
+  "Afora stopped this run because tool-loop recovery encountered another critical loop. No blocked tool action was executed.";
 const STEERING_TOOL_SKIP_MESSAGE = "Skipped due to queued user message.";
 
 function getSteeringAtCheckpoint(
@@ -1872,7 +1872,7 @@ type TurnTaintMetadata = {
 };
 
 function readTurnTaintMetadata(message: AgentMessage): TurnTaintMetadata | undefined {
-  const metadata = Reflect.get(message, "__openclaw");
+  const metadata = Reflect.get(message, "__afora");
   const record = asOptionalRecord(metadata);
   if (!record) {
     return undefined;
@@ -1908,8 +1908,8 @@ function withAssistantTurnTaint(message: AssistantMessage, tainted: boolean): As
   }
   const taintedMessage = {
     ...message,
-    __openclaw: { ...readTurnTaintMetadata(message), turnTainted: true },
-  } satisfies AssistantMessage & { __openclaw: TurnTaintMetadata };
+    __afora: { ...readTurnTaintMetadata(message), turnTainted: true },
+  } satisfies AssistantMessage & { __afora: TurnTaintMetadata };
   return taintedMessage;
 }
 
@@ -1922,7 +1922,7 @@ function withToolResultContentSource(
   }
   return {
     ...message,
-    __openclaw: { ...readTurnTaintMetadata(message), resultContentSource: source },
+    __afora: { ...readTurnTaintMetadata(message), resultContentSource: source },
   } as ToolResultMessage;
 }
 

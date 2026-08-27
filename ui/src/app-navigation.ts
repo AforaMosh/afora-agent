@@ -1,5 +1,5 @@
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import { isValidWorkboardBoardId } from "@openclaw/workboard-contract";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
+import { isValidWorkboardBoardId } from "@afora/workboard-contract";
 // Control UI app navigation defines sidebar and settings presentation metadata.
 import type { RouteId } from "./app-route-paths.ts";
 import type { IconName } from "./components/icons.ts";
@@ -401,16 +401,16 @@ export function titleForRoute(routeId: NavigationRouteId): string {
 /** Window/tab title, markers leftmost because tabs truncate from the right.
  * Offline replaces the approval count (a stale queue is not actionable) and
  * carries the pending-outbox total; titles already ending in the brand
- * ("Ask OpenClaw") skip the suffix so it never reads "… OpenClaw — OpenClaw". */
+ * ("Ask Afora") skip the suffix so it never reads "… Afora — Afora". */
 export function formatDocumentTitle(options: {
   context: string;
   attentionCount?: number;
   offline?: boolean;
   queuedCount?: number;
 }): string {
-  const base = options.context.endsWith("OpenClaw")
+  const base = options.context.endsWith("Afora")
     ? options.context
-    : `${options.context} — OpenClaw`;
+    : `${options.context} — Afora`;
   if (options.offline) {
     const queued =
       options.queuedCount && options.queuedCount > 0
@@ -426,7 +426,7 @@ export function formatDocumentTitle(options: {
 
 export function settingsNavigationLabelForRoute(routeId: NavigationRouteId): string {
   if (routeId === "custodian") {
-    return t("nav.askOpenClaw");
+    return t("nav.askAfora");
   }
   return titleForRoute(routeId);
 }

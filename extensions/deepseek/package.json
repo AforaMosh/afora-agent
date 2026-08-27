@@ -1,22 +1,22 @@
 {
-  "name": "@openclaw/deepseek-provider",
+  "name": "@afora/deepseek-provider",
   "version": "2026.8.1",
-  "description": "OpenClaw DeepSeek provider plugin.",
+  "description": "Afora DeepSeek provider plugin.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/openclaw"
+    "url": "https://github.com/AforaMosh/afora-agent"
   },
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],
     "install": {
-      "clawhubSpec": "clawhub:@openclaw/deepseek-provider",
-      "npmSpec": "@openclaw/deepseek-provider",
+      "clawhubSpec": "clawhub:@afora/deepseek-provider",
+      "npmSpec": "@afora/deepseek-provider",
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.6.8"
     },
@@ -24,7 +24,7 @@
       "pluginApi": ">=2026.8.1"
     },
     "build": {
-      "openclawVersion": "2026.8.1",
+      "aforaVersion": "2026.8.1",
       "bundledDist": false
     },
     "release": {

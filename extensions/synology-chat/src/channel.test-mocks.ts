@@ -1,6 +1,6 @@
 // Synology Chat plugin module implements channel mocks behavior.
 import type { IncomingMessage } from "node:http";
-import type { registerPluginHttpRoute } from "openclaw/plugin-sdk/webhook-ingress";
+import type { registerPluginHttpRoute } from "afora-agent/plugin-sdk/webhook-ingress";
 import type { Mock } from "vitest";
 import { vi } from "vitest";
 
@@ -114,24 +114,24 @@ async function readRequestBodyWithLimitForTest(req: IncomingMessage): Promise<st
   });
 }
 
-vi.mock("openclaw/plugin-sdk/setup", async () => {
-  const actual = await vi.importActual<object>("openclaw/plugin-sdk/setup");
+vi.mock("afora-agent/plugin-sdk/setup", async () => {
+  const actual = await vi.importActual<object>("afora-agent/plugin-sdk/setup");
   return {
     ...actual,
     DEFAULT_ACCOUNT_ID: "default",
   };
 });
 
-vi.mock("openclaw/plugin-sdk/channel-config-schema", async () => {
-  const actual = await vi.importActual<object>("openclaw/plugin-sdk/channel-config-schema");
+vi.mock("afora-agent/plugin-sdk/channel-config-schema", async () => {
+  const actual = await vi.importActual<object>("afora-agent/plugin-sdk/channel-config-schema");
   return {
     ...actual,
     buildChannelConfigSchema: vi.fn((schema: unknown) => ({ schema })),
   };
 });
 
-vi.mock("openclaw/plugin-sdk/webhook-ingress", async () => {
-  const actual = await vi.importActual<object>("openclaw/plugin-sdk/webhook-ingress");
+vi.mock("afora-agent/plugin-sdk/webhook-ingress", async () => {
+  const actual = await vi.importActual<object>("afora-agent/plugin-sdk/webhook-ingress");
   return {
     ...actual,
     registerPluginHttpRoute: registerPluginHttpRouteMock,
@@ -158,7 +158,7 @@ vi.mock("./outbound-media.js", async () => {
   return {
     ...actual,
     prepareSynologyHostedMedia: vi.fn(async () => ({
-      url: "https://gateway.example.com/webhook/synology?__openclaw_synology_media_token_test=value",
+      url: "https://gateway.example.com/webhook/synology?__afora_synology_media_token_test=value",
       cleanup: vi.fn(async () => undefined),
     })),
     tryHandleSynologyHostedMediaRequest: tryHandleSynologyHostedMediaRequestMock,
@@ -203,7 +203,7 @@ vi.mock("./runtime.js", () => ({
         dispatchReplyWithBufferedBlockDispatcher,
       },
       session: {
-        resolveStorePath: vi.fn(() => "/tmp/openclaw/synology-chat-sessions.json"),
+        resolveStorePath: vi.fn(() => "/tmp/afora/synology-chat-sessions.json"),
         recordInboundSession: vi.fn(async () => undefined),
       },
       inbound: {

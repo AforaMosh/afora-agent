@@ -3,9 +3,9 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {
-  closeOpenClawStateDatabaseForTest,
+  closeAforaStateDatabaseForTest,
   createChannelIngressQueueForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { UrbitHttpError } from "../urbit/errors.js";
 import { createTlonIngressMonitor } from "./ingress.js";
@@ -86,12 +86,12 @@ function createQueue(stateDir: string, accountId = "default"): TlonIngressQueue 
 async function withQueue<T>(
   fn: (queue: TlonIngressQueue, stateDir: string) => Promise<T>,
 ): Promise<T> {
-  const created = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-tlon-ingress-"));
+  const created = await fs.mkdtemp(path.join(os.tmpdir(), "afora-tlon-ingress-"));
   const stateDir = await fs.realpath(created);
   try {
     return await fn(createQueue(stateDir), stateDir);
   } finally {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await fs.rm(stateDir, { recursive: true, force: true });
   }
 }
@@ -118,7 +118,7 @@ function deferred() {
 }
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   vi.restoreAllMocks();
 });
 
@@ -154,7 +154,7 @@ describe("Tlon durable ingress", () => {
       await interrupted.waitForIdle();
       expect(await queue.listClaims()).toHaveLength(1);
       await interrupted.stop();
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
 
       const recoveredDispatch = vi.fn<TlonIngressDispatch>(async (_source, _event, lifecycle) => {
         await lifecycle.onAdopted();

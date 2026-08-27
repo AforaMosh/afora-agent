@@ -1,5 +1,5 @@
 // Registry contract tests cover plugin contract registry contents and lookup behavior.
-import { sortUniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { sortUniqueStrings } from "@afora/normalization-core/string-normalization";
 import { describe, expect, it } from "vitest";
 import { loadPluginManifestRegistryCore, type PluginManifestRecord } from "../manifest-registry.js";
 import { resolveManifestContractPluginIds } from "../plugin-registry.js";

@@ -5,7 +5,7 @@ import {
   optionalFiniteNumberSchema,
   optionalPositiveIntegerSchema,
   stringEnum,
-} from "openclaw/plugin-sdk/channel-actions";
+} from "afora-agent/plugin-sdk/channel-actions";
 import { Type } from "typebox";
 
 /** Agent tool actions supported by the Canvas plugin. */

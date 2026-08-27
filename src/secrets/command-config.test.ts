@@ -1,6 +1,6 @@
 /** Tests command-specific secret assignment collection from config snapshots. */
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import {
   buildTalkTestProviderConfig,
   TALK_TEST_PROVIDER_API_KEY_PATH,
@@ -67,7 +67,7 @@ describe("analyzeCommandSecretAssignmentsFromSnapshot", () => {
       agents: {
         defaults: {},
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const resolvedConfig = {
       memory: {
         search: {
@@ -80,7 +80,7 @@ describe("analyzeCommandSecretAssignmentsFromSnapshot", () => {
       agents: {
         defaults: {},
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const result = analyzeCommandSecretAssignmentsFromSnapshot({
       sourceConfig,

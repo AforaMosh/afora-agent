@@ -1,6 +1,6 @@
 // Configure wizard tests keep workspace-owned effects on the configured default agent.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { RuntimeEnv } from "../runtime.js";
 
 const mocks = vi.hoisted(() => ({
@@ -19,8 +19,8 @@ vi.mock("../config/config.js", () => ({
   readConfigFileSnapshotForWrite: async () => ({
     snapshot: mocks.state.snapshot,
     writeOptions: {
-      expectedConfigPath: "/tmp/openclaw.json",
-      ownedConfigPathForWrite: "/tmp/openclaw.json",
+      expectedConfigPath: "/tmp/afora.json",
+      ownedConfigPathForWrite: "/tmp/afora.json",
     },
   }),
   resolveGatewayPort: () => 18789,
@@ -31,12 +31,12 @@ vi.mock("../config/logging.js", () => ({ logConfigUpdated: vi.fn() }));
 vi.mock("../plugins/install-record-commit.js", () => ({
   commitConfigWithPendingPluginInstalls: mocks.commitConfig,
   transformConfigWithPendingPluginInstalls: async (params: {
-    transform: (config: OpenClawConfig) => { nextConfig: OpenClawConfig };
+    transform: (config: AforaConfig) => { nextConfig: AforaConfig };
     writeOptions?: Record<string, unknown>;
   }) => {
     const snapshot = mocks.state.snapshot as {
-      sourceConfig?: OpenClawConfig;
-      config: OpenClawConfig;
+      sourceConfig?: AforaConfig;
+      config: AforaConfig;
     };
     const nextConfig = params.transform(snapshot.sourceConfig ?? snapshot.config).nextConfig;
     const committed = await mocks.commitConfig({ nextConfig, writeOptions: params.writeOptions });
@@ -72,7 +72,7 @@ vi.mock("./configure.shared.js", () => ({
 
 vi.mock("./onboard-helpers.js", () => ({
   DEFAULT_WORKSPACE: "/tmp/default-workspace",
-  applyWizardMetadata: (config: OpenClawConfig) => config,
+  applyWizardMetadata: (config: AforaConfig) => config,
   ensureWorkspaceAndSessions: mocks.ensureWorkspaceAndSessions,
   guardCancel: (value: unknown) => value,
   probeGatewayReachable: vi.fn(),
@@ -106,7 +106,7 @@ describe("runConfigureWizard default-agent ownership", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     mocks.state.snapshot = {
       exists: true,
       valid: true,
@@ -117,11 +117,11 @@ describe("runConfigureWizard default-agent ownership", () => {
     };
     mocks.text.mockResolvedValue("/tmp/new-ops-workspace");
     mocks.setupPluginConfig.mockImplementation(
-      async ({ config }: { config: OpenClawConfig }) => config,
+      async ({ config }: { config: AforaConfig }) => config,
     );
-    mocks.setupSkills.mockImplementation(async (config: OpenClawConfig) => config);
+    mocks.setupSkills.mockImplementation(async (config: AforaConfig) => config);
     mocks.commitConfig.mockImplementation(
-      async ({ nextConfig }: { nextConfig: OpenClawConfig }) => ({ config: nextConfig }),
+      async ({ nextConfig }: { nextConfig: AforaConfig }) => ({ config: nextConfig }),
     );
   });
 

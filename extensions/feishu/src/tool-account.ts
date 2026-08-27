@@ -1,8 +1,8 @@
 // Feishu plugin module implements tool account behavior.
 import type * as Lark from "@larksuiteoapi/node-sdk";
-import { normalizeOptionalAccountId } from "openclaw/plugin-sdk/account-resolution";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
-import type { OpenClawPluginApi } from "../runtime-api.js";
+import { normalizeOptionalAccountId } from "afora-agent/plugin-sdk/account-resolution";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import type { AforaPluginApi } from "../runtime-api.js";
 import {
   listFeishuAccountIds,
   resolveDefaultFeishuAccountId,
@@ -21,7 +21,7 @@ type FeishuToolRequirement = {
 };
 
 function resolveImplicitToolAccountId(params: {
-  api: Pick<OpenClawPluginApi, "config">;
+  api: Pick<AforaPluginApi, "config">;
   executeParams?: AccountAwareParams;
   defaultAccountId?: string;
   requiredTool?: FeishuToolRequirement;
@@ -94,7 +94,7 @@ function resolveImplicitToolAccountId(params: {
 }
 
 export function resolveFeishuToolAccount(params: {
-  api: Pick<OpenClawPluginApi, "config">;
+  api: Pick<AforaPluginApi, "config">;
   executeParams?: AccountAwareParams;
   defaultAccountId?: string;
   requiredTool?: FeishuToolRequirement;
@@ -118,7 +118,7 @@ export function resolveFeishuToolAccount(params: {
 }
 
 export function createFeishuToolClient(params: {
-  api: Pick<OpenClawPluginApi, "config">;
+  api: Pick<AforaPluginApi, "config">;
   executeParams?: AccountAwareParams;
   defaultAccountId?: string;
   requiredTool?: FeishuToolRequirement;

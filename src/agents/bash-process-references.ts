@@ -3,7 +3,7 @@
  * These references are surfaced in agent context so follow-up turns can
  * reconnect to prior long-running work.
  */
-import { truncateUtf16Safe, truncateWithMarker } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe, truncateWithMarker } from "@afora/normalization-core/utf16-slice";
 import { listRunningSessions } from "./bash-process-registry.js";
 import { deriveSessionName } from "./bash-tools.shared.js";
 

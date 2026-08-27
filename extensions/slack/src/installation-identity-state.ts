@@ -1,6 +1,6 @@
 // Slack plugin module owns authenticated installation identity state.
-import { normalizeAccountId } from "openclaw/plugin-sdk/account-resolution";
-import { resolveGlobalMap } from "openclaw/plugin-sdk/global-singleton";
+import { normalizeAccountId } from "afora-agent/plugin-sdk/account-resolution";
+import { resolveGlobalMap } from "afora-agent/plugin-sdk/global-singleton";
 
 type SlackInstallationKind = "workspace" | "enterprise" | "degraded";
 
@@ -15,7 +15,7 @@ type SlackInstallationStateRegistration = {
 };
 
 const slackInstallationStates = resolveGlobalMap<string, SlackInstallationStateEntry>(
-  Symbol.for("openclaw.slack.installation-identities"),
+  Symbol.for("afora.slack.installation-identities"),
   "close-and-restart",
 );
 

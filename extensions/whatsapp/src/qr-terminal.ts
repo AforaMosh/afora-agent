@@ -1,2 +1,2 @@
 // Whatsapp plugin module implements qr terminal behavior.
-export { renderQrTerminal } from "openclaw/plugin-sdk/media-runtime";
+export { renderQrTerminal } from "afora-agent/plugin-sdk/media-runtime";

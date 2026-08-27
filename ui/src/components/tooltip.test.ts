@@ -14,7 +14,7 @@ type TooltipProviderElement = HTMLElement & {
 };
 
 function createTooltip(content: string, triggerText = "trigger") {
-  const tooltip = document.createElement("openclaw-tooltip") as TooltipElement;
+  const tooltip = document.createElement("afora-tooltip") as TooltipElement;
   tooltip.content = content;
   const trigger = document.createElement("button");
   trigger.textContent = triggerText;
@@ -23,7 +23,7 @@ function createTooltip(content: string, triggerText = "trigger") {
 }
 
 function createRichTooltip(content: string, triggerText = "trigger") {
-  const tooltip = document.createElement("openclaw-tooltip") as TooltipElement;
+  const tooltip = document.createElement("afora-tooltip") as TooltipElement;
   const trigger = document.createElement("button");
   trigger.textContent = triggerText;
   const card = document.createElement("div");
@@ -34,7 +34,7 @@ function createRichTooltip(content: string, triggerText = "trigger") {
 }
 
 function createProvider() {
-  return document.createElement("openclaw-tooltip-provider") as TooltipProviderElement;
+  return document.createElement("afora-tooltip-provider") as TooltipProviderElement;
 }
 
 function focusTrigger(trigger: HTMLElement) {
@@ -62,13 +62,13 @@ function webAwesomeTooltip(tooltip: TooltipElement) {
 }
 
 function expectOpenCount(count: number) {
-  const open = [...document.querySelectorAll<TooltipElement>("openclaw-tooltip")].filter(
+  const open = [...document.querySelectorAll<TooltipElement>("afora-tooltip")].filter(
     (tooltip) => webAwesomeTooltip(tooltip)?.open,
   );
   expect(open).toHaveLength(count);
 }
 
-describe("openclaw-tooltip", () => {
+describe("afora-tooltip", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -160,7 +160,7 @@ describe("openclaw-tooltip", () => {
     if (!foreignDocument) {
       throw new Error("Expected iframe document");
     }
-    const tooltip = document.createElement("openclaw-tooltip") as TooltipElement;
+    const tooltip = document.createElement("afora-tooltip") as TooltipElement;
     tooltip.content = "Cross-realm tooltip";
     const trigger = foreignDocument.createElement("button");
     trigger.textContent = "trigger";

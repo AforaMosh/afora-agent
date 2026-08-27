@@ -5,7 +5,7 @@ import Foundation
 /// localStorage-backed list; assigned groups still persist server-side via
 /// the session category field.
 enum SessionGroupStore {
-    static let defaultsKey = "openclaw:sessions:custom-groups"
+    static let defaultsKey = "afora:sessions:custom-groups"
 
     static func load(defaults: UserDefaults = .standard) -> [String] {
         self.normalized(defaults.stringArray(forKey: self.defaultsKey) ?? [])

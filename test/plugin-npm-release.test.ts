@@ -1,7 +1,7 @@
 // Plugin npm release tests validate plugin npm release artifacts.
 import { mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { bundledPluginFile, bundledPluginRoot } from "openclaw/plugin-sdk/test-fixtures";
+import { bundledPluginFile, bundledPluginRoot } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { collectClawHubPublishablePluginPackages } from "../scripts/lib/plugin-clawhub-release.ts";
 import {
@@ -11,7 +11,7 @@ import {
   collectPluginReleaseVersionFloorErrors,
   collectPublishablePluginPackages,
   collectPublishablePluginPackageErrors,
-  OPENCLAW_PLUGIN_NPM_REPOSITORY_URL,
+  AFORA_PLUGIN_NPM_REPOSITORY_URL,
   parsePluginReleaseArgs,
   parsePluginNpmReleaseArgs,
   parsePluginReleaseSelection,
@@ -56,8 +56,8 @@ describe("parsePluginReleaseSelection", () => {
 
   it("dedupes and sorts comma or whitespace separated package names", () => {
     expect(
-      parsePluginReleaseSelection(" @openclaw/zalo, @openclaw/feishu  @openclaw/zalo "),
-    ).toEqual(["@openclaw/feishu", "@openclaw/zalo"]);
+      parsePluginReleaseSelection(" @afora/zalo, @afora/feishu  @afora/zalo "),
+    ).toEqual(["@afora/feishu", "@afora/zalo"]);
   });
 });
 
@@ -113,7 +113,7 @@ describe("parsePluginReleaseArgs", () => {
         "--selection-mode",
         "all-publishable",
         "--plugins",
-        "@openclaw/zalo",
+        "@afora/zalo",
       ]),
     ).toThrowError("`--selection-mode all-publishable` must not be combined with `--plugins`.");
   });
@@ -151,7 +151,7 @@ describe("parsePluginReleaseArgs", () => {
         "--selection-mode",
         "selected",
         "--plugins",
-        "@openclaw/slack",
+        "@afora/slack",
         "--npm-dist-tag",
         "extended-stable",
       ]),
@@ -165,7 +165,7 @@ function externalPluginContract(version: string) {
       pluginApi: `>=${version}`,
     },
     build: {
-      openclawVersion: version,
+      aforaVersion: version,
     },
   };
 }
@@ -178,18 +178,18 @@ describe("collectPublishablePluginPackageErrors", () => {
         packageDir: bundledPluginRoot("zalo"),
         readmeText: "# Zalo\n",
         packageJson: {
-          name: "@openclaw/zalo",
+          name: "@afora/zalo",
           version: "2026.3.15",
           type: "module",
           repository: {
             type: "git",
-            url: OPENCLAW_PLUGIN_NPM_REPOSITORY_URL,
+            url: AFORA_PLUGIN_NPM_REPOSITORY_URL,
           },
-          openclaw: {
+          afora: {
             extensions: ["./index.ts"],
             ...externalPluginContract("2026.3.15"),
             install: {
-              npmSpec: "@openclaw/zalo",
+              npmSpec: "@afora/zalo",
             },
             release: {
               publishToNpm: true,
@@ -210,7 +210,7 @@ describe("collectPublishablePluginPackageErrors", () => {
           name: "broken",
           version: "latest",
           private: true,
-          openclaw: {
+          afora: {
             extensions: [""],
             ...externalPluginContract("2026.3.15"),
             install: {
@@ -223,13 +223,13 @@ describe("collectPublishablePluginPackageErrors", () => {
         },
       }),
     ).toEqual([
-      'package name must start with "@openclaw/"; found "broken".',
+      'package name must start with "@afora/"; found "broken".',
       "package.json private must not be true.",
       'package.json type must be "module" so built .js runtime entries load as ESM.',
-      `package.json repository.url must be "${OPENCLAW_PLUGIN_NPM_REPOSITORY_URL}" so npm provenance can validate GitHub trusted publishing; found "<missing>".`,
+      `package.json repository.url must be "${AFORA_PLUGIN_NPM_REPOSITORY_URL}" so npm provenance can validate GitHub trusted publishing; found "<missing>".`,
       'package.json version must match YYYY.M.PATCH, YYYY.M.PATCH-N, YYYY.M.PATCH-alpha.N, or YYYY.M.PATCH-beta.N; found "latest".',
-      "openclaw.extensions must contain only non-empty strings.",
-      "openclaw.install.npmSpec must be a non-empty string for publishable plugins.",
+      "afora.extensions must contain only non-empty strings.",
+      "afora.install.npmSpec must be a non-empty string for publishable plugins.",
     ]);
   });
 
@@ -240,14 +240,14 @@ describe("collectPublishablePluginPackageErrors", () => {
         packageDir: bundledPluginRoot("twitch"),
         readmeText: "# Twitch\n",
         packageJson: {
-          name: "@openclaw/twitch",
+          name: "@afora/twitch",
           version: "2026.5.1-beta.1",
           type: "module",
-          openclaw: {
+          afora: {
             extensions: ["./index.ts"],
             ...externalPluginContract("2026.5.1-beta.1"),
             install: {
-              npmSpec: "@openclaw/twitch",
+              npmSpec: "@afora/twitch",
             },
             release: {
               publishToNpm: true,
@@ -256,7 +256,7 @@ describe("collectPublishablePluginPackageErrors", () => {
         },
       }),
     ).toEqual([
-      `package.json repository.url must be "${OPENCLAW_PLUGIN_NPM_REPOSITORY_URL}" so npm provenance can validate GitHub trusted publishing; found "<missing>".`,
+      `package.json repository.url must be "${AFORA_PLUGIN_NPM_REPOSITORY_URL}" so npm provenance can validate GitHub trusted publishing; found "<missing>".`,
     ]);
   });
 
@@ -267,14 +267,14 @@ describe("collectPublishablePluginPackageErrors", () => {
         packageDir: bundledPluginRoot("voice-call"),
         readmeText: "# Voice call\n",
         packageJson: {
-          name: "@openclaw/voice-call",
+          name: "@afora/voice-call",
           version: "2026.5.1-beta.1",
           type: "module",
           repository: {
             type: "git",
-            url: OPENCLAW_PLUGIN_NPM_REPOSITORY_URL,
+            url: AFORA_PLUGIN_NPM_REPOSITORY_URL,
           },
-          openclaw: {
+          afora: {
             extensions: ["./index.ts"],
             ...externalPluginContract("2026.5.1-beta.1"),
             release: {
@@ -283,7 +283,7 @@ describe("collectPublishablePluginPackageErrors", () => {
           },
         },
       }),
-    ).toEqual(["openclaw.install.npmSpec must be a non-empty string for publishable plugins."]);
+    ).toEqual(["afora.install.npmSpec must be a non-empty string for publishable plugins."]);
   });
 
   it("requires the external plugin package compatibility contract for npm publish", () => {
@@ -293,17 +293,17 @@ describe("collectPublishablePluginPackageErrors", () => {
         packageDir: bundledPluginRoot("voice-call"),
         readmeText: "# Voice call\n",
         packageJson: {
-          name: "@openclaw/voice-call",
+          name: "@afora/voice-call",
           version: "2026.5.1-beta.1",
           type: "module",
           repository: {
             type: "git",
-            url: OPENCLAW_PLUGIN_NPM_REPOSITORY_URL,
+            url: AFORA_PLUGIN_NPM_REPOSITORY_URL,
           },
-          openclaw: {
+          afora: {
             extensions: ["./index.ts"],
             install: {
-              npmSpec: "@openclaw/voice-call",
+              npmSpec: "@afora/voice-call",
             },
             release: {
               publishToNpm: true,
@@ -312,8 +312,8 @@ describe("collectPublishablePluginPackageErrors", () => {
         },
       }),
     ).toEqual([
-      "openclaw.compat.pluginApi is required for external code plugin packages.",
-      "openclaw.build.openclawVersion is required for external code plugin packages.",
+      "afora.compat.pluginApi is required for external code plugin packages.",
+      "afora.build.aforaVersion is required for external code plugin packages.",
     ]);
   });
 
@@ -324,18 +324,18 @@ describe("collectPublishablePluginPackageErrors", () => {
         packageDir: bundledPluginRoot("zalo"),
         readmeText: " \n",
         packageJson: {
-          name: "@openclaw/zalo",
+          name: "@afora/zalo",
           version: "2026.3.15",
           type: "module",
           repository: {
             type: "git",
-            url: OPENCLAW_PLUGIN_NPM_REPOSITORY_URL,
+            url: AFORA_PLUGIN_NPM_REPOSITORY_URL,
           },
-          openclaw: {
+          afora: {
             extensions: ["./index.ts"],
             ...externalPluginContract("2026.3.15"),
             install: {
-              npmSpec: "@openclaw/zalo",
+              npmSpec: "@afora/zalo",
             },
             release: {
               publishToNpm: true,
@@ -353,21 +353,21 @@ describe("collectPublishablePluginPackageErrors", () => {
         packageDir: bundledPluginRoot("codex"),
         readmeText: "# Codex\n",
         packageJson: {
-          name: "@openclaw/codex",
+          name: "@afora/codex",
           version: "2026.6.11",
           type: "module",
           repository: {
             type: "git",
-            url: OPENCLAW_PLUGIN_NPM_REPOSITORY_URL,
+            url: AFORA_PLUGIN_NPM_REPOSITORY_URL,
           },
           dependencies: {
             "@openai/codex": "0.142.5",
           },
-          openclaw: {
+          afora: {
             extensions: ["./index.ts"],
             ...externalPluginContract("2026.6.11"),
             install: {
-              npmSpec: "@openclaw/codex",
+              npmSpec: "@afora/codex",
             },
             release: {
               publishToNpm: true,
@@ -377,8 +377,8 @@ describe("collectPublishablePluginPackageErrors", () => {
         },
       }),
     ).toEqual([
-      'openclaw.release.requireLatestDependencies must not contain duplicate package names; found "@openai/codex".',
-      'openclaw.release.requireLatestDependencies must reference package.json dependencies or optionalDependencies; "missing" is not a runtime dependency.',
+      'afora.release.requireLatestDependencies must not contain duplicate package names; found "@openai/codex".',
+      'afora.release.requireLatestDependencies must reference package.json dependencies or optionalDependencies; "missing" is not a runtime dependency.',
     ]);
   });
 });
@@ -388,12 +388,12 @@ describe("collectPluginReleaseVersionFloorErrors", () => {
     expect(
       collectPluginReleaseVersionFloorErrors([
         {
-          packageName: "@openclaw/demo",
+          packageName: "@afora/demo",
           version: "2026.6.4-beta.1",
         },
       ]),
     ).toEqual([
-      '@openclaw/demo@2026.6.4-beta.1: June 2026 stable and beta release trains must use patch 5 or higher because 2026.6.5-beta.1 is already published; found "2026.6.4-beta.1".',
+      '@afora/demo@2026.6.4-beta.1: June 2026 stable and beta release trains must use patch 5 or higher because 2026.6.5-beta.1 is already published; found "2026.6.4-beta.1".',
     ]);
   });
 
@@ -401,11 +401,11 @@ describe("collectPluginReleaseVersionFloorErrors", () => {
     expect(
       collectPluginReleaseVersionFloorErrors([
         {
-          packageName: "@openclaw/demo",
+          packageName: "@afora/demo",
           version: "2026.6.4-alpha.1",
         },
         {
-          packageName: "@openclaw/demo",
+          packageName: "@afora/demo",
           version: "2026.6.5-beta.2",
         },
       ]),
@@ -417,7 +417,7 @@ describe("collectPluginReleaseDependencyFreshnessErrors", () => {
   const plugin: PublishablePluginPackage = {
     extensionId: "codex",
     packageDir: "extensions/codex",
-    packageName: "@openclaw/codex",
+    packageName: "@afora/codex",
     version: "2026.6.11",
     channel: "stable",
     publishTag: "latest",
@@ -431,7 +431,7 @@ describe("collectPluginReleaseDependencyFreshnessErrors", () => {
 
   it("rejects release dependencies older than the npm latest dist-tag", () => {
     expect(collectPluginReleaseDependencyFreshnessErrors([plugin], () => "0.142.5")).toEqual([
-      '@openclaw/codex@2026.6.11: @openai/codex must match npm latest for release; found "0.139.0", latest is "0.142.5".',
+      '@afora/codex@2026.6.11: @openai/codex must match npm latest for release; found "0.139.0", latest is "0.142.5".',
     ]);
   });
 
@@ -460,7 +460,7 @@ describe("collectPluginReleaseDependencyFreshnessErrors", () => {
         throw new Error("registry unavailable");
       }),
     ).toEqual([
-      "@openclaw/codex@2026.6.11: could not resolve npm latest for @openai/codex: registry unavailable",
+      "@afora/codex@2026.6.11: could not resolve npm latest for @openai/codex: registry unavailable",
     ]);
   });
 
@@ -477,7 +477,7 @@ describe("collectPluginReleaseDependencyFreshnessErrors", () => {
         "dist-tags.latest",
         "--json",
         "--userconfig",
-        expect.stringContaining("openclaw-plugin-npm-view-"),
+        expect.stringContaining("afora-plugin-npm-view-"),
       ]);
       expect(options).toMatchObject({
         killSignal: "SIGKILL",
@@ -487,14 +487,14 @@ describe("collectPluginReleaseDependencyFreshnessErrors", () => {
     }) as unknown as ExecFileSync;
 
     expect(collectPluginReleaseDependencyFreshnessErrors([plugin])).toEqual([
-      "@openclaw/codex@2026.6.11: could not resolve npm latest for @openai/codex: npm view timed out after 60000ms.",
+      "@afora/codex@2026.6.11: could not resolve npm latest for @openai/codex: npm view timed out after 60000ms.",
     ]);
   });
 });
 
 describe("collectPluginReleasePlan", () => {
   it("fails closed when the published-version lookup times out", () => {
-    const repoDir = makeTempRepoRoot(tempDirs, "openclaw-plugin-npm-release-");
+    const repoDir = makeTempRepoRoot(tempDirs, "afora-plugin-npm-release-");
     writePublishablePluginFixture(repoDir, {
       version: "2026.4.10",
       publishTo: "npm",
@@ -503,10 +503,10 @@ describe("collectPluginReleasePlan", () => {
       expect(command).toBe("npm");
       expect(args).toEqual([
         "view",
-        "@openclaw/demo-plugin@2026.4.10",
+        "@afora/demo-plugin@2026.4.10",
         "version",
         "--userconfig",
-        expect.stringContaining("openclaw-plugin-npm-view-"),
+        expect.stringContaining("afora-plugin-npm-view-"),
       ]);
       throw Object.assign(new Error("spawnSync npm ETIMEDOUT"), { code: "ETIMEDOUT" });
     }) as unknown as ExecFileSync;
@@ -519,7 +519,7 @@ describe("collectPluginReleasePlan", () => {
 
 describe("collectPublishablePluginPackages", () => {
   it("defers explicitly bundled plugins from npm and ClawHub release plans", () => {
-    const repoDir = makeTempRepoRoot(tempDirs, "openclaw-plugin-npm-release-");
+    const repoDir = makeTempRepoRoot(tempDirs, "afora-plugin-npm-release-");
     writePublishablePluginFixture(repoDir, {
       version: "2026.4.10",
       publishTo: "both",
@@ -544,13 +544,13 @@ describe("collectPublishablePluginPackages", () => {
       const packageJson = JSON.parse(
         readFileSync(join(plugin.packageDir, "package.json"), "utf8"),
       ) as {
-        openclaw?: {
+        afora?: {
           build?: {
             bundledDist?: unknown;
           };
         };
       };
-      if (packageJson.openclaw?.build?.bundledDist === true) {
+      if (packageJson.afora?.build?.bundledDist === true) {
         corePackageRuntimePluginIds.add(plugin.extensionId);
       }
     }
@@ -566,7 +566,7 @@ describe("collectPublishablePluginPackages", () => {
   });
 
   it("collects publishable npm plugins from extension package manifests", () => {
-    const repoDir = makeTempRepoRoot(tempDirs, "openclaw-plugin-npm-release-");
+    const repoDir = makeTempRepoRoot(tempDirs, "afora-plugin-npm-release-");
     writePublishablePluginFixture(repoDir, {
       version: "2026.4.10",
       publishTo: "npm",
@@ -576,17 +576,17 @@ describe("collectPublishablePluginPackages", () => {
       {
         extensionId: "demo-plugin",
         packageDir: "extensions/demo-plugin",
-        packageName: "@openclaw/demo-plugin",
+        packageName: "@afora/demo-plugin",
         version: "2026.4.10",
         channel: "stable",
         publishTag: "latest",
-        installNpmSpec: "@openclaw/demo-plugin",
+        installNpmSpec: "@afora/demo-plugin",
       },
     ]);
   });
 
   it("uses extended-stable for every publishable plugin at the exact root version", () => {
-    const repoDir = makeTempRepoRoot(tempDirs, "openclaw-plugin-npm-release-");
+    const repoDir = makeTempRepoRoot(tempDirs, "afora-plugin-npm-release-");
     writeJsonFile(join(repoDir, "package.json"), { version: "2026.7.33" });
     writePublishablePluginFixture(repoDir, {
       version: "2026.7.33",
@@ -599,7 +599,7 @@ describe("collectPublishablePluginPackages", () => {
   });
 
   it("rejects extended-stable plugins whose version differs from core", () => {
-    const repoDir = makeTempRepoRoot(tempDirs, "openclaw-plugin-npm-release-");
+    const repoDir = makeTempRepoRoot(tempDirs, "afora-plugin-npm-release-");
     writeJsonFile(join(repoDir, "package.json"), { version: "2026.7.34" });
     writePublishablePluginFixture(repoDir, {
       version: "2026.7.33",
@@ -612,7 +612,7 @@ describe("collectPublishablePluginPackages", () => {
   });
 
   it("collects exact release dependencies that must match npm latest", () => {
-    const repoDir = makeTempRepoRoot(tempDirs, "openclaw-plugin-npm-release-");
+    const repoDir = makeTempRepoRoot(tempDirs, "afora-plugin-npm-release-");
     writePublishablePluginFixture(repoDir, {
       version: "2026.4.10",
       publishTo: "npm",
@@ -627,11 +627,11 @@ describe("collectPublishablePluginPackages", () => {
       {
         extensionId: "demo-plugin",
         packageDir: "extensions/demo-plugin",
-        packageName: "@openclaw/demo-plugin",
+        packageName: "@afora/demo-plugin",
         version: "2026.4.10",
         channel: "stable",
         publishTag: "latest",
-        installNpmSpec: "@openclaw/demo-plugin",
+        installNpmSpec: "@afora/demo-plugin",
         requiredLatestDependencies: [
           {
             packageName: "demo-runtime",
@@ -643,21 +643,21 @@ describe("collectPublishablePluginPackages", () => {
   });
 
   it("does not validate unselected publishable plugin manifests", () => {
-    const repoDir = makeTempRepoRoot(tempDirs, "openclaw-plugin-npm-release-");
+    const repoDir = makeTempRepoRoot(tempDirs, "afora-plugin-npm-release-");
     writePublishablePluginFixture(repoDir, {
       version: "2026.4.10-beta.1",
       publishTo: "npm",
     });
     mkdirSync(join(repoDir, "extensions", "private-plugin"), { recursive: true });
     writeJsonFile(join(repoDir, "extensions", "private-plugin", "package.json"), {
-      name: "@openclaw/private-plugin",
+      name: "@afora/private-plugin",
       version: "2026.4.10-beta.1",
       private: true,
-      openclaw: {
+      afora: {
         extensions: ["./index.ts"],
         ...externalPluginContract("2026.4.10-beta.1"),
         install: {
-          npmSpec: "@openclaw/private-plugin",
+          npmSpec: "@afora/private-plugin",
         },
         release: {
           publishToNpm: true,
@@ -667,15 +667,15 @@ describe("collectPublishablePluginPackages", () => {
 
     expect(
       collectPublishablePluginPackages(repoDir, {
-        packageNames: ["@openclaw/demo-plugin"],
+        packageNames: ["@afora/demo-plugin"],
       }),
     ).toEqual([
       {
         extensionId: "demo-plugin",
         packageDir: "extensions/demo-plugin",
-        installNpmSpec: "@openclaw/demo-plugin",
+        installNpmSpec: "@afora/demo-plugin",
         channel: "beta",
-        packageName: "@openclaw/demo-plugin",
+        packageName: "@afora/demo-plugin",
         publishTag: "beta",
         version: "2026.4.10-beta.1",
       },
@@ -683,13 +683,13 @@ describe("collectPublishablePluginPackages", () => {
   });
 
   it("treats an explicit empty extension filter as no candidates", () => {
-    const repoDir = makeTempRepoRoot(tempDirs, "openclaw-plugin-npm-release-");
+    const repoDir = makeTempRepoRoot(tempDirs, "afora-plugin-npm-release-");
     mkdirSync(join(repoDir, "extensions", "private-plugin"), { recursive: true });
     writeJsonFile(join(repoDir, "extensions", "private-plugin", "package.json"), {
-      name: "@openclaw/private-plugin",
+      name: "@afora/private-plugin",
       version: "2026.4.10-beta.1",
       private: true,
-      openclaw: {
+      afora: {
         extensions: ["./index.ts"],
         ...externalPluginContract("2026.4.10-beta.1"),
         release: {
@@ -706,7 +706,7 @@ describe("collectPublishablePluginPackages", () => {
   });
 
   it("publishes alpha plugin packages to the alpha dist-tag", () => {
-    const repoDir = makeTempRepoRoot(tempDirs, "openclaw-plugin-npm-release-");
+    const repoDir = makeTempRepoRoot(tempDirs, "afora-plugin-npm-release-");
     writePublishablePluginFixture(repoDir, {
       version: "2026.4.10-alpha.1",
       publishTo: "npm",
@@ -716,8 +716,8 @@ describe("collectPublishablePluginPackages", () => {
       {
         extensionId: "demo-plugin",
         packageDir: "extensions/demo-plugin",
-        installNpmSpec: "@openclaw/demo-plugin",
-        packageName: "@openclaw/demo-plugin",
+        installNpmSpec: "@afora/demo-plugin",
+        packageName: "@afora/demo-plugin",
         channel: "alpha",
         publishTag: "alpha",
         version: "2026.4.10-alpha.1",
@@ -731,7 +731,7 @@ describe("resolveSelectedPublishablePluginPackages", () => {
     {
       extensionId: "feishu",
       packageDir: bundledPluginRoot("feishu"),
-      packageName: "@openclaw/feishu",
+      packageName: "@afora/feishu",
       version: "2026.3.15",
       channel: "stable",
       publishTag: "latest",
@@ -739,7 +739,7 @@ describe("resolveSelectedPublishablePluginPackages", () => {
     {
       extensionId: "zalo",
       packageDir: bundledPluginRoot("zalo"),
-      packageName: "@openclaw/zalo",
+      packageName: "@afora/zalo",
       version: "2026.3.15-beta.1",
       channel: "beta",
       publishTag: "beta",
@@ -759,7 +759,7 @@ describe("resolveSelectedPublishablePluginPackages", () => {
     expect(
       resolveSelectedPublishablePluginPackages({
         plugins: publishablePlugins,
-        selection: ["@openclaw/zalo"],
+        selection: ["@afora/zalo"],
       }),
     ).toEqual([publishablePlugins[1]]);
   });
@@ -768,9 +768,9 @@ describe("resolveSelectedPublishablePluginPackages", () => {
     expect(() =>
       resolveSelectedPublishablePluginPackages({
         plugins: publishablePlugins,
-        selection: ["@openclaw/missing"],
+        selection: ["@afora/missing"],
       }),
-    ).toThrowError("Unknown or non-publishable plugin package selection: @openclaw/missing.");
+    ).toThrowError("Unknown or non-publishable plugin package selection: @afora/missing.");
   });
 });
 
@@ -792,7 +792,7 @@ describe("resolveChangedPublishablePluginPackages", () => {
     {
       extensionId: "feishu",
       packageDir: bundledPluginRoot("feishu"),
-      packageName: "@openclaw/feishu",
+      packageName: "@afora/feishu",
       version: "2026.3.15",
       channel: "stable",
       publishTag: "latest",
@@ -800,7 +800,7 @@ describe("resolveChangedPublishablePluginPackages", () => {
     {
       extensionId: "zalo",
       packageDir: bundledPluginRoot("zalo"),
-      packageName: "@openclaw/zalo",
+      packageName: "@afora/zalo",
       version: "2026.3.15-beta.1",
       channel: "beta",
       publishTag: "beta",

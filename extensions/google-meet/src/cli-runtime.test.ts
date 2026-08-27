@@ -15,7 +15,7 @@ describe("google-meet CLI", () => {
   });
 
   afterAll(() => {
-    vi.doUnmock("openclaw/plugin-sdk/ssrf-runtime");
+    vi.doUnmock("afora-agent/plugin-sdk/ssrf-runtime");
     vi.resetModules();
   });
 

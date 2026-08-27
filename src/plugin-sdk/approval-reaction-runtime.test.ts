@@ -42,7 +42,7 @@ describe("plugin-sdk/approval-reaction-runtime", () => {
     request: {
       title: "Use 1Password",
       description: "Allow Codex to use 1Password?",
-      pluginId: "openclaw-1password",
+      pluginId: "afora-1password",
       toolName: "read_secret",
       agentId: "main",
       sessionKey: "main:signal:+15555550123",

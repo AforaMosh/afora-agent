@@ -21,7 +21,7 @@ describe("projectSessionDisplayMessage", () => {
       {
         role: "assistant",
         content: [{ type: "text", text: "" }],
-        openclawDelivery: { replyToCurrent: true },
+        aforaDelivery: { replyToCurrent: true },
       },
     ];
 

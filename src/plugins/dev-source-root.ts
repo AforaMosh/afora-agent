@@ -4,8 +4,8 @@ import path from "node:path";
 import { resolveUserPath } from "../utils.js";
 import { isPathInside, safeRealpathSync } from "./path-safety.js";
 
-/** Env var that points bundled-plugin lookup at an OpenClaw source checkout. */
-const OPENCLAW_DEV_SOURCE_ROOT_ENV = "OPENCLAW_DEV_SOURCE_ROOT";
+/** Env var that points bundled-plugin lookup at an Afora source checkout. */
+const AFORA_DEV_SOURCE_ROOT_ENV = "AFORA_DEV_SOURCE_ROOT";
 
 function readPackageName(packageJsonPath: string): string | null {
   try {
@@ -16,9 +16,9 @@ function readPackageName(packageJsonPath: string): string | null {
   }
 }
 
-/** Resolves and validates the configured OpenClaw development source root. */
-export function resolveOpenClawDevSourceRoot(env: NodeJS.ProcessEnv = process.env): string | null {
-  const rawRoot = env[OPENCLAW_DEV_SOURCE_ROOT_ENV]?.trim();
+/** Resolves and validates the configured Afora development source root. */
+export function resolveAforaDevSourceRoot(env: NodeJS.ProcessEnv = process.env): string | null {
+  const rawRoot = env[AFORA_DEV_SOURCE_ROOT_ENV]?.trim();
   if (!rawRoot) {
     return null;
   }
@@ -27,7 +27,7 @@ export function resolveOpenClawDevSourceRoot(env: NodeJS.ProcessEnv = process.en
   if (!realRoot) {
     return null;
   }
-  if (readPackageName(path.join(realRoot, "package.json")) !== "openclaw") {
+  if (readPackageName(path.join(realRoot, "package.json")) !== "afora") {
     return null;
   }
   if (!fs.existsSync(path.join(realRoot, "src"))) {
@@ -44,7 +44,7 @@ export function isBundledPluginInsideDevSourceRoot(params: {
   rootDir: string;
   env: NodeJS.ProcessEnv;
 }): boolean {
-  const devSourceRoot = resolveOpenClawDevSourceRoot(params.env);
+  const devSourceRoot = resolveAforaDevSourceRoot(params.env);
   if (!devSourceRoot) {
     return false;
   }

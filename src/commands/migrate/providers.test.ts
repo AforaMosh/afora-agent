@@ -1,6 +1,6 @@
 // Migration provider tests cover provider-specific option shaping.
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { MigrationProviderPlugin } from "../../plugins/types.js";
 
 const migrationRuntimeMocks = vi.hoisted(() => ({
@@ -19,7 +19,7 @@ import { buildMigrationProviderOptions, resolveMigrationProvider } from "./provi
 
 describe("resolveMigrationProvider", () => {
   it("loads the requested bundled provider before resolving it", () => {
-    const config = {} as OpenClawConfig;
+    const config = {} as AforaConfig;
     const provider = {
       id: "hermes",
       label: "Hermes",

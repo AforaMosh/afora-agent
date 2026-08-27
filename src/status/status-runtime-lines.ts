@@ -4,7 +4,7 @@ import {
   resolveSessionFilePathCore,
   resolveSessionFilePathOptions,
 } from "../config/sessions/paths.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatDurationCompact } from "../infra/format-time/format-duration.ts";
 import { formatMissingCostEntries } from "../infra/session-cost-usage-totals.js";
 import {
@@ -21,7 +21,7 @@ export function buildStatusUptimeValue(): string {
 }
 
 async function resolveSessionCostLine(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   sessionEntry?: SessionEntry;
   storePath?: string;
@@ -87,7 +87,7 @@ async function resolveSessionCostLine(params: {
 
 export async function appendSessionCostLine(
   usageLine: string | null,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
   sessionEntry?: SessionEntry,
   storePath?: string,

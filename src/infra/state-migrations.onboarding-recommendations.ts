@@ -1,11 +1,11 @@
 import { existsSync } from "node:fs";
 import { resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
 import { resolveWorkspaceStateIdentity } from "../agents/workspace-state-store.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { tryResolveLegacyCompatibilityAgentId } from "../config/legacy.default-agent-owner.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
-import { runOpenClawStateWriteTransaction } from "../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
+import { runAforaStateWriteTransaction } from "../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
@@ -16,17 +16,17 @@ import type { MigrationMessages } from "./state-migrations.types.js";
 const LEGACY_ONBOARDING_RECOMMENDATIONS_KEY = "primary";
 
 type OnboardingRecommendationsMigrationDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "onboarding_recommendations"
 >;
 
 /** Move the shipped singleton row into the default workspace during doctor repair. */
 export function migrateLegacyOnboardingRecommendationsScope(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
 }): MigrationMessages {
   const env = params.env ?? process.env;
-  if (!existsSync(resolveOpenClawStateSqlitePath(env))) {
+  if (!existsSync(resolveAforaStateSqlitePath(env))) {
     return { changes: [], warnings: [] };
   }
 
@@ -36,7 +36,7 @@ export function migrateLegacyOnboardingRecommendationsScope(params: {
       ? resolveWorkspaceStateIdentity(resolveAgentWorkspaceDir(params.cfg, migrationAgentId, env))
           .workspaceKey
       : undefined;
-    const outcome = runOpenClawStateWriteTransaction(
+    const outcome = runAforaStateWriteTransaction(
       ({ db: writeDatabase }) => {
         const writeDb =
           getNodeSqliteKysely<OnboardingRecommendationsMigrationDatabase>(writeDatabase);

@@ -3,8 +3,8 @@ import {
   buildSingleProviderApiKeyCatalog,
   type ProviderCatalogContext,
   type ProviderCatalogResult,
-} from "openclaw/plugin-sdk/provider-catalog-shared";
-import type { ModelProviderConfig } from "openclaw/plugin-sdk/provider-model-shared";
+} from "afora-agent/plugin-sdk/provider-catalog-shared";
+import type { ModelProviderConfig } from "afora-agent/plugin-sdk/provider-model-shared";
 import {
   DEEPINFRA_BASE_URL,
   DEEPINFRA_MODEL_CATALOG,

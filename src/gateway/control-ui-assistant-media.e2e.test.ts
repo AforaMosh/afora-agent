@@ -10,9 +10,9 @@ const CONTROL_UI_E2E_TOKEN = "test-gateway-token-1234567890";
 
 describe("Control UI assistant media e2e", () => {
   test("serves local assistant media through scoped tickets over the gateway HTTP route", async () => {
-    const stateDir = process.env.OPENCLAW_STATE_DIR;
+    const stateDir = process.env.AFORA_STATE_DIR;
     if (!stateDir) {
-      throw new Error("OPENCLAW_STATE_DIR is required for gateway e2e media fixtures");
+      throw new Error("AFORA_STATE_DIR is required for gateway e2e media fixtures");
     }
     testState.gatewayAuth = { mode: "token", token: CONTROL_UI_E2E_TOKEN };
 
@@ -23,7 +23,7 @@ describe("Control UI assistant media e2e", () => {
 
     await withGatewayServer(
       async ({ port }) => {
-        const route = `http://127.0.0.1:${port}/__openclaw__/assistant-media`;
+        const route = `http://127.0.0.1:${port}/__afora__/assistant-media`;
         const sourceParam = encodeURIComponent(filePath);
 
         const metadata = await fetch(`${route}?meta=1&source=${sourceParam}`, {

@@ -5,8 +5,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { buildClawAddPlan } from "./lifecycle.js";
 import { readClawManifestFile } from "./reader.js";
-import { parseClawManifest, parseClawOpenClawProfile } from "./schema.js";
-import type { ClawManifest, ClawOpenClawProfile, ClawSourceIdentity } from "./types.js";
+import { parseClawManifest, parseClawAforaProfile } from "./schema.js";
+import type { ClawManifest, ClawAforaProfile, ClawSourceIdentity } from "./types.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
@@ -18,7 +18,7 @@ const baseManifest = {
     description: "Reviews incoming issues.",
     identity: { name: "Triage", emoji: "search" },
   },
-  metadata: { "openclaw.config": "profiles/openclaw.yml" },
+  metadata: { "afora.config": "profiles/afora.yml" },
   workspace: {
     bootstrapFiles: {
       "AGENTS.md": { source: "workspace/AGENTS.md" },
@@ -60,7 +60,7 @@ const baseManifest = {
   ],
 } as const;
 
-const baseOpenClawProfile: ClawOpenClawProfile = {
+const baseAforaProfile: ClawAforaProfile = {
   schemaVersion: 1,
   agent: {
     groupChat: { mentionPatterns: ["@triage"] },
@@ -80,7 +80,7 @@ function requireManifest(value: unknown = baseManifest): ClawManifest {
 }
 
 async function createPlanSource(): Promise<{ source: ClawSourceIdentity; workspace: string }> {
-  const root = tempDirs.make("openclaw-claw-plan-");
+  const root = tempDirs.make("afora-claw-plan-");
   await mkdir(join(root, "workspace", "reference"), { recursive: true });
   await writeFile(join(root, "workspace", "AGENTS.md"), "# Agent\n", "utf8");
   await writeFile(join(root, "workspace", "reference", "policy.md"), "Policy\n", "utf8");
@@ -90,7 +90,7 @@ async function createPlanSource(): Promise<{ source: ClawSourceIdentity; workspa
       name: "@acme/github-triage",
       version: "1.0.0",
       packageRoot: root,
-      manifestPath: join(root, "openclaw.claw.json"),
+      manifestPath: join(root, "afora.claw.json"),
       integrityKind: "development-snapshot",
       integrity: "sha256:test",
       byteLength: 0,
@@ -126,7 +126,7 @@ describe("parseClawManifest", () => {
 
   it("rejects the prototype flat entries contract", () => {
     const result = parseClawManifest({
-      schemaVersion: "openclaw.claw.v1",
+      schemaVersion: "afora.claw.v1",
       id: "old-claw",
       entries: [{ kind: "skill", id: "demo", required: false }],
     });
@@ -292,7 +292,7 @@ describe("parseClawManifest", () => {
   });
 
   it("rejects invalid heartbeat durations and cron expressions", () => {
-    const heartbeat = parseClawOpenClawProfile({
+    const heartbeat = parseClawAforaProfile({
       schemaVersion: 1,
       agent: { heartbeat: { every: "eventually" } },
     });
@@ -319,18 +319,18 @@ describe("parseClawManifest", () => {
 
 describe("readClawManifestFile", () => {
   it("takes published identity from package.json", async () => {
-    const root = tempDirs.make("openclaw-claw-package-");
+    const root = tempDirs.make("afora-claw-package-");
     await writeFile(
       join(root, "package.json"),
       JSON.stringify({
         name: "@acme/github-triage",
         version: "3.2.1",
-        openclaw: { claw: "openclaw.claw.json" },
+        afora: { claw: "afora.claw.json" },
       }),
       "utf8",
     );
     await writeFile(
-      join(root, "openclaw.claw.json"),
+      join(root, "afora.claw.json"),
       JSON.stringify({ schemaVersion: 1, agent: { id: "triage" } }),
       "utf8",
     );
@@ -352,13 +352,13 @@ describe("readClawManifestFile", () => {
   });
 
   it("reads a human-authored CLAW.md package through the same manifest schema", async () => {
-    const root = tempDirs.make("openclaw-claw-markdown-");
+    const root = tempDirs.make("afora-claw-markdown-");
     await writeFile(
       join(root, "package.json"),
       JSON.stringify({
         name: "@acme/github-triage",
         version: "3.2.1",
-        openclaw: { claw: "CLAW.md" },
+        afora: { claw: "CLAW.md" },
       }),
       "utf8",
     );
@@ -409,13 +409,13 @@ describe("readClawManifestFile", () => {
   });
 
   it("accepts a UTF-8 BOM and includes its bytes in snapshot integrity", async () => {
-    const root = tempDirs.make("openclaw-claw-markdown-bom-");
+    const root = tempDirs.make("afora-claw-markdown-bom-");
     await writeFile(
       join(root, "package.json"),
       JSON.stringify({
         name: "@acme/github-triage",
         version: "3.2.1",
-        openclaw: { claw: "CLAW.md" },
+        afora: { claw: "CLAW.md" },
       }),
       "utf8",
     );
@@ -456,7 +456,7 @@ describe("readClawManifestFile", () => {
   });
 
   it("rejects CLAW.md without YAML frontmatter", async () => {
-    const root = tempDirs.make("openclaw-claw-markdown-invalid-");
+    const root = tempDirs.make("afora-claw-markdown-invalid-");
     const path = join(root, "CLAW.md");
     await writeFile(path, "# Missing manifest\n", "utf8");
 
@@ -474,7 +474,7 @@ describe("readClawManifestFile", () => {
     ["merge key", "agent: { <<: { id: triage } }"],
     ["explicit tag", "agent: { id: !!str triage }"],
   ])("rejects CLAW.md YAML %s", async (_label, declaration) => {
-    const root = tempDirs.make("openclaw-claw-markdown-alias-");
+    const root = tempDirs.make("afora-claw-markdown-alias-");
     const path = join(root, "CLAW.md");
     await writeFile(
       path,
@@ -500,7 +500,7 @@ describe("readClawManifestFile", () => {
   });
 
   it("rejects a CLAW.md body that is not valid UTF-8", async () => {
-    const root = tempDirs.make("openclaw-claw-markdown-original-bytes-");
+    const root = tempDirs.make("afora-claw-markdown-original-bytes-");
     const path = join(root, "CLAW.md");
     const frontmatter = Buffer.from(
       [
@@ -525,7 +525,7 @@ describe("readClawManifestFile", () => {
   });
 
   it("rejects two competing SOUL.md sources", async () => {
-    const root = tempDirs.make("openclaw-claw-markdown-soul-conflict-");
+    const root = tempDirs.make("afora-claw-markdown-soul-conflict-");
     const path = join(root, "CLAW.md");
     await writeFile(
       path,
@@ -554,7 +554,7 @@ describe("readClawManifestFile", () => {
   });
 
   it("synthesizes explicit development identity for a standalone manifest", async () => {
-    const root = tempDirs.make("openclaw-claw-development-");
+    const root = tempDirs.make("afora-claw-development-");
     const path = join(root, "demo.claw.json");
     await writeFile(
       path,
@@ -576,7 +576,7 @@ describe("readClawManifestFile", () => {
   });
 
   it("rejects workspace sources through an intermediate symlink", async () => {
-    const root = tempDirs.make("openclaw-claw-reader-symlink-");
+    const root = tempDirs.make("afora-claw-reader-symlink-");
     await mkdir(join(root, "workspace"));
     await writeFile(join(root, "workspace", "AGENTS.md"), "# Agent\n", "utf8");
     await symlink(
@@ -604,7 +604,7 @@ describe("readClawManifestFile", () => {
   });
 
   it("rejects a workspace source over the per-file byte limit", async () => {
-    const root = tempDirs.make("openclaw-claw-reader-file-limit-");
+    const root = tempDirs.make("afora-claw-reader-file-limit-");
     await writeFile(join(root, "large.md"), Buffer.alloc(1024 * 1024 + 1));
     const manifestPath = join(root, "demo.claw.json");
     await writeFile(
@@ -626,7 +626,7 @@ describe("readClawManifestFile", () => {
   });
 
   it("rejects aggregate workspace bytes before reading source contents", async () => {
-    const root = tempDirs.make("openclaw-claw-reader-aggregate-limit-");
+    const root = tempDirs.make("afora-claw-reader-aggregate-limit-");
     const files = [];
     for (let index = 0; index < 5; index += 1) {
       const source = `large-${index}.md`;
@@ -655,13 +655,13 @@ describe("readClawManifestFile", () => {
   it.runIf(process.platform !== "win32")(
     "uses the declared CLAW.md path when it is an in-package symlink",
     async () => {
-      const root = tempDirs.make("openclaw-claw-markdown-link-");
+      const root = tempDirs.make("afora-claw-markdown-link-");
       await writeFile(
         join(root, "package.json"),
         JSON.stringify({
           name: "@acme/github-triage",
           version: "3.2.1",
-          openclaw: { claw: "CLAW.md" },
+          afora: { claw: "CLAW.md" },
         }),
         "utf8",
       );
@@ -693,7 +693,7 @@ describe("readClawManifestFile", () => {
   );
 
   it("rejects package manifests that escape the package root", async () => {
-    const parent = tempDirs.make("openclaw-claw-escape-");
+    const parent = tempDirs.make("afora-claw-escape-");
     const root = join(parent, "package");
     await mkdir(root);
     await writeFile(
@@ -706,7 +706,7 @@ describe("readClawManifestFile", () => {
       JSON.stringify({
         name: "@acme/escape",
         version: "1.0.0",
-        openclaw: { claw: "../outside.json" },
+        afora: { claw: "../outside.json" },
       }),
       "utf8",
     );
@@ -825,13 +825,13 @@ describe("buildClawAddPlan", () => {
     const canonicalWorkspace = join(await realpath(source.packageRoot), "new-workspace");
     const plan = await buildClawAddPlan({
       manifest: requireManifest(),
-      openClawProfile: baseOpenClawProfile,
+      aforaProfile: baseAforaProfile,
       source,
       context: { workspace },
     });
 
     expect(plan).toMatchObject({
-      schemaVersion: "openclaw.clawAddPlan.v1",
+      schemaVersion: "afora.clawAddPlan.v1",
       manifestSchemaVersion: 1,
       stability: "experimental",
       dryRun: true,
@@ -906,7 +906,7 @@ describe("buildClawAddPlan", () => {
 
   it("canonicalizes a missing workspace through an existing aliased parent", async () => {
     const { source } = await createPlanSource();
-    const root = tempDirs.make("openclaw-claw-workspace-alias-");
+    const root = tempDirs.make("afora-claw-workspace-alias-");
     const canonicalParent = join(root, "canonical");
     const aliasParent = join(root, "alias");
     await mkdir(canonicalParent);
@@ -1047,28 +1047,28 @@ describe("buildClawAddPlan", () => {
     const { source, workspace } = await createPlanSource();
     const first = await buildClawAddPlan({
       manifest: requireManifest(),
-      openClawProfile: baseOpenClawProfile,
+      aforaProfile: baseAforaProfile,
       source,
       context: { workspace },
     });
     const repeated = await buildClawAddPlan({
       manifest: requireManifest(),
-      openClawProfile: baseOpenClawProfile,
+      aforaProfile: baseAforaProfile,
       source,
       context: { workspace },
     });
     const changed = await buildClawAddPlan({
       manifest: requireManifest(),
-      openClawProfile: baseOpenClawProfile,
+      aforaProfile: baseAforaProfile,
       source: { ...source, integrity: "sha256:changed" },
       context: { workspace },
     });
     const changedCapability = await buildClawAddPlan({
       manifest: requireManifest(),
-      openClawProfile: {
-        ...baseOpenClawProfile,
+      aforaProfile: {
+        ...baseAforaProfile,
         agent: {
-          ...baseOpenClawProfile.agent,
+          ...baseAforaProfile.agent,
           tools: { allow: ["read", "exec"] },
         },
       },

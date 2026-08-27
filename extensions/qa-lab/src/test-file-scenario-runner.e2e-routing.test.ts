@@ -12,7 +12,7 @@ import {
 describe("QA native Vitest scenario routing", () => {
   it("runs E2E test scenarios under the existing Gateway E2E configuration", async () => {
     const repoRoot = await fs.realpath(
-      await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-qa-vitest-e2e-routing-")),
+      await fs.mkdtemp(path.join(os.tmpdir(), "afora-qa-vitest-e2e-routing-")),
     );
     const commands: QaScenarioCommandExecution[] = [];
     const testPath = "extensions/ollama/src/node-inference.paired-node.e2e.test.ts";

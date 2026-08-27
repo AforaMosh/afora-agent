@@ -2,8 +2,8 @@
 import {
   setCurrentManifestModelIdNormalizationRecords,
   type ManifestModelIdNormalizationRecord,
-} from "@openclaw/model-catalog-core/provider-model-id-normalization";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+} from "@afora/model-catalog-core/provider-model-id-normalization";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveGlobalSingleton } from "../shared/global-singleton.js";
 
 export type CurrentPluginMetadataSnapshotRevision = symbol;
@@ -17,14 +17,14 @@ type CurrentPluginMetadataMutableState = {
   // Temporary snapshot owners compare this publication token before restoring;
   // lifecycle clears and newer publications must always win.
   revision: CurrentPluginMetadataSnapshotRevision;
-  configIdentities: WeakSet<OpenClawConfig>;
+  configIdentities: WeakSet<AforaConfig>;
 };
 
 // Process-scoped facts must survive dual module instances (ESM plus the lazy
 // require bridge in plugin-metadata-snapshot.runtime.ts), so the state lives
 // on a globalThis singleton like the scoped snapshot ALS.
 const state = resolveGlobalSingleton<CurrentPluginMetadataMutableState>(
-  Symbol.for("openclaw.currentPluginMetadataState"),
+  Symbol.for("afora.currentPluginMetadataState"),
   () => ({
     snapshot: undefined,
     configFingerprint: undefined,
@@ -32,25 +32,25 @@ const state = resolveGlobalSingleton<CurrentPluginMetadataMutableState>(
     compatibleConfigFingerprints: undefined,
     manifestModelIdNormalizationRecords: undefined,
     revision: Symbol("plugin-metadata-snapshot"),
-    configIdentities: new WeakSet<OpenClawConfig>(),
+    configIdentities: new WeakSet<AforaConfig>(),
   }),
 );
 
 /** Owns config identity reuse for the current immutable metadata snapshot. */
 export const currentPluginMetadataConfigIdentityCache = {
-  add(config: OpenClawConfig): void {
+  add(config: AforaConfig): void {
     state.configIdentities.add(config);
   },
-  capture(): WeakSet<OpenClawConfig> {
+  capture(): WeakSet<AforaConfig> {
     return state.configIdentities;
   },
   clear(): void {
     state.configIdentities = new WeakSet();
   },
-  has(config: OpenClawConfig): boolean {
+  has(config: AforaConfig): boolean {
     return state.configIdentities.has(config);
   },
-  restore(identities: WeakSet<OpenClawConfig>): void {
+  restore(identities: WeakSet<AforaConfig>): void {
     state.configIdentities = identities;
   },
 };

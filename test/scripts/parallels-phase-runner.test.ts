@@ -29,7 +29,7 @@ it("keeps the truncated phase tail UTF-8 safe when the byte cut splits a charact
   // 134 bytes total; the retained window starts one byte into the 4-byte
   // emoji, so a byte-naive decode would emit replacement characters.
   const tail = await captureFailedPhaseTail(
-    new PhaseRunner(tempRoots.make("openclaw-parallels-phase-runner-"), 128),
+    new PhaseRunner(tempRoots.make("afora-parallels-phase-runner-"), 128),
     `${"x".repeat(50)}😀${"y".repeat(79)}`,
   );
 

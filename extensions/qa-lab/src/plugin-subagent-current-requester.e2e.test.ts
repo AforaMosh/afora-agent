@@ -1,5 +1,5 @@
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { afterEach, describe, expect, it } from "vitest";
 import { startQaBusServer } from "./bus-server.js";
 import { createQaBusState } from "./bus-state.js";
@@ -17,7 +17,7 @@ const PLUGIN_DIR = path.join(
   "extensions/qa-lab/test-fixtures/current-requester-subagent-plugin",
 );
 
-function withFixturePlugin(config: OpenClawConfig): OpenClawConfig {
+function withFixturePlugin(config: AforaConfig): AforaConfig {
   return {
     ...config,
     plugins: {

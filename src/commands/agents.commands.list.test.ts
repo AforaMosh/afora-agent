@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { OutputRuntimeEnv } from "../runtime.js";
 import { withTestDir } from "../test-helpers/temp-dir.js";
 import { withEnvAsync } from "../test-utils/env.js";
@@ -68,7 +68,7 @@ function createRuntime(): OutputRuntimeEnv & { json: unknown[] } {
   };
 }
 
-function createConfig(): OpenClawConfig {
+function createConfig(): AforaConfig {
   return {
     agents: {
       list: [{ id: "main", default: true }],
@@ -122,7 +122,7 @@ describe("agentsListCommand", () => {
           orphan: { name: "Orphan" },
         },
       },
-    } satisfies OpenClawConfig);
+    } satisfies AforaConfig);
     listAgentProvenanceMock.mockReturnValue([
       { agentId: "main", createdVia: "operator", creatorAgentId: null, createdAtMs: 1 },
       { agentId: "child", createdVia: "agent", creatorAgentId: "main", createdAtMs: 2 },
@@ -188,14 +188,14 @@ describe("agentsListCommand", () => {
         [
           "Agents:",
           "- main (default)",
-          `  Workspace: ~${path.sep}.openclaw${path.sep}workspace`,
-          `  Agent dir: ~${path.sep}.openclaw${path.sep}agents${path.sep}main${path.sep}agent`,
+          `  Workspace: ~${path.sep}.afora${path.sep}workspace`,
+          `  Agent dir: ~${path.sep}.afora${path.sep}agents${path.sep}main${path.sep}agent`,
           "  Routing rules: 1",
           "  Routing: Telegram default",
           "  Providers:",
           "    - Telegram default: configured",
           "Routing rules map channel/account/peer to an agent. Use --bindings for full rules.",
-          "Channel status reflects local config/creds. For live health: openclaw channels status --probe.",
+          "Channel status reflects local config/creds. For live health: afora channels status --probe.",
         ].join("\n"),
       ],
     ]);
@@ -219,7 +219,7 @@ describe("agentsListCommand", () => {
         },
       },
       bindings: [{ agentId: "main", match: { channel: "telegram" } }],
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     requireValidConfigMock.mockResolvedValue(cfg);
     summarizeBindingsMock.mockReturnValue([`${control}Telegram\nroute`]);
     listProvidersForAgentMock.mockReturnValue([`${control}Telegram\tconfigured`]);
@@ -246,7 +246,7 @@ describe("agentsListCommand", () => {
   it.skipIf(process.platform !== "win32")(
     "shortens real Windows home casing aliases in human output",
     async () => {
-      await withTestDir({ prefix: "openclaw-home-display-" }, async (home) => {
+      await withTestDir({ prefix: "afora-home-display-" }, async (home) => {
         const workspace = path.join(home, "workspace");
         const agentDir = path.join(home, "agents", "main", "agent");
         await fs.promises.mkdir(workspace, { recursive: true });
@@ -265,17 +265,17 @@ describe("agentsListCommand", () => {
               },
             ],
           },
-        } satisfies OpenClawConfig);
+        } satisfies AforaConfig);
         const runtime = createRuntime();
 
-        await withEnvAsync({ OPENCLAW_HOME: home }, async () => {
+        await withEnvAsync({ AFORA_HOME: home }, async () => {
           await agentsListCommand({}, runtime);
         });
 
         const output = vi.mocked(runtime.log).mock.calls.flat().join("\n");
-        expect(output).toContain(`Workspace: $OPENCLAW_HOME${path.sep}workspace`);
+        expect(output).toContain(`Workspace: $AFORA_HOME${path.sep}workspace`);
         expect(output).toContain(
-          `Agent dir: $OPENCLAW_HOME${path.sep}agents${path.sep}main${path.sep}agent`,
+          `Agent dir: $AFORA_HOME${path.sep}agents${path.sep}main${path.sep}agent`,
         );
         expect(output).not.toContain(homeAlias);
       });

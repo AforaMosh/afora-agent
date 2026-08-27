@@ -5,11 +5,11 @@ import {
   executeSqliteQueryTakeFirstSync,
 } from "../../infra/kysely-sync.js";
 import {
-  openOpenClawAgentDatabase,
-  runOpenClawAgentWriteTransaction,
-  type OpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
-import { ensureSessionTranscriptArchiveSchema } from "../../state/openclaw-agent-session-transcript-archive-schema.js";
+  openAforaAgentDatabase,
+  runAforaAgentWriteTransaction,
+  type AforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
+import { ensureSessionTranscriptArchiveSchema } from "../../state/afora-agent-session-transcript-archive-schema.js";
 import {
   runSqliteTranscriptArchivePublishWorker,
   type MaterializedSessionStateDeletePlan,
@@ -26,7 +26,7 @@ import {
 
 /** Inserts the canonical archive row inside the lifecycle deletion transaction. */
 export function persistSessionTranscriptArchive(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   plan: MaterializedSessionStateDeletePlan,
 ): void {
   const archive = plan.archive;
@@ -124,7 +124,7 @@ export async function publishSessionStateArchives(
   let includeRequested = true;
   while (true) {
     const plans = await runExclusiveSqliteSessionWrite(scope, async () => {
-      const database = openOpenClawAgentDatabase(toDatabaseOptions(scope));
+      const database = openAforaAgentDatabase(toDatabaseOptions(scope));
       const db = getSessionKysely(database.db);
       if (includeRequested && requestedArchives.length > 0) {
         ensureSessionTranscriptArchiveSchema(database.db);
@@ -173,7 +173,7 @@ export async function publishSessionStateArchives(
     const results = await runSqliteTranscriptArchivePublishWorker(plans);
     await runExclusiveSqliteSessionWrite(scope, async () => {
       const now = Date.now();
-      runOpenClawAgentWriteTransaction((transactionDb) => {
+      runAforaAgentWriteTransaction((transactionDb) => {
         ensureSessionTranscriptArchiveSchema(transactionDb.db);
         const db = getSessionKysely(transactionDb.db);
         for (const result of results) {
@@ -243,7 +243,7 @@ export async function prunePublishedSessionArchivesByRetention(params: {
     return 0;
   }
   const candidates = await runExclusiveSqliteSessionWrite(params.scope, async () => {
-    const database = openOpenClawAgentDatabase(toDatabaseOptions(params.scope));
+    const database = openAforaAgentDatabase(toDatabaseOptions(params.scope));
     const db = getSessionKysely(database.db);
     const exists = executeSqliteQueryTakeFirstSync(
       database.db,
@@ -294,7 +294,7 @@ export async function prunePublishedSessionArchivesByRetention(params: {
   }
   return await runExclusiveSqliteSessionWrite(params.scope, async () => {
     let removed = 0;
-    runOpenClawAgentWriteTransaction((transactionDb) => {
+    runAforaAgentWriteTransaction((transactionDb) => {
       const db = getSessionKysely(transactionDb.db);
       for (const row of removable) {
         const result = executeSqliteQuerySync(

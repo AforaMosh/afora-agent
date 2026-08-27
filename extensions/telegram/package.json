@@ -1,8 +1,8 @@
 {
-  "name": "@openclaw/telegram",
+  "name": "@afora/telegram",
   "version": "2026.8.1",
   "private": true,
-  "description": "OpenClaw Telegram channel plugin",
+  "description": "Afora Telegram channel plugin",
   "type": "module",
   "dependencies": {
     "@grammyjs/runner": "2.0.3",
@@ -13,9 +13,9 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],
@@ -45,7 +45,7 @@
       "selectionDocsPrefix": "",
       "selectionDocsOmitLabel": true,
       "selectionExtras": [
-        "https://openclaw.ai"
+        "https://afora.ai"
       ],
       "markdownCapable": true,
       "setup": {

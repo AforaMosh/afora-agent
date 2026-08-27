@@ -39,9 +39,9 @@ const selected = {
 };
 
 const buildInfo = readJson("/app/dist/build-info.json");
-const expectedCommit = process.env.OPENCLAW_E2E_EXPECTED_GIT_COMMIT?.toLowerCase();
+const expectedCommit = process.env.AFORA_E2E_EXPECTED_GIT_COMMIT?.toLowerCase();
 const expectedBuiltAt = new Date(
-  process.env.OPENCLAW_E2E_EXPECTED_BUILD_TIMESTAMP ?? "",
+  process.env.AFORA_E2E_EXPECTED_BUILD_TIMESTAMP ?? "",
 ).toISOString();
 assert(buildInfo.commit === expectedCommit, `unexpected build commit: ${buildInfo.commit}`);
 assert(buildInfo.builtAt === expectedBuiltAt, `unexpected build timestamp: ${buildInfo.builtAt}`);
@@ -51,24 +51,24 @@ for (const [pluginId, expected] of Object.entries(selected)) {
   for (const entry of expected.entries) {
     assertFile(path.join(pluginRoot, entry));
   }
-  assertFile(path.join(pluginRoot, "openclaw.plugin.json"));
+  assertFile(path.join(pluginRoot, "afora.plugin.json"));
   assertFile(path.join(pluginRoot, "package.json"));
 
-  const manifest = readJson(path.join(pluginRoot, "openclaw.plugin.json"));
+  const manifest = readJson(path.join(pluginRoot, "afora.plugin.json"));
   const packageJson = readJson(path.join(pluginRoot, "package.json"));
   assert(manifest.id === pluginId, `unexpected ${pluginId} manifest id: ${manifest.id}`);
   assert(
-    packageJson.openclaw?.extensions?.includes("./index.js"),
+    packageJson.afora?.extensions?.includes("./index.js"),
     `${pluginId} package entry was not rewritten to ./index.js`,
   );
   if (expected.entries.includes("setup-entry.js")) {
     assert(
-      packageJson.openclaw?.setupEntry === "./setup-entry.js",
+      packageJson.afora?.setupEntry === "./setup-entry.js",
       `${pluginId} setup entry was not rewritten to ./setup-entry.js`,
     );
   }
 
-  const inspect = readJson(`/tmp/openclaw-${pluginId}-inspect.json`);
+  const inspect = readJson(`/tmp/afora-${pluginId}-inspect.json`);
   assert(inspect.plugin?.id === pluginId, `unexpected ${pluginId} inspect id`);
   assert(inspect.plugin?.status === "loaded", `${pluginId} runtime did not load`);
   assert(inspect.plugin?.origin === "bundled", `${pluginId} did not load from bundled dist`);
@@ -83,7 +83,7 @@ for (const [pluginId, expected] of Object.entries(selected)) {
 for (const pluginId of ["clickclack", "slack"]) {
   const packageJson = readJson(`/app/dist/extensions/${pluginId}/package.json`);
   assert(
-    packageJson.openclaw?.build?.bundledDist === false,
+    packageJson.afora?.build?.bundledDist === false,
     `${pluginId} bundledDist release metadata changed`,
   );
 }

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import type { PluginRuntime } from "openclaw/plugin-sdk/core";
-import type { PluginStateSyncKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/core";
+import type { PluginStateSyncKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
 
 export const REEF_REGISTRATION_NAMESPACE = "registration";
 export const REEF_REGISTRATION_IDENTITY_KEY = "identity";
@@ -75,7 +75,7 @@ function parseReefIdentityPendingRecord(value: unknown): ReefIdentityPendingReco
 
 function reefIdentityConflict(binding: ReefIdentityBinding): Error {
   return new Error(
-    `This OpenClaw state already holds the Reef identity @${binding.handle} on ${binding.relayUrl}. Re-register the same handle and relay.`,
+    `This Afora state already holds the Reef identity @${binding.handle} on ${binding.relayUrl}. Re-register the same handle and relay.`,
   );
 }
 
@@ -107,7 +107,7 @@ export function assertReefIdentityBinding(
   const existing = loadReefIdentityBinding(runtime);
   if (!existing) {
     throw new Error(
-      "Reef identity binding is missing; run openclaw doctor --fix or register this claw",
+      "Reef identity binding is missing; run afora doctor --fix or register this claw",
     );
   }
   if (existing.handle !== binding.handle || existing.relayUrl !== binding.relayUrl) {

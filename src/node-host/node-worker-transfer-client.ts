@@ -228,8 +228,8 @@ async function initializeGitWorkspace(params: {
   if (actual !== params.baseCommit) {
     throw new Error("workspace transfer Git base does not match the synced pack");
   }
-  await git(["update-ref", "refs/heads/openclaw-worker", params.baseCommit]);
-  await git(["symbolic-ref", "HEAD", "refs/heads/openclaw-worker"]);
+  await git(["update-ref", "refs/heads/afora-worker", params.baseCommit]);
+  await git(["symbolic-ref", "HEAD", "refs/heads/afora-worker"]);
   await git(["read-tree", params.baseCommit]);
   const index = await git(["ls-files", "--stage", "-z"], {
     maxOutputBytes: MAX_WORKSPACE_MANIFEST_BYTES,
@@ -400,7 +400,7 @@ async function downloadWorkspace(params: {
   const staging = stagingWorkspace.dir;
   try {
     if (manifest.baseCommit) {
-      const packPath = path.join(staging, ".openclaw-base.pack");
+      const packPath = path.join(staging, ".afora-base.pack");
       const packStartedAt = performance.now();
       await downloadFile({
         request: {
@@ -507,7 +507,7 @@ async function uploadWorkspace(params: {
   const baseRaw = await fsp.readFile(
     path.join(
       params.manifestHome,
-      ".openclaw-worker",
+      ".afora-worker",
       "manifests",
       `${params.transfer.baseManifestRef.slice("sha256:".length)}.json`,
     ),
@@ -523,7 +523,7 @@ async function uploadWorkspace(params: {
   const currentRaw = await fsp.readFile(
     path.join(
       params.manifestHome,
-      ".openclaw-worker",
+      ".afora-worker",
       "manifests",
       `${currentRef.slice("sha256:".length)}.json`,
     ),
@@ -553,7 +553,7 @@ async function uploadWorkspace(params: {
     method: "POST",
     token: params.transfer.token,
     headers: {
-      "content-type": "application/vnd.openclaw.worker-workspace-reconcile-v1",
+      "content-type": "application/vnd.afora.worker-workspace-reconcile-v1",
       "content-length": String(contentLength),
     },
     signal: params.signal,

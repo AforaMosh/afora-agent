@@ -2,7 +2,7 @@
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { setTimeout as delay } from "node:timers/promises";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import WebSocket, { WebSocketServer } from "ws";
 import {
@@ -699,8 +699,8 @@ describe("createRealtimeTranscriptionWebSocketSession", () => {
 
   it("preserves connect failures when the error callback throws", async () => {
     vi.useFakeTimers();
-    const previousDebugProxyEnabled = process.env.OPENCLAW_DEBUG_PROXY_ENABLED;
-    process.env.OPENCLAW_DEBUG_PROXY_ENABLED = "1";
+    const previousDebugProxyEnabled = process.env.AFORA_DEBUG_PROXY_ENABLED;
+    process.env.AFORA_DEBUG_PROXY_ENABLED = "1";
     const onError = vi.fn((_error: Error) => {
       throw new Error("error observer failed");
     });
@@ -732,9 +732,9 @@ describe("createRealtimeTranscriptionWebSocketSession", () => {
     } finally {
       session.close();
       if (previousDebugProxyEnabled === undefined) {
-        delete process.env.OPENCLAW_DEBUG_PROXY_ENABLED;
+        delete process.env.AFORA_DEBUG_PROXY_ENABLED;
       } else {
-        process.env.OPENCLAW_DEBUG_PROXY_ENABLED = previousDebugProxyEnabled;
+        process.env.AFORA_DEBUG_PROXY_ENABLED = previousDebugProxyEnabled;
       }
       vi.useRealTimers();
     }

@@ -1,4 +1,4 @@
-// OpenClaw operation parser tests protect direct command routing before model fallback.
+// Afora operation parser tests protect direct command routing before model fallback.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   clearRuntimeConfigSnapshot,
@@ -307,22 +307,22 @@ describe("parseSystemAgentOperation", () => {
       kind: "plugin-search",
       query: "calendar sync",
     });
-    expect(parseSystemAgentOperation("install npm plugin @openclaw/discord")).toEqual({
+    expect(parseSystemAgentOperation("install npm plugin @afora/discord")).toEqual({
       kind: "plugin-install",
-      spec: "npm:@openclaw/discord",
+      spec: "npm:@afora/discord",
     });
-    expect(parseSystemAgentOperation("plugin install clawhub:openclaw-demo")).toEqual({
+    expect(parseSystemAgentOperation("plugin install clawhub:afora-demo")).toEqual({
       kind: "plugin-install",
-      spec: "clawhub:openclaw-demo",
+      spec: "clawhub:afora-demo",
     });
-    expect(parseSystemAgentOperation("plugin uninstall openclaw-demo")).toEqual({
+    expect(parseSystemAgentOperation("plugin uninstall afora-demo")).toEqual({
       kind: "plugin-uninstall",
-      pluginId: "openclaw-demo",
+      pluginId: "afora-demo",
     });
     expect(parseSystemAgentOperation("plugin install npm:@example/plugin")).toEqual({
       kind: "none",
       message:
-        "OpenClaw installs only ClawHub, bundled, or official-catalog plugins. Use `openclaw plugins install <spec>` in a trusted shell to review an arbitrary executable source.",
+        "Afora installs only ClawHub, bundled, or official-catalog plugins. Use `afora plugins install <spec>` in a trusted shell to review an arbitrary executable source.",
     });
   });
 

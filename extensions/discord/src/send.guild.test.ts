@@ -9,7 +9,7 @@ vi.mock("./send.shared.js", () => ({
   resolveDiscordRest: () => restMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/web-media", () => ({
+vi.mock("afora-agent/plugin-sdk/web-media", () => ({
   loadWebMediaRaw: vi.fn(),
 }));
 

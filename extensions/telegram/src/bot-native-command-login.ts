@@ -1,13 +1,13 @@
 // Telegram plugin module implements native Codex login behavior.
-import type { CommandArgs } from "openclaw/plugin-sdk/command-auth-native";
-import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
-import { codexChannelLoginRuntime } from "openclaw/plugin-sdk/provider-auth-login-flow-runtime";
-import { danger } from "openclaw/plugin-sdk/runtime-env";
+import type { CommandArgs } from "afora-agent/plugin-sdk/command-auth-native";
+import { createDeferred } from "afora-agent/plugin-sdk/extension-shared";
+import { codexChannelLoginRuntime } from "afora-agent/plugin-sdk/provider-auth-login-flow-runtime";
+import { danger } from "afora-agent/plugin-sdk/runtime-env";
 import {
   resolveStorePath,
   updateSessionStoreEntry,
-} from "openclaw/plugin-sdk/session-store-runtime";
-import { escapeHtml } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/session-store-runtime";
+import { escapeHtml } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import { defaultTelegramNativeCommandDeps } from "./bot-native-command-deps.runtime.js";
 import type { TelegramCommandDispatch } from "./bot-native-command-dispatch.js";
@@ -100,7 +100,7 @@ export async function executeTelegramLoginCommand(params: {
     !dispatch.senderIsOwner ||
     !codexChannelLoginRuntime.hasConfiguredCommandOwnerAllowlist(dispatch.runtimeCfg)
   ) {
-    await sendLoginMessage("Only a configured OpenClaw owner can start Codex login from Telegram.");
+    await sendLoginMessage("Only a configured Afora owner can start Codex login from Telegram.");
     return false;
   }
   if (dispatch.isGroup) {

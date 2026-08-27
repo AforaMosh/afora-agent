@@ -1,6 +1,6 @@
 # Opt-in plugin dependencies and supported runtime builds (space- or comma-separated ids).
 # Manifest ids and existing source-directory names are accepted.
-# Example: docker build --build-arg OPENCLAW_EXTENSIONS="diagnostics-otel,matrix" .
+# Example: docker build --build-arg AFORA_EXTENSIONS="diagnostics-otel,matrix" .
 #
 # Multi-stage build produces a minimal runtime image without build tools,
 # source code, or Bun. Works with Docker, Buildx, and Podman.
@@ -8,17 +8,17 @@
 # build layer is not invalidated by unrelated source changes.
 #
 # Build stages use full bookworm; the runtime image is always bookworm-slim.
-ARG OPENCLAW_EXTENSIONS=""
-ARG OPENCLAW_BUNDLED_PLUGIN_DIR=extensions
-ARG OPENCLAW_DOCKER_BUILD_NODE_OPTIONS="--max-old-space-size=8192"
-ARG OPENCLAW_DOCKER_BUILD_TSDOWN_MAX_OLD_SPACE_MB=""
-ARG OPENCLAW_DOCKER_BUILD_SKIP_DTS=1
-ARG OPENCLAW_NODE_BOOKWORM_IMAGE="docker.io/library/node:24-bookworm@sha256:5711a0d445a1af54af9589066c646df387d1831a608226f4cd694fc59e745059"
-ARG OPENCLAW_NODE_BOOKWORM_SLIM_IMAGE="docker.io/library/node:24-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d"
-ARG OPENCLAW_NODE_BOOKWORM_SLIM_DIGEST="sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d"
+ARG AFORA_EXTENSIONS=""
+ARG AFORA_BUNDLED_PLUGIN_DIR=extensions
+ARG AFORA_DOCKER_BUILD_NODE_OPTIONS="--max-old-space-size=8192"
+ARG AFORA_DOCKER_BUILD_TSDOWN_MAX_OLD_SPACE_MB=""
+ARG AFORA_DOCKER_BUILD_SKIP_DTS=1
+ARG AFORA_NODE_BOOKWORM_IMAGE="docker.io/library/node:24-bookworm@sha256:5711a0d445a1af54af9589066c646df387d1831a608226f4cd694fc59e745059"
+ARG AFORA_NODE_BOOKWORM_SLIM_IMAGE="docker.io/library/node:24-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d"
+ARG AFORA_NODE_BOOKWORM_SLIM_DIGEST="sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d"
 # Keep in sync with .github/actions/setup-node-env/action.yml bun-version.
 # To update: docker buildx imagetools inspect docker.io/oven/bun:<version> and use the manifest-list digest.
-ARG OPENCLAW_BUN_IMAGE="docker.io/oven/bun:1.3.14@sha256:e10577f0db68676a7024391c6e5cb4b879ebd17188ab750cf10024a6d700e5c4"
+ARG AFORA_BUN_IMAGE="docker.io/oven/bun:1.3.14@sha256:e10577f0db68676a7024391c6e5cb4b879ebd17188ab750cf10024a6d700e5c4"
 
 # Base images are pinned to SHA256 digests for reproducible builds.
 # Dependabot refreshes these blessed digests; release builds consume the
@@ -27,9 +27,9 @@ ARG OPENCLAW_BUN_IMAGE="docker.io/oven/bun:1.3.14@sha256:e10577f0db68676a7024391
 # docker.io/library/node:24-bookworm-slim (or podman) and replace the digests below with the
 # current multi-arch manifest list entries.
 
-FROM ${OPENCLAW_NODE_BOOKWORM_IMAGE} AS workspace-deps
-ARG OPENCLAW_EXTENSIONS
-ARG OPENCLAW_BUNDLED_PLUGIN_DIR
+FROM ${AFORA_NODE_BOOKWORM_IMAGE} AS workspace-deps
+ARG AFORA_EXTENSIONS
+ARG AFORA_BUNDLED_PLUGIN_DIR
 # Copy package.json files for workspace packages used by the install layer.
 # Manifest-only bundled plugins remain valid selections but need no workspace metadata.
 # Use COPY because build-context bind mounts are unreliable across supported
@@ -37,8 +37,8 @@ ARG OPENCLAW_BUNDLED_PLUGIN_DIR
 # receive only extracted manifests.
 COPY scripts/lib/docker-plugin-selection.mjs /tmp/docker-plugin-selection.mjs
 COPY packages /tmp/packages
-COPY ${OPENCLAW_BUNDLED_PLUGIN_DIR} /tmp/${OPENCLAW_BUNDLED_PLUGIN_DIR}
-RUN mkdir -p /out/packages "/out/${OPENCLAW_BUNDLED_PLUGIN_DIR}" && \
+COPY ${AFORA_BUNDLED_PLUGIN_DIR} /tmp/${AFORA_BUNDLED_PLUGIN_DIR}
+RUN mkdir -p /out/packages "/out/${AFORA_BUNDLED_PLUGIN_DIR}" && \
     for manifest in /tmp/packages/*/package.json; do \
       [ -f "$manifest" ] || continue; \
       pkg_dir="${manifest%/package.json}"; \
@@ -46,23 +46,23 @@ RUN mkdir -p /out/packages "/out/${OPENCLAW_BUNDLED_PLUGIN_DIR}" && \
       mkdir -p "/out/packages/$pkg_name" && \
       cp "$manifest" "/out/packages/$pkg_name/package.json"; \
     done && \
-    node /tmp/docker-plugin-selection.mjs "/tmp/${OPENCLAW_BUNDLED_PLUGIN_DIR}" "$OPENCLAW_EXTENSIONS" \
-      > /out/openclaw-selected-plugin-dirs && \
+    node /tmp/docker-plugin-selection.mjs "/tmp/${AFORA_BUNDLED_PLUGIN_DIR}" "$AFORA_EXTENSIONS" \
+      > /out/afora-selected-plugin-dirs && \
     while IFS= read -r ext; do \
-      ext_dir="/tmp/${OPENCLAW_BUNDLED_PLUGIN_DIR}/$ext"; \
+      ext_dir="/tmp/${AFORA_BUNDLED_PLUGIN_DIR}/$ext"; \
       if [ -f "$ext_dir/package.json" ]; then \
-        mkdir -p "/out/${OPENCLAW_BUNDLED_PLUGIN_DIR}/$ext" && \
-        cp "$ext_dir/package.json" "/out/${OPENCLAW_BUNDLED_PLUGIN_DIR}/$ext/package.json"; \
+        mkdir -p "/out/${AFORA_BUNDLED_PLUGIN_DIR}/$ext" && \
+        cp "$ext_dir/package.json" "/out/${AFORA_BUNDLED_PLUGIN_DIR}/$ext/package.json"; \
       fi; \
-    done < /out/openclaw-selected-plugin-dirs
+    done < /out/afora-selected-plugin-dirs
 
 # ── Stage 2: Build ──────────────────────────────────────────────
-FROM ${OPENCLAW_BUN_IMAGE} AS bun-binary
-FROM ${OPENCLAW_NODE_BOOKWORM_IMAGE} AS build
-ARG OPENCLAW_BUNDLED_PLUGIN_DIR
-ARG OPENCLAW_DOCKER_BUILD_NODE_OPTIONS
-ARG OPENCLAW_DOCKER_BUILD_TSDOWN_MAX_OLD_SPACE_MB
-ARG OPENCLAW_DOCKER_BUILD_SKIP_DTS
+FROM ${AFORA_BUN_IMAGE} AS bun-binary
+FROM ${AFORA_NODE_BOOKWORM_IMAGE} AS build
+ARG AFORA_BUNDLED_PLUGIN_DIR
+ARG AFORA_DOCKER_BUILD_NODE_OPTIONS
+ARG AFORA_DOCKER_BUILD_TSDOWN_MAX_OLD_SPACE_MB
+ARG AFORA_DOCKER_BUILD_SKIP_DTS
 
 # Copy pinned Bun binary from the official image instead of fetching via curl.
 COPY --from=bun-binary /usr/local/bin/bun /usr/local/bin/bun
@@ -73,7 +73,7 @@ WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY node-version.mjs ./
-COPY openclaw.mjs ./
+COPY afora.mjs ./
 COPY ui/package.json ./ui/package.json
 COPY patches ./patches
 COPY scripts/postinstall-bundled-plugins.mjs scripts/preinstall-package-manager-warning.mjs scripts/windows-cmd-helpers.mjs scripts/prepare-git-hooks.mjs ./scripts/
@@ -81,12 +81,12 @@ COPY scripts/lib/guard-inventory-utils.mjs ./scripts/lib/guard-inventory-utils.m
 COPY scripts/lib/package-dist-imports.mjs ./scripts/lib/package-dist-imports.mjs
 
 COPY --from=workspace-deps /out/packages/ ./packages/
-COPY --from=workspace-deps /out/${OPENCLAW_BUNDLED_PLUGIN_DIR}/ ./${OPENCLAW_BUNDLED_PLUGIN_DIR}/
-COPY --from=workspace-deps /out/openclaw-selected-plugin-dirs /tmp/openclaw-selected-plugin-dirs
+COPY --from=workspace-deps /out/${AFORA_BUNDLED_PLUGIN_DIR}/ ./${AFORA_BUNDLED_PLUGIN_DIR}/
+COPY --from=workspace-deps /out/afora-selected-plugin-dirs /tmp/afora-selected-plugin-dirs
 
 # Reduce OOM risk on low-memory hosts during dependency installation.
 # Docker builds on small VMs may otherwise fail with "Killed" (exit 137).
-RUN --mount=type=cache,id=openclaw-pnpm-store,target=/root/.local/share/pnpm/store,sharing=locked \
+RUN --mount=type=cache,id=afora-pnpm-store,target=/root/.local/share/pnpm/store,sharing=locked \
     NODE_OPTIONS=--max-old-space-size=2048 pnpm install --frozen-lockfile \
       --config.supportedArchitectures.os=linux \
       --config.supportedArchitectures.cpu="$(node -p 'process.arch')" \
@@ -97,7 +97,7 @@ RUN --mount=type=cache,id=openclaw-pnpm-store,target=/root/.local/share/pnpm/sto
 # still exiting successfully, so retry the package downloader before failing.
 # Skip the entire check when matrix is not a bundled extension (e.g. msteams-only builds).
 RUN set -eux; \
-    if ! grep -qx 'matrix' /tmp/openclaw-selected-plugin-dirs; then \
+    if ! grep -qx 'matrix' /tmp/afora-selected-plugin-dirs; then \
       echo "==> matrix not bundled, skipping matrix-sdk-crypto check"; \
       exit 0; \
     fi; \
@@ -116,9 +116,9 @@ RUN set -eux; \
 # Public source provenance supplied by release automation or local setup. Keep
 # these after the dependency layer so a new timestamp does not invalidate install.
 ARG GIT_COMMIT=""
-ARG OPENCLAW_BUILD_TIMESTAMP=""
+ARG AFORA_BUILD_TIMESTAMP=""
 ENV GIT_COMMIT=${GIT_COMMIT} \
-    OPENCLAW_BUILD_TIMESTAMP=${OPENCLAW_BUILD_TIMESTAMP}
+    AFORA_BUILD_TIMESTAMP=${AFORA_BUILD_TIMESTAMP}
 
 COPY . .
 
@@ -128,7 +128,7 @@ RUN find /app -path /app/node_modules -prune -o -exec chmod a+rX {} +
 
 # Normalize extension paths now so runtime COPY preserves safe modes
 # without adding a second full extensions layer.
-RUN for dir in /app/${OPENCLAW_BUNDLED_PLUGIN_DIR} /app/.agent /app/.agents; do \
+RUN for dir in /app/${AFORA_BUNDLED_PLUGIN_DIR} /app/.agent /app/.agents; do \
       if [ -d "$dir" ]; then \
         find "$dir" -type d -exec chmod 755 {} +; \
         find "$dir" -type f -exec chmod 644 {} +; \
@@ -143,21 +143,21 @@ RUN pnpm_config_verify_deps_before_run=false pnpm canvas:a2ui:bundle || \
      mkdir -p extensions/canvas/src/host/a2ui && \
      echo "/* A2UI bundle unavailable in this build */" > extensions/canvas/src/host/a2ui/a2ui.bundle.js && \
      echo "stub" > extensions/canvas/src/host/a2ui/.bundle.hash && \
-     rm -rf vendor/a2ui apps/shared/OpenClawKit/Tools/CanvasA2UI)
+     rm -rf vendor/a2ui apps/shared/AforaKit/Tools/CanvasA2UI)
 # Force pnpm for UI build (Bun may fail on ARM/Synology architectures)
-ENV OPENCLAW_PREFER_PNPM=1
+ENV AFORA_PREFER_PNPM=1
 RUN set -eu; \
-    selected_plugin_dirs="$(cat /tmp/openclaw-selected-plugin-dirs)"; \
-    if [ -z "$OPENCLAW_BUILD_TIMESTAMP" ]; then \
-      OPENCLAW_BUILD_TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"; \
-      export OPENCLAW_BUILD_TIMESTAMP; \
+    selected_plugin_dirs="$(cat /tmp/afora-selected-plugin-dirs)"; \
+    if [ -z "$AFORA_BUILD_TIMESTAMP" ]; then \
+      AFORA_BUILD_TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"; \
+      export AFORA_BUILD_TIMESTAMP; \
     fi; \
-    if grep -qx 'qa-lab' /tmp/openclaw-selected-plugin-dirs; then \
-      export OPENCLAW_BUILD_PRIVATE_QA=1 OPENCLAW_ENABLE_PRIVATE_QA_CLI=1; \
+    if grep -qx 'qa-lab' /tmp/afora-selected-plugin-dirs; then \
+      export AFORA_BUILD_PRIVATE_QA=1 AFORA_ENABLE_PRIVATE_QA_CLI=1; \
     fi; \
-    OPENCLAW_INTERNAL_DOCKER_BUILD_PLUGIN_IDS="$selected_plugin_dirs" OPENCLAW_RUN_NODE_SKIP_DTS_BUILD="$OPENCLAW_DOCKER_BUILD_SKIP_DTS" OPENCLAW_TSDOWN_MAX_OLD_SPACE_MB="$OPENCLAW_DOCKER_BUILD_TSDOWN_MAX_OLD_SPACE_MB" NODE_OPTIONS="$OPENCLAW_DOCKER_BUILD_NODE_OPTIONS" pnpm_config_verify_deps_before_run=false pnpm build:docker; \
+    AFORA_INTERNAL_DOCKER_BUILD_PLUGIN_IDS="$selected_plugin_dirs" AFORA_RUN_NODE_SKIP_DTS_BUILD="$AFORA_DOCKER_BUILD_SKIP_DTS" AFORA_TSDOWN_MAX_OLD_SPACE_MB="$AFORA_DOCKER_BUILD_TSDOWN_MAX_OLD_SPACE_MB" NODE_OPTIONS="$AFORA_DOCKER_BUILD_NODE_OPTIONS" pnpm_config_verify_deps_before_run=false pnpm build:docker; \
     pnpm_config_verify_deps_before_run=false pnpm ui:build
-RUN if grep -qx 'qa-lab' /tmp/openclaw-selected-plugin-dirs; then \
+RUN if grep -qx 'qa-lab' /tmp/afora-selected-plugin-dirs; then \
       pnpm_config_verify_deps_before_run=false pnpm qa:lab:build && \
       mkdir -p dist/extensions/qa-lab/web && \
       rm -rf dist/extensions/qa-lab/web/dist && \
@@ -167,53 +167,53 @@ RUN if grep -qx 'qa-lab' /tmp/openclaw-selected-plugin-dirs; then \
 # Prune dev dependencies, omitted plugin runtime packages, and build-only
 # metadata before copying runtime assets into the final image.
 FROM build AS runtime-assets
-ARG OPENCLAW_BUNDLED_PLUGIN_DIR
+ARG AFORA_BUNDLED_PLUGIN_DIR
 # BuildKit cache mounts are not part of cached layers; seed tarballs for the
 # installed prod graph in the same step that runs offline prune.
-RUN --mount=type=cache,id=openclaw-pnpm-store,target=/root/.local/share/pnpm/store,sharing=locked \
+RUN --mount=type=cache,id=afora-pnpm-store,target=/root/.local/share/pnpm/store,sharing=locked \
     node scripts/list-prod-store-packages.mjs | xargs -r pnpm store add && \
     CI=true pnpm prune --prod \
       --config.offline=true \
       --config.supportedArchitectures.os=linux \
       --config.supportedArchitectures.cpu="$(node -p 'process.arch')" \
       --config.supportedArchitectures.libc=glibc && \
-    OPENCLAW_EXTENSIONS="$(cat /tmp/openclaw-selected-plugin-dirs)" OPENCLAW_BUNDLED_PLUGIN_DIR="$OPENCLAW_BUNDLED_PLUGIN_DIR" node scripts/prune-docker-plugin-dist.mjs && \
+    AFORA_EXTENSIONS="$(cat /tmp/afora-selected-plugin-dirs)" AFORA_BUNDLED_PLUGIN_DIR="$AFORA_BUNDLED_PLUGIN_DIR" node scripts/prune-docker-plugin-dist.mjs && \
     node scripts/postinstall-bundled-plugins.mjs && \
     find dist -type f \( -name '*.d.ts' -o -name '*.d.mts' -o -name '*.d.cts' -o -name '*.map' \) -delete && \
-    if [ -L /app/node_modules/@openclaw/ai ]; then \
-      ai_runtime_target="$(readlink -f /app/node_modules/@openclaw/ai)" && \
+    if [ -L /app/node_modules/@afora/ai ]; then \
+      ai_runtime_target="$(readlink -f /app/node_modules/@afora/ai)" && \
       ai_runtime_tmp="$(mktemp -d)" && \
       cp -a "$ai_runtime_target" "$ai_runtime_tmp/ai" && \
-      rm /app/node_modules/@openclaw/ai && \
-      mv "$ai_runtime_tmp/ai" /app/node_modules/@openclaw/ai && \
+      rm /app/node_modules/@afora/ai && \
+      mv "$ai_runtime_tmp/ai" /app/node_modules/@afora/ai && \
       rmdir "$ai_runtime_tmp"; \
     fi && \
     rm -rf \
-      /app/node_modules/openclaw \
-      /app/node_modules/.bin/openclaw \
-      /app/node_modules/.pnpm/openclaw@*/node_modules/openclaw && \
+      /app/node_modules/afora \
+      /app/node_modules/.bin/afora \
+      /app/node_modules/.pnpm/afora@*/node_modules/afora && \
     node scripts/check-package-dist-imports.mjs /app
 
 # ── Runtime base image ──────────────────────────────────────────
-FROM ${OPENCLAW_NODE_BOOKWORM_SLIM_IMAGE} AS base-runtime
-ARG OPENCLAW_NODE_BOOKWORM_SLIM_DIGEST
+FROM ${AFORA_NODE_BOOKWORM_SLIM_IMAGE} AS base-runtime
+ARG AFORA_NODE_BOOKWORM_SLIM_DIGEST
 LABEL org.opencontainers.image.base.name="docker.io/library/node:24-bookworm-slim" \
-  org.opencontainers.image.base.digest="${OPENCLAW_NODE_BOOKWORM_SLIM_DIGEST}"
+  org.opencontainers.image.base.digest="${AFORA_NODE_BOOKWORM_SLIM_DIGEST}"
 
 # ── Stage 3: Runtime ────────────────────────────────────────────
 FROM base-runtime
-ARG OPENCLAW_BUNDLED_PLUGIN_DIR
+ARG AFORA_BUNDLED_PLUGIN_DIR
 
 # OCI base-image metadata for downstream image consumers.
 # If you change these annotations, also update:
 # - docs/install/docker.md ("Base image metadata" section)
-# - https://docs.openclaw.ai/install/docker
-LABEL org.opencontainers.image.source="https://github.com/openclaw/openclaw" \
-  org.opencontainers.image.url="https://openclaw.ai" \
-  org.opencontainers.image.documentation="https://docs.openclaw.ai/install/docker" \
+# - https://docs.afora.ai/install/docker
+LABEL org.opencontainers.image.source="https://github.com/AforaMosh/afora-agent" \
+  org.opencontainers.image.url="https://afora.ai" \
+  org.opencontainers.image.documentation="https://docs.afora.ai/install/docker" \
   org.opencontainers.image.licenses="MIT" \
-  org.opencontainers.image.title="OpenClaw" \
-  org.opencontainers.image.description="OpenClaw gateway and CLI runtime container image"
+  org.opencontainers.image.title="Afora" \
+  org.opencontainers.image.description="Afora gateway and CLI runtime container image"
 
 WORKDIR /app
 
@@ -224,8 +224,8 @@ WORKDIR /app
 # `error setting certificate file`.
 # Apply current Debian point-release security fixes even when the pinned base
 # digest predates them, without waiting for a base-digest refresh.
-RUN --mount=type=cache,id=openclaw-bookworm-apt-cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,id=openclaw-bookworm-apt-lists,target=/var/lib/apt,sharing=locked \
+RUN --mount=type=cache,id=afora-bookworm-apt-cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=afora-bookworm-apt-lists,target=/var/lib/apt,sharing=locked \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -251,9 +251,9 @@ COPY --from=runtime-assets --chown=node:node /app/package.json .
 COPY --from=runtime-assets --chown=node:node /app/pnpm-workspace.yaml .
 COPY --from=runtime-assets --chown=node:node /app/patches ./patches
 COPY --from=runtime-assets --chown=node:node /app/node-version.mjs .
-COPY --from=runtime-assets --chown=node:node /app/openclaw.mjs .
+COPY --from=runtime-assets --chown=node:node /app/afora.mjs .
 COPY --from=runtime-assets --chown=node:node /app/src/agents/templates ./src/agents/templates
-COPY --from=runtime-assets --chown=node:node /app/${OPENCLAW_BUNDLED_PLUGIN_DIR} ./${OPENCLAW_BUNDLED_PLUGIN_DIR}
+COPY --from=runtime-assets --chown=node:node /app/${AFORA_BUNDLED_PLUGIN_DIR} ./${AFORA_BUNDLED_PLUGIN_DIR}
 COPY --from=runtime-assets --chown=node:node /app/skills ./skills
 COPY --from=runtime-assets --chown=node:node /app/docs ./docs
 COPY --from=runtime-assets --chown=node:node /app/qa ./qa
@@ -276,41 +276,41 @@ RUN install -d -m 0755 "$COREPACK_HOME" && \
     chmod -R a+rX "$COREPACK_HOME"
 
 # Install additional system packages needed by your skills or extensions.
-# Example: docker build --build-arg OPENCLAW_IMAGE_APT_PACKAGES="python3 wget" .
-# Legacy alias: OPENCLAW_DOCKER_APT_PACKAGES is still accepted as a fallback.
-ARG OPENCLAW_IMAGE_APT_PACKAGES
-ARG OPENCLAW_DOCKER_APT_PACKAGES=""
+# Example: docker build --build-arg AFORA_IMAGE_APT_PACKAGES="python3 wget" .
+# Legacy alias: AFORA_DOCKER_APT_PACKAGES is still accepted as a fallback.
+ARG AFORA_IMAGE_APT_PACKAGES
+ARG AFORA_DOCKER_APT_PACKAGES=""
 ENV PATH="/home/node/.local/bin:${PATH}"
-RUN --mount=type=cache,id=openclaw-bookworm-apt-cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,id=openclaw-bookworm-apt-lists,target=/var/lib/apt,sharing=locked \
-    packages="${OPENCLAW_IMAGE_APT_PACKAGES:-$OPENCLAW_DOCKER_APT_PACKAGES}"; \
+RUN --mount=type=cache,id=afora-bookworm-apt-cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=afora-bookworm-apt-lists,target=/var/lib/apt,sharing=locked \
+    packages="${AFORA_IMAGE_APT_PACKAGES:-$AFORA_DOCKER_APT_PACKAGES}"; \
     if [ -n "$packages" ]; then \
       apt-get update && \
       DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends $packages; \
     fi
 
 # Install additional Python packages needed by your plugins or skills.
-# Example: docker build --build-arg OPENCLAW_IMAGE_PIP_PACKAGES="requests humanize" .
-ARG OPENCLAW_IMAGE_PIP_PACKAGES=""
-RUN --mount=type=cache,id=openclaw-bookworm-apt-cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,id=openclaw-bookworm-apt-lists,target=/var/lib/apt,sharing=locked \
-    if [ -n "$OPENCLAW_IMAGE_PIP_PACKAGES" ]; then \
+# Example: docker build --build-arg AFORA_IMAGE_PIP_PACKAGES="requests humanize" .
+ARG AFORA_IMAGE_PIP_PACKAGES=""
+RUN --mount=type=cache,id=afora-bookworm-apt-cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=afora-bookworm-apt-lists,target=/var/lib/apt,sharing=locked \
+    if [ -n "$AFORA_IMAGE_PIP_PACKAGES" ]; then \
       if ! python3 -m pip --version >/dev/null 2>&1; then \
         apt-get update && \
         DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-pip; \
       fi && \
-      python3 -m pip install --no-cache-dir --break-system-packages $OPENCLAW_IMAGE_PIP_PACKAGES; \
+      python3 -m pip install --no-cache-dir --break-system-packages $AFORA_IMAGE_PIP_PACKAGES; \
     fi
 
 # Optionally install Chromium and Xvfb for browser automation.
-# Build with: docker build --build-arg OPENCLAW_INSTALL_BROWSER=1 ...
+# Build with: docker build --build-arg AFORA_INSTALL_BROWSER=1 ...
 # Adds ~300MB but eliminates the 60-90s Playwright install on every container start.
 # Must run after node_modules COPY so playwright-core is available.
-ARG OPENCLAW_INSTALL_BROWSER=""
+ARG AFORA_INSTALL_BROWSER=""
 ENV PLAYWRIGHT_BROWSERS_PATH=/home/node/.cache/ms-playwright
-RUN --mount=type=cache,id=openclaw-bookworm-apt-cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,id=openclaw-bookworm-apt-lists,target=/var/lib/apt,sharing=locked \
-    if [ -n "$OPENCLAW_INSTALL_BROWSER" ]; then \
+RUN --mount=type=cache,id=afora-bookworm-apt-cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=afora-bookworm-apt-lists,target=/var/lib/apt,sharing=locked \
+    if [ -n "$AFORA_INSTALL_BROWSER" ]; then \
       apt-get update && \
       DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends xvfb && \
       mkdir -p "$PLAYWRIGHT_BROWSERS_PATH" && \
@@ -319,14 +319,14 @@ RUN --mount=type=cache,id=openclaw-bookworm-apt-cache,target=/var/cache/apt,shar
     fi
 
 # Optionally install Docker CLI for sandbox container management.
-# Build with: docker build --build-arg OPENCLAW_INSTALL_DOCKER_CLI=1 ...
+# Build with: docker build --build-arg AFORA_INSTALL_DOCKER_CLI=1 ...
 # Adds ~50MB. Only the CLI is installed — no Docker daemon.
 # Required for agents.defaults.sandbox to function in Docker deployments.
-ARG OPENCLAW_INSTALL_DOCKER_CLI=""
-ARG OPENCLAW_DOCKER_GPG_FINGERPRINT="9DC858229FC7DD38854AE2D88D81803C0EBFCD88"
-RUN --mount=type=cache,id=openclaw-bookworm-apt-cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,id=openclaw-bookworm-apt-lists,target=/var/lib/apt,sharing=locked \
-    if [ -n "$OPENCLAW_INSTALL_DOCKER_CLI" ]; then \
+ARG AFORA_INSTALL_DOCKER_CLI=""
+ARG AFORA_DOCKER_GPG_FINGERPRINT="9DC858229FC7DD38854AE2D88D81803C0EBFCD88"
+RUN --mount=type=cache,id=afora-bookworm-apt-cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=afora-bookworm-apt-lists,target=/var/lib/apt,sharing=locked \
+    if [ -n "$AFORA_INSTALL_DOCKER_CLI" ]; then \
       apt-get update && \
       DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         ca-certificates curl gnupg && \
@@ -334,10 +334,10 @@ RUN --mount=type=cache,id=openclaw-bookworm-apt-cache,target=/var/cache/apt,shar
       # Verify Docker apt signing key fingerprint before trusting it as a root key.
       # Require exactly one primary key (`pub` in --with-colons; subkeys use `sub`) so we
       # never pin the first fingerprint while apt trusts extra keys from the same file.
-      # Update OPENCLAW_DOCKER_GPG_FINGERPRINT when Docker rotates release keys.
+      # Update AFORA_DOCKER_GPG_FINGERPRINT when Docker rotates release keys.
       curl -fsSL --connect-timeout 10 --max-time 120 \
         https://download.docker.com/linux/debian/gpg -o /tmp/docker.gpg.asc && \
-      expected_fingerprint="$(printf '%s' "$OPENCLAW_DOCKER_GPG_FINGERPRINT" | tr '[:lower:]' '[:upper:]' | tr -d '[:space:]')" && \
+      expected_fingerprint="$(printf '%s' "$AFORA_DOCKER_GPG_FINGERPRINT" | tr '[:lower:]' '[:upper:]' | tr -d '[:space:]')" && \
       docker_gpg_pub_count="$(gpg --batch --show-keys --with-colons /tmp/docker.gpg.asc | awk -F: '$1 == "pub" { c++ } END { print c+0 }')" && \
       if [ "$docker_gpg_pub_count" != "1" ]; then \
         echo "ERROR: Docker apt key must contain exactly one public key (found $docker_gpg_pub_count); refusing a multi-key file." >&2; \
@@ -359,23 +359,23 @@ RUN --mount=type=cache,id=openclaw-bookworm-apt-cache,target=/var/cache/apt,shar
     fi
 
 # Expose the CLI binary without requiring npm global writes as non-root.
-RUN ln -sf /app/openclaw.mjs /usr/local/bin/openclaw \
- && chmod 755 /app/openclaw.mjs
+RUN ln -sf /app/afora.mjs /usr/local/bin/afora \
+ && chmod 755 /app/afora.mjs
 
 # Pre-create default named-volume mount points so first-run Docker volumes copy
 # node ownership from the image instead of starting as root-owned directories.
 # NOTE: /home/node/.config must be created with node ownership first so that
-# the leaf /home/node/.config/openclaw inherits the correct parent permissions.
+# the leaf /home/node/.config/afora inherits the correct parent permissions.
 # Without this, install -d leaves /home/node/.config as root:root (issue #85968).
 RUN install -d -m 0755 -o node -g node /home/node/.config && \
     install -d -m 0700 -o node -g node \
-      /home/node/.openclaw \
-      /home/node/.openclaw/workspace \
-      /home/node/.config/openclaw && \
-    stat -c '%U:%G %a' /home/node/.openclaw | grep -qx 'node:node 700' && \
-    stat -c '%U:%G %a' /home/node/.openclaw/workspace | grep -qx 'node:node 700' && \
+      /home/node/.afora \
+      /home/node/.afora/workspace \
+      /home/node/.config/afora && \
+    stat -c '%U:%G %a' /home/node/.afora | grep -qx 'node:node 700' && \
+    stat -c '%U:%G %a' /home/node/.afora/workspace | grep -qx 'node:node 700' && \
     stat -c '%U:%G %a' /home/node/.config | grep -qx 'node:node 755' && \
-    stat -c '%U:%G %a' /home/node/.config/openclaw | grep -qx 'node:node 700'
+    stat -c '%U:%G %a' /home/node/.config/afora | grep -qx 'node:node 700'
 
 ENV NODE_ENV=production
 
@@ -400,4 +400,4 @@ USER node
 HEALTHCHECK --interval=3m --timeout=10s --start-period=15s --retries=3 \
   CMD ["node", "dist/docker-healthcheck.js"]
 ENTRYPOINT ["tini", "-s", "--"]
-CMD ["node", "openclaw.mjs", "gateway"]
+CMD ["node", "afora.mjs", "gateway"]

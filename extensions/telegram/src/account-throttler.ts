@@ -1,6 +1,6 @@
 // Telegram plugin module implements account throttler behavior.
-import { expectDefined } from "openclaw/plugin-sdk/expect-runtime";
-import { parseStrictInteger } from "openclaw/plugin-sdk/number-runtime";
+import { expectDefined } from "afora-agent/plugin-sdk/expect-runtime";
+import { parseStrictInteger } from "afora-agent/plugin-sdk/number-runtime";
 import { apiThrottler } from "./bot.runtime.js";
 
 type ApiThrottlerTransformer = ReturnType<typeof apiThrottler>;
@@ -95,7 +95,7 @@ class GroupFairQueue {
   }
 }
 
-const TELEGRAM_ACCOUNT_THROTTLERS_KEY = Symbol.for("openclaw.telegram.accountThrottlers");
+const TELEGRAM_ACCOUNT_THROTTLERS_KEY = Symbol.for("afora.telegram.accountThrottlers");
 
 function getAccountThrottlers(): Map<string, ApiThrottlerTransformer> {
   const globalRecord = globalThis as Record<PropertyKey, unknown>;

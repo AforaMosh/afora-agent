@@ -1,17 +1,17 @@
 // Imessage tests cover monitor.plugin payload plugin behavior.
 import path from "node:path";
-import * as channelInbound from "openclaw/plugin-sdk/channel-inbound";
+import * as channelInbound from "afora-agent/plugin-sdk/channel-inbound";
 import {
   addTestHook,
   createEmptyPluginRegistry,
   createTestInboundDebounceFlush,
   initializeGlobalHookRunner,
   resetGlobalHookRunner,
-} from "openclaw/plugin-sdk/channel-test-helpers";
-import { recordInboundSession } from "openclaw/plugin-sdk/conversation-runtime";
-import type { dispatchReplyWithBufferedBlockDispatcher } from "openclaw/plugin-sdk/reply-runtime";
-import { resolveStorePath } from "openclaw/plugin-sdk/session-store-runtime";
-import type { waitForTransportReady } from "openclaw/plugin-sdk/transport-ready-runtime";
+} from "afora-agent/plugin-sdk/channel-test-helpers";
+import { recordInboundSession } from "afora-agent/plugin-sdk/conversation-runtime";
+import type { dispatchReplyWithBufferedBlockDispatcher } from "afora-agent/plugin-sdk/reply-runtime";
+import { resolveStorePath } from "afora-agent/plugin-sdk/session-store-runtime";
+import type { waitForTransportReady } from "afora-agent/plugin-sdk/transport-ready-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { createIMessageRpcClient } from "./client.js";
 import { monitorIMessageProvider } from "./monitor.js";
@@ -26,12 +26,12 @@ const createIMessageRpcClientMock = vi.hoisted(() => vi.fn<typeof createIMessage
 const shouldDebounceTextInboundMock = vi.hoisted(() => vi.fn(() => false));
 const directDeliveryProof = vi.hoisted(() => ({ flush: false }));
 
-vi.mock("openclaw/plugin-sdk/transport-ready-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/transport-ready-runtime", () => ({
   waitForTransportReady: waitForTransportReadyMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/channel-inbound", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/channel-inbound")>();
+vi.mock("afora-agent/plugin-sdk/channel-inbound", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/channel-inbound")>();
   return {
     ...actual,
     createChannelInboundDebouncer: vi.fn(
@@ -96,7 +96,7 @@ describe("iMessage plugin payload attachments", () => {
               attachments: [
                 {
                   original_path:
-                    "/Users/openclaw/Library/Messages/Attachments/AA/BB/link.pluginPayloadAttachment",
+                    "/Users/afora/Library/Messages/Attachments/AA/BB/link.pluginPayloadAttachment",
                   mime_type: null,
                   missing: false,
                   transfer_name: "link.pluginPayloadAttachment",
@@ -271,7 +271,7 @@ describe("iMessage plugin payload attachments", () => {
 
       const { DatabaseSync } = await import("node:sqlite");
       const database = new DatabaseSync(
-        path.join(getIMessageRuntime().state.resolveStateDir(), "state", "openclaw.sqlite"),
+        path.join(getIMessageRuntime().state.resolveStateDir(), "state", "afora.sqlite"),
         { readOnly: true },
       );
       try {

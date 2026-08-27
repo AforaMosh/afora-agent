@@ -12,7 +12,7 @@ async function makeFixtureRoot(): Promise<{
   userApplications: string;
   systemApplications: string;
 }> {
-  const raw = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-installed-apps-"));
+  const raw = await fs.mkdtemp(path.join(os.tmpdir(), "afora-installed-apps-"));
   const root = await fs.realpath(raw);
   tempRoots.push(root);
   const applications = path.join(root, "Applications");

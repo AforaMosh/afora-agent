@@ -6,8 +6,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { SessionManager } from "openclaw/plugin-sdk/agent-sessions";
-import { readSessionTranscriptEvents } from "openclaw/plugin-sdk/session-transcript-runtime";
+import { SessionManager } from "afora-agent/plugin-sdk/agent-sessions";
+import { readSessionTranscriptEvents } from "afora-agent/plugin-sdk/session-transcript-runtime";
 import {
   buildRuntimeContextCustomMessage,
   resolveRuntimeContextPromptParts,
@@ -55,9 +55,9 @@ async function verifyRuntimeContextTranscriptShape() {
   const effectivePrompt = [
     "visible ask",
     "",
-    "<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>",
+    "<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>",
     "secret docker context",
-    "<<<END_OPENCLAW_INTERNAL_CONTEXT>>>",
+    "<<<END_AFORA_INTERNAL_CONTEXT>>>",
   ].join("\n");
   const promptSubmission = resolveRuntimeContextPromptParts({
     effectivePrompt,
@@ -87,7 +87,7 @@ async function verifyRuntimeContextTranscriptShape() {
   const customEntry = entries.find((entry) => entry.type === "custom_message");
   assert(!customEntry, "runtime custom message should not be persisted without its user turn");
   assert(
-    runtimeContextMessage.customType === "openclaw.runtime-context",
+    runtimeContextMessage.customType === "afora.runtime-context",
     "unexpected custom message type",
   );
   assert(!runtimeContextMessage.display, "runtime custom message should be hidden");
@@ -101,7 +101,7 @@ async function verifyRuntimeContextTranscriptShape() {
   const userText = messageText(userEntries[0]?.message?.content);
   assert(userText === "visible ask", `unexpected visible user text: ${JSON.stringify(userText)}`);
   assert(
-    !userText.includes("OPENCLAW_INTERNAL_CONTEXT") && !userText.includes("secret docker context"),
+    !userText.includes("AFORA_INTERNAL_CONTEXT") && !userText.includes("secret docker context"),
     "visible user transcript leaked runtime context",
   );
 }
@@ -127,9 +127,9 @@ async function seedBrokenSession(stateDir: string): Promise<string> {
         content: [
           "visible ask",
           "",
-          "<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>",
+          "<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>",
           "secret doctor context",
-          "<<<END_OPENCLAW_INTERNAL_CONTEXT>>>",
+          "<<<END_AFORA_INTERNAL_CONTEXT>>>",
         ].join("\n"),
       },
     },
@@ -177,8 +177,8 @@ async function seedBrokenSession(stateDir: string): Promise<string> {
 }
 
 async function verifyDoctorRepair(root: string) {
-  const stateDir = path.join(root, ".openclaw");
-  const configPath = path.join(stateDir, "openclaw.json");
+  const stateDir = path.join(root, ".afora");
+  const configPath = path.join(stateDir, "afora.json");
   const sessionFile = await seedBrokenSession(stateDir);
   await fs.mkdir(path.dirname(configPath), { recursive: true });
   await fs.writeFile(configPath, JSON.stringify({ plugins: { enabled: false } }, null, 2));
@@ -192,15 +192,15 @@ async function verifyDoctorRepair(root: string) {
     env: {
       ...process.env,
       HOME: root,
-      OPENCLAW_CONFIG_PATH: configPath,
-      OPENCLAW_DISABLE_BONJOUR: "1",
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-      OPENCLAW_NO_ONBOARD: "1",
-      OPENCLAW_STATE_DIR: stateDir,
-      OPENCLAW_SKIP_CANVAS_HOST: "1",
-      OPENCLAW_SKIP_CHANNELS: "1",
-      OPENCLAW_SKIP_CRON: "1",
-      OPENCLAW_SKIP_GMAIL_WATCHER: "1",
+      AFORA_CONFIG_PATH: configPath,
+      AFORA_DISABLE_BONJOUR: "1",
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+      AFORA_NO_ONBOARD: "1",
+      AFORA_STATE_DIR: stateDir,
+      AFORA_SKIP_CANVAS_HOST: "1",
+      AFORA_SKIP_CHANNELS: "1",
+      AFORA_SKIP_CRON: "1",
+      AFORA_SKIP_GMAIL_WATCHER: "1",
     },
     encoding: "utf-8",
     timeout: 120_000,
@@ -210,7 +210,7 @@ async function verifyDoctorRepair(root: string) {
     result.status === 0,
     `doctor --fix failed\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
   );
-  const databasePath = path.join(stateDir, "agents", "main", "agent", "openclaw-agent.sqlite");
+  const databasePath = path.join(stateDir, "agents", "main", "agent", "afora-agent.sqlite");
   const database = new DatabaseSync(databasePath, { readOnly: true });
   let migratedSessionId: string | undefined;
   try {
@@ -247,17 +247,17 @@ async function verifyDoctorRepair(root: string) {
 }
 
 async function main() {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-session-runtime-context-"));
-  const stateDir = path.join(root, ".openclaw");
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-session-runtime-context-"));
+  const stateDir = path.join(root, ".afora");
   setEnvValue("HOME", root);
-  setEnvValue("OPENCLAW_STATE_DIR", stateDir);
-  setEnvValue("OPENCLAW_CONFIG_PATH", path.join(stateDir, "openclaw.json"));
+  setEnvValue("AFORA_STATE_DIR", stateDir);
+  setEnvValue("AFORA_CONFIG_PATH", path.join(stateDir, "afora.json"));
   try {
     await verifyRuntimeContextTranscriptShape();
     await verifyDoctorRepair(root);
     console.log("session runtime context Docker E2E passed");
   } finally {
-    if (process.env.OPENCLAW_SESSION_RUNTIME_CONTEXT_KEEP_ARTIFACTS !== "1") {
+    if (process.env.AFORA_SESSION_RUNTIME_CONTEXT_KEEP_ARTIFACTS !== "1") {
       await fs.rm(root, { recursive: true, force: true });
     } else {
       console.error(`kept artifacts: ${root}`);

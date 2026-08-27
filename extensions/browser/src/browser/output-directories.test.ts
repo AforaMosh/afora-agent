@@ -8,7 +8,7 @@ import { ensureOutputDirectory } from "./output-directories.js";
 const directorySymlinkType = process.platform === "win32" ? "junction" : "dir";
 
 async function withTempDir<T>(run: (tempDir: string) => Promise<T>): Promise<T> {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-output-dir-test-"));
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-output-dir-test-"));
   try {
     return await run(tempDir);
   } finally {

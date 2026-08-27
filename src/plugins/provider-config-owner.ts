@@ -1,6 +1,6 @@
 // Resolves provider config ownership between core and plugins.
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
+import type { AforaConfig } from "../config/types.afora.js";
 
 /** Core built-in model API ids that do not imply plugin ownership of a provider config. */
 export const CORE_BUILT_IN_MODEL_APIS = new Set([
@@ -17,7 +17,7 @@ export const CORE_BUILT_IN_MODEL_APIS = new Set([
 /** Returns the plugin API id that owns a provider config when it is not core built-in. */
 export function resolveProviderConfigApiOwnerHint(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): string | undefined {
   const providers = params.config?.models?.providers;
   if (!providers) {

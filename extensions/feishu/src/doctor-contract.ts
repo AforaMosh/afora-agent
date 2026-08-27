@@ -2,15 +2,15 @@
 import type {
   ChannelDoctorConfigMutation,
   ChannelDoctorLegacyConfigRule,
-} from "openclaw/plugin-sdk/channel-contract";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+} from "afora-agent/plugin-sdk/channel-contract";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   asObjectRecord,
   defineChannelAliasMigration,
   defineKeyMoveMigration,
   hasLegacyAccountStreamingAliases,
   normalizeChannelConfigEntries,
-} from "openclaw/plugin-sdk/runtime-doctor-migrations";
+} from "afora-agent/plugin-sdk/runtime-doctor-migrations";
 import { DEFAULT_FEISHU_WEBHOOK_PATH, normalizeFeishuWebhookPath } from "./webhook-path.js";
 
 // Feishu's legacy boolean `streaming` gated streaming-card replies with an
@@ -120,9 +120,9 @@ function normalizeLegacyWebhookPath(params: {
 }
 
 function normalizeFeishuLegacyConfigEntries(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   changes: string[],
-): OpenClawConfig {
+): AforaConfig {
   return normalizeChannelConfigEntries({
     cfg,
     channelId: "feishu",
@@ -145,7 +145,7 @@ export const legacyConfigRules: ChannelDoctorLegacyConfigRule[] = [
   {
     path: ["channels", "feishu"],
     message:
-      'channels.feishu[.accounts.<id>].webhookPath must be a canonical HTTP request path; run "openclaw doctor --fix".',
+      'channels.feishu[.accounts.<id>].webhookPath must be a canonical HTTP request path; run "afora doctor --fix".',
     match: (value) => {
       const entry = asObjectRecord(value);
       return (
@@ -157,7 +157,7 @@ export const legacyConfigRules: ChannelDoctorLegacyConfigRule[] = [
   {
     path: ["channels", "feishu"],
     message:
-      'channels.feishu[.accounts.<id>].tools.base is legacy; use tools.bitable. Run "openclaw doctor --fix".',
+      'channels.feishu[.accounts.<id>].tools.base is legacy; use tools.bitable. Run "afora doctor --fix".',
     match: (value) => {
       const entry = asObjectRecord(value);
       return (
@@ -171,7 +171,7 @@ export const legacyConfigRules: ChannelDoctorLegacyConfigRule[] = [
 export function normalizeCompatibilityConfig({
   cfg,
 }: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 }): ChannelDoctorConfigMutation {
   const aliases = streamingAliasMigration.normalizeChannelConfig({ cfg });
   return {

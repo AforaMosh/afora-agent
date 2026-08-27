@@ -1,6 +1,6 @@
 // Checks web-search credential presence from config and plugin metadata.
-import { asOptionalObjectRecord } from "@openclaw/normalization-core/record-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { asOptionalObjectRecord } from "@afora/normalization-core/record-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
 import { loadManifestMetadataSnapshot } from "./manifest-contract-eligibility.js";
 import type { PluginManifestRecord } from "./manifest-registry.js";
 
@@ -21,7 +21,7 @@ function hasConfiguredSearchCredentialCandidate(searchConfig: unknown): boolean 
   );
 }
 
-function hasConfiguredPluginWebSearchCandidate(config: OpenClawConfig): boolean {
+function hasConfiguredPluginWebSearchCandidate(config: AforaConfig): boolean {
   const entries = asOptionalObjectRecord(config.plugins?.entries);
   if (!entries) {
     return false;
@@ -33,7 +33,7 @@ function hasConfiguredPluginWebSearchCandidate(config: OpenClawConfig): boolean 
 }
 
 function hasManifestWebSearchEnvCredentialCandidate(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env?: NodeJS.ProcessEnv;
   origin?: PluginManifestRecord["origin"];
 }): boolean {
@@ -57,7 +57,7 @@ function hasManifestWebSearchEnvCredentialCandidate(params: {
 }
 
 export function hasConfiguredWebSearchCredential(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env?: NodeJS.ProcessEnv;
   searchConfig?: Record<string, unknown>;
   origin?: PluginManifestRecord["origin"];

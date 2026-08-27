@@ -319,8 +319,8 @@ describe("Where chip state", () => {
               {
                 code: "update-required",
                 action: "update-and-reconnect",
-                updateCommand: "openclaw update",
-                headlessReconnectCommand: "openclaw node restart",
+                updateCommand: "afora update",
+                headlessReconnectCommand: "afora node restart",
               },
             ],
           },
@@ -369,7 +369,7 @@ describe("Where chip state", () => {
       expect(facts("legacy")[0]).toMatch(/^Last seen /);
       expect(row("outdated")?.disabled).toBe(true);
       expect(facts("outdated")).toEqual([
-        "Update required: run openclaw update, then reconnect. For a headless node, run openclaw node restart.",
+        "Update required: run afora update, then reconnect. For a headless node, run afora node restart.",
       ]);
       expect(row("camera")).toBeNull();
     } finally {

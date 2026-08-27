@@ -3,17 +3,17 @@ import { execFileUtf8Tail } from "./logs-cli.runtime.js";
 
 describe("execFileUtf8Tail", () => {
   it("replaces the ambient environment when an explicit environment is supplied", async () => {
-    process.env.OPENCLAW_LOG_ENV_LEAK_TEST = "ambient";
+    process.env.AFORA_LOG_ENV_LEAK_TEST = "ambient";
     try {
       await expect(
         execFileUtf8Tail(
           process.execPath,
-          ["-e", "process.stdout.write(process.env.OPENCLAW_LOG_ENV_LEAK_TEST ?? 'missing')"],
+          ["-e", "process.stdout.write(process.env.AFORA_LOG_ENV_LEAK_TEST ?? 'missing')"],
           { env: {}, maxBytes: 1024 },
         ),
       ).resolves.toMatchObject({ code: 0, stdout: "missing" });
     } finally {
-      delete process.env.OPENCLAW_LOG_ENV_LEAK_TEST;
+      delete process.env.AFORA_LOG_ENV_LEAK_TEST;
     }
   });
 
@@ -62,7 +62,7 @@ describe("execFileUtf8Tail", () => {
   });
 
   it("returns a soft failure when command launch fails", async () => {
-    const command = `openclaw-missing-${process.pid}-${Date.now()}`;
+    const command = `afora-missing-${process.pid}-${Date.now()}`;
     const result = await execFileUtf8Tail(command, [], { maxBytes: 1024 });
     expect(result).toMatchObject({ code: 1, stdout: "", truncated: false });
     expect(result.stderr).toMatch(/ENOENT|not found/i);

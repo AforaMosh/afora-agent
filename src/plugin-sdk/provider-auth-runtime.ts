@@ -4,11 +4,11 @@ import fs from "node:fs";
 import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { resolveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
+import { resolveTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
 import { ensureAuthProfileStore } from "../agents/auth-profiles/store.js";
 import { resolveApiKeyForProviderCore as resolveModelApiKeyForProvider } from "../agents/model-auth.js";
 import { normalizeProviderId } from "../agents/model-selection.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { startOAuthLoopbackCallbackServer } from "../infra/oauth-loopback-callback.js";
 import { escapeHtml } from "../shared/html-escape.js";
 
@@ -77,7 +77,7 @@ export type ProviderAuthProfileMetadata = {
 
 export function resolveProviderAuthProfileMetadata(params: {
   provider: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   profileId?: string;
   agentDir?: string;
 }): ProviderAuthProfileMetadata {
@@ -234,7 +234,7 @@ export async function waitForLocalOAuthCallback(params: {
       body:
         "<!doctype html><html><head><meta charset='utf-8'/></head>" +
         `<body><h2>${escapedSuccessTitle}</h2>` +
-        "<p>You can close this window and return to OpenClaw.</p></body></html>",
+        "<p>You can close this window and return to Afora.</p></body></html>",
       contentType: "text/html; charset=utf-8",
     }),
   });

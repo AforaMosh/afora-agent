@@ -8,7 +8,7 @@ export { truncateCloseReason } from "./server/close-reason.js";
 export type { GatewayServer, GatewayServerOptions } from "./server-public.js";
 
 async function emitStartupTrace(name: string, durationMs: number, totalMs: number): Promise<void> {
-  if (!process.env.OPENCLAW_GATEWAY_STARTUP_TRACE) {
+  if (!process.env.AFORA_GATEWAY_STARTUP_TRACE) {
     return;
   }
   const { formatConsoleDiagnosticLine } = await import("../logging/json-console-line.js");

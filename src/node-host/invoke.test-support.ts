@@ -16,7 +16,7 @@ type NodeHostInvokeTestApi = {
 
 function getTestApi(): NodeHostInvokeTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.nodeHostInvokeTestApi")
+    Symbol.for("afora.nodeHostInvokeTestApi")
   ] as NodeHostInvokeTestApi;
 }
 

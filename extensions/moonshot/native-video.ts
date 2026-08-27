@@ -1,12 +1,12 @@
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
-import { resolveProviderContext, streamSimple } from "openclaw/plugin-sdk/llm";
-import type { ProviderWrapStreamFnContext } from "openclaw/plugin-sdk/plugin-entry";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
+import { resolveProviderContext, streamSimple } from "afora-agent/plugin-sdk/llm";
+import type { ProviderWrapStreamFnContext } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   createMoonshotThinkingWrapper,
   resolveMoonshotThinkingKeep,
   resolveMoonshotThinkingType,
-} from "openclaw/plugin-sdk/provider-stream-shared";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/provider-stream-shared";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   isMoonshotAlwaysThinkingModelId,
   isMoonshotK3NativeVideoRoute,

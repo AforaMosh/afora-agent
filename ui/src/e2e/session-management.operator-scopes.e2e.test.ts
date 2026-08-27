@@ -16,7 +16,7 @@ const archived = sessionRow(
 
 async function confirmDelete(page: import("playwright").Page) {
   await page
-    .locator("openclaw-modal-dialog")
+    .locator("afora-modal-dialog")
     .last()
     .getByRole("button", { name: "Delete", exact: true })
     .click();

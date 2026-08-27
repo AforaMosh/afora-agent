@@ -36,8 +36,8 @@ suite.define(() => {
             const body =
               documentRequests === 1
                 ? documentHtml.replace(
-                    'data-openclaw-mount-timeout-ms="12000"',
-                    'data-openclaw-mount-timeout-ms="250"',
+                    'data-afora-mount-timeout-ms="12000"',
+                    'data-afora-mount-timeout-ms="250"',
                   )
                 : documentHtml;
             await route.fulfill({ response, body });
@@ -57,12 +57,12 @@ suite.define(() => {
             await page.goto(`${suite.server.baseUrl}chat`, { waitUntil: "domcontentloaded" })
           )?.status(),
         ).toBe(200);
-        await page.locator("openclaw-app-shell").waitFor();
+        await page.locator("afora-app-shell").waitFor();
         await page.locator(".agent-chat__welcome").waitFor();
 
         expect(documentRequests).toBe(2);
         expect(failedModuleRequests).toBe(1);
-        await expect.poll(() => page.url()).not.toContain("openclaw_mount_recovery");
+        await expect.poll(() => page.url()).not.toContain("afora_mount_recovery");
         await page.screenshot({ path: path.join(artifactDir, "recovered-control-ui.png") });
       },
     );

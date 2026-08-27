@@ -1,7 +1,7 @@
 // Tests plugin command install, listing, and config behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { handlePluginsCommand } from "./commands-plugins.js";
 import { buildPluginsCommandParams, type ConfigSnapshotMock } from "./commands.test-harness.js";
 
@@ -39,12 +39,12 @@ vi.mock("../../config/config.js", () => ({
   transformConfigFileWithRetry: async (params: {
     afterWrite?: unknown;
     transform: (
-      currentConfig: OpenClawConfig,
+      currentConfig: AforaConfig,
       context: { snapshot: ConfigSnapshotMock; previousHash: string | null; attempt: number },
     ) =>
-      | Promise<{ nextConfig: OpenClawConfig; result?: unknown }>
+      | Promise<{ nextConfig: AforaConfig; result?: unknown }>
       | {
-          nextConfig: OpenClawConfig;
+          nextConfig: AforaConfig;
           result?: unknown;
         };
   }) => {
@@ -58,7 +58,7 @@ vi.mock("../../config/config.js", () => ({
     const afterWrite = params.afterWrite ?? { mode: "auto" };
     await replaceConfigFileMock({ nextConfig: transformed.nextConfig, afterWrite });
     return {
-      path: snapshot.path ?? "/tmp/openclaw.json",
+      path: snapshot.path ?? "/tmp/afora.json",
       previousHash,
       persistedHash: "persisted-hash",
       snapshot,
@@ -106,7 +106,7 @@ vi.mock("../../plugins/status.js", () => ({
 }));
 
 vi.mock("../../plugins/toggle-config.js", () => ({
-  setPluginEnabledInConfig: vi.fn((config: OpenClawConfig, id: string, enabled: boolean) => ({
+  setPluginEnabledInConfig: vi.fn((config: AforaConfig, id: string, enabled: boolean) => ({
     ...config,
     plugins: {
       ...config.plugins,
@@ -126,7 +126,7 @@ vi.mock("../../utils.js", async () => {
   };
 });
 
-function buildCfg(): OpenClawConfig {
+function buildCfg(): AforaConfig {
   return {
     plugins: { enabled: true },
     commands: { text: true, plugins: true },
@@ -137,7 +137,7 @@ const WRITE_GATEWAY_SCOPES = ["operator.admin", "operator.write", "operator.pair
 
 function buildPluginsParams(
   commandBodyNormalized: string,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   options?: { gatewayClientScopes?: string[]; omitGatewayClientScopes?: boolean },
 ) {
   const params = buildPluginsCommandParams({
@@ -194,7 +194,7 @@ describe("handlePluginsCommand", () => {
     vi.clearAllMocks();
     readConfigFileSnapshotMock.mockResolvedValue({
       valid: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       sourceConfig: buildCfg(),
       resolved: buildCfg(),
       hash: "config-1",
@@ -211,7 +211,7 @@ describe("handlePluginsCommand", () => {
           id: "superpowers",
           name: "superpowers",
           status: "disabled",
-          format: "openclaw",
+          format: "afora",
           bundleFormat: "claude",
         },
       ],
@@ -223,7 +223,7 @@ describe("handlePluginsCommand", () => {
           id: "superpowers",
           name: "superpowers",
           status: "disabled",
-          format: "openclaw",
+          format: "afora",
           bundleFormat: "claude",
         },
       ],
@@ -345,8 +345,8 @@ describe("handlePluginsCommand", () => {
   });
 
   it("refuses plugin enablement in Nix mode before reading or replacing config", async () => {
-    const previousNixMode = process.env.OPENCLAW_NIX_MODE;
-    process.env.OPENCLAW_NIX_MODE = "1";
+    const previousNixMode = process.env.AFORA_NIX_MODE;
+    process.env.AFORA_NIX_MODE = "1";
     try {
       const params = buildPluginsParams("/plugins enable superpowers", buildCfg(), {
         gatewayClientScopes: WRITE_GATEWAY_SCOPES,
@@ -354,16 +354,16 @@ describe("handlePluginsCommand", () => {
       params.command.senderIsOwner = true;
 
       const result = await handlePluginsCommand(params, true);
-      expect(result?.reply?.text).toContain("OPENCLAW_NIX_MODE=1");
-      expect(result?.reply?.text).toContain("nix-openclaw#quick-start");
+      expect(result?.reply?.text).toContain("AFORA_NIX_MODE=1");
+      expect(result?.reply?.text).toContain("nix-afora#quick-start");
       expect(readConfigFileSnapshotMock).not.toHaveBeenCalled();
       expect(replaceConfigFileMock).not.toHaveBeenCalled();
       expect(refreshPluginRegistryAfterConfigMutationMock).not.toHaveBeenCalled();
     } finally {
       if (previousNixMode === undefined) {
-        delete process.env.OPENCLAW_NIX_MODE;
+        delete process.env.AFORA_NIX_MODE;
       } else {
-        process.env.OPENCLAW_NIX_MODE = previousNixMode;
+        process.env.AFORA_NIX_MODE = previousNixMode;
       }
     }
   });
@@ -376,7 +376,7 @@ describe("handlePluginsCommand", () => {
           id: "superpowers",
           name: "Super Powers",
           status: "disabled",
-          format: "openclaw",
+          format: "afora",
           bundleFormat: "claude",
         },
       ],

@@ -7,6 +7,6 @@ export const page = definePage({
   component: () =>
     import("./debug-page.ts").then(() => ({
       header: true,
-      render: () => html`<openclaw-debug-page></openclaw-debug-page>`,
+      render: () => html`<afora-debug-page></afora-debug-page>`,
     })),
 });

@@ -1,9 +1,9 @@
 import { Buffer } from "node:buffer";
 import crypto from "node:crypto";
-import { responsesPromptObserver } from "@openclaw/ai/internal/openai";
-import { stableStringify } from "@openclaw/normalization-core";
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
-import type { Model } from "openclaw/plugin-sdk/llm";
+import { responsesPromptObserver } from "@afora/ai/internal/openai";
+import { stableStringify } from "@afora/normalization-core";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
+import type { Model } from "afora-agent/plugin-sdk/llm";
 import { resolveGlobalSingleton } from "../../shared/global-singleton.js";
 
 type ProviderPromptSnapshot = {
@@ -17,7 +17,7 @@ export type ProviderPromptState = {
   lastRejected?: ProviderPromptSnapshot;
 };
 
-const PROVIDER_PROMPT_STATES_KEY = Symbol.for("openclaw.providerPromptStates");
+const PROVIDER_PROMPT_STATES_KEY = Symbol.for("afora.providerPromptStates");
 const providerPromptStates = resolveGlobalSingleton(
   PROVIDER_PROMPT_STATES_KEY,
   () => new Map<string, ProviderPromptState>(),

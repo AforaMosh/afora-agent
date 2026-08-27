@@ -1,11 +1,11 @@
 import path from "node:path";
-import type { NormalizedModelCatalogRow } from "@openclaw/model-catalog-core/model-catalog-types";
+import type { NormalizedModelCatalogRow } from "@afora/model-catalog-core/model-catalog-types";
 // Model picker tests cover catalog rows, provider metadata, backend defaults, and prompt choices.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { testing as cliBackendsTesting } from "../agents/cli-backends.test-support.js";
 import type { ModelCatalogEntry } from "../agents/model-catalog.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { stampConfigWriteMetadata } from "../config/io.meta.js";
 import type { WizardMultiSelectParams, WizardPrompter } from "../wizard/prompts.js";
 import {
@@ -38,7 +38,7 @@ vi.mock("./models/list.manifest-catalog.js", () => ({
 const loadPreferredProviderPickerCatalog = vi.hoisted(() =>
   vi.fn<
     (_params: {
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       preferredProvider: string;
       agentDir?: string;
       workspaceDir?: string;
@@ -77,7 +77,7 @@ const resolveEnvApiKey = vi.hoisted(() =>
   ),
 );
 const hasUsableCustomProviderApiKey = vi.hoisted(() =>
-  vi.fn<(_cfg?: OpenClawConfig, _provider?: string, _env?: NodeJS.ProcessEnv) => boolean>(
+  vi.fn<(_cfg?: AforaConfig, _provider?: string, _env?: NodeJS.ProcessEnv) => boolean>(
     () => false,
   ),
 );
@@ -89,7 +89,7 @@ const hasRuntimeAvailableProviderAuth = vi.hoisted(() =>
       env,
     }: {
       provider: string;
-      cfg?: OpenClawConfig;
+      cfg?: AforaConfig;
       workspaceDir?: string;
       env?: NodeJS.ProcessEnv;
     }) => {
@@ -153,7 +153,7 @@ const providerAuthEvaluations = vi.hoisted(
     >(),
 );
 const createProviderAuthChecker = vi.hoisted(() =>
-  vi.fn((params: { cfg?: OpenClawConfig; workspaceDir?: string; env?: NodeJS.ProcessEnv }) => {
+  vi.fn((params: { cfg?: AforaConfig; workspaceDir?: string; env?: NodeJS.ProcessEnv }) => {
     const checker = vi.fn(
       async (provider: string, ref?: { api?: string | null; baseUrl?: unknown }) => {
         const prepared = providerAuthEvaluations.get(provider);
@@ -343,9 +343,9 @@ function providerCallProviders() {
 }
 
 beforeEach(() => {
-  delete process.env.OPENCLAW_LOCALE;
+  delete process.env.AFORA_LOCALE;
   // Route hints exercise source policy even when a prior local build left stale dist artifacts.
-  vi.stubEnv("OPENCLAW_BUNDLED_PLUGINS_DIR", path.resolve("extensions"));
+  vi.stubEnv("AFORA_BUNDLED_PLUGINS_DIR", path.resolve("extensions"));
   vi.clearAllMocks();
   modelCatalogRouteVariants.value = undefined;
   providerAuthRoute.value = undefined;
@@ -431,14 +431,14 @@ describe("promptDefaultModel", () => {
     const prompter = makePrompter({ select });
 
     await promptDefaultPicker({
-      config: { agents: { defaults: {} } } as OpenClawConfig,
+      config: { agents: { defaults: {} } } as AforaConfig,
       prompter,
     });
 
     const options = pickerOptions(select as MockCallSource);
     const canonical = requireOption(options, "openai/gpt-5.5");
     expect(canonical.hint).toContain("Codex runtime route");
-    expect(canonical.hint).not.toContain("OpenClaw runtime route");
+    expect(canonical.hint).not.toContain("Afora runtime route");
   });
 
   it.each([
@@ -448,7 +448,7 @@ describe("promptDefaultModel", () => {
       { models: { "openai/gpt-5.5": { params: { text_verbosity: "low" } } } },
     ],
   ] as const)(
-    "labels official OpenAI with %s as an OpenClaw runtime route",
+    "labels official OpenAI with %s as an Afora runtime route",
     async (_label, defaults) => {
       loadModelCatalog.mockResolvedValue([
         {
@@ -462,12 +462,12 @@ describe("promptDefaultModel", () => {
       const select = vi.fn(async (params) => params.initialValue as never);
 
       await promptDefaultPicker({
-        config: { agents: { defaults } } as OpenClawConfig,
+        config: { agents: { defaults } } as AforaConfig,
         prompter: makePrompter({ select }),
       });
 
       const option = requireOption(pickerOptions(select as MockCallSource), "openai/gpt-5.5");
-      expect(option.hint).toContain("OpenClaw runtime route");
+      expect(option.hint).toContain("Afora runtime route");
       expect(option.hint).not.toContain("Codex runtime route");
     },
   );
@@ -475,7 +475,7 @@ describe("promptDefaultModel", () => {
   it.each([
     ["custom endpoint", "openai-responses", "https://example.test/v1"],
     ["authored Completions", "openai-completions", "https://api.openai.com/v1"],
-  ] as const)("labels an OpenAI %s as an OpenClaw runtime route", async (_label, api, baseUrl) => {
+  ] as const)("labels an OpenAI %s as an Afora runtime route", async (_label, api, baseUrl) => {
     loadModelCatalog.mockResolvedValue([
       { provider: "openai", id: "gpt-5.5", name: "GPT-5.5", api, baseUrl },
     ]);
@@ -486,7 +486,7 @@ describe("promptDefaultModel", () => {
           openai: { api, baseUrl, models: [configuredTextModel("gpt-5.5", "GPT-5.5")] },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const select = vi.fn(async (params) => params.initialValue as never);
 
     await promptDefaultPicker({
@@ -495,7 +495,7 @@ describe("promptDefaultModel", () => {
     });
 
     const option = requireOption(pickerOptions(select as MockCallSource), "openai/gpt-5.5");
-    expect(option.hint).toContain("OpenClaw runtime route");
+    expect(option.hint).toContain("Afora runtime route");
     expect(option.hint).not.toContain("Codex runtime route");
   });
 
@@ -531,7 +531,7 @@ describe("promptDefaultModel", () => {
     const select = vi.fn(async (params) => params.initialValue as never);
 
     await promptDefaultPicker({
-      config: { agents: { defaults: {} } } as OpenClawConfig,
+      config: { agents: { defaults: {} } } as AforaConfig,
       prompter: makePrompter({ select }),
     });
 
@@ -603,7 +603,7 @@ describe("promptDefaultModel", () => {
     const prompter = makePrompter({ select });
 
     await promptDefaultPicker({
-      config: { agents: { defaults: {} } } as OpenClawConfig,
+      config: { agents: { defaults: {} } } as AforaConfig,
       prompter,
     });
 
@@ -641,7 +641,7 @@ describe("promptDefaultModel", () => {
     const select = vi.fn(async (params) => params.initialValue as never);
 
     await promptDefaultPicker({
-      config: { agents: { defaults: {} } } as OpenClawConfig,
+      config: { agents: { defaults: {} } } as AforaConfig,
       prompter: makePrompter({ select }),
     });
 
@@ -678,7 +678,7 @@ describe("promptDefaultModel", () => {
     const prompter = makePrompter({ select });
 
     await promptDefaultPicker({
-      config: { agents: { defaults: {} } } as OpenClawConfig,
+      config: { agents: { defaults: {} } } as AforaConfig,
       prompter,
     });
 
@@ -699,7 +699,7 @@ describe("promptDefaultModel", () => {
     const prompter = makePrompter({ select });
 
     const result = await promptDefaultPicker({
-      config: { agents: { defaults: {} } } as OpenClawConfig,
+      config: { agents: { defaults: {} } } as AforaConfig,
       prompter,
     });
 
@@ -734,7 +734,7 @@ describe("promptDefaultModel", () => {
         },
       },
       agents: { defaults: {} },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptDefaultPicker({
       config,
@@ -764,7 +764,7 @@ describe("promptDefaultModel", () => {
           model: "openai/gpt-5.5",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptDefaultPicker({
       config,
@@ -804,7 +804,7 @@ describe("promptDefaultModel", () => {
           model: "nvidia/nemotron-3-super-120b-a12b",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await promptDefaultPicker({
       config,
@@ -838,7 +838,7 @@ describe("promptDefaultModel", () => {
     const prompter = makePrompter({ select });
 
     await promptDefaultPicker({
-      config: { agents: { defaults: {} } } as OpenClawConfig,
+      config: { agents: { defaults: {} } } as AforaConfig,
       prompter,
       preferredProvider: "nvidia",
     });
@@ -869,7 +869,7 @@ describe("promptDefaultModel", () => {
           model: "nvidia/nemotron-3-super-120b-a12b",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptDefaultPicker({
       config,
@@ -901,7 +901,7 @@ describe("promptDefaultModel", () => {
           model: "openai/gpt-5.5",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptDefaultPicker({
       config,
@@ -933,7 +933,7 @@ describe("promptDefaultModel", () => {
           model: "fleet-router/qwen3.6:latest",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptDefaultPicker({
       config,
@@ -977,7 +977,7 @@ describe("promptDefaultModel", () => {
           model: "openai/gpt-5.5",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptDefaultPicker({
       config,
@@ -1015,7 +1015,7 @@ describe("promptDefaultModel", () => {
           model: "openai/gpt-5.5",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptDefaultPicker({
       config,
@@ -1050,7 +1050,7 @@ describe("promptDefaultModel", () => {
           model: "nvidia/nemotron-3-super-120b-a12b",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptDefaultPicker({
       config,
@@ -1085,7 +1085,7 @@ describe("promptDefaultModel", () => {
           model: "nvidia/nemotron-3-ultra-550b-a55b",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptDefaultPicker({
       config,
@@ -1132,7 +1132,7 @@ describe("promptDefaultModel", () => {
             model: "nvidia/nemotron-3-super-120b-a12b",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       prompter,
       allowKeep: true,
       includeManual: true,
@@ -1179,7 +1179,7 @@ describe("promptDefaultModel", () => {
             model: "nvidia/nemotron-3-super-120b-a12b",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       prompter,
       allowKeep: true,
       includeManual: true,
@@ -1204,7 +1204,7 @@ describe("promptDefaultModel", () => {
     const prompter = makePrompter({ select });
     const env = {
       ...process.env,
-      OPENCLAW_STATE_DIR: "/tmp/openclaw-picker-state",
+      AFORA_STATE_DIR: "/tmp/afora-picker-state",
     };
     const config = {
       agents: {
@@ -1213,7 +1213,7 @@ describe("promptDefaultModel", () => {
           model: "nvidia/nemotron-3-super-120b-a12b",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await promptDefaultPicker({
       config,
@@ -1226,7 +1226,7 @@ describe("promptDefaultModel", () => {
     expect(loadPreferredProviderPickerCatalog).toHaveBeenCalledWith({
       cfg: config,
       preferredProvider: "nvidia",
-      agentDir: "/tmp/openclaw-picker-state/agents/worker/agent",
+      agentDir: "/tmp/afora-picker-state/agents/worker/agent",
       env,
     });
   });
@@ -1269,13 +1269,13 @@ describe("promptDefaultModel", () => {
       return (vllm?.value ?? "") as never;
     });
     const prompter = makePrompter({ select });
-    const config = { agents: { defaults: {} } } as OpenClawConfig;
+    const config = { agents: { defaults: {} } } as AforaConfig;
 
     const result = await promptDefaultPicker({
       config,
       prompter,
       includeProviderPluginSetups: true,
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       runtime: {} as never,
     });
 
@@ -1327,10 +1327,10 @@ describe("promptDefaultModel", () => {
     const prompter = makePrompter({ select });
 
     await promptDefaultPicker({
-      config: { agents: { defaults: {} } } as OpenClawConfig,
+      config: { agents: { defaults: {} } } as AforaConfig,
       prompter,
       includeProviderPluginSetups: true,
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       runtime: {} as never,
     });
 
@@ -1349,7 +1349,7 @@ describe("promptDefaultModel", () => {
           model: "openai/gpt-5.5",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptDefaultPicker({
       config,
@@ -1358,7 +1358,7 @@ describe("promptDefaultModel", () => {
       includeManual: true,
       includeProviderPluginSetups: true,
       loadCatalog: false,
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       runtime: {} as never,
     });
 
@@ -1398,10 +1398,10 @@ describe("promptDefaultModel", () => {
     const prompter = makePrompter({ select });
 
     await promptDefaultPicker({
-      config: { agents: { defaults: {} } } as OpenClawConfig,
+      config: { agents: { defaults: {} } } as AforaConfig,
       prompter,
       includeProviderPluginSetups: true,
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       runtime: {} as never,
     });
 
@@ -1422,7 +1422,7 @@ describe("promptModelAllowlist", () => {
 
     const multiselect = createSelectAllMultiselect();
     const prompter = makePrompter({ multiselect });
-    const config = { agents: { defaults: {} } } as OpenClawConfig;
+    const config = { agents: { defaults: {} } } as AforaConfig;
 
     const result = await promptModelAllowlist({
       config,
@@ -1436,12 +1436,12 @@ describe("promptModelAllowlist", () => {
   });
 
   it("localizes the model allowlist picker", async () => {
-    process.env.OPENCLAW_LOCALE = "zh-CN";
+    process.env.AFORA_LOCALE = "zh-CN";
     loadModelCatalog.mockResolvedValue([catalogModel("openai", "gpt-5.5", "GPT-5.5")]);
 
     const multiselect = createSelectAllMultiselect();
     const prompter = makePrompter({ multiselect });
-    const config = { agents: { defaults: {} } } as OpenClawConfig;
+    const config = { agents: { defaults: {} } } as AforaConfig;
 
     await promptModelAllowlist({ config, prompter });
 
@@ -1465,7 +1465,7 @@ describe("promptModelAllowlist", () => {
 
     const multiselect = createSelectAllMultiselect();
     const prompter = makePrompter({ multiselect });
-    const config = { agents: { defaults: {} } } as OpenClawConfig;
+    const config = { agents: { defaults: {} } } as AforaConfig;
 
     await promptModelAllowlist({
       config,
@@ -1550,7 +1550,7 @@ describe("promptModelAllowlist", () => {
     const multiselect = createSelectAllMultiselect();
 
     await promptModelAllowlist({
-      config: { agents: { defaults: {} } } as OpenClawConfig,
+      config: { agents: { defaults: {} } } as AforaConfig,
       prompter: makePrompter({ multiselect }),
     });
 
@@ -1580,7 +1580,7 @@ describe("promptModelAllowlist", () => {
         },
       },
       agents: { defaults: {} },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptModelAllowlist({ config, prompter });
 
@@ -1601,7 +1601,7 @@ describe("promptModelAllowlist", () => {
 
     const multiselect = createSelectAllMultiselect();
     const prompter = makePrompter({ multiselect });
-    const config = { agents: { defaults: {} } } as OpenClawConfig;
+    const config = { agents: { defaults: {} } } as AforaConfig;
 
     await promptModelAllowlist({
       config,
@@ -1637,7 +1637,7 @@ describe("promptModelAllowlist", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptModelAllowlist({
       config,
@@ -1688,7 +1688,7 @@ describe("promptModelAllowlist", () => {
         },
       },
       agents: { defaults: {} },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptModelAllowlist({
       config,
@@ -1732,7 +1732,7 @@ describe("promptModelAllowlist", () => {
         },
       },
       agents: { defaults: {} },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptModelAllowlist({
       config,
@@ -1789,7 +1789,7 @@ describe("promptModelAllowlist", () => {
         },
       },
       agents: { defaults: {} },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptModelAllowlist({
       config,
@@ -1838,7 +1838,7 @@ describe("promptModelAllowlist", () => {
         },
       },
       agents: { defaults: {} },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptModelAllowlist({
       config,
@@ -1884,7 +1884,7 @@ describe("promptModelAllowlist", () => {
         },
       },
       agents: { defaults: {} },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptModelAllowlist({
       config,
@@ -1920,7 +1920,7 @@ describe("promptModelAllowlist", () => {
         },
       },
       agents: { defaults: {} },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptModelAllowlist({
       config,
@@ -1957,7 +1957,7 @@ describe("promptModelAllowlist", () => {
         },
       },
       agents: { defaults: {} },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptModelAllowlist({ config, prompter });
 
@@ -1984,7 +1984,7 @@ describe("promptModelAllowlist", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptModelAllowlist({ config, prompter });
     const call = pickerParams(multiselect as MockCallSource);
@@ -2014,7 +2014,7 @@ describe("promptModelAllowlist", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptModelAllowlist({ config, prompter });
     const call = pickerParams(multiselect as MockCallSource);
@@ -2037,7 +2037,7 @@ describe("promptModelAllowlist", () => {
           model: "openai/gpt-5.5",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptModelAllowlist({ config, prompter });
 
@@ -2062,7 +2062,7 @@ describe("promptModelAllowlist", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptModelAllowlist({ config, prompter });
 
@@ -2090,7 +2090,7 @@ describe("promptModelAllowlist", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptModelAllowlist({
       config,
@@ -2119,7 +2119,7 @@ describe("promptModelAllowlist", () => {
           model: "openai/gpt-5.5",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptModelAllowlist({
       config,
@@ -2146,7 +2146,7 @@ describe("promptModelAllowlist", () => {
           model: "openai/gpt-5.5",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await promptModelAllowlist({
       config,
@@ -2192,7 +2192,7 @@ describe("runtime model picker visibility", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await promptModelAllowlist({ config, prompter });
 
@@ -2219,7 +2219,7 @@ describe("router model filtering", () => {
     const multiselect = createSelectAllMultiselect();
     const defaultPrompter = makePrompter({ select });
     const allowlistPrompter = makePrompter({ multiselect });
-    const config = { agents: { defaults: {} } } as OpenClawConfig;
+    const config = { agents: { defaults: {} } } as AforaConfig;
 
     await promptDefaultPicker({
       config,
@@ -2248,7 +2248,7 @@ describe("applyModelAllowlist", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const next = applyModelAllowlist(config, ["openai/gpt-5.5"]);
     expect(next.agents?.defaults?.models).toEqual({
@@ -2267,7 +2267,7 @@ describe("applyModelAllowlist", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const next = applyModelAllowlist(config, [
       "google/gemini-3-pro-preview",
@@ -2287,7 +2287,7 @@ describe("applyModelAllowlist", () => {
   });
 
   it("keeps non-Google provider Gemini-looking refs unchanged while writing selected models", () => {
-    const config = {} as OpenClawConfig;
+    const config = {} as AforaConfig;
 
     const next = applyModelAllowlist(config, ["litellm/gemini-3-flash", "litellm/gemini-3.1-pro"]);
     expect(next.agents?.defaults?.models).toEqual({
@@ -2312,7 +2312,7 @@ describe("applyModelAllowlist", () => {
           modelPolicy: { allow: ["openai/*", "anthropic/*", "sonnet"] },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const next = applyModelAllowlist(config, ["anthropic/claude-sonnet-4-6"], {
       scopeKeys: ["anthropic/claude-opus-4-6", "anthropic/claude-sonnet-4-6"],
@@ -2338,7 +2338,7 @@ describe("applyModelAllowlist", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const applied = applyModelAllowlist(config, ["openai/gpt-5.6-sol"], {
       scopeKeys: ["openai/gpt-5.5", "openai/gpt-5.6-sol"],
@@ -2361,7 +2361,7 @@ describe("applyModelAllowlist", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const applied = applyModelAllowlist(config, []);
     const next = stampConfigWriteMetadata(applied, undefined, undefined, config);
@@ -2381,7 +2381,7 @@ describe("applyModelFallbacksFromSelection", () => {
           model: { primary: "anthropic/claude-opus-4-6" },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const next = applyModelFallbacksFromSelection(config, [
       "anthropic/claude-opus-4-6",
@@ -2398,7 +2398,7 @@ describe("applyModelFallbacksFromSelection", () => {
       agents: {
         defaults: {},
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const next = applyModelFallbacksFromSelection(config, [
       "openai/gpt-5.6-sol",
@@ -2415,7 +2415,7 @@ describe("applyModelFallbacksFromSelection", () => {
       agents: {
         defaults: {},
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const next = applyModelFallbacksFromSelection(config, ["openai/gpt-5.5"]);
     expect(next).toBe(config);
@@ -2431,7 +2431,7 @@ describe("applyModelFallbacksFromSelection", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const next = applyModelFallbacksFromSelection(config, ["anthropic/claude-opus-4-6"]);
     expect(next.agents?.defaults?.model).toEqual({
@@ -2449,7 +2449,7 @@ describe("applyModelFallbacksFromSelection", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const next = applyModelFallbacksFromSelection(config, [
       "openai/gpt-5.5",
@@ -2472,7 +2472,7 @@ describe("applyModelFallbacksFromSelection", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const next = applyModelFallbacksFromSelection(config, [
       "google/gemini-3.1-pro-preview",
@@ -2494,7 +2494,7 @@ describe("applyModelFallbacksFromSelection", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const next = applyModelFallbacksFromSelection(config, ["openai/gpt-5.5"]);
     expect(next.agents?.defaults?.model).toEqual({
@@ -2512,7 +2512,7 @@ describe("applyModelFallbacksFromSelection", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const next = applyModelFallbacksFromSelection(config, ["openai/gpt-5.5"]);
     expect(next.agents?.defaults?.model).toEqual({
@@ -2531,7 +2531,7 @@ describe("applyModelFallbacksFromSelection", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const next = applyModelFallbacksFromSelection(config, ["openai/gpt-5.5"], {
       scopeKeys: ["openai/gpt-5.5", "openai/gpt-5.4"],
@@ -2552,7 +2552,7 @@ describe("applyModelFallbacksFromSelection", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const next = applyModelFallbacksFromSelection(config, [], {
       scopeKeys: ["openai/gpt-5.5", "openai/gpt-5.4"],
@@ -2573,7 +2573,7 @@ describe("applyModelFallbacksFromSelection", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const next = applyModelFallbacksFromSelection(config, ["openai/gpt-5.5", "openai/gpt-5.4"], {
       scopeKeys: ["openai/gpt-5.5", "openai/gpt-5.4"],
@@ -2597,7 +2597,7 @@ describe("applyModelFallbacksFromSelection", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const next = applyModelFallbacksFromSelection(config, ["openai/gpt-5.5"], {
       scopeKeys: ["openai/gpt-5.5", "openai/gpt-5.4-mini"],
@@ -2620,7 +2620,7 @@ describe("applyModelFallbacksFromSelection", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const next = applyModelFallbacksFromSelection(
       config,
@@ -2642,7 +2642,7 @@ describe("applyModelFallbacksFromSelection", () => {
           model: { primary: "anthropic/claude-opus-4-6", fallbacks: ["openai/gpt-5.5"] },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const next = applyModelFallbacksFromSelection(config, ["openai/gpt-5.5"]);
     expect(next.agents?.defaults?.model).toEqual({

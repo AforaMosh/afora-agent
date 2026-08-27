@@ -10,11 +10,11 @@ import {
   readWorkspaceStateSnapshot,
   resolveWorkspaceStateIdentity,
 } from "../agents/workspace-state-store.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { captureEnv, setTestEnvValue } from "../test-utils/env.js";
 import {
   detectLegacyWorkspaceState,
@@ -27,7 +27,7 @@ describe("legacy workspace Doctor migration", () => {
   let envSnapshot: ReturnType<typeof captureEnv> | undefined;
   const tempDirs = useAutoCleanupTempDirTracker((cleanup) => {
     afterEach(() => {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       envSnapshot?.restore();
       envSnapshot = undefined;
       cleanup();
@@ -35,19 +35,19 @@ describe("legacy workspace Doctor migration", () => {
   });
 
   function setup() {
-    const homeDir = tempDirs.make("openclaw-workspace-migration-home-");
-    const stateDir = path.join(homeDir, ".openclaw");
+    const homeDir = tempDirs.make("afora-workspace-migration-home-");
+    const stateDir = path.join(homeDir, ".afora");
     const workspaceDir = path.join(homeDir, "workspace");
     fs.mkdirSync(workspaceDir, { recursive: true });
-    envSnapshot ??= captureEnv(["HOME", "OPENCLAW_HOME", "OPENCLAW_STATE_DIR"]);
+    envSnapshot ??= captureEnv(["HOME", "AFORA_HOME", "AFORA_STATE_DIR"]);
     setTestEnvValue("HOME", homeDir);
-    setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
+    setTestEnvValue("AFORA_STATE_DIR", stateDir);
     const cfg = {
       agents: { defaults: { workspace: workspaceDir } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     return {
       cfg,
-      env: { ...process.env, HOME: homeDir, OPENCLAW_STATE_DIR: stateDir },
+      env: { ...process.env, HOME: homeDir, AFORA_STATE_DIR: stateDir },
       homeDir,
       stateDir,
       workspaceDir,
@@ -74,10 +74,10 @@ describe("legacy workspace Doctor migration", () => {
 
   it("detects configured and orphan sources only for explicit Doctor repair", async () => {
     const context = setup();
-    const setupPath = path.join(context.workspaceDir, "openclaw-workspace-state.json");
+    const setupPath = path.join(context.workspaceDir, "afora-workspace-state.json");
     const canonicalSetupPath = path.join(
       resolveWorkspaceStateIdentity(context.workspaceDir).workspacePath,
-      "openclaw-workspace-state.json",
+      "afora-workspace-state.json",
     );
     await fsp.writeFile(setupPath, JSON.stringify({ version: 1 }), "utf8");
     const orphanKey = "b".repeat(64);
@@ -89,7 +89,7 @@ describe("legacy workspace Doctor migration", () => {
     await fsp.mkdir(path.dirname(orphanPath), { recursive: true });
     await fsp.writeFile(
       orphanPath,
-      "openclaw-workspace-attestation:v1\n2026-07-16T00:00:00.000Z\n",
+      "afora-workspace-attestation:v1\n2026-07-16T00:00:00.000Z\n",
       "utf8",
     );
 
@@ -115,7 +115,7 @@ describe("legacy workspace Doctor migration", () => {
     const identity = resolveWorkspaceStateIdentity(context.workspaceDir);
     const seededAt = "2026-07-15T10:00:00.000Z";
     const completedAt = "2026-07-15T10:01:00.000Z";
-    const setupPath = path.join(context.workspaceDir, "openclaw-workspace-state.json");
+    const setupPath = path.join(context.workspaceDir, "afora-workspace-state.json");
     await fsp.writeFile(
       setupPath,
       JSON.stringify({ version: 1, bootstrapSeededAt: seededAt, setupCompletedAt: completedAt }),
@@ -129,7 +129,7 @@ describe("legacy workspace Doctor migration", () => {
     await fsp.mkdir(path.dirname(attestationPath), { recursive: true });
     await fsp.writeFile(
       attestationPath,
-      `openclaw-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\ngenerated:AGENTS.md:${HASH}\n`,
+      `afora-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\ngenerated:AGENTS.md:${HASH}\n`,
       "utf8",
     );
     const mtime = new Date("2026-07-15T11:02:03.456Z");
@@ -141,7 +141,7 @@ describe("legacy workspace Doctor migration", () => {
     expect(result.changes).toHaveLength(2);
     expect(fs.existsSync(setupPath)).toBe(false);
     expect(fs.existsSync(attestationPath)).toBe(false);
-    const db = openOpenClawStateDatabase({ env: context.env }).db;
+    const db = openAforaStateDatabase({ env: context.env }).db;
     expect(
       db
         .prepare(
@@ -177,7 +177,7 @@ describe("legacy workspace Doctor migration", () => {
   it("imports the legacy onboarding completion alias", async () => {
     const context = setup();
     const completedAt = "2026-07-15T10:01:00.000Z";
-    const setupPath = path.join(context.workspaceDir, ".openclaw", "workspace-state.json");
+    const setupPath = path.join(context.workspaceDir, ".afora", "workspace-state.json");
     await fsp.mkdir(path.dirname(setupPath), { recursive: true });
     await fsp.writeFile(setupPath, JSON.stringify({ onboardingCompletedAt: completedAt }), "utf8");
 
@@ -186,7 +186,7 @@ describe("legacy workspace Doctor migration", () => {
     expect(result.warnings).toEqual([]);
     const identity = resolveWorkspaceStateIdentity(context.workspaceDir);
     expect(
-      openOpenClawStateDatabase({ env: context.env })
+      openAforaStateDatabase({ env: context.env })
         .db.prepare("SELECT setup_completed_at FROM workspace_setup_state WHERE workspace_key = ?")
         .get(identity.workspaceKey),
     ).toEqual({ setup_completed_at: completedAt });
@@ -202,19 +202,19 @@ describe("legacy workspace Doctor migration", () => {
     );
     const aliasContext = {
       ...context,
-      cfg: { agents: { defaults: { workspace: workspaceAlias } } } satisfies OpenClawConfig,
+      cfg: { agents: { defaults: { workspace: workspaceAlias } } } satisfies AforaConfig,
       workspaceDir: workspaceAlias,
     };
     const completedAt = "2026-07-15T10:01:00.000Z";
     await fsp.writeFile(
-      path.join(workspaceAlias, "openclaw-workspace-state.json"),
+      path.join(workspaceAlias, "afora-workspace-state.json"),
       JSON.stringify({ setupCompletedAt: completedAt }),
       "utf8",
     );
     const canonicalSiblingPath = `${resolveWorkspaceStateIdentity(context.workspaceDir).workspacePath}.attested`;
     await fsp.writeFile(
       canonicalSiblingPath,
-      `openclaw-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\n`,
+      `afora-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\n`,
       "utf8",
     );
 
@@ -239,7 +239,7 @@ describe("legacy workspace Doctor migration", () => {
     );
     const aliasContext = {
       ...context,
-      cfg: { agents: { defaults: { workspace: workspaceAlias } } } satisfies OpenClawConfig,
+      cfg: { agents: { defaults: { workspace: workspaceAlias } } } satisfies AforaConfig,
       workspaceDir: workspaceAlias,
     };
     const identity = resolveWorkspaceStateIdentity(context.workspaceDir);
@@ -251,7 +251,7 @@ describe("legacy workspace Doctor migration", () => {
     await fsp.mkdir(path.dirname(attestationPath), { recursive: true });
     await fsp.writeFile(
       attestationPath,
-      "openclaw-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\n",
+      "afora-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\n",
       "utf8",
     );
     const attestedAt = new Date("2026-07-15T11:00:00.000Z");
@@ -284,14 +284,14 @@ describe("legacy workspace Doctor migration", () => {
     );
     const aliasContext = {
       ...context,
-      cfg: { agents: { defaults: { workspace: workspaceAlias } } } satisfies OpenClawConfig,
+      cfg: { agents: { defaults: { workspace: workspaceAlias } } } satisfies AforaConfig,
       workspaceDir: workspaceAlias,
     };
     const sourcePath = `${workspaceAlias}.attested`;
     const identityA = resolveWorkspaceStateIdentity(context.workspaceDir);
     await fsp.writeFile(
       sourcePath,
-      "openclaw-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\n",
+      "afora-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\n",
       "utf8",
     );
     const attestedAtA = new Date("2026-07-15T11:00:00.000Z");
@@ -304,14 +304,14 @@ describe("legacy workspace Doctor migration", () => {
     const identityB = resolveWorkspaceStateIdentity(targetB);
     await fsp.writeFile(
       sourcePath,
-      "openclaw-workspace-attestation:v1\n2026-07-15T12:00:00.000Z\n",
+      "afora-workspace-attestation:v1\n2026-07-15T12:00:00.000Z\n",
       "utf8",
     );
     const attestedAtB = new Date("2026-07-15T12:00:00.000Z");
     await fsp.utimes(sourcePath, attestedAtB, attestedAtB);
 
     expect((await migrate(aliasContext)).warnings).toEqual([]);
-    const db = openOpenClawStateDatabase({ env: context.env }).db;
+    const db = openAforaStateDatabase({ env: context.env }).db;
     expect(
       db
         .prepare(
@@ -349,7 +349,7 @@ describe("legacy workspace Doctor migration", () => {
     );
     const aliasContext = {
       ...context,
-      cfg: { agents: { defaults: { workspace: workspaceAlias } } } satisfies OpenClawConfig,
+      cfg: { agents: { defaults: { workspace: workspaceAlias } } } satisfies AforaConfig,
       workspaceDir: workspaceAlias,
     };
     const identityA = resolveWorkspaceStateIdentity(context.workspaceDir);
@@ -361,7 +361,7 @@ describe("legacy workspace Doctor migration", () => {
     await fsp.mkdir(path.dirname(attestationPath), { recursive: true });
     await fsp.writeFile(
       attestationPath,
-      "openclaw-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\n",
+      "afora-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\n",
       "utf8",
     );
     const detected = detect(aliasContext);
@@ -379,7 +379,7 @@ describe("legacy workspace Doctor migration", () => {
     expect(result.warnings[0]).toContain("configured workspace identity changed");
     expect(fs.existsSync(attestationPath)).toBe(true);
     expect(fs.existsSync(`${attestationPath}.doctor-importing`)).toBe(false);
-    const db = openOpenClawStateDatabase({ env: context.env }).db;
+    const db = openAforaStateDatabase({ env: context.env }).db;
     expect(db.prepare("SELECT COUNT(*) AS count FROM workspace_attestations").get()).toEqual({
       count: 0,
     });
@@ -394,8 +394,8 @@ describe("legacy workspace Doctor migration", () => {
   it("removes a stale nested setup marker after the root marker wins", async () => {
     const context = setup();
     const identity = resolveWorkspaceStateIdentity(context.workspaceDir);
-    const rootPath = path.join(context.workspaceDir, "openclaw-workspace-state.json");
-    const nestedPath = path.join(context.workspaceDir, ".openclaw", "workspace-state.json");
+    const rootPath = path.join(context.workspaceDir, "afora-workspace-state.json");
+    const nestedPath = path.join(context.workspaceDir, ".afora", "workspace-state.json");
     const rootSeededAt = "2026-07-15T10:00:00.000Z";
     const completedAt = "2026-07-15T10:01:00.000Z";
     await fsp.mkdir(path.dirname(nestedPath), { recursive: true });
@@ -420,7 +420,7 @@ describe("legacy workspace Doctor migration", () => {
     expect(fs.existsSync(rootPath)).toBe(false);
     expect(fs.existsSync(nestedPath)).toBe(false);
     expect(
-      openOpenClawStateDatabase({ env: context.env })
+      openAforaStateDatabase({ env: context.env })
         .db.prepare(
           "SELECT bootstrap_seeded_at, setup_completed_at FROM workspace_setup_state WHERE workspace_key = ?",
         )
@@ -439,7 +439,7 @@ describe("legacy workspace Doctor migration", () => {
     await fsp.mkdir(path.dirname(attestationPath), { recursive: true });
     await fsp.writeFile(
       attestationPath,
-      `openclaw-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\ngenerated:TOOLS.md:${HASH}\n`,
+      `afora-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\ngenerated:TOOLS.md:${HASH}\n`,
       "utf8",
     );
 
@@ -447,7 +447,7 @@ describe("legacy workspace Doctor migration", () => {
 
     expect(result.warnings).toEqual([]);
     expect(
-      openOpenClawStateDatabase({ env: context.env })
+      openAforaStateDatabase({ env: context.env })
         .db.prepare(
           "SELECT filename, sha256 FROM workspace_generated_bootstrap_hashes WHERE workspace_key = ?",
         )
@@ -462,7 +462,7 @@ describe("legacy workspace Doctor migration", () => {
     const attestationPath = `${context.workspaceDir}.attested`;
     await fsp.writeFile(
       attestationPath,
-      `openclaw-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\ngenerated:USER.md:${HASH}\n`,
+      `afora-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\ngenerated:USER.md:${HASH}\n`,
       "utf8",
     );
 
@@ -470,7 +470,7 @@ describe("legacy workspace Doctor migration", () => {
 
     expect(result.warnings).toEqual([]);
     expect(
-      openOpenClawStateDatabase({ env: context.env })
+      openAforaStateDatabase({ env: context.env })
         .db.prepare(
           "SELECT filename FROM workspace_generated_bootstrap_hashes WHERE workspace_key = ?",
         )
@@ -491,12 +491,12 @@ describe("legacy workspace Doctor migration", () => {
     await fsp.mkdir(path.dirname(currentPath), { recursive: true });
     await fsp.writeFile(
       currentPath,
-      `openclaw-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\ngenerated:AGENTS.md:${HASH}\n`,
+      `afora-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\ngenerated:AGENTS.md:${HASH}\n`,
       "utf8",
     );
     await fsp.writeFile(
       siblingPath,
-      `openclaw-workspace-attestation:v1\n2026-07-15T12:00:00.000Z\ngenerated:USER.md:${"b".repeat(64)}\n`,
+      `afora-workspace-attestation:v1\n2026-07-15T12:00:00.000Z\ngenerated:USER.md:${"b".repeat(64)}\n`,
       "utf8",
     );
     const currentMtime = new Date("2026-07-15T11:00:00.000Z");
@@ -510,7 +510,7 @@ describe("legacy workspace Doctor migration", () => {
     expect(fs.existsSync(currentPath)).toBe(false);
     expect(fs.existsSync(siblingPath)).toBe(false);
     expect(
-      openOpenClawStateDatabase({ env: context.env })
+      openAforaStateDatabase({ env: context.env })
         .db.prepare(
           "SELECT filename, sha256 FROM workspace_generated_bootstrap_hashes WHERE workspace_key = ?",
         )
@@ -530,12 +530,12 @@ describe("legacy workspace Doctor migration", () => {
     await fsp.mkdir(path.dirname(currentPath), { recursive: true });
     await fsp.writeFile(
       currentPath,
-      `openclaw-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\ngenerated:AGENTS.md:${HASH}\n`,
+      `afora-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\ngenerated:AGENTS.md:${HASH}\n`,
       "utf8",
     );
     await fsp.writeFile(
       siblingPath,
-      `openclaw-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\ngenerated:USER.md:${"b".repeat(64)}\n`,
+      `afora-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\ngenerated:USER.md:${"b".repeat(64)}\n`,
       "utf8",
     );
     const sameMtime = new Date("2026-07-15T11:00:00.000Z");
@@ -546,7 +546,7 @@ describe("legacy workspace Doctor migration", () => {
 
     expect(result.warnings).toEqual([]);
     expect(
-      openOpenClawStateDatabase({ env: context.env })
+      openAforaStateDatabase({ env: context.env })
         .db.prepare(
           "SELECT filename, sha256 FROM workspace_generated_bootstrap_hashes WHERE workspace_key = ?",
         )
@@ -566,7 +566,7 @@ describe("legacy workspace Doctor migration", () => {
     const sameMtime = new Date("2026-07-15T11:00:00.000Z");
     await fsp.writeFile(
       siblingPath,
-      `openclaw-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\ngenerated:USER.md:${"b".repeat(64)}\n`,
+      `afora-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\ngenerated:USER.md:${"b".repeat(64)}\n`,
       "utf8",
     );
     await fsp.utimes(siblingPath, sameMtime, sameMtime);
@@ -575,7 +575,7 @@ describe("legacy workspace Doctor migration", () => {
     await fsp.mkdir(path.dirname(currentPath), { recursive: true });
     await fsp.writeFile(
       currentPath,
-      `openclaw-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\ngenerated:AGENTS.md:${HASH}\n`,
+      `afora-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\ngenerated:AGENTS.md:${HASH}\n`,
       "utf8",
     );
     await fsp.utimes(currentPath, sameMtime, sameMtime);
@@ -585,7 +585,7 @@ describe("legacy workspace Doctor migration", () => {
     expect(result.warnings).toEqual([]);
     expect(fs.existsSync(currentPath)).toBe(false);
     expect(
-      openOpenClawStateDatabase({ env: context.env })
+      openAforaStateDatabase({ env: context.env })
         .db.prepare(
           "SELECT filename, sha256 FROM workspace_generated_bootstrap_hashes WHERE workspace_key = ?",
         )
@@ -595,7 +595,7 @@ describe("legacy workspace Doctor migration", () => {
 
   it("resumes an interrupted unreceipted claim", async () => {
     const context = setup();
-    const setupPath = path.join(context.workspaceDir, "openclaw-workspace-state.json");
+    const setupPath = path.join(context.workspaceDir, "afora-workspace-state.json");
     const claimPath = `${setupPath}.doctor-importing`;
     await fsp.writeFile(
       setupPath,
@@ -610,7 +610,7 @@ describe("legacy workspace Doctor migration", () => {
     expect(fs.existsSync(claimPath)).toBe(false);
     const identity = resolveWorkspaceStateIdentity(context.workspaceDir);
     expect(
-      openOpenClawStateDatabase({ env: context.env })
+      openAforaStateDatabase({ env: context.env })
         .db.prepare("SELECT setup_completed_at FROM workspace_setup_state WHERE workspace_key = ?")
         .get(identity.workspaceKey),
     ).toEqual({ setup_completed_at: "2026-07-15T10:01:00.000Z" });
@@ -621,7 +621,7 @@ describe("legacy workspace Doctor migration", () => {
     async (kind) => {
       const context = setup();
       const attestationPath = `${context.workspaceDir}.attested`;
-      const content = `openclaw-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\n${kind === "oversized" ? "x".repeat(3_000) : ""}`;
+      const content = `afora-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\n${kind === "oversized" ? "x".repeat(3_000) : ""}`;
       if (kind === "hardlink") {
         const targetPath = path.join(context.homeDir, "attestation-target");
         await fsp.writeFile(targetPath, content, "utf8");
@@ -647,7 +647,7 @@ describe("legacy workspace Doctor migration", () => {
     "oversized-attestation",
   ] as const)("rejects %s without changing canonical state", async (kind) => {
     const context = setup();
-    const setupPath = path.join(context.workspaceDir, "openclaw-workspace-state.json");
+    const setupPath = path.join(context.workspaceDir, "afora-workspace-state.json");
     let sourcePath = setupPath;
     if (kind === "invalid-attestation" || kind === "oversized-attestation") {
       const identity = resolveWorkspaceStateIdentity(context.workspaceDir);
@@ -661,8 +661,8 @@ describe("legacy workspace Doctor migration", () => {
       await fsp.writeFile(
         attestationPath,
         kind === "invalid-attestation"
-          ? "openclaw-workspace-attestation:v1\nnot-a-date\n"
-          : `openclaw-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\n${"x".repeat(3_000)}`,
+          ? "afora-workspace-attestation:v1\nnot-a-date\n"
+          : `afora-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\n${"x".repeat(3_000)}`,
         "utf8",
       );
     } else {
@@ -684,7 +684,7 @@ describe("legacy workspace Doctor migration", () => {
     expect(fs.existsSync(`${sourcePath}.doctor-importing`)).toBe(false);
     const identity = resolveWorkspaceStateIdentity(context.workspaceDir);
     expect(
-      openOpenClawStateDatabase({ env: context.env })
+      openAforaStateDatabase({ env: context.env })
         .db.prepare("SELECT workspace_key FROM workspace_setup_state WHERE workspace_key = ?")
         .get(identity.workspaceKey),
     ).toBeUndefined();
@@ -696,7 +696,7 @@ describe("legacy workspace Doctor migration", () => {
     const externalSource = path.join(externalDir, "workspace-state.json");
     await fsp.mkdir(externalDir, { recursive: true });
     await fsp.writeFile(externalSource, JSON.stringify({ version: 1 }), "utf8");
-    await fsp.symlink(externalDir, path.join(context.workspaceDir, ".openclaw"));
+    await fsp.symlink(externalDir, path.join(context.workspaceDir, ".afora"));
 
     expect(detect(context).hasLegacy).toBe(true);
     const result = await migrate(context);
@@ -708,7 +708,7 @@ describe("legacy workspace Doctor migration", () => {
     expect(fs.existsSync(`${externalSource}.doctor-importing`)).toBe(false);
     const identity = resolveWorkspaceStateIdentity(context.workspaceDir);
     expect(
-      openOpenClawStateDatabase({ env: context.env })
+      openAforaStateDatabase({ env: context.env })
         .db.prepare("SELECT workspace_key FROM workspace_setup_state WHERE workspace_key = ?")
         .get(identity.workspaceKey),
     ).toBeUndefined();
@@ -722,7 +722,7 @@ describe("legacy workspace Doctor migration", () => {
     await fsp.mkdir(externalDir, { recursive: true });
     await fsp.writeFile(
       externalSource,
-      "openclaw-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\n",
+      "afora-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\n",
       "utf8",
     );
     await fsp.mkdir(context.stateDir, { recursive: true });
@@ -733,11 +733,11 @@ describe("legacy workspace Doctor migration", () => {
 
     expect(result.warnings[0]).toMatch(/legacy workspace/i);
     await expect(fsp.readFile(externalSource, "utf8")).resolves.toContain(
-      "openclaw-workspace-attestation:v1",
+      "afora-workspace-attestation:v1",
     );
     expect(fs.existsSync(`${externalSource}.doctor-importing`)).toBe(false);
     expect(
-      openOpenClawStateDatabase({ env: context.env })
+      openAforaStateDatabase({ env: context.env })
         .db.prepare("SELECT workspace_key FROM workspace_attestations WHERE workspace_key = ?")
         .get(identity.workspaceKey),
     ).toBeUndefined();
@@ -745,7 +745,7 @@ describe("legacy workspace Doctor migration", () => {
 
   it("retains a setup source that changes before Doctor claims it", async () => {
     const context = setup();
-    const setupPath = path.join(context.workspaceDir, "openclaw-workspace-state.json");
+    const setupPath = path.join(context.workspaceDir, "afora-workspace-state.json");
     await fsp.writeFile(setupPath, JSON.stringify({ version: 1 }), "utf8");
 
     const result = await migrateLegacyWorkspaceState({
@@ -766,7 +766,7 @@ describe("legacy workspace Doctor migration", () => {
     expect(fs.existsSync(`${setupPath}.doctor-importing`)).toBe(false);
     const identity = resolveWorkspaceStateIdentity(context.workspaceDir);
     expect(
-      openOpenClawStateDatabase({ env: context.env })
+      openAforaStateDatabase({ env: context.env })
         .db.prepare("SELECT workspace_key FROM workspace_setup_state WHERE workspace_key = ?")
         .get(identity.workspaceKey),
     ).toBeUndefined();
@@ -775,13 +775,13 @@ describe("legacy workspace Doctor migration", () => {
   it("keeps a conflicting source and preserves canonical SQLite state", async () => {
     const context = setup();
     const identity = resolveWorkspaceStateIdentity(context.workspaceDir);
-    const db = openOpenClawStateDatabase({ env: context.env }).db;
+    const db = openAforaStateDatabase({ env: context.env }).db;
     db.prepare(
       `INSERT INTO workspace_setup_state (
          workspace_key, workspace_path, version, bootstrap_seeded_at, setup_completed_at, updated_at
        ) VALUES (?, ?, 1, ?, NULL, 1)`,
     ).run(identity.workspaceKey, identity.workspacePath, "2026-07-15T00:00:00.000Z");
-    const setupPath = path.join(context.workspaceDir, "openclaw-workspace-state.json");
+    const setupPath = path.join(context.workspaceDir, "afora-workspace-state.json");
     await fsp.writeFile(
       setupPath,
       JSON.stringify({ version: 1, bootstrapSeededAt: "2026-07-16T00:00:00.000Z" }),
@@ -805,13 +805,13 @@ describe("legacy workspace Doctor migration", () => {
     const identity = resolveWorkspaceStateIdentity(context.workspaceDir);
     const seededAt = "2026-07-15T00:00:00.000Z";
     const completedAt = "2026-07-15T00:01:00.000Z";
-    const db = openOpenClawStateDatabase({ env: context.env }).db;
+    const db = openAforaStateDatabase({ env: context.env }).db;
     db.prepare(
       `INSERT INTO workspace_setup_state (
          workspace_key, workspace_path, version, bootstrap_seeded_at, setup_completed_at, updated_at
        ) VALUES (?, ?, 1, ?, NULL, 1)`,
     ).run(identity.workspaceKey, identity.workspacePath, seededAt);
-    const setupPath = path.join(context.workspaceDir, "openclaw-workspace-state.json");
+    const setupPath = path.join(context.workspaceDir, "afora-workspace-state.json");
     await fsp.writeFile(
       setupPath,
       JSON.stringify({ version: 1, setupCompletedAt: completedAt }),
@@ -831,7 +831,7 @@ describe("legacy workspace Doctor migration", () => {
     ).toEqual({ bootstrap_seeded_at: seededAt, setup_completed_at: completedAt });
     const receipt = db
       .prepare("SELECT report_json FROM migration_sources WHERE source_path = ?")
-      .get(path.join(identity.workspacePath, "openclaw-workspace-state.json")) as {
+      .get(path.join(identity.workspacePath, "afora-workspace-state.json")) as {
       report_json: string;
     };
     expect(JSON.parse(receipt.report_json)).toMatchObject({
@@ -844,7 +844,7 @@ describe("legacy workspace Doctor migration", () => {
   it("uses receipts for idempotent cleanup-only retries", async () => {
     const context = setup();
     const identity = resolveWorkspaceStateIdentity(context.workspaceDir);
-    const setupPath = path.join(context.workspaceDir, "openclaw-workspace-state.json");
+    const setupPath = path.join(context.workspaceDir, "afora-workspace-state.json");
     const seededAt = "2026-07-15T00:00:00.000Z";
     await fsp.writeFile(
       setupPath,
@@ -861,7 +861,7 @@ describe("legacy workspace Doctor migration", () => {
     });
     expect(first.warnings[0]).toContain("legacy cleanup failed");
     expect(fs.existsSync(`${setupPath}.doctor-importing`)).toBe(true);
-    const db = openOpenClawStateDatabase({ env: context.env }).db;
+    const db = openAforaStateDatabase({ env: context.env }).db;
 
     const retry = await migrate(context);
 
@@ -877,7 +877,7 @@ describe("legacy workspace Doctor migration", () => {
         .prepare(
           "SELECT source_sha256, removed_source FROM migration_sources WHERE source_path = ?",
         )
-        .get(path.join(identity.workspacePath, "openclaw-workspace-state.json")),
+        .get(path.join(identity.workspacePath, "afora-workspace-state.json")),
     ).toEqual({
       source_sha256: createHash("sha256")
         .update(JSON.stringify({ version: 1, bootstrapSeededAt: seededAt }))
@@ -888,8 +888,8 @@ describe("legacy workspace Doctor migration", () => {
 
   it("cleans receipt-covered superseded setup markers after an interrupted delete", async () => {
     const context = setup();
-    const rootPath = path.join(context.workspaceDir, "openclaw-workspace-state.json");
-    const nestedPath = path.join(context.workspaceDir, ".openclaw", "workspace-state.json");
+    const rootPath = path.join(context.workspaceDir, "afora-workspace-state.json");
+    const nestedPath = path.join(context.workspaceDir, ".afora", "workspace-state.json");
     await fsp.mkdir(path.dirname(nestedPath), { recursive: true });
     await fsp.writeFile(
       rootPath,
@@ -933,7 +933,7 @@ describe("legacy workspace Doctor migration", () => {
     await fsp.mkdir(path.dirname(attestationPath), { recursive: true });
     await fsp.writeFile(
       attestationPath,
-      "openclaw-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\n",
+      "afora-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\n",
       "utf8",
     );
     const originalMtime = new Date("2026-07-15T11:01:00.000Z");
@@ -956,7 +956,7 @@ describe("legacy workspace Doctor migration", () => {
     expect(retry.warnings[0]).toContain("retired source now conflicts");
     expect(fs.existsSync(claimPath)).toBe(true);
     expect(
-      openOpenClawStateDatabase({ env: context.env })
+      openAforaStateDatabase({ env: context.env })
         .db.prepare("SELECT attested_at_ms FROM workspace_attestations WHERE workspace_key = ?")
         .get(identity.workspaceKey),
     ).toEqual({ attested_at_ms: originalMtime.getTime() });

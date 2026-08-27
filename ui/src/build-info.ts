@@ -7,11 +7,11 @@ export type { ControlUiBuildInfo } from "./build-info-types.ts";
 declare global {
   // Vite replaces this property with one object so the UI and service worker
   // share the exact artifact identity without separate compile-time constants.
-  var OPENCLAW_CONTROL_UI_BUILD_INFO: ControlUiBuildInfo | undefined;
+  var AFORA_CONTROL_UI_BUILD_INFO: ControlUiBuildInfo | undefined;
 }
 
 export const CONTROL_UI_BUILD_INFO =
-  globalThis.OPENCLAW_CONTROL_UI_BUILD_INFO ?? normalizeControlUiBuildInfo(undefined);
+  globalThis.AFORA_CONTROL_UI_BUILD_INFO ?? normalizeControlUiBuildInfo(undefined);
 
 /** Reports whether the reload was started, so callers can tell an outcome they
  * still have to present from one the reloaded document will present instead. */

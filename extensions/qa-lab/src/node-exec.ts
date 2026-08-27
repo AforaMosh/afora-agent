@@ -1,6 +1,6 @@
 // Qa Lab plugin module implements node exec behavior.
 import path from "node:path";
-import { runExec } from "openclaw/plugin-sdk/process-runtime";
+import { runExec } from "afora-agent/plugin-sdk/process-runtime";
 import { resolveQaWindowsSystem32ExePath } from "./windows-system-tools.js";
 
 type ExecFileAsync = (

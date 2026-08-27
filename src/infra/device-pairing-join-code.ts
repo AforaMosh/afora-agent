@@ -2,12 +2,12 @@
 import type { DatabaseSync } from "node:sqlite";
 import { DEVICE_PAIRING_JOIN_CODE_BYTES, isDevicePairingJoinCode } from "../pairing/join-code.js";
 import { decodePairingSetupCode, encodePairingSetupCode } from "../pairing/setup-code.js";
-import { ensureDevicePairingJoinCodeSchema } from "../state/openclaw-state-db-schema-additive.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import { ensureDevicePairingJoinCodeSchema } from "../state/afora-state-db-schema-additive.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "../state/openclaw-state-db.js";
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "../state/afora-state-db.js";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
@@ -15,7 +15,7 @@ import {
 } from "./kysely-sync.js";
 import { generateSecureToken } from "./secure-random.js";
 
-type DevicePairingJoinCodeDatabase = Pick<OpenClawStateKyselyDatabase, "device_pairing_join_codes">;
+type DevicePairingJoinCodeDatabase = Pick<AforaStateKyselyDatabase, "device_pairing_join_codes">;
 type PairingSetupPayload = ReturnType<typeof decodePairingSetupCode>;
 
 const initializedDatabases = new WeakSet<DatabaseSync>();
@@ -36,7 +36,7 @@ function validatePairingSetupPayload(payload: PairingSetupPayload): PairingSetup
 export function registerDevicePairingJoinCode(params: {
   payload: PairingSetupPayload;
   expiresAtMs: number;
-  database?: OpenClawStateDatabaseOptions;
+  database?: AforaStateDatabaseOptions;
 }): string {
   const createdAtMs = Date.now();
   if (!Number.isSafeInteger(params.expiresAtMs) || params.expiresAtMs <= createdAtMs) {
@@ -45,7 +45,7 @@ export function registerDevicePairingJoinCode(params: {
   const payloadJson = JSON.stringify(validatePairingSetupPayload(params.payload));
   const shortcode = generateSecureToken(DEVICE_PAIRING_JOIN_CODE_BYTES);
 
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     ensureJoinCodeSchema(db);
     const kysely = getNodeSqliteKysely<DevicePairingJoinCodeDatabase>(db);
     executeSqliteQuerySync(
@@ -68,14 +68,14 @@ export function registerDevicePairingJoinCode(params: {
 /** Atomically burn one live shortcode and return its validated setup payload. */
 export function redeemDevicePairingJoinCode(params: {
   shortcode: string;
-  database?: OpenClawStateDatabaseOptions;
+  database?: AforaStateDatabaseOptions;
 }): PairingSetupPayload | null {
   const shortcode = params.shortcode.trim();
   if (!isDevicePairingJoinCode(shortcode)) {
     return null;
   }
   const nowMs = Date.now();
-  const payloadJson = runOpenClawStateWriteTransaction(({ db }) => {
+  const payloadJson = runAforaStateWriteTransaction(({ db }) => {
     ensureJoinCodeSchema(db);
     const kysely = getNodeSqliteKysely<DevicePairingJoinCodeDatabase>(db);
     executeSqliteQuerySync(

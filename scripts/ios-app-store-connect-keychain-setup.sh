@@ -12,7 +12,7 @@ Required:
 
 Optional:
   --key-id <id>          API key ID (auto-detected from AuthKey_<id>.p8 if omitted)
-  --service <name>       Keychain service name (default: openclaw-app-store-connect-key)
+  --service <name>       Keychain service name (default: afora-app-store-connect-key)
   --account <name>       Keychain account name (default: $USER or $LOGNAME)
   --write-env            Upsert non-secret env vars into apps/ios/fastlane/.env
   --env-file <path>      Override env file path used with --write-env
@@ -69,7 +69,7 @@ delete_env_line() {
 KEY_PATH=""
 KEY_ID=""
 ISSUER_ID=""
-SERVICE="openclaw-app-store-connect-key"
+SERVICE="afora-app-store-connect-key"
 ACCOUNT="${USER:-${LOGNAME:-}}"
 WRITE_ENV=0
 ENV_FILE=""

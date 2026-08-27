@@ -10,14 +10,14 @@ type DreamsPageElement = HTMLElement & {
 
 describe("MemoryDreamingSettings", () => {
   it("hosts only the selected agent's memory panel without global config", async () => {
-    const element = document.createElement("openclaw-memory-dreaming") as DreamsPageElement;
+    const element = document.createElement("afora-memory-dreaming") as DreamsPageElement;
     element.agentId = null;
     document.body.append(element);
     try {
       await element.updateComplete;
-      expect(element.querySelector("openclaw-agent-memory-panel")).toBeNull();
+      expect(element.querySelector("afora-agent-memory-panel")).toBeNull();
       expect(element.textContent).not.toContain("Dreaming frequency");
-      expect(element.querySelector("openclaw-agent-select")).toBeNull();
+      expect(element.querySelector("afora-agent-select")).toBeNull();
     } finally {
       element.remove();
     }

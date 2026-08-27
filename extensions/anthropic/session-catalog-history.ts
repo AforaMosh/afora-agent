@@ -1,7 +1,7 @@
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-harness-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { parseDateStringTimestampMs } from "openclaw/plugin-sdk/number-runtime";
-import { withSessionTranscriptWriteLock } from "openclaw/plugin-sdk/session-transcript-runtime";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-harness-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { parseDateStringTimestampMs } from "afora-agent/plugin-sdk/number-runtime";
+import { withSessionTranscriptWriteLock } from "afora-agent/plugin-sdk/session-transcript-runtime";
 import { CLAUDE_CLI_BACKEND_ID } from "./cli-constants.js";
 import type { ClaudeTranscriptItem } from "./session-catalog-transcript.js";
 
@@ -16,13 +16,13 @@ function importedClaudeMessage(
   }
   const text = importedText || "[Unsupported Claude transcript item]";
   if (item.type === "userMessage") {
-    // Imported native rows are not OpenClaw-authored; mirrorOrigin excludes them
+    // Imported native rows are not Afora-authored; mirrorOrigin excludes them
     // from self-echo provenance so a repeated native prompt stays observable.
     return {
       role: "user",
       content: text,
       timestamp,
-      __openclaw: { mirrorOrigin: "claude-catalog-import" },
+      __afora: { mirrorOrigin: "claude-catalog-import" },
     } as AgentMessage;
   }
   const prefix =
@@ -60,7 +60,7 @@ export async function importClaudeHistory(params: {
   agentId: string;
   storePath: string;
   cwd?: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
 }): Promise<void> {
   const items = params.items.toReversed();
   await withSessionTranscriptWriteLock(params, async (transcript) => {

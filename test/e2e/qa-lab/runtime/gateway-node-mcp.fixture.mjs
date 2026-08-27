@@ -8,7 +8,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import * as z from "zod/v4";
 
-const READY_TYPE = "openclaw-mcp-parity-ready";
+const READY_TYPE = "afora-mcp-parity-ready";
 
 function readOption(name) {
   const index = process.argv.indexOf(name);
@@ -16,7 +16,7 @@ function readOption(name) {
 }
 
 function createProbeServer(label, catalogState = { rotated: false }) {
-  const server = new McpServer({ name: `openclaw-mcp-parity-${label}`, version: "1.0.0" });
+  const server = new McpServer({ name: `afora-mcp-parity-${label}`, version: "1.0.0" });
   const initialToolConfig = {
     description: `MCP parity probe for ${label}`,
     inputSchema: { marker: z.string() },

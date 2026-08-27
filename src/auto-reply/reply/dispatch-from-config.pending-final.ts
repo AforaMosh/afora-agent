@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { buildRestartRecoveryClaimCleanupPatch } from "../../config/sessions/restart-recovery-state.js";
 import { updateSessionEntry } from "../../config/sessions/session-accessor.js";
 import { settlePendingFinalDelivery } from "../../infra/outbound/delivery-completion.js";

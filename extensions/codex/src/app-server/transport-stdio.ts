@@ -6,7 +6,7 @@ import { spawn } from "node:child_process";
 import {
   materializeWindowsSpawnProgram,
   resolveWindowsSpawnProgram,
-} from "openclaw/plugin-sdk/windows-spawn";
+} from "afora-agent/plugin-sdk/windows-spawn";
 import type { CodexAppServerStartOptions } from "./config.js";
 import type { CodexAppServerTransport } from "./transport.js";
 
@@ -17,7 +17,7 @@ const RUNTIME_INJECTION_ENVIRONMENT_KEYS = new Set([
   "LD_LIBRARY_PATH",
   "LD_PRELOAD",
 ]);
-const QA_PARENT_PID_ENV = "OPENCLAW_QA_PARENT_PID";
+const QA_PARENT_PID_ENV = "AFORA_QA_PARENT_PID";
 
 type CodexAppServerSpawnRuntime = {
   platform: NodeJS.Platform;

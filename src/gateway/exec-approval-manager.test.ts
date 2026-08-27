@@ -4,14 +4,14 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ExecApprovalDecision, ExecApprovalRequestPayload } from "../infra/exec-approvals.js";
 import type { PluginApprovalRequestPayload } from "../infra/plugin-approvals.js";
 import {
-  closeOpenClawStateDatabase,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabase,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import {
   ExecApprovalManager,
   InvalidApprovalIdError,
@@ -40,7 +40,7 @@ describe("ExecApprovalManager", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-    closeOpenClawStateDatabase();
+    closeAforaStateDatabase();
     for (const dir of tempDirs.splice(0)) {
       fs.rmSync(dir, { recursive: true, force: true });
     }
@@ -53,7 +53,7 @@ describe("ExecApprovalManager", () => {
       onLifecycle?: ExecApprovalManagerOptions<ExecApprovalRequestPayload>["onLifecycle"];
     } = {},
   ) {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-approval-manager-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-approval-manager-"));
     tempDirs.push(dir);
     const databaseOptions = { path: path.join(dir, "state.sqlite") };
     return {
@@ -390,7 +390,7 @@ describe("ExecApprovalManager", () => {
   });
 
   it("passes the source agent when deriving a global-session stream audience", async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-approval-manager-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-approval-manager-"));
     tempDirs.push(dir);
     const databaseOptions = { path: path.join(dir, "state.sqlite") };
     const resolveAudienceSessionKeys = vi.fn((sessionKey: string, agentId?: string | null) => [
@@ -598,7 +598,7 @@ describe("ExecApprovalManager", () => {
     expect(durableJson).not.toContain("/hidden/cwd/value");
     expect(durableJson).not.toContain("hidden-env-hash");
 
-    const database = openOpenClawStateDatabase(databaseOptions);
+    const database = openAforaStateDatabase(databaseOptions);
     const row = database.db
       .prepare("SELECT presentation_json FROM operator_approvals WHERE approval_id = ?")
       .get(record.id) as { presentation_json?: unknown } | undefined;
@@ -654,7 +654,7 @@ describe("ExecApprovalManager", () => {
   });
 
   it("rejects unrenderable persistent plugin requests before creating a row or waiter", () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-approval-manager-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-approval-manager-"));
     tempDirs.push(dir);
     const databaseOptions = { path: path.join(dir, "state.sqlite") };
     const manager = new ExecApprovalManager<PluginApprovalRequestPayload>({

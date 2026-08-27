@@ -37,7 +37,7 @@ function profileContext(tabs: Array<{ targetId: string; url: string }>) {
   return {
     profile: {
       cdpIsLoopback: true,
-      driver: "openclaw",
+      driver: "afora",
     },
     listTabs: async () => tabs,
   };
@@ -79,7 +79,7 @@ describe("browser route shared helpers", () => {
       metadata: {
         reason: "no_display_for_headed_profile",
         details: {
-          profile: "openclaw",
+          profile: "afora",
           requestedHeadless: false,
           headlessSource: "env",
           displayPresent: false,

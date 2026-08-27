@@ -1,9 +1,9 @@
 // Qa Lab plugin module implements qa transport behavior.
 import { setTimeout as sleep } from "node:timers/promises";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { resolveTimerTimeoutMs } from "openclaw/plugin-sdk/number-runtime";
-import type { QaRunnerCliRegistration } from "openclaw/plugin-sdk/qa-runner-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { resolveTimerTimeoutMs } from "afora-agent/plugin-sdk/number-runtime";
+import type { QaRunnerCliRegistration } from "afora-agent/plugin-sdk/qa-runner-runtime";
 import { QaSuiteInfraError } from "./errors.js";
 import type { QaProviderMode } from "./model-selection.js";
 import { extractQaFailureReplyText } from "./reply-failure.js";
@@ -120,7 +120,7 @@ export type QaTransportReportParams = {
   isolatedWorkers?: boolean;
 };
 
-export type QaTransportGatewayConfig = Pick<OpenClawConfig, "channels" | "messages">;
+export type QaTransportGatewayConfig = Pick<AforaConfig, "channels" | "messages">;
 
 export type QaTransportPolicy = NonNullable<
   Parameters<NonNullable<QaRunnerCliRegistration["adapterFactory"]>["create"]>[0]["adapterOptions"]
@@ -385,7 +385,7 @@ export abstract class QaStateBackedTransportAdapter implements QaTransportAdapte
   abstract handleAction: (params: {
     action: QaTransportActionName;
     args: Record<string, unknown>;
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string | null;
   }) => Promise<unknown>;
   abstract createReportNotes: (params: QaTransportReportParams) => string[];

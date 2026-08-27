@@ -1,4 +1,4 @@
-import { finiteSecondsToTimerSafeMilliseconds } from "@openclaw/normalization-core/number-coercion";
+import { finiteSecondsToTimerSafeMilliseconds } from "@afora/normalization-core/number-coercion";
 import { runCommandWithTimeout } from "../process/exec.js";
 import {
   buildCronCommandSummary,

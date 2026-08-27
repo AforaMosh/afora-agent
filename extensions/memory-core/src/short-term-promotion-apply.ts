@@ -1,14 +1,14 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { withFileLock } from "openclaw/plugin-sdk/file-lock";
+import { withFileLock } from "afora-agent/plugin-sdk/file-lock";
 import {
   DEFAULT_MEMORY_DEEP_DREAMING_MAX_PROMOTED_SNIPPET_TOKENS,
   formatMemoryDreamingDay,
-} from "openclaw/plugin-sdk/memory-core-host-status";
-import { appendMemoryHostEvent } from "openclaw/plugin-sdk/memory-host-events";
-import { resolveStateDir } from "openclaw/plugin-sdk/state-paths";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/memory-core-host-status";
+import { appendMemoryHostEvent } from "afora-agent/plugin-sdk/memory-host-events";
+import { resolveStateDir } from "afora-agent/plugin-sdk/state-paths";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import {
   appendConsolidationSkippedSummary,
   appendConsolidationSummary,
@@ -56,7 +56,7 @@ import {
 } from "./short-term-promotion-utils.js";
 import { resolveMemoryCoreNowMs, resolveMemoryCoreTimestamp } from "./time.js";
 
-const PROMOTION_MARKER_PREFIX = "openclaw-memory-promotion:";
+const PROMOTION_MARKER_PREFIX = "afora-memory-promotion:";
 const PROMOTED_SNIPPET_CHARS_PER_TOKEN_ESTIMATE = 4;
 const MEMORY_WRITE_LOCK_OPTIONS = {
   retries: { retries: 100, factor: 1.2, minTimeout: 25, maxTimeout: 250 },
@@ -147,7 +147,7 @@ function extractPromotionMarkers(memoryText: string): Set<string> {
   // Marker keys include source paths, so spaces are valid. Capture until the
   // comment close; otherwise a path like "memory/project alpha/..." is missed
   // and the same candidate can be appended again.
-  const matches = memoryText.matchAll(/<!--\s*openclaw-memory-promotion:([^\n]*?)\s*-->/gi);
+  const matches = memoryText.matchAll(/<!--\s*afora-memory-promotion:([^\n]*?)\s*-->/gi);
   for (const match of matches) {
     const key = match[1]?.trim();
     if (key) {
@@ -578,7 +578,7 @@ export async function applyShortTermPromotions(
           const header = baseMemory.trim().length > 0 ? "" : "# Long-Term Memory\n\n";
           const content = `${header}${withTrailingNewline(baseMemory)}${section}`;
           // Append fallback keeps the historical read-modify-replace contract. Policy accepts
-          // its external-editor race because OpenClaw writers remain serialized by this sweep lock.
+          // its external-editor race because Afora writers remain serialized by this sweep lock.
           await writeMemoryContent({
             memoryPath,
             memoryWritePath,

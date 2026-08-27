@@ -3,11 +3,11 @@ import fs from "node:fs";
 import fsp from "node:fs/promises";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { captureEnv, setTestEnvValue } from "../test-utils/env.js";
 import { resolveExecApprovalsPath } from "./exec-approvals-config.js";
 import { ExecApprovalsMigrationRequiredError } from "./exec-approvals-migration-gate.js";
@@ -25,13 +25,13 @@ import {
   migrateLegacyExecApprovals,
 } from "./state-migrations.exec-approvals.js";
 
-type MigrationDatabase = Pick<OpenClawStateKyselyDatabase, "migration_runs" | "migration_sources">;
+type MigrationDatabase = Pick<AforaStateKyselyDatabase, "migration_runs" | "migration_sources">;
 
 describe("legacy exec approvals migration", () => {
-  const envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
+  const envSnapshot = captureEnv(["AFORA_STATE_DIR"]);
   const tempDirs = useAutoCleanupTempDirTracker((cleanup) => {
     afterEach(() => {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       execApprovalsStoreTesting.reset();
       envSnapshot.restore();
       cleanup();
@@ -39,8 +39,8 @@ describe("legacy exec approvals migration", () => {
   });
 
   function useStateDir(): { env: NodeJS.ProcessEnv; stateDir: string; sourcePath: string } {
-    const stateDir = tempDirs.make("openclaw-exec-approvals-migration-");
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = tempDirs.make("afora-exec-approvals-migration-");
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
     return { env, stateDir, sourcePath: resolveExecApprovalsPath(env) };
   }
 
@@ -66,7 +66,7 @@ describe("legacy exec approvals migration", () => {
   }
 
   function database(env: NodeJS.ProcessEnv) {
-    return openOpenClawStateDatabase({ env }).db;
+    return openAforaStateDatabase({ env }).db;
   }
 
   function receipt(env: NodeJS.ProcessEnv) {
@@ -294,7 +294,7 @@ describe("legacy exec approvals migration", () => {
   it("keeps store APIs blocked until Doctor completes the import", async () => {
     const { env, stateDir, sourcePath } = useStateDir();
     await writeLegacy(sourcePath, { version: 1, defaults: { security: "deny" }, agents: {} });
-    setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
+    setTestEnvValue("AFORA_STATE_DIR", stateDir);
     execApprovalsStoreTesting.reset();
     expect(() => loadExecApprovals()).toThrow(ExecApprovalsMigrationRequiredError);
 

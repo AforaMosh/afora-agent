@@ -1,6 +1,6 @@
 import { CLAW_OUTPUT_STABILITY } from "./types.js";
 
-export const CLAW_REMOVE_PLAN_SCHEMA_VERSION = "openclaw.clawRemovePlan.v1" as const;
+export const CLAW_REMOVE_PLAN_SCHEMA_VERSION = "afora.clawRemovePlan.v1" as const;
 
 export type ClawRemovePlanAction = {
   kind:

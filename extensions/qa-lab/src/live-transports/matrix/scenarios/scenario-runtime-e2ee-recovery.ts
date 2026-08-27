@@ -1,6 +1,6 @@
 // Qa Matrix plugin module implements recovery scenario runtime E2EE behavior.
 import { randomUUID } from "node:crypto";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { createMatrixQaClient } from "../substrate/client.js";
 import { createMatrixQaE2eeScenarioClient } from "../substrate/e2ee-client.js";
 import {
@@ -85,7 +85,7 @@ export async function runMatrixQaE2eeRecoveryKeyLifecycleScenario(
         baseUrl: context.baseUrl,
       });
       const recoveryDevice = await loginClient.loginWithPassword({
-        deviceName: "OpenClaw Matrix QA Recovery Restore Device",
+        deviceName: "Afora Matrix QA Recovery Restore Device",
         password: driverPassword,
         userId: context.driverUserId,
       });
@@ -209,7 +209,7 @@ export async function runMatrixQaE2eeRecoveryOwnerVerificationRequiredScenario(
         baseUrl: context.baseUrl,
       });
       const recoveryDevice = await loginClient.loginWithPassword({
-        deviceName: "OpenClaw Matrix QA Owner Verification Required Device",
+        deviceName: "Afora Matrix QA Owner Verification Required Device",
         password: driverPassword,
         userId: context.driverUserId,
       });

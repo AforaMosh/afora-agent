@@ -1,13 +1,13 @@
 // Human-readable hint for why a node command was rejected, kept out of the
 // oversized nodes.ts server-methods file.
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { DEFAULT_DANGEROUS_NODE_COMMANDS } from "../node-command-policy.js";
 
 export function buildNodeCommandRejectionHint(
   reason: string,
   command: string,
   node: { platform?: string; declaredCommands?: readonly string[] } | undefined,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): string {
   const platform = node?.platform ?? "unknown";
   if (reason === "command not declared by node") {
@@ -28,7 +28,7 @@ export function buildNodeCommandRejectionHint(
   }
   if (reason === "node did not declare commands") {
     if (node?.declaredCommands?.includes(command)) {
-      return "node command not allowed: the node's declared command surface is pending approval; run `openclaw nodes pending`, then `openclaw nodes approve <requestId>`";
+      return "node command not allowed: the node's declared command surface is pending approval; run `afora nodes pending`, then `afora nodes approve <requestId>`";
     }
     return `node command not allowed: the node did not declare any supported commands`;
   }

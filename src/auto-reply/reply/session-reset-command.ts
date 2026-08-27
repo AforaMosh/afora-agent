@@ -1,5 +1,5 @@
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { normalizeCommandBody } from "../commands-registry.js";
 import type { MsgContext } from "../templating.js";
 import { parseSoftResetCommand } from "./commands-reset-mode.js";
@@ -94,7 +94,7 @@ function stripLeadingMention(params: {
   trigger: string;
   commandText: string;
   ctx: MsgContext;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   isGroup: boolean;
 }): number | undefined {
@@ -141,7 +141,7 @@ function stripLeadingMention(params: {
 function isRecognizedCommandSuffix(params: {
   suffix: string;
   ctx: MsgContext;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   isGroup: boolean;
 }): boolean {
@@ -163,7 +163,7 @@ function resolveAnchoredResetPayload(params: {
   trigger: string;
   commandText: string;
   ctx: MsgContext;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   isGroup: boolean;
 }): string | undefined {
@@ -220,7 +220,7 @@ function resolveAnchoredResetPayload(params: {
 function resolveCommandTextForSession(params: {
   commandText: string;
   ctx: MsgContext;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   isGroup: boolean;
 }): string {
@@ -244,7 +244,7 @@ export function resolveSessionResetCommand(params: {
   rawText: string;
   resetTriggers: readonly string[];
   ctx: MsgContext;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   isGroup: boolean;
   resetAuthorized: boolean;

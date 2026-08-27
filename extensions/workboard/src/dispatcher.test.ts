@@ -93,7 +93,7 @@ describe("dispatchAndStartWorkboardCards", () => {
       create: vi.fn().mockResolvedValue({
         id: "managed-id",
         path: "/state/worktrees/fingerprint/wb-card",
-        branch: `openclaw/wb-${card.id}`,
+        branch: `afora/wb-${card.id}`,
       }),
       release: vi.fn(),
       removeIfLossless: vi.fn().mockResolvedValue(true),
@@ -127,7 +127,7 @@ describe("dispatchAndStartWorkboardCards", () => {
           workspace: {
             kind: "worktree",
             path: "/state/worktrees/fingerprint/wb-card",
-            branch: `openclaw/wb-${card.id}`,
+            branch: `afora/wb-${card.id}`,
             sourcePath: "/repo",
             sourceBranch: "main",
           },
@@ -750,7 +750,7 @@ describe("dispatchAndStartWorkboardCards", () => {
       workspace: {
         kind: "worktree",
         path: "/state/worktrees/fingerprint/wb-card",
-        branch: "openclaw/wb-card",
+        branch: "afora-agent/wb-card",
         sourcePath: "/repo",
       },
       workspaceAccess: { unrestricted: true },
@@ -758,7 +758,7 @@ describe("dispatchAndStartWorkboardCards", () => {
     const create = vi.fn().mockResolvedValue({
       id: "managed-id",
       path: "/state/worktrees/fingerprint/wb-card",
-      branch: "openclaw/wb-card",
+      branch: "afora-agent/wb-card",
     });
 
     await dispatchAndStartWorkboardCards({

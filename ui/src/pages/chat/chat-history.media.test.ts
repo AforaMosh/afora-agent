@@ -11,9 +11,9 @@ const MANAGED_UUID = "43007e90-2ade-43f2-a781-42b843e9eca3";
 function userMessageWithMedia(media: unknown[]): {
   role: string;
   content: string;
-  __openclaw: { media: unknown[] };
+  __afora: { media: unknown[] };
 } {
-  return { role: "user", content: "", __openclaw: { media } };
+  return { role: "user", content: "", __afora: { media } };
 }
 
 describe("chat history canonical media filtering", () => {
@@ -26,7 +26,7 @@ describe("chat history canonical media filtering", () => {
       isEmptyUserTextOnlyMessage({
         role: "user",
         content: "",
-        __openclaw: { media },
+        __afora: { media },
       }),
     ).toBe(false);
   });
@@ -91,12 +91,12 @@ describe("chat history attachment card labels", () => {
     const attachments = extractTranscriptAttachments(
       userMessageWithMedia([
         {
-          path: `media://inbound/openclaw-attachment-test---${MANAGED_UUID}.docx`,
+          path: `media://inbound/afora-attachment-test---${MANAGED_UUID}.docx`,
           contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         },
       ]),
     );
-    expect(attachments[0]?.attachment.label).toBe("openclaw-attachment-test.docx");
+    expect(attachments[0]?.attachment.label).toBe("afora-attachment-test.docx");
   });
 
   it("leaves non-managed https attachment paths unchanged", () => {
@@ -105,12 +105,12 @@ describe("chat history attachment card labels", () => {
     const attachments = extractTranscriptAttachments(
       userMessageWithMedia([
         {
-          path: "https://example.com/files/openclaw-attachment-test---old.docx",
+          path: "https://example.com/files/afora-attachment-test---old.docx",
           contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         },
       ]),
     );
-    expect(attachments[0]?.attachment.label).toBe("openclaw-attachment-test---old.docx");
+    expect(attachments[0]?.attachment.label).toBe("afora-attachment-test---old.docx");
   });
 
   it("does not strip a managed inbound basename that lacks a UUID suffix", () => {

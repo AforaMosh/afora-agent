@@ -54,13 +54,13 @@ function compactParams(overrides: Record<string, unknown> = {}) {
   };
   const sessionEntry = { execHost: "node", execNode: "paired-node" };
   return {
-    sessionId: "openclaw-session",
+    sessionId: "afora-session",
     sessionKey: "agent:main:main",
     sessionTarget: {
       agentId: "main",
-      sessionId: "openclaw-session",
+      sessionId: "afora-session",
       sessionKey: "agent:main:main",
-      storePath: "/tmp/openclaw.sqlite",
+      storePath: "/tmp/afora.sqlite",
     },
     sessionFile: "agent:main:main",
     agentId: "main",
@@ -102,7 +102,7 @@ describe("native CLI manual compaction", () => {
       expect.objectContaining({
         preparedRunAdmission: expect.objectContaining({
           operationalRunInstance: expect.objectContaining({
-            runId: "openclaw-session:native-compact",
+            runId: "afora-session:native-compact",
           }),
         }),
         prompt: "/compact keep decisions",

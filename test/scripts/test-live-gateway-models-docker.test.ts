@@ -14,27 +14,27 @@ describe("scripts/test-live-gateway-models-docker.sh", () => {
     const script = fs.readFileSync(SCRIPT_PATH, "utf8");
 
     expect(script).toContain(
-      'LIVE_GATEWAY_MAX_MODELS="$(openclaw_live_read_positive_int_env OPENCLAW_LIVE_GATEWAY_MAX_MODELS 8)"',
+      'LIVE_GATEWAY_MAX_MODELS="$(afora_live_read_positive_int_env AFORA_LIVE_GATEWAY_MAX_MODELS 8)"',
     );
     expect(script).toContain(
-      'LIVE_GATEWAY_STEP_TIMEOUT_MS="$(openclaw_live_read_positive_int_env OPENCLAW_LIVE_GATEWAY_STEP_TIMEOUT_MS 45000)"',
+      'LIVE_GATEWAY_STEP_TIMEOUT_MS="$(afora_live_read_positive_int_env AFORA_LIVE_GATEWAY_STEP_TIMEOUT_MS 45000)"',
     );
     expect(script).toContain(
-      'LIVE_GATEWAY_MODEL_TIMEOUT_MS="$(openclaw_live_read_positive_int_env OPENCLAW_LIVE_GATEWAY_MODEL_TIMEOUT_MS 90000)"',
+      'LIVE_GATEWAY_MODEL_TIMEOUT_MS="$(afora_live_read_positive_int_env AFORA_LIVE_GATEWAY_MODEL_TIMEOUT_MS 90000)"',
     );
-    expect(script).toContain('-e OPENCLAW_LIVE_GATEWAY_MAX_MODELS="$LIVE_GATEWAY_MAX_MODELS"');
+    expect(script).toContain('-e AFORA_LIVE_GATEWAY_MAX_MODELS="$LIVE_GATEWAY_MAX_MODELS"');
     expect(script).toContain(
-      '-e OPENCLAW_LIVE_GATEWAY_STEP_TIMEOUT_MS="$LIVE_GATEWAY_STEP_TIMEOUT_MS"',
+      '-e AFORA_LIVE_GATEWAY_STEP_TIMEOUT_MS="$LIVE_GATEWAY_STEP_TIMEOUT_MS"',
     );
     expect(script).toContain(
-      '-e OPENCLAW_LIVE_GATEWAY_MODEL_TIMEOUT_MS="$LIVE_GATEWAY_MODEL_TIMEOUT_MS"',
+      '-e AFORA_LIVE_GATEWAY_MODEL_TIMEOUT_MS="$LIVE_GATEWAY_MODEL_TIMEOUT_MS"',
     );
   });
 
   it.each([
-    ["max models", "OPENCLAW_LIVE_GATEWAY_MAX_MODELS", "two"],
-    ["step timeout", "OPENCLAW_LIVE_GATEWAY_STEP_TIMEOUT_MS", "45s"],
-    ["model timeout", "OPENCLAW_LIVE_GATEWAY_MODEL_TIMEOUT_MS", "90s"],
+    ["max models", "AFORA_LIVE_GATEWAY_MAX_MODELS", "two"],
+    ["step timeout", "AFORA_LIVE_GATEWAY_STEP_TIMEOUT_MS", "45s"],
+    ["model timeout", "AFORA_LIVE_GATEWAY_MODEL_TIMEOUT_MS", "90s"],
   ])("rejects invalid %s values before live Docker setup", (_label, envName, value) => {
     const result = spawnSync("bash", [SCRIPT_PATH], {
       encoding: "utf8",

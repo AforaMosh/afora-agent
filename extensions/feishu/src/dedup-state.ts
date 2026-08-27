@@ -1,4 +1,4 @@
-import { createChannelReplayGuard } from "openclaw/plugin-sdk/persistent-dedupe";
+import { createChannelReplayGuard } from "afora-agent/plugin-sdk/persistent-dedupe";
 
 // 24h/10k preserves the pre-drain logical-twin guard window across restarts.
 const DEDUPE_NAMESPACE_PREFIX = "feishu.dedup";

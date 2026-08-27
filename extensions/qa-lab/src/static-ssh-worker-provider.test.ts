@@ -1,5 +1,5 @@
 // QA Lab tests cover deterministic static-SSH worker provider behavior.
-import type { WorkerProfile } from "openclaw/plugin-sdk/plugin-entry";
+import type { WorkerProfile } from "afora-agent/plugin-sdk/plugin-entry";
 import { describe, expect, it } from "vitest";
 import { createStaticSshWorkerProvider } from "./static-ssh-worker-provider.js";
 
@@ -11,7 +11,7 @@ const KEY_REF = {
 const HOST_KEY = ["ssh-ed25519", "AAAA"].join(" ");
 const PROFILE = {
   host: "worker.example.test",
-  user: "openclaw",
+  user: "afora",
   hostKey: HOST_KEY,
   keyRef: KEY_REF,
 };
@@ -21,7 +21,7 @@ describe("QA Lab static-SSH worker provider", () => {
     const provider = createStaticSshWorkerProvider();
     const profile = {
       host: " worker.example.test ",
-      user: " openclaw ",
+      user: " afora ",
       hostKey: ` ${HOST_KEY} `,
       keyRef: KEY_REF,
     };
@@ -36,7 +36,7 @@ describe("QA Lab static-SSH worker provider", () => {
       ssh: {
         host: "worker.example.test",
         port: 22,
-        user: "openclaw",
+        user: "afora",
         hostKey: HOST_KEY,
         keyRef: KEY_REF,
       },

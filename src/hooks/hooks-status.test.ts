@@ -25,11 +25,11 @@ describe("hook status", () => {
     const report = buildWorkspaceHookStatus("/tmp/workspace", {
       entries: [
         createHookEntry({
-          source: "openclaw-managed",
+          source: "afora-managed",
           events: [],
         }),
         createHookEntry({
-          source: "openclaw-workspace",
+          source: "afora-workspace",
           events: ["command:new"],
         }),
       ],
@@ -37,7 +37,7 @@ describe("hook status", () => {
 
     expect(report.hooks).toHaveLength(1);
     expect(report.hooks[0]).toMatchObject({
-      source: "openclaw-managed",
+      source: "afora-managed",
       events: [],
       enabledByConfig: true,
       requirementsSatisfied: true,
@@ -49,7 +49,7 @@ describe("hook status", () => {
   it("keeps OS incompatibility visible for always-on hooks", () => {
     const mismatchedOs = process.platform === "darwin" ? "linux" : "darwin";
     const entry = createHookEntry({
-      source: "openclaw-workspace",
+      source: "afora-workspace",
       events: ["command:new"],
     });
     entry.metadata = {

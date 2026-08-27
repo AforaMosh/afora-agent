@@ -4,7 +4,7 @@ import { streamOpenAICompletions } from "./openai-completions.js";
 
 // Live coverage for provider compat behavior that unit fakes cannot prove:
 // role selection and thinking parameters are validated by the real backends.
-const LIVE = process.env.OPENCLAW_LIVE_TEST === "1";
+const LIVE = process.env.AFORA_LIVE_TEST === "1";
 const LIVE_TIMEOUT_MS = 120_000;
 
 function liveModel(overrides: Partial<Model<"openai-completions">>) {
@@ -65,7 +65,7 @@ const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY ?? "";
       // the system-role selection end to end against the real gateway.
       await expectLiveReply(
         liveModel({
-          id: process.env.OPENCLAW_LIVE_OPENROUTER_MODEL || "moonshotai/kimi-k2",
+          id: process.env.AFORA_LIVE_OPENROUTER_MODEL || "moonshotai/kimi-k2",
           provider: "openrouter",
           baseUrl: "https://openrouter.ai/api/v1",
         }),

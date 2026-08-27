@@ -1,4 +1,4 @@
-// Android Sync Versioning script supports OpenClaw repository automation.
+// Android Sync Versioning script supports Afora repository automation.
 import path from "node:path";
 import { syncAndroidVersioning } from "./lib/android-version.ts";
 import { parseVersionSyncArgs } from "./lib/version-script-args.ts";

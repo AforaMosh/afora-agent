@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveConfigWidePluginManifestRegistry } from "../config/io.plugin-metadata.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { openRootFileSync } from "../infra/boundary-file-read.js";
 import { shouldRejectHardlinkedPluginFiles } from "../plugins/hardlink-policy.js";
 import type { PluginManifestRecord } from "../plugins/manifest-registry.js";
@@ -20,7 +20,7 @@ import type { SecretTargetRegistryEntry } from "./target-registry-types.js";
 
 type BundledChannelContractApi = {
   collectRuntimeConfigAssignments?: (params: {
-    config: OpenClawConfig;
+    config: AforaConfig;
     defaults: SecretDefaults | undefined;
     context: ResolverContext;
   }) => void;
@@ -74,8 +74,8 @@ function orderedContractApiExtensions(): readonly string[] {
 
 function resolvePluginContractApiPath(rootDir: string): string | null {
   // Compiled npm-published plugins place their public artifacts under <rootDir>/dist/
-  // (per package.json `openclaw.runtimeExtensions`), while flat-layout plugins keep
-  // them at <rootDir>/. Search both, preferring dist/ when running from built openclaw
+  // (per package.json `afora.runtimeExtensions`), while flat-layout plugins keep
+  // them at <rootDir>/. Search both, preferring dist/ when running from built afora
   // artifacts and rootDir/ when running from source.
   const searchDirs = RUNNING_FROM_BUILT_ARTIFACT
     ? [path.join(rootDir, "dist"), rootDir]
@@ -131,7 +131,7 @@ function loadExternalChannelSecretContractFromRecord(
       return mod;
     }
   } catch (error) {
-    if (process.env.OPENCLAW_DEBUG_CHANNEL_CONTRACT_API === "1") {
+    if (process.env.AFORA_DEBUG_CHANNEL_CONTRACT_API === "1") {
       const detail = error instanceof Error ? error.message : String(error);
       console.warn(
         `[channel-contract-api] failed to load ${record.id} contract ${safePath}: ${detail}`,
@@ -152,7 +152,7 @@ function recordOwnsChannel(record: PluginManifestRecord, channelId: string): boo
 
 function listChannelSecretContractRecords(params: {
   channelId: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   env: NodeJS.ProcessEnv;
   loadablePluginOrigins?: ReadonlyMap<string, PluginOrigin>;
 }): PluginManifestRecord[] {
@@ -181,7 +181,7 @@ function listChannelSecretContractRecords(params: {
 /** Loads a channel secret contract API for a channel id and current plugin origin policy. */
 export function loadChannelSecretContractApi(params: {
   channelId: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   env?: NodeJS.ProcessEnv;
   loadablePluginOrigins?: ReadonlyMap<string, PluginOrigin>;
   bundledOnly?: boolean;

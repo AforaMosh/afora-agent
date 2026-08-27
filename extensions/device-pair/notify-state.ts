@@ -1,6 +1,6 @@
 // Device Pair notify state helpers keep runtime and doctor migration in sync.
 import { createHash } from "node:crypto";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 export const DEVICE_PAIR_NOTIFY_LEGACY_STATE_FILE = "device-pair-notify.json";
 export const DEVICE_PAIR_NOTIFY_SUBSCRIBER_NAMESPACE = "notify-subscribers";

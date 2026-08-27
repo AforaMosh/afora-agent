@@ -2,10 +2,10 @@
 import type {
   ChannelDoctorConfigMutation,
   ChannelDoctorLegacyConfigRule,
-} from "openclaw/plugin-sdk/channel-contract";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { defineChannelAliasMigration } from "openclaw/plugin-sdk/runtime-doctor-migrations";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/channel-contract";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { defineChannelAliasMigration } from "afora-agent/plugin-sdk/runtime-doctor-migrations";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { migrateLegacySignalTransportConfigSync } from "./src/config-compat.js";
 
 const RETIRED_SIGNAL_ACCOUNT_TRANSPORT_FIELDS = [
@@ -47,7 +47,7 @@ export const legacyConfigRules: ChannelDoctorLegacyConfigRule[] = [
   {
     path: ["channels", "signal"],
     message:
-      'Signal transport config is now account-owned; run "openclaw doctor --fix" to migrate retired channels.signal transport fields.',
+      'Signal transport config is now account-owned; run "afora doctor --fix" to migrate retired channels.signal transport fields.',
     match: (value) =>
       isRecord(value) &&
       (Object.hasOwn(value, "apiMode") || hasRetiredSignalAccountTransportFields(value)),
@@ -55,7 +55,7 @@ export const legacyConfigRules: ChannelDoctorLegacyConfigRule[] = [
   {
     path: ["channels", "signal", "accounts"],
     message:
-      'Signal transport config is now account-owned; run "openclaw doctor --fix" to migrate retired per-account transport fields.',
+      'Signal transport config is now account-owned; run "afora doctor --fix" to migrate retired per-account transport fields.',
     match: hasRetiredSignalAccountMapTransportFields,
   },
 ];
@@ -63,7 +63,7 @@ export const legacyConfigRules: ChannelDoctorLegacyConfigRule[] = [
 export function normalizeCompatibilityConfig({
   cfg,
 }: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 }): ChannelDoctorConfigMutation {
   const streaming = streamingAliasMigration.normalizeChannelConfig({ cfg });
   const transport = migrateLegacySignalTransportConfigSync(streaming.config);

@@ -3,7 +3,7 @@
  * Covers denied prompts, agent-session resume, wait handling, direct fallback,
  * and elevated runtime handoff routing.
  */
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./tools/gateway.js", () => ({

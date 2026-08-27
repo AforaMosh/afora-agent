@@ -1,8 +1,8 @@
 import { afterEach, expect, test } from "vitest";
 import { GatewayErrorDetailCodes } from "../../../packages/gateway-protocol/src/index.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import { ensureProfileForEmail, linkEmail } from "../../state/user-profiles.js";
-import { createOpenClawTestState } from "../../test-utils/openclaw-test-state.js";
+import { createAforaTestState } from "../../test-utils/afora-test-state.js";
 import { usersHandlers } from "./users.js";
 
 async function invokePreferenceMethod(
@@ -28,11 +28,11 @@ async function invokePreferenceMethod(
 }
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 test("users.prefs remains self-scoped across durable identities", async () => {
-  const state = await createOpenClawTestState({ layout: "state-only", prefix: "users-prefs-rpc-" });
+  const state = await createAforaTestState({ layout: "state-only", prefix: "users-prefs-rpc-" });
   try {
     const ada = ensureProfileForEmail("ada@example.test");
     const grace = ensureProfileForEmail("grace@example.test");
@@ -81,7 +81,7 @@ test("users.prefs returns a typed result without a durable identity", async () =
 });
 
 test("users.prefs.set returns typed profile quota details", async () => {
-  const state = await createOpenClawTestState({
+  const state = await createAforaTestState({
     layout: "state-only",
     prefix: "users-prefs-quota-",
   });

@@ -49,7 +49,7 @@ describe("native extension bootstrap", () => {
       });
     });
 
-    harness.alarmListener({ name: "openclaw-relay-watchdog" });
+    harness.alarmListener({ name: "afora-relay-watchdog" });
 
     await vi.waitFor(() => expect(harness.sendNativeMessage).toHaveBeenCalledTimes(2));
     expect(harness.storageValues).not.toHaveProperty("relayUrl");
@@ -67,7 +67,7 @@ describe("native extension bootstrap", () => {
         return response ?? nativeSuccess(request);
       },
     });
-    harness.alarmListener({ name: "openclaw-relay-watchdog" });
+    harness.alarmListener({ name: "afora-relay-watchdog" });
     const status = sendRuntimeMessage(harness, { type: "getStatus" });
 
     expect(harness.sendNativeMessage).toHaveBeenCalledOnce();
@@ -180,7 +180,7 @@ describe("native extension bootstrap", () => {
       },
     });
 
-    harness.alarmListener({ name: "openclaw-relay-watchdog" });
+    harness.alarmListener({ name: "afora-relay-watchdog" });
     harness.startupListener();
     harness.installedListener();
     await Promise.resolve();
@@ -365,7 +365,7 @@ describe("relay pairing and authentication", () => {
 
   it("offers only the non-secret v2 relay subprotocol", async () => {
     const harness = await loadBackground();
-    expect(harness.relaySockets[0]?.protocols).toEqual(["openclaw-extension-relay.v2"]);
+    expect(harness.relaySockets[0]?.protocols).toEqual(["afora-extension-relay.v2"]);
     expect(JSON.stringify(harness.relaySockets[0]?.protocols)).not.toContain(TEST_RELAY_KEY);
   });
 

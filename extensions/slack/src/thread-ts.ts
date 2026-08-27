@@ -1,5 +1,5 @@
 // Slack plugin module implements thread ts behavior.
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 const SLACK_THREAD_TS_PATTERN = /^\d+\.\d+$/;
 

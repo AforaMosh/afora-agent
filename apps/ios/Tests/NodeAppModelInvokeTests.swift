@@ -1,11 +1,11 @@
 import Foundation
-import OpenClawKit
-import OpenClawProtocol
+import AforaKit
+import AforaProtocol
 import Testing
 import UIKit
 import UserNotifications
-@testable import OpenClaw
-@testable import OpenClawChatUI
+@testable import Afora
+@testable import AforaChatUI
 
 @MainActor
 private final class MockVoiceNoteAudioCapture: VoiceNoteAudioCapture {
@@ -35,15 +35,15 @@ private actor CancellingCameraService: CameraServicing {
     }
 
     func snap(
-        params _: OpenClawCameraSnapParams,
-        defaultFacing _: OpenClawCameraFacing) async throws -> OpenClawCameraSnapResult
+        params _: AforaCameraSnapParams,
+        defaultFacing _: AforaCameraFacing) async throws -> AforaCameraSnapResult
     {
         throw CancellationError()
     }
 
     func clip(
-        params _: OpenClawCameraClipParams,
-        defaultFacing _: OpenClawCameraFacing) async throws -> OpenClawCameraClipResult
+        params _: AforaCameraClipParams,
+        defaultFacing _: AforaCameraFacing) async throws -> AforaCameraClipResult
     {
         throw CancellationError()
     }
@@ -57,15 +57,15 @@ private actor RecordingCameraService: CameraServicing {
     }
 
     func snap(
-        params _: OpenClawCameraSnapParams,
-        defaultFacing _: OpenClawCameraFacing) async throws -> OpenClawCameraSnapResult
+        params _: AforaCameraSnapParams,
+        defaultFacing _: AforaCameraFacing) async throws -> AforaCameraSnapResult
     {
         (format: "jpg", base64: "", width: 1, height: 1)
     }
 
     func clip(
-        params _: OpenClawCameraClipParams,
-        defaultFacing _: OpenClawCameraFacing) async throws -> OpenClawCameraClipResult
+        params _: AforaCameraClipParams,
+        defaultFacing _: AforaCameraFacing) async throws -> AforaCameraClipResult
     {
         self.clipCalls += 1
         return (format: "mp4", base64: "", durationMs: 1, hasAudio: true)
@@ -101,11 +101,11 @@ private actor WatchApprovalReadbackProbe {
 }
 
 private actor MockHealthSummaryService: HealthSummaryServicing {
-    private(set) var periods: [OpenClawHealthSummaryPeriod] = []
+    private(set) var periods: [AforaHealthSummaryPeriod] = []
 
-    func summary(params: OpenClawHealthSummaryParams) async throws -> OpenClawHealthSummaryPayload {
+    func summary(params: AforaHealthSummaryParams) async throws -> AforaHealthSummaryPayload {
         self.periods.append(params.period)
-        return OpenClawHealthSummaryPayload(
+        return AforaHealthSummaryPayload(
             period: params.period,
             startISO: "2026-07-06T00:00:00Z",
             endISO: "2026-07-12T18:30:00Z",
@@ -130,15 +130,15 @@ private actor BlockingAudioCameraService: CameraServicing {
     }
 
     func snap(
-        params _: OpenClawCameraSnapParams,
-        defaultFacing _: OpenClawCameraFacing) async throws -> OpenClawCameraSnapResult
+        params _: AforaCameraSnapParams,
+        defaultFacing _: AforaCameraFacing) async throws -> AforaCameraSnapResult
     {
         (format: "jpg", base64: "", width: 1, height: 1)
     }
 
     func clip(
-        params _: OpenClawCameraClipParams,
-        defaultFacing _: OpenClawCameraFacing) async throws -> OpenClawCameraClipResult
+        params _: AforaCameraClipParams,
+        defaultFacing _: AforaCameraFacing) async throws -> AforaCameraClipResult
     {
         await self.barrier.suspendFirstPreparation()
         try Task.checkCancellation()
@@ -165,7 +165,7 @@ private actor BlockingAudioScreenRecorder: ScreenRecordingServicing {
         await self.barrier.suspendFirstPreparation()
         try Task.checkCancellation()
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("openclaw-screen-test-\(UUID().uuidString).mp4")
+            .appendingPathComponent("afora-screen-test-\(UUID().uuidString).mp4")
         try Data().write(to: url)
         return url.path
     }
@@ -217,8 +217,8 @@ private actor OverlappingCameraService: CameraServicing {
     }
 
     func snap(
-        params _: OpenClawCameraSnapParams,
-        defaultFacing _: OpenClawCameraFacing) async throws -> OpenClawCameraSnapResult
+        params _: AforaCameraSnapParams,
+        defaultFacing _: AforaCameraFacing) async throws -> AforaCameraSnapResult
     {
         self.snapCount += 1
         if self.snapCount == 1 {
@@ -235,8 +235,8 @@ private actor OverlappingCameraService: CameraServicing {
     }
 
     func clip(
-        params _: OpenClawCameraClipParams,
-        defaultFacing _: OpenClawCameraFacing) async throws -> OpenClawCameraClipResult
+        params _: AforaCameraClipParams,
+        defaultFacing _: AforaCameraFacing) async throws -> AforaCameraClipResult
     {
         throw CancellationError()
     }
@@ -294,7 +294,7 @@ private func waitForTalkCondition(_ condition: @MainActor () -> Bool) async {
     Issue.record("Timed out waiting for Talk state")
 }
 
-private func talkRequest(id: String, command: OpenClawTalkCommand) -> BridgeInvokeRequest {
+private func talkRequest(id: String, command: AforaTalkCommand) -> BridgeInvokeRequest {
     BridgeInvokeRequest(id: id, command: command.rawValue)
 }
 
@@ -311,7 +311,7 @@ private func makeAgentDeepLinkURL(
     key: String? = nil) -> URL
 {
     var components = URLComponents()
-    components.scheme = "openclaw"
+    components.scheme = "afora"
     components.host = "agent"
     var queryItems: [URLQueryItem] = [URLQueryItem(name: "message", value: message)]
     if deliver {
@@ -338,10 +338,10 @@ private func makeWatchChatRawMessage(
     idempotencyKey: String? = nil,
     stopReason: String? = nil) throws -> AnyCodable
 {
-    let message = OpenClawChatMessage(
+    let message = AforaChatMessage(
         role: role,
         content: [
-            OpenClawChatMessageContent(
+            AforaChatMessageContent(
                 type: type,
                 text: text,
                 mimeType: nil,
@@ -366,10 +366,10 @@ private func makeProjectedWatchChatRawMessage(
         "role": role,
         "content": [["type": "text", "text": text]],
         "timestamp": timestamp,
-        "__openclaw": ["id": serverId],
+        "__afora": ["id": serverId],
     ]
     if isMessageToolMirror {
-        object["openclawMessageToolMirror"] = ["toolName": "message"]
+        object["aforaMessageToolMirror"] = ["toolName": "message"]
     }
     let data = try JSONSerialization.data(withJSONObject: object)
     return try JSONDecoder().decode(AnyCodable.self, from: data)
@@ -609,7 +609,7 @@ private func makeWatchApprovalSnapshotRequest(
 
 private func makeWatchAppCommand(
     _ id: String,
-    _ command: OpenClawWatchAppCommand,
+    _ command: AforaWatchAppCommand,
     session: String? = "main",
     gateway: String? = nil,
     text: String? = nil,
@@ -670,18 +670,18 @@ private final class MockWatchMessagingService: @preconcurrency WatchMessagingSer
         queuedForDelivery: false,
         transport: "sendMessage")
     var sendError: Error?
-    var lastSent: (id: String, params: OpenClawWatchNotifyParams, gatewayStableID: String?)?
+    var lastSent: (id: String, params: AforaWatchNotifyParams, gatewayStableID: String?)?
     var lastDirectNodeSetupCode: String?
-    var lastSentExecApprovalPrompt: OpenClawWatchExecApprovalPromptMessage?
-    var sentExecApprovalPrompts: [OpenClawWatchExecApprovalPromptMessage] = []
-    var lastSentExecApprovalResolved: OpenClawWatchExecApprovalResolvedMessage?
-    var lastSentExecApprovalExpired: OpenClawWatchExecApprovalExpiredMessage?
-    var lastSentExecApprovalSnapshot: OpenClawWatchExecApprovalSnapshotMessage?
-    var sentExecApprovalSnapshots: [OpenClawWatchExecApprovalSnapshotMessage] = []
-    var lastSentAppSnapshot: OpenClawWatchAppSnapshotMessage?
-    var syncExecApprovalSnapshotHandler: ((OpenClawWatchExecApprovalSnapshotMessage) async throws
+    var lastSentExecApprovalPrompt: AforaWatchExecApprovalPromptMessage?
+    var sentExecApprovalPrompts: [AforaWatchExecApprovalPromptMessage] = []
+    var lastSentExecApprovalResolved: AforaWatchExecApprovalResolvedMessage?
+    var lastSentExecApprovalExpired: AforaWatchExecApprovalExpiredMessage?
+    var lastSentExecApprovalSnapshot: AforaWatchExecApprovalSnapshotMessage?
+    var sentExecApprovalSnapshots: [AforaWatchExecApprovalSnapshotMessage] = []
+    var lastSentAppSnapshot: AforaWatchAppSnapshotMessage?
+    var syncExecApprovalSnapshotHandler: ((AforaWatchExecApprovalSnapshotMessage) async throws
         -> WatchNotificationSendResult)?
-    var lastSentChatCompletion: OpenClawWatchChatCompletionMessage?
+    var lastSentChatCompletion: AforaWatchChatCompletionMessage?
     private var statusHandler: (@Sendable (WatchMessagingStatus) -> Void)?
     private var replyHandler: (@Sendable (WatchQuickReplyEvent) -> Void)?
     private var execApprovalResolveHandler: (@Sendable (WatchExecApprovalResolveEvent) -> Void)?
@@ -726,7 +726,7 @@ private final class MockWatchMessagingService: @preconcurrency WatchMessagingSer
 
     func sendNotification(
         id: String,
-        params: OpenClawWatchNotifyParams,
+        params: AforaWatchNotifyParams,
         gatewayStableID: String?) async throws -> WatchNotificationSendResult
     {
         self.lastSent = (id: id, params: params, gatewayStableID: gatewayStableID)
@@ -745,7 +745,7 @@ private final class MockWatchMessagingService: @preconcurrency WatchMessagingSer
     }
 
     func sendExecApprovalPrompt(
-        _ message: OpenClawWatchExecApprovalPromptMessage) async throws -> WatchNotificationSendResult
+        _ message: AforaWatchExecApprovalPromptMessage) async throws -> WatchNotificationSendResult
     {
         self.lastSentExecApprovalPrompt = message
         self.sentExecApprovalPrompts.append(message)
@@ -756,7 +756,7 @@ private final class MockWatchMessagingService: @preconcurrency WatchMessagingSer
     }
 
     func sendExecApprovalResolved(
-        _ message: OpenClawWatchExecApprovalResolvedMessage) async throws -> WatchNotificationSendResult
+        _ message: AforaWatchExecApprovalResolvedMessage) async throws -> WatchNotificationSendResult
     {
         self.lastSentExecApprovalResolved = message
         if let sendError {
@@ -766,7 +766,7 @@ private final class MockWatchMessagingService: @preconcurrency WatchMessagingSer
     }
 
     func sendExecApprovalExpired(
-        _ message: OpenClawWatchExecApprovalExpiredMessage) async throws -> WatchNotificationSendResult
+        _ message: AforaWatchExecApprovalExpiredMessage) async throws -> WatchNotificationSendResult
     {
         self.lastSentExecApprovalExpired = message
         if let sendError {
@@ -776,7 +776,7 @@ private final class MockWatchMessagingService: @preconcurrency WatchMessagingSer
     }
 
     func syncExecApprovalSnapshot(
-        _ message: OpenClawWatchExecApprovalSnapshotMessage) async throws -> WatchNotificationSendResult
+        _ message: AforaWatchExecApprovalSnapshotMessage) async throws -> WatchNotificationSendResult
     {
         self.lastSentExecApprovalSnapshot = message
         self.sentExecApprovalSnapshots.append(message)
@@ -790,7 +790,7 @@ private final class MockWatchMessagingService: @preconcurrency WatchMessagingSer
     }
 
     func syncAppSnapshot(
-        _ message: OpenClawWatchAppSnapshotMessage) async throws -> WatchNotificationSendResult
+        _ message: AforaWatchAppSnapshotMessage) async throws -> WatchNotificationSendResult
     {
         self.lastSentAppSnapshot = message
         if let sendError {
@@ -800,7 +800,7 @@ private final class MockWatchMessagingService: @preconcurrency WatchMessagingSer
     }
 
     func sendChatCompletion(
-        _ message: OpenClawWatchChatCompletionMessage) async throws -> WatchNotificationSendResult
+        _ message: AforaWatchChatCompletionMessage) async throws -> WatchNotificationSendResult
     {
         self.lastSentChatCompletion = message
         if let sendError {
@@ -985,7 +985,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
 @Suite(.serialized) struct NodeAppModelInvokeTests {
     @Test @MainActor func `decode params fails without JSON`() {
         #expect(throws: Error.self) {
-            _ = try NodeAppModel.decodeParams(OpenClawCanvasNavigateParams.self, from: nil)
+            _ = try NodeAppModel.decodeParams(AforaCanvasNavigateParams.self, from: nil)
         }
     }
 
@@ -1002,11 +1002,11 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         let appModel = NodeAppModel(healthSummaryService: service)
         let request = BridgeInvokeRequest(
             id: "health-1",
-            command: OpenClawHealthCommand.summary.rawValue,
+            command: AforaHealthCommand.summary.rawValue,
             paramsJSON: #"{"period":"today"}"#)
 
         let response = await appModel.handleInvoke(request)
-        let payload = try decodeTalkPayload(OpenClawHealthSummaryPayload.self, from: response)
+        let payload = try decodeTalkPayload(AforaHealthSummaryPayload.self, from: response)
 
         #expect(response.ok)
         #expect(payload.period == .today)
@@ -1019,7 +1019,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         let appModel = NodeAppModel(healthSummaryService: service)
         let request = BridgeInvokeRequest(
             id: "health-invalid",
-            command: OpenClawHealthCommand.summary.rawValue,
+            command: AforaHealthCommand.summary.rawValue,
             paramsJSON: #"{"period":"90d"}"#)
 
         let response = await appModel.handleInvoke(request)
@@ -1616,7 +1616,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
             NotificationSnapshot(
                 identifier: "old-requested-approval",
                 userInfo: [
-                    "openclaw": [
+                    "afora": [
                         "kind": ExecApprovalNotificationBridge.requestedKind,
                         "approvalId": "recovery-a",
                         "gatewayDeviceId": "device-a",
@@ -1625,7 +1625,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
             NotificationSnapshot(
                 identifier: "new-requested-approval",
                 userInfo: [
-                    "openclaw": [
+                    "afora": [
                         "kind": ExecApprovalNotificationBridge.requestedKind,
                         "approvalId": "recovery-b",
                         "gatewayDeviceId": "device-b",
@@ -1709,7 +1709,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
             expiresAtMs: 4_000_000_000_000))
         appModel._test_presentExecApprovalPrompt(prompt)
 
-        let uncertainMessage = "Decision status is unknown. Actions remain locked until OpenClaw reconnects."
+        let uncertainMessage = "Decision status is unknown. Actions remain locked until Afora reconnects."
         appModel._test_setPendingExecApprovalPromptUncertain(uncertainMessage)
 
         #expect(appModel._test_pendingExecApprovalState().resolving)
@@ -2058,7 +2058,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         // owner-frozen uncertain contract with a durable readback record.
         #expect(appModel._test_pendingExecApprovalState().resolving)
         #expect(appModel._test_pendingExecApprovalState().error ==
-            "Decision status is unknown. Actions remain locked until OpenClaw reconnects.")
+            "Decision status is unknown. Actions remain locked until Afora reconnects.")
         #expect(appModel._test_pendingPersistedExecApprovalReadbacks().contains { readback in
             readback.approvalId == approvalID && readback.gatewayStableID == gatewayA.effectiveStableID
         })
@@ -2228,7 +2228,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         notificationCenter.delivered = [NotificationSnapshot(
             identifier: "offline-request-alert",
             userInfo: [
-                "openclaw": [
+                "afora": [
                     "kind": ExecApprovalNotificationBridge.requestedKind,
                     "approvalId": push.approvalId,
                     "gatewayDeviceId": "gateway-device-a",
@@ -2284,7 +2284,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
 
         let request = BridgeInvokeRequest(
             id: "ptt-start",
-            command: OpenClawTalkCommand.pttStart.rawValue)
+            command: AforaTalkCommand.pttStart.rawValue)
         let response = await appModel.handleInvoke(request)
 
         #expect(response.ok == false)
@@ -2295,7 +2295,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
 
     @Test @MainActor func `PTT start preserves an active voice note`() async {
         let capture = MockVoiceNoteAudioCapture()
-        let recorder = OpenClawVoiceNoteRecorder(capture: capture)
+        let recorder = AforaVoiceNoteRecorder(capture: capture)
         #expect(await recorder.start())
         let appModel = NodeAppModel(
             talkMode: TalkModeManager(allowSimulatorCapture: true),
@@ -2303,7 +2303,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
 
         let request = BridgeInvokeRequest(
             id: "ptt-start-with-voice-note",
-            command: OpenClawTalkCommand.pttStart.rawValue)
+            command: AforaTalkCommand.pttStart.rawValue)
         let response = await appModel.handleInvoke(request)
 
         #expect(response.ok == false)
@@ -2338,7 +2338,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
 
         let activeResponse = await active.value
         let queuedResponse = await queued.value
-        let activePayload = try decodeTalkPayload(OpenClawTalkPTTStartPayload.self, from: activeResponse)
+        let activePayload = try decodeTalkPayload(AforaTalkPTTStartPayload.self, from: activeResponse)
         #expect(activeResponse.ok)
         #expect(!queuedResponse.ok)
         #expect(talkMode._test_activePushToTalkCaptureId() == activePayload.captureId)
@@ -2395,7 +2395,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
 
         #expect(await stale.value.ok == false)
         let freshResponse = await fresh.value
-        let freshPayload = try decodeTalkPayload(OpenClawTalkPTTStartPayload.self, from: freshResponse)
+        let freshPayload = try decodeTalkPayload(AforaTalkPTTStartPayload.self, from: freshResponse)
         #expect(freshResponse.ok)
         #expect(talkMode._test_activePushToTalkCaptureId() == freshPayload.captureId)
 
@@ -2471,8 +2471,8 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         let barrier = TalkPreparationBarrier()
         let stableID = "talk-routing-restore-\(UUID().uuidString)"
         let databaseDirectoryURL = try #require(NodeAppModel.chatDatabaseDirectoryURL())
-        let databases = try OpenClawClientDatabases(directoryURL: databaseDirectoryURL)
-        let identity = try #require(OpenClawChatSessionRoutingIdentity(
+        let databases = try AforaClientDatabases(directoryURL: databaseDirectoryURL)
+        let identity = try #require(AforaChatSessionRoutingIdentity(
             scope: "per-sender",
             mainSessionKey: "restored-main",
             defaultAgentID: "main"))
@@ -2510,8 +2510,8 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         let barrier = TalkPreparationBarrier()
         let stableID = "cancelled-routing-restore-\(UUID().uuidString)"
         let databaseDirectoryURL = try #require(NodeAppModel.chatDatabaseDirectoryURL())
-        let databases = try OpenClawClientDatabases(directoryURL: databaseDirectoryURL)
-        let identity = try #require(OpenClawChatSessionRoutingIdentity(
+        let databases = try AforaClientDatabases(directoryURL: databaseDirectoryURL)
+        let identity = try #require(AforaChatSessionRoutingIdentity(
             scope: "per-sender",
             mainSessionKey: "stale-main",
             defaultAgentID: "main"))
@@ -2723,7 +2723,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
 
         let activeResponse = await appModel.handleInvoke(
             talkRequest(id: "node-route-active", command: .pttStart))
-        let active = try decodeTalkPayload(OpenClawTalkPTTStartPayload.self, from: activeResponse)
+        let active = try decodeTalkPayload(AforaTalkPTTStartPayload.self, from: activeResponse)
         #expect(talkMode._test_activePushToTalkCaptureId() == active.captureId)
 
         appModel.invalidateNodePushToTalkRoute()
@@ -2755,7 +2755,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         }
         let startResponse = await appModel.handleInvoke(
             talkRequest(id: "fresh-before-stale-cancel", command: .pttStart))
-        let active = try decodeTalkPayload(OpenClawTalkPTTStartPayload.self, from: startResponse)
+        let active = try decodeTalkPayload(AforaTalkPTTStartPayload.self, from: startResponse)
         let staleCancel = Task { @MainActor in
             await barrier.suspendFirstPreparation()
             return await appModel.handleInvoke(
@@ -2841,9 +2841,9 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         await waitForTalkCondition { talkMode._test_activePushToTalkCaptureId() != nil }
         let cancelledCaptureId = try #require(talkMode._test_activePushToTalkCaptureId())
         let cancelResponse = await appModel.handleInvoke(talkRequest(id: "cancel", command: .pttCancel))
-        let cancelPayload = try decodeTalkPayload(OpenClawTalkPTTStopPayload.self, from: cancelResponse)
+        let cancelPayload = try decodeTalkPayload(AforaTalkPTTStopPayload.self, from: cancelResponse)
         let cancelledOncePayload = try await decodeTalkPayload(
-            OpenClawTalkPTTStopPayload.self,
+            AforaTalkPTTStopPayload.self,
             from: cancelledOnce.value)
         #expect(cancelPayload.captureId == cancelledCaptureId)
         #expect(cancelPayload.status == "cancelled")
@@ -2855,8 +2855,8 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         await waitForTalkCondition { talkMode._test_activePushToTalkCaptureId() != nil }
         let stoppedCaptureId = try #require(talkMode._test_activePushToTalkCaptureId())
         let stopResponse = await appModel.handleInvoke(talkRequest(id: "stop", command: .pttStop))
-        let stopPayload = try decodeTalkPayload(OpenClawTalkPTTStopPayload.self, from: stopResponse)
-        let stoppedOncePayload = try await decodeTalkPayload(OpenClawTalkPTTStopPayload.self, from: stoppedOnce.value)
+        let stopPayload = try decodeTalkPayload(AforaTalkPTTStopPayload.self, from: stopResponse)
+        let stoppedOncePayload = try await decodeTalkPayload(AforaTalkPTTStopPayload.self, from: stoppedOnce.value)
         #expect(stopPayload.captureId == stoppedCaptureId)
         #expect(stopPayload.status == "empty")
         #expect(stoppedOncePayload == stopPayload)
@@ -2986,7 +2986,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
                 caps: [],
                 commands: [],
                 permissions: [:],
-                clientId: "openclaw-ios",
+                clientId: "afora-ios",
                 clientMode: "node",
                 clientDisplayName: nil))
         appModel.activeGatewayConnectConfig = config
@@ -3092,10 +3092,10 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         #expect(!remoteStart.ok)
         #expect(remoteStart.error?.message.contains("PTT_BUSY") == true)
 
-        for command in [OpenClawTalkCommand.pttStop, .pttCancel] {
+        for command in [AforaTalkCommand.pttStop, .pttCancel] {
             let response = await appModel.handleInvoke(
                 talkRequest(id: "remote-\(command.rawValue)-during-dictation", command: command))
-            let payload = try decodeTalkPayload(OpenClawTalkPTTStopPayload.self, from: response)
+            let payload = try decodeTalkPayload(AforaTalkPTTStopPayload.self, from: response)
             #expect(payload.status == "idle")
             #expect(payload.captureId != captureId)
             #expect(talkMode._test_activePushToTalkCaptureId() == captureId)
@@ -3551,7 +3551,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
 
         talkMode.suspendForBackground()
 
-        let payload = try await decodeTalkPayload(OpenClawTalkPTTStopPayload.self, from: once.value)
+        let payload = try await decodeTalkPayload(AforaTalkPTTStopPayload.self, from: once.value)
         #expect(payload.captureId == captureId)
         #expect(payload.status == "cancelled")
         #expect(talkMode._test_activePushToTalkCaptureId() == nil)
@@ -3567,7 +3567,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         defer { appModel.voiceWake.stop() }
 
         let startResponse = await appModel.handleInvoke(talkRequest(id: "background-start", command: .pttStart))
-        let start = try decodeTalkPayload(OpenClawTalkPTTStartPayload.self, from: startResponse)
+        let start = try decodeTalkPayload(AforaTalkPTTStartPayload.self, from: startResponse)
         #expect(appModel._test_pttVoiceWakeLeaseCaptureIds() == [start.captureId])
 
         appModel.setScenePhase(.background)
@@ -3602,7 +3602,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         }
 
         let response = await appModel.handleInvoke(talkRequest(id: "background-pref-start", command: .pttStart))
-        let start = try decodeTalkPayload(OpenClawTalkPTTStartPayload.self, from: response)
+        let start = try decodeTalkPayload(AforaTalkPTTStartPayload.self, from: response)
         #expect(talkMode._test_activePushToTalkCaptureId() == start.captureId)
 
         appModel.setScenePhase(.background)
@@ -3679,14 +3679,14 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
 
         let startResponse = await appModel.handleInvoke(
             talkRequest(id: "background-finalizer-start", command: .pttStart))
-        let start = try decodeTalkPayload(OpenClawTalkPTTStartPayload.self, from: startResponse)
+        let start = try decodeTalkPayload(AforaTalkPTTStartPayload.self, from: startResponse)
         await talkMode._test_handlePushToTalkTranscript(
             "finish in background",
             isFinal: false,
             captureId: start.captureId)
         let stopResponse = await appModel.handleInvoke(
             talkRequest(id: "background-finalizer-stop", command: .pttStop))
-        #expect(try decodeTalkPayload(OpenClawTalkPTTStopPayload.self, from: stopResponse).status == "queued")
+        #expect(try decodeTalkPayload(AforaTalkPTTStopPayload.self, from: stopResponse).status == "queued")
         await barrier.waitUntilEntered()
 
         appModel.setScenePhase(.background)
@@ -3816,7 +3816,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
 
         let response = await appModel.handleInvoke(
             talkRequest(id: "disconnect-ptt-start", command: .pttStart))
-        let start = try decodeTalkPayload(OpenClawTalkPTTStartPayload.self, from: response)
+        let start = try decodeTalkPayload(AforaTalkPTTStartPayload.self, from: response)
         #expect(appModel._test_pttVoiceWakeLeaseCaptureIds() == [start.captureId])
 
         talkMode.updateGatewayConnected(false)
@@ -3895,7 +3895,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
 
     @Test @MainActor func `voice note start cannot race an acquired PTT lease`() async {
         let capture = MockVoiceNoteAudioCapture()
-        let recorder = OpenClawVoiceNoteRecorder(capture: capture)
+        let recorder = AforaVoiceNoteRecorder(capture: capture)
         let appModel = NodeAppModel(
             talkMode: TalkModeManager(allowSimulatorCapture: true),
             voiceNoteRecorder: recorder)
@@ -3910,7 +3910,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
 
     @Test @MainActor func `voice note cannot start after the app backgrounds`() async {
         let capture = MockVoiceNoteAudioCapture()
-        let recorder = OpenClawVoiceNoteRecorder(capture: capture)
+        let recorder = AforaVoiceNoteRecorder(capture: capture)
         let appModel = NodeAppModel(voiceNoteRecorder: recorder)
         defer { appModel.setScenePhase(.active) }
 
@@ -3924,7 +3924,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
 
     @Test @MainActor func `voice note cannot start during PTT preparation`() async {
         let capture = MockVoiceNoteAudioCapture()
-        let recorder = OpenClawVoiceNoteRecorder(capture: capture)
+        let recorder = AforaVoiceNoteRecorder(capture: capture)
         let talkMode = TalkModeManager(allowSimulatorCapture: true)
         let appModel = NodeAppModel(talkMode: talkMode, voiceNoteRecorder: recorder)
         let barrier = TalkPreparationBarrier()
@@ -3956,10 +3956,10 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
             talkMode: TalkModeManager(allowSimulatorCapture: true))
         appModel.acquirePttVoiceWakeLease(for: "camera-audio-ptt")
         defer { appModel.releasePttVoiceWakeLease(for: "camera-audio-ptt") }
-        let params = try JSONEncoder().encode(OpenClawCameraClipParams(includeAudio: true))
+        let params = try JSONEncoder().encode(AforaCameraClipParams(includeAudio: true))
         let request = try BridgeInvokeRequest(
             id: "camera-audio-during-ptt",
-            command: OpenClawCameraCommand.clip.rawValue,
+            command: AforaCameraCommand.clip.rawValue,
             paramsJSON: #require(String(data: params, encoding: .utf8)))
 
         let response = await appModel.handleInvoke(request)
@@ -3973,7 +3973,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         let barrier = TalkPreparationBarrier()
         let talkMode = TalkModeManager(allowSimulatorCapture: true)
         let voiceNoteCapture = MockVoiceNoteAudioCapture()
-        let voiceNoteRecorder = OpenClawVoiceNoteRecorder(capture: voiceNoteCapture)
+        let voiceNoteRecorder = AforaVoiceNoteRecorder(capture: voiceNoteCapture)
         let appModel = NodeAppModel(
             camera: BlockingAudioCameraService(barrier: barrier),
             talkMode: talkMode,
@@ -3983,10 +3983,10 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
             barrier.release()
             talkMode.stop()
         }
-        let params = try JSONEncoder().encode(OpenClawCameraClipParams(includeAudio: true))
+        let params = try JSONEncoder().encode(AforaCameraClipParams(includeAudio: true))
         let clipRequest = try BridgeInvokeRequest(
             id: "blocking-camera-audio",
-            command: OpenClawCameraCommand.clip.rawValue,
+            command: AforaCameraCommand.clip.rawValue,
             paramsJSON: #require(String(data: params, encoding: .utf8)))
         let clip = Task { @MainActor in await appModel.handleInvoke(clipRequest) }
         await barrier.waitUntilEntered()
@@ -4019,10 +4019,10 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
             barrier.release()
             talkMode.stop()
         }
-        let params = try JSONEncoder().encode(OpenClawScreenRecordParams(includeAudio: true))
+        let params = try JSONEncoder().encode(AforaScreenRecordParams(includeAudio: true))
         let recordRequest = try BridgeInvokeRequest(
             id: "blocking-screen-audio",
-            command: OpenClawScreenCommand.record.rawValue,
+            command: AforaScreenCommand.record.rawValue,
             paramsJSON: #require(String(data: params, encoding: .utf8)))
         let recording = Task { @MainActor in await appModel.handleInvoke(recordRequest) }
         await barrier.waitUntilEntered()
@@ -4043,16 +4043,16 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
             let recorder = BlockingAudioScreenRecorder(barrier: barrier)
             let appModel = NodeAppModel(screenRecorder: recorder)
             let firstParams = try JSONEncoder().encode(
-                OpenClawScreenRecordParams(includeAudio: firstIncludesAudio))
+                AforaScreenRecordParams(includeAudio: firstIncludesAudio))
             let secondParams = try JSONEncoder().encode(
-                OpenClawScreenRecordParams(includeAudio: secondIncludesAudio))
+                AforaScreenRecordParams(includeAudio: secondIncludesAudio))
             let firstRequest = try BridgeInvokeRequest(
                 id: "screen-first-\(firstIncludesAudio)",
-                command: OpenClawScreenCommand.record.rawValue,
+                command: AforaScreenCommand.record.rawValue,
                 paramsJSON: #require(String(data: firstParams, encoding: .utf8)))
             let secondRequest = try BridgeInvokeRequest(
                 id: "screen-second-\(secondIncludesAudio)",
-                command: OpenClawScreenCommand.record.rawValue,
+                command: AforaScreenCommand.record.rawValue,
                 paramsJSON: #require(String(data: secondParams, encoding: .utf8)))
 
             let first = Task { @MainActor in await appModel.handleInvoke(firstRequest) }
@@ -4081,10 +4081,10 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         }
         appModel.voiceWake.isEnabled = true
         appModel.voiceWake.statusText = "Listening"
-        let params = try JSONEncoder().encode(OpenClawCameraClipParams(includeAudio: true))
+        let params = try JSONEncoder().encode(AforaCameraClipParams(includeAudio: true))
         let request = try BridgeInvokeRequest(
             id: "background-camera-audio",
-            command: OpenClawCameraCommand.clip.rawValue,
+            command: AforaCameraCommand.clip.rawValue,
             paramsJSON: #require(String(data: params, encoding: .utf8)))
         let capture = Task { @MainActor in await appModel.handleInvoke(request) }
         await barrier.waitUntilEntered()
@@ -4105,10 +4105,10 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
             barrier.release()
             appModel.setScenePhase(.active)
         }
-        let params = try JSONEncoder().encode(OpenClawScreenRecordParams(includeAudio: false))
+        let params = try JSONEncoder().encode(AforaScreenRecordParams(includeAudio: false))
         let request = try BridgeInvokeRequest(
             id: "background-screen-no-audio",
-            command: OpenClawScreenCommand.record.rawValue,
+            command: AforaScreenCommand.record.rawValue,
             paramsJSON: #require(String(data: params, encoding: .utf8)))
         let capture = Task { @MainActor in await appModel.handleInvoke(request) }
         await barrier.waitUntilEntered()
@@ -4133,10 +4133,10 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
             barrier.release()
             appModel.setScenePhase(.active)
         }
-        let params = try JSONEncoder().encode(OpenClawScreenRecordParams(includeAudio: false))
+        let params = try JSONEncoder().encode(AforaScreenRecordParams(includeAudio: false))
         let request = try BridgeInvokeRequest(
             id: "late-cancelled-screen",
-            command: OpenClawScreenCommand.record.rawValue,
+            command: AforaScreenCommand.record.rawValue,
             paramsJSON: #require(String(data: params, encoding: .utf8)))
         let capture = Task { @MainActor in await appModel.handleInvoke(request) }
         await barrier.waitUntilEntered()
@@ -5178,7 +5178,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
                 id: "main",
                 name: "Main",
                 identity: [
-                    "avatarUrl": AnyCodable("https://example.com/openclaw.png"),
+                    "avatarUrl": AnyCodable("https://example.com/afora.png"),
                     "emoji": AnyCodable("OC"),
                 ],
                 workspace: nil,
@@ -5195,7 +5195,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         await Task.yield()
 
         let snapshot = try #require(watchService.lastSentAppSnapshot)
-        #expect(snapshot.agentAvatarURL == "https://example.com/openclaw.png")
+        #expect(snapshot.agentAvatarURL == "https://example.com/afora.png")
         #expect(snapshot.agentAvatarText == "OC")
     }
 
@@ -5261,7 +5261,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         appModel.connectedGatewayID = "gateway-current"
         appModel.setTalkEnabled(false)
 
-        for command in [OpenClawWatchAppCommand.openChat, .startTalk] {
+        for command in [AforaWatchAppCommand.openChat, .startTalk] {
             watchService.emitAppCommand(
                 makeWatchAppCommand(
                     "watch-stale-\(command.rawValue)",
@@ -5470,7 +5470,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
     }
 
     @Test func `watch chat completion bounds reply text`() {
-        let message = OpenClawWatchChatCompletionMessage(
+        let message = AforaWatchChatCompletionMessage(
             commandId: "watch-voice",
             replyText: String(repeating: "x", count: 5000))
 
@@ -5930,7 +5930,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         notificationCenter.delivered = [NotificationSnapshot(
             identifier: "delivered-approval",
             userInfo: [
-                "openclaw": [
+                "afora": [
                     "kind": ExecApprovalNotificationBridge.requestedKind,
                     "approvalId": "approval-delivered-recovery",
                     "gatewayDeviceId": "gateway-device-a",
@@ -6156,7 +6156,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         notificationCenter.delivered = [NotificationSnapshot(
             identifier: "approval-event-notification",
             userInfo: [
-                "openclaw": [
+                "afora": [
                     "kind": ExecApprovalNotificationBridge.requestedKind,
                     "approvalId": "approval-event-resolved",
                     "gatewayDeviceId": "gateway-device-a",
@@ -6445,7 +6445,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         let appModel = NodeAppModel()
         appModel.setScenePhase(.background)
 
-        let req = BridgeInvokeRequest(id: "bg", command: OpenClawCanvasCommand.present.rawValue)
+        let req = BridgeInvokeRequest(id: "bg", command: AforaCanvasCommand.present.rawValue)
         let res = await appModel.handleInvoke(req)
         #expect(res.ok == false)
         #expect(res.error?.code == .backgroundUnavailable)
@@ -6457,7 +6457,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
 
     @Test @MainActor func `handle invoke rejects camera when disabled`() async {
         let appModel = NodeAppModel()
-        let req = BridgeInvokeRequest(id: "cam", command: OpenClawCameraCommand.snap.rawValue)
+        let req = BridgeInvokeRequest(id: "cam", command: AforaCameraCommand.snap.rawValue)
 
         let defaults = UserDefaults.standard
         let key = "camera.enabled"
@@ -6490,7 +6490,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
             }
         }
         let appModel = NodeAppModel(camera: CancellingCameraService())
-        let request = BridgeInvokeRequest(id: "cancelled-camera", command: OpenClawCameraCommand.snap.rawValue)
+        let request = BridgeInvokeRequest(id: "cancelled-camera", command: AforaCameraCommand.snap.rawValue)
 
         let response = await appModel.handleInvoke(request)
 
@@ -6521,14 +6521,14 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         let appModel = NodeAppModel(camera: camera)
         let firstTask = Task {
             await appModel.handleInvoke(
-                BridgeInvokeRequest(id: "camera-first", command: OpenClawCameraCommand.snap.rawValue))
+                BridgeInvokeRequest(id: "camera-first", command: AforaCameraCommand.snap.rawValue))
         }
         for await _ in firstStarted.stream {
             break
         }
         let secondTask = Task {
             await appModel.handleInvoke(
-                BridgeInvokeRequest(id: "camera-second", command: OpenClawCameraCommand.snap.rawValue))
+                BridgeInvokeRequest(id: "camera-second", command: AforaCameraCommand.snap.rawValue))
         }
         for await _ in secondStarted.stream {
             break
@@ -6549,8 +6549,8 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         let (center, appModel) = makeNotificationModel(status: .notDetermined)
         let req = try makeInvokeRequest(
             id: "notify-off",
-            command: OpenClawSystemCommand.notify.rawValue,
-            params: OpenClawSystemNotifyParams(title: "Approval", body: "Review request"))
+            command: AforaSystemCommand.notify.rawValue,
+            params: AforaSystemNotifyParams(title: "Approval", body: "Review request"))
 
         let res = await appModel.handleInvoke(req)
 
@@ -6566,8 +6566,8 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         let (center, appModel) = makeNotificationModel(status: .authorized)
         let req = try makeInvokeRequest(
             id: "notify-on",
-            command: OpenClawSystemCommand.notify.rawValue,
-            params: OpenClawSystemNotifyParams(title: "Approval", body: "Review request"))
+            command: AforaSystemCommand.notify.rawValue,
+            params: AforaSystemNotifyParams(title: "Approval", body: "Review request"))
 
         let res = await appModel.handleInvoke(req)
 
@@ -6581,8 +6581,8 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         let (center, appModel) = makeNotificationModel(status: .authorized)
         let req = try makeInvokeRequest(
             id: "notify-disabled",
-            command: OpenClawSystemCommand.notify.rawValue,
-            params: OpenClawSystemNotifyParams(title: "Approval", body: "Review request"))
+            command: AforaSystemCommand.notify.rawValue,
+            params: AforaSystemNotifyParams(title: "Approval", body: "Review request"))
 
         let res = await appModel.handleInvoke(req)
 
@@ -6617,8 +6617,8 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         let (center, appModel) = makeNotificationModel(status: .notDetermined)
         let req = try makeInvokeRequest(
             id: "chat-push-off",
-            command: OpenClawChatCommand.push.rawValue,
-            params: OpenClawChatPushParams(text: "Build finished", speak: false))
+            command: AforaChatCommand.push.rawValue,
+            params: AforaChatPushParams(text: "Build finished", speak: false))
 
         let res = await appModel.handleInvoke(req)
 
@@ -6634,8 +6634,8 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         let (center, appModel) = makeNotificationModel(status: .authorized)
         let req = try makeInvokeRequest(
             id: "chat-push-on",
-            command: OpenClawChatCommand.push.rawValue,
-            params: OpenClawChatPushParams(text: "Build finished", speak: false))
+            command: AforaChatCommand.push.rawValue,
+            params: AforaChatPushParams(text: "Build finished", speak: false))
 
         let res = await appModel.handleInvoke(req)
 
@@ -6645,13 +6645,13 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
 
     @Test @MainActor func `handle invoke rejects invalid screen format`() async {
         let appModel = NodeAppModel()
-        let params = OpenClawScreenRecordParams(format: "gif")
+        let params = AforaScreenRecordParams(format: "gif")
         let data = try? JSONEncoder().encode(params)
         let json = data.flatMap { String(data: $0, encoding: .utf8) }
 
         let req = BridgeInvokeRequest(
             id: "screen",
-            command: OpenClawScreenCommand.record.rawValue,
+            command: AforaScreenCommand.record.rawValue,
             paramsJSON: json)
 
         let res = await appModel.handleInvoke(req)
@@ -6666,7 +6666,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
 
         appModel.screen.navigate(to: "http://example.com")
 
-        let present = BridgeInvokeRequest(id: "present", command: OpenClawCanvasCommand.present.rawValue)
+        let present = BridgeInvokeRequest(id: "present", command: AforaCanvasCommand.present.rawValue)
         let presentRes = await appModel.handleInvoke(present)
         #expect(presentRes.ok == true)
         #expect(appModel.screen.urlString.isEmpty)
@@ -6674,16 +6674,16 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         // Loopback URLs are rejected (they are not meaningful for a remote gateway).
         let navigate = try makeInvokeRequest(
             id: "nav",
-            command: OpenClawCanvasCommand.navigate.rawValue,
-            params: OpenClawCanvasNavigateParams(url: "http://example.com/"))
+            command: AforaCanvasCommand.navigate.rawValue,
+            params: AforaCanvasNavigateParams(url: "http://example.com/"))
         let navRes = await appModel.handleInvoke(navigate)
         #expect(navRes.ok == true)
         #expect(appModel.screen.urlString == "http://example.com/")
 
         let eval = try makeInvokeRequest(
             id: "eval",
-            command: OpenClawCanvasCommand.evalJS.rawValue,
-            params: OpenClawCanvasEvalParams(javaScript: "1+1"))
+            command: AforaCanvasCommand.evalJS.rawValue,
+            params: AforaCanvasEvalParams(javaScript: "1+1"))
         var evalRes = await appModel.handleInvoke(eval)
         let deadline = ContinuousClock().now.advanced(by: .seconds(3))
         while evalRes.ok != true, ContinuousClock().now < deadline {
@@ -6699,13 +6699,13 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
     @Test @MainActor func `pending foreground actions replay canvas navigate`() async throws {
         let appModel = NodeAppModel()
         let navJSON = try String(
-            decoding: JSONEncoder().encode(OpenClawCanvasNavigateParams(url: "http://example.com/")),
+            decoding: JSONEncoder().encode(AforaCanvasNavigateParams(url: "http://example.com/")),
             as: UTF8.self)
 
         await appModel._test_applyPendingForegroundNodeActions([
             (
                 id: "pending-nav-1",
-                command: OpenClawCanvasCommand.navigate.rawValue,
+                command: AforaCanvasCommand.navigate.rawValue,
                 paramsJSON: navJSON),
         ])
 
@@ -6716,13 +6716,13 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         let appModel = NodeAppModel()
         appModel.setScenePhase(.background)
         let navJSON = try String(
-            decoding: JSONEncoder().encode(OpenClawCanvasNavigateParams(url: "http://example.com/")),
+            decoding: JSONEncoder().encode(AforaCanvasNavigateParams(url: "http://example.com/")),
             as: UTF8.self)
 
         await appModel._test_applyPendingForegroundNodeActions([
             (
                 id: "pending-nav-bg",
-                command: OpenClawCanvasCommand.navigate.rawValue,
+                command: AforaCanvasCommand.navigate.rawValue,
                 paramsJSON: navJSON),
         ])
 
@@ -6732,7 +6732,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
     @Test @MainActor func `handle invoke A 2 UI commands fail when local host unavailable`() async throws {
         let appModel = NodeAppModel()
 
-        let reset = BridgeInvokeRequest(id: "reset", command: OpenClawCanvasA2UICommand.reset.rawValue)
+        let reset = BridgeInvokeRequest(id: "reset", command: AforaCanvasA2UICommand.reset.rawValue)
         let resetRes = await appModel.handleInvoke(reset)
         #expect(resetRes.ok == false)
         #expect(resetRes.error?.message.contains("A2UI_HOST_UNAVAILABLE") == true)
@@ -6740,8 +6740,8 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         let jsonl = "{\"beginRendering\":{}}"
         let push = try makeInvokeRequest(
             id: "push",
-            command: OpenClawCanvasA2UICommand.pushJSONL.rawValue,
-            params: OpenClawCanvasA2UIPushJSONLParams(jsonl: jsonl))
+            command: AforaCanvasA2UICommand.pushJSONL.rawValue,
+            params: AforaCanvasA2UIPushJSONLParams(jsonl: jsonl))
         let pushRes = await appModel.handleInvoke(push)
         #expect(pushRes.ok == false)
         #expect(pushRes.error?.message.contains("A2UI_HOST_UNAVAILABLE") == true)
@@ -6764,13 +6764,13 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
             reachable: false,
             activationState: "inactive")
         let appModel = NodeAppModel(watchMessagingService: watchService)
-        let req = BridgeInvokeRequest(id: "watch-status", command: OpenClawWatchCommand.status.rawValue)
+        let req = BridgeInvokeRequest(id: "watch-status", command: AforaWatchCommand.status.rawValue)
 
         let res = await appModel.handleInvoke(req)
         #expect(res.ok == true)
 
         let payloadData = try #require(res.payloadJSON?.data(using: .utf8))
-        let payload = try JSONDecoder().decode(OpenClawWatchStatusPayload.self, from: payloadData)
+        let payload = try JSONDecoder().decode(AforaWatchStatusPayload.self, from: payloadData)
         #expect(payload.supported == true)
         #expect(payload.reachable == false)
         #expect(payload.activationState == "inactive")
@@ -6815,31 +6815,31 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
             transport: "transferUserInfo")
         let appModel = NodeAppModel(watchMessagingService: watchService)
         appModel.connectedGatewayID = "gateway-watch-notify"
-        let params = OpenClawWatchNotifyParams(
-            title: "OpenClaw",
+        let params = AforaWatchNotifyParams(
+            title: "Afora",
             body: "Meeting with Peter is at 4pm",
             priority: .timeSensitive)
         let req = try makeInvokeRequest(
             id: "watch-notify",
-            command: OpenClawWatchCommand.notify.rawValue,
+            command: AforaWatchCommand.notify.rawValue,
             params: params)
 
         let res = await appModel.handleInvoke(req, gatewayStableID: "gateway-a")
         #expect(res.ok == true)
-        #expect(watchService.lastSent?.params.title == "OpenClaw")
+        #expect(watchService.lastSent?.params.title == "Afora")
         #expect(watchService.lastSent?.params.body == "Meeting with Peter is at 4pm")
         #expect(watchService.lastSent?.params.priority == .timeSensitive)
         #expect(watchService.lastSent?.gatewayStableID == "gateway-watch-notify")
 
         let payloadData = try #require(res.payloadJSON?.data(using: .utf8))
-        let payload = try JSONDecoder().decode(OpenClawWatchNotifyPayload.self, from: payloadData)
+        let payload = try JSONDecoder().decode(AforaWatchNotifyPayload.self, from: payloadData)
         #expect(payload.deliveredImmediately == false)
         #expect(payload.queuedForDelivery == true)
         #expect(payload.transport == "transferUserInfo")
     }
 
     @Test @MainActor func `watch reply codec preserves prompt gateway owner`() throws {
-        let params = OpenClawWatchNotifyParams(
+        let params = AforaWatchNotifyParams(
             title: "Approval",
             body: "Allow?",
             promptId: "prompt-a",
@@ -6852,7 +6852,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         #expect(notification["gatewayStableID"] as? String == "gateway-a")
 
         let reply = try #require(WatchMessagingPayloadCodec.parseQuickReplyPayload([
-            "type": OpenClawWatchPayloadType.reply.rawValue,
+            "type": AforaWatchPayloadType.reply.rawValue,
             "replyId": "reply-a",
             "promptId": "prompt-a",
             "actionId": "approve",
@@ -6862,35 +6862,35 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
     }
 
     @Test @MainActor func `watch exec approval codec preserves gateway owner`() throws {
-        let approval = OpenClawWatchExecApprovalItem(
+        let approval = AforaWatchExecApprovalItem(
             id: "approval-a",
             gatewayStableID: "gateway-a",
             commandText: "echo safe",
             warningText: "Review shell expansion",
             allowedDecisions: [.allowOnce, .deny])
         let prompt = WatchMessagingPayloadCodec.encodeExecApprovalPromptPayload(
-            OpenClawWatchExecApprovalPromptMessage(approval: approval))
+            AforaWatchExecApprovalPromptMessage(approval: approval))
         let encodedApproval = try #require(prompt["approval"] as? [String: Any])
         #expect(encodedApproval["gatewayStableID"] as? String == "gateway-a")
         #expect(encodedApproval["warningText"] as? String == "Review shell expansion")
 
         let reply = try #require(WatchMessagingPayloadCodec.parseExecApprovalResolvePayload([
-            "type": OpenClawWatchPayloadType.execApprovalResolve.rawValue,
+            "type": AforaWatchPayloadType.execApprovalResolve.rawValue,
             "replyId": "reply-a",
             "approvalId": "approval-a",
             "gatewayStableID": "gateway-a",
-            "decision": OpenClawWatchExecApprovalDecision.allowOnce.rawValue,
+            "decision": AforaWatchExecApprovalDecision.allowOnce.rawValue,
         ], transport: "sendMessage"))
         #expect(reply.gatewayStableID == "gateway-a")
 
         let resolved = WatchMessagingPayloadCodec.encodeExecApprovalResolvedPayload(
-            OpenClawWatchExecApprovalResolvedMessage(
+            AforaWatchExecApprovalResolvedMessage(
                 approvalId: "approval-a",
                 gatewayStableID: "gateway-a",
                 outcome: .allowedAlways,
                 outcomeText: "This approval was already set to Always Allow."))
         let expired = WatchMessagingPayloadCodec.encodeExecApprovalExpiredPayload(
-            OpenClawWatchExecApprovalExpiredMessage(
+            AforaWatchExecApprovalExpiredMessage(
                 approvalId: "approval-a",
                 gatewayStableID: "gateway-a",
                 reason: .notFound))
@@ -6904,7 +6904,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         let activeResolutionAttemptID = "\u{0085}resolution-attempt-a\u{0085}"
         let snapshotRequest = try #require(
             WatchMessagingPayloadCodec.parseExecApprovalSnapshotRequestPayload([
-                "type": OpenClawWatchPayloadType.execApprovalSnapshotRequest.rawValue,
+                "type": AforaWatchPayloadType.execApprovalSnapshotRequest.rawValue,
                 "requestId": requestID,
                 "gatewayStableID": "gateway-a",
                 "heldApprovals": [
@@ -6924,7 +6924,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         #expect(snapshotRequest.heldApprovals[1].activeResolutionAttemptId == nil)
 
         let snapshot = WatchMessagingPayloadCodec.encodeExecApprovalSnapshotPayload(
-            OpenClawWatchExecApprovalSnapshotMessage(
+            AforaWatchExecApprovalSnapshotMessage(
                 approvals: [approval],
                 gatewayStableID: "gateway-a",
                 requestId: requestID,
@@ -6933,51 +6933,51 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         #expect(snapshot["requestGatewayStableID"] as? String == "gateway-a")
 
         let legacySnapshot = try JSONDecoder().decode(
-            OpenClawWatchExecApprovalSnapshotMessage.self,
+            AforaWatchExecApprovalSnapshotMessage.self,
             from: Data(#"{"type":"watch.execApproval.snapshot","approvals":[]}"#.utf8))
         #expect(legacySnapshot.requestId == nil)
         #expect(legacySnapshot.requestGatewayStableID == nil)
         #expect(throws: DecodingError.self) {
             _ = try JSONDecoder().decode(
-                OpenClawWatchExecApprovalSnapshotRequestMessage.self,
+                AforaWatchExecApprovalSnapshotRequestMessage.self,
                 from: Data(#"{"type":"watch.execApproval.snapshotRequest","requestId":"legacy"}"#.utf8))
         }
         // Shipped Watch binaries request snapshots with neither requestId nor heldApprovals.
         let shippedShapeRequest = try #require(
             WatchMessagingPayloadCodec.parseExecApprovalSnapshotRequestPayload([
-                "type": OpenClawWatchPayloadType.execApprovalSnapshotRequest.rawValue,
+                "type": AforaWatchPayloadType.execApprovalSnapshotRequest.rawValue,
             ], transport: "sendMessage"))
         #expect(!shippedShapeRequest.requestId.isEmpty)
         #expect(shippedShapeRequest.heldApprovals.isEmpty)
         #expect(shippedShapeRequest.gatewayStableID == nil)
         let missingHeldApprovalsRequest = try #require(
             WatchMessagingPayloadCodec.parseExecApprovalSnapshotRequestPayload([
-                "type": OpenClawWatchPayloadType.execApprovalSnapshotRequest.rawValue,
+                "type": AforaWatchPayloadType.execApprovalSnapshotRequest.rawValue,
                 "requestId": "missing-held-approvals",
             ], transport: "applicationContext"))
         #expect(missingHeldApprovalsRequest.requestId == "missing-held-approvals")
         #expect(missingHeldApprovalsRequest.heldApprovals.isEmpty)
         let missingRequestIdRequest = try #require(
             WatchMessagingPayloadCodec.parseExecApprovalSnapshotRequestPayload([
-                "type": OpenClawWatchPayloadType.execApprovalSnapshotRequest.rawValue,
+                "type": AforaWatchPayloadType.execApprovalSnapshotRequest.rawValue,
                 "heldApprovals": [],
             ], transport: "applicationContext"))
         #expect(!missingRequestIdRequest.requestId.isEmpty)
         let emptyRequestIdRequest = try #require(
             WatchMessagingPayloadCodec.parseExecApprovalSnapshotRequestPayload([
-                "type": OpenClawWatchPayloadType.execApprovalSnapshotRequest.rawValue,
+                "type": AforaWatchPayloadType.execApprovalSnapshotRequest.rawValue,
                 "requestId": "",
                 "heldApprovals": [],
             ], transport: "applicationContext"))
         #expect(!emptyRequestIdRequest.requestId.isEmpty)
         // A present heldApprovals key keeps strict rejection when malformed.
         #expect(WatchMessagingPayloadCodec.parseExecApprovalSnapshotRequestPayload([
-            "type": OpenClawWatchPayloadType.execApprovalSnapshotRequest.rawValue,
+            "type": AforaWatchPayloadType.execApprovalSnapshotRequest.rawValue,
             "requestId": "malformed-held-approvals-shape",
             "heldApprovals": "not-an-array",
         ], transport: "applicationContext") == nil)
         #expect(WatchMessagingPayloadCodec.parseExecApprovalSnapshotRequestPayload([
-            "type": OpenClawWatchPayloadType.execApprovalSnapshotRequest.rawValue,
+            "type": AforaWatchPayloadType.execApprovalSnapshotRequest.rawValue,
             "requestId": "malformed-held-approval",
             "heldApprovals": [
                 ["approvalId": "valid"],
@@ -6985,7 +6985,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
             ],
         ], transport: "applicationContext") == nil)
         #expect(WatchMessagingPayloadCodec.parseExecApprovalSnapshotRequestPayload([
-            "type": OpenClawWatchPayloadType.execApprovalSnapshotRequest.rawValue,
+            "type": AforaWatchPayloadType.execApprovalSnapshotRequest.rawValue,
             "requestId": "malformed-attempt",
             "heldApprovals": [[
                 "approvalId": "valid",
@@ -6999,7 +6999,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         let gatewayID = "\u{0085}gateway-a\u{0085}"
         let replyID = "\u{0085}reply-e\u{0301}\u{0085}"
         let prompt = WatchMessagingPayloadCodec.encodeExecApprovalPromptPayload(
-            OpenClawWatchExecApprovalPromptMessage(approval: OpenClawWatchExecApprovalItem(
+            AforaWatchExecApprovalPromptMessage(approval: AforaWatchExecApprovalItem(
                 id: approvalID,
                 gatewayStableID: gatewayID,
                 commandText: "echo exact",
@@ -7008,11 +7008,11 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         let encodedApprovalID = try #require(encodedApproval["id"] as? String)
         let encodedGatewayID = try #require(encodedApproval["gatewayStableID"] as? String)
         let reply = try #require(WatchMessagingPayloadCodec.parseExecApprovalResolvePayload([
-            "type": OpenClawWatchPayloadType.execApprovalResolve.rawValue,
+            "type": AforaWatchPayloadType.execApprovalResolve.rawValue,
             "replyId": replyID,
             "approvalId": encodedApprovalID,
             "gatewayStableID": encodedGatewayID,
-            "decision": OpenClawWatchExecApprovalDecision.allowOnce.rawValue,
+            "decision": AforaWatchExecApprovalDecision.allowOnce.rawValue,
         ], transport: "sendMessage"))
 
         #expect(Array(reply.replyId.utf8) == Array(replyID.utf8))
@@ -7024,7 +7024,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         let payload = WatchMessagingPayloadCodec.encodeDirectNodeSetupPayload(
             setupCode: "opaque-bootstrap-code")
 
-        #expect(payload["type"] as? String == OpenClawWatchPayloadType.directNodeSetup.rawValue)
+        #expect(payload["type"] as? String == AforaWatchPayloadType.directNodeSetup.rawValue)
         #expect(payload["setupCode"] as? String == "opaque-bootstrap-code")
         #expect(payload["sentAtMs"] is Int64)
         #expect(payload["token"] == nil)
@@ -7036,30 +7036,30 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         let encodedTimestamp = NSNumber(value: sentAtMs)
 
         let reply = try #require(WatchMessagingPayloadCodec.parseQuickReplyPayload([
-            "type": OpenClawWatchPayloadType.reply.rawValue,
+            "type": AforaWatchPayloadType.reply.rawValue,
             "actionId": "approve",
             "sentAtMs": encodedTimestamp,
         ], transport: "sendMessage"))
         let resolution = try #require(WatchMessagingPayloadCodec.parseExecApprovalResolvePayload([
-            "type": OpenClawWatchPayloadType.execApprovalResolve.rawValue,
+            "type": AforaWatchPayloadType.execApprovalResolve.rawValue,
             "approvalId": "approval-a",
-            "decision": OpenClawWatchExecApprovalDecision.allowOnce.rawValue,
+            "decision": AforaWatchExecApprovalDecision.allowOnce.rawValue,
             "sentAtMs": encodedTimestamp,
         ], transport: "sendMessage"))
         let approvalSnapshotRequest = try #require(
             WatchMessagingPayloadCodec.parseExecApprovalSnapshotRequestPayload([
-                "type": OpenClawWatchPayloadType.execApprovalSnapshotRequest.rawValue,
+                "type": AforaWatchPayloadType.execApprovalSnapshotRequest.rawValue,
                 "requestId": "timestamp-request",
                 "sentAtMs": encodedTimestamp,
                 "heldApprovals": [],
             ], transport: "sendMessage"))
         let appSnapshotRequest = try #require(WatchMessagingPayloadCodec.parseAppSnapshotRequestPayload([
-            "type": OpenClawWatchPayloadType.appSnapshotRequest.rawValue,
+            "type": AforaWatchPayloadType.appSnapshotRequest.rawValue,
             "sentAtMs": encodedTimestamp,
         ], transport: "sendMessage"))
         let appCommand = try #require(WatchMessagingPayloadCodec.parseAppCommandPayload([
-            "type": OpenClawWatchPayloadType.appCommand.rawValue,
-            "command": OpenClawWatchAppCommand.refresh.rawValue,
+            "type": AforaWatchPayloadType.appCommand.rawValue,
+            "command": AforaWatchAppCommand.refresh.rawValue,
             "sentAtMs": encodedTimestamp,
         ], transport: "sendMessage"))
 
@@ -7072,27 +7072,27 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
 
     @Test @MainActor func `watch application context retains app and approval snapshots`() throws {
         let appPayload = WatchMessagingPayloadCodec.encodeAppSnapshotPayload(
-            OpenClawWatchAppSnapshotMessage(
-                gatewayStatus: OpenClawWatchAppStatus(code: .gatewayConnected),
+            AforaWatchAppSnapshotMessage(
+                gatewayStatus: AforaWatchAppStatus(code: .gatewayConnected),
                 gatewayStatusText: "Connected",
                 gatewayConnected: true,
                 agentName: "Main",
                 agentAvatarURL: "https://example.com/avatar.png",
                 sessionKey: "main",
                 gatewayStableID: "gateway-a",
-                talkStatus: OpenClawWatchAppStatus(code: .talkOff),
+                talkStatus: AforaWatchAppStatus(code: .talkOff),
                 talkStatusText: "Off",
                 talkEnabled: false,
                 talkListening: false,
                 talkSpeaking: false,
                 pendingApprovalCount: 1,
-                chatStatus: OpenClawWatchAppStatus(code: .chatConnectIPhone),
+                chatStatus: AforaWatchAppStatus(code: .chatConnectIPhone),
                 chatStatusText: "Connect iPhone chat to read messages",
                 snapshotId: "app-a"))
         let approvalPayload = WatchMessagingPayloadCodec.encodeExecApprovalSnapshotPayload(
-            OpenClawWatchExecApprovalSnapshotMessage(
+            AforaWatchExecApprovalSnapshotMessage(
                 approvals: [
-                    OpenClawWatchExecApprovalItem(
+                    AforaWatchExecApprovalItem(
                         id: "approval-a",
                         gatewayStableID: "gateway-a",
                         commandText: "echo safe",
@@ -7109,11 +7109,11 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
             approvalPayload,
             merging: appContext)
 
-        #expect(combined["type"] as? String == OpenClawWatchPayloadType.execApprovalSnapshot.rawValue)
+        #expect(combined["type"] as? String == AforaWatchPayloadType.execApprovalSnapshot.rawValue)
         let nestedApp = try #require(
-            combined[OpenClawWatchPayloadType.appSnapshot.rawValue] as? [String: Any])
+            combined[AforaWatchPayloadType.appSnapshot.rawValue] as? [String: Any])
         let nestedApprovals = try #require(
-            combined[OpenClawWatchPayloadType.execApprovalSnapshot.rawValue] as? [String: Any])
+            combined[AforaWatchPayloadType.execApprovalSnapshot.rawValue] as? [String: Any])
         #expect(nestedApp["gatewayStableID"] as? String == "gateway-a")
         #expect(nestedApp["agentAvatarUrl"] as? String == "https://example.com/avatar.png")
         #expect(nestedApp["agentAvatarURL"] == nil)
@@ -7130,10 +7130,10 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
 
     @Test @MainActor func `handle invoke watch notify rejects empty message`() async throws {
         let (watchService, appModel) = makeWatchModel()
-        let params = OpenClawWatchNotifyParams(title: "   ", body: "\n")
+        let params = AforaWatchNotifyParams(title: "   ", body: "\n")
         let req = try makeInvokeRequest(
             id: "watch-notify-empty",
-            command: OpenClawWatchCommand.notify.rawValue,
+            command: AforaWatchCommand.notify.rawValue,
             params: params)
 
         let res = await appModel.handleInvoke(req)
@@ -7144,14 +7144,14 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
 
     @Test @MainActor func `handle invoke watch notify adds default actions for prompt`() async throws {
         let (watchService, appModel) = makeWatchModel()
-        let params = OpenClawWatchNotifyParams(
+        let params = AforaWatchNotifyParams(
             title: "Task",
             body: "Action needed",
             priority: .passive,
             promptId: "prompt-123")
         let req = try makeInvokeRequest(
             id: "watch-notify-default-actions",
-            command: OpenClawWatchCommand.notify.rawValue,
+            command: AforaWatchCommand.notify.rawValue,
             params: params)
 
         let res = await appModel.handleInvoke(req)
@@ -7164,13 +7164,13 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
     @Test @MainActor func `legacy watch reply binds to latest prompt owner`() async throws {
         let (watchService, appModel) = makeWatchModel()
         appModel.connectedGatewayID = "gateway-a"
-        let params = OpenClawWatchNotifyParams(
+        let params = AforaWatchNotifyParams(
             title: "Task",
             body: "Action needed",
             promptId: "prompt-legacy")
         let request = try makeInvokeRequest(
             id: "watch-notify-legacy-owner",
-            command: OpenClawWatchCommand.notify.rawValue,
+            command: AforaWatchCommand.notify.rawValue,
             params: params)
         #expect(await appModel.handleInvoke(request, gatewayStableID: "gateway-a").ok)
 
@@ -7191,14 +7191,14 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
 
     @Test @MainActor func `handle invoke watch notify adds approval defaults`() async throws {
         let (watchService, appModel) = makeWatchModel()
-        let params = OpenClawWatchNotifyParams(
+        let params = AforaWatchNotifyParams(
             title: "Approval",
             body: "Allow command?",
             promptId: "prompt-approval",
             kind: "approval")
         let req = try makeInvokeRequest(
             id: "watch-notify-approval-defaults",
-            command: OpenClawWatchCommand.notify.rawValue,
+            command: AforaWatchCommand.notify.rawValue,
             params: params)
 
         let res = await appModel.handleInvoke(req)
@@ -7210,20 +7210,20 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
 
     @Test @MainActor func `handle invoke watch notify derives priority from risk and caps actions`() async throws {
         let (watchService, appModel) = makeWatchModel()
-        let params = OpenClawWatchNotifyParams(
+        let params = AforaWatchNotifyParams(
             title: "Urgent",
             body: "Check now",
             risk: .high,
             actions: [
-                OpenClawWatchAction(id: "a1", label: "A1"),
-                OpenClawWatchAction(id: "a2", label: "A2"),
-                OpenClawWatchAction(id: "a3", label: "A3"),
-                OpenClawWatchAction(id: "a4", label: "A4"),
-                OpenClawWatchAction(id: "a5", label: "A5"),
+                AforaWatchAction(id: "a1", label: "A1"),
+                AforaWatchAction(id: "a2", label: "A2"),
+                AforaWatchAction(id: "a3", label: "A3"),
+                AforaWatchAction(id: "a4", label: "A4"),
+                AforaWatchAction(id: "a5", label: "A5"),
             ])
         let req = try makeInvokeRequest(
             id: "watch-notify-derive-priority",
-            command: OpenClawWatchCommand.notify.rawValue,
+            command: AforaWatchCommand.notify.rawValue,
             params: params)
 
         let res = await appModel.handleInvoke(req)
@@ -7241,10 +7241,10 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
             code: 1,
             userInfo: [NSLocalizedDescriptionKey: "WATCH_UNAVAILABLE: no paired Apple Watch"])
         let appModel = NodeAppModel(watchMessagingService: watchService)
-        let params = OpenClawWatchNotifyParams(title: "OpenClaw", body: "Delivery check")
+        let params = AforaWatchNotifyParams(title: "Afora", body: "Delivery check")
         let req = try makeInvokeRequest(
             id: "watch-notify-fail",
-            command: OpenClawWatchCommand.notify.rawValue,
+            command: AforaWatchCommand.notify.rawValue,
             params: params)
 
         let res = await appModel.handleInvoke(req)
@@ -7496,7 +7496,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
 
     @Test @MainActor func `handle deep link sets error when not connected`() async throws {
         let appModel = NodeAppModel()
-        let url = try #require(URL(string: "openclaw://agent?message=hello"))
+        let url = try #require(URL(string: "afora://agent?message=hello"))
         await appModel.handleDeepLink(url: url)
         #expect(appModel.screen.errorText?.contains("Gateway not connected") == true)
     }
@@ -7504,7 +7504,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
     @Test @MainActor func `handle deep link rejects oversized message`() async throws {
         let appModel = NodeAppModel()
         let msg = String(repeating: "a", count: 20001)
-        let url = try #require(URL(string: "openclaw://agent?message=\(msg)"))
+        let url = try #require(URL(string: "afora://agent?message=\(msg)"))
         await appModel.handleDeepLink(url: url)
         #expect(appModel.screen.errorText?.contains("Deep link too large") == true)
     }
@@ -7583,13 +7583,13 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
         let tempDir = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-        let previousStateDir = ProcessInfo.processInfo.environment["OPENCLAW_STATE_DIR"]
-        setenv("OPENCLAW_STATE_DIR", tempDir.path, 1)
+        let previousStateDir = ProcessInfo.processInfo.environment["AFORA_STATE_DIR"]
+        setenv("AFORA_STATE_DIR", tempDir.path, 1)
         defer {
             if let previousStateDir {
-                setenv("OPENCLAW_STATE_DIR", previousStateDir, 1)
+                setenv("AFORA_STATE_DIR", previousStateDir, 1)
             } else {
-                unsetenv("OPENCLAW_STATE_DIR")
+                unsetenv("AFORA_STATE_DIR")
             }
             try? FileManager.default.removeItem(at: tempDir)
         }
@@ -7611,7 +7611,7 @@ private func overrideNotificationServingPreference(_ enabled: Bool) -> () -> Voi
                 caps: [],
                 commands: [],
                 permissions: [:],
-                clientId: "openclaw-ios",
+                clientId: "afora-ios",
                 clientMode: "node",
                 clientDisplayName: nil,
                 deviceAuthGatewayID: authenticationOwnerID))

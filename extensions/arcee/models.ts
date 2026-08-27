@@ -2,7 +2,7 @@
  * Arcee model catalog metadata. These definitions back both direct Arcee and
  * OpenRouter-routed provider catalogs.
  */
-import type { ModelDefinitionConfig } from "openclaw/plugin-sdk/provider-model-shared";
+import type { ModelDefinitionConfig } from "afora-agent/plugin-sdk/provider-model-shared";
 
 /** Default direct Arcee API base URL. */
 export const ARCEE_BASE_URL = "https://api.arcee.ai/api/v1";

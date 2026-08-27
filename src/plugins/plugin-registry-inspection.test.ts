@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import type { PluginCandidate } from "./discovery.js";
 import {
   readPersistedInstalledPluginIndex,
@@ -20,19 +20,19 @@ import { cleanupTrackedTempDirs, makeTrackedTempDir } from "./test-helpers/fs-fi
 const tempDirs: string[] = [];
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   clearPluginMetadataLifecycleCaches();
   cleanupTrackedTempDirs(tempDirs);
 });
 
 function makeTempDir(): string {
-  return makeTrackedTempDir("openclaw-plugin-registry-inspection", tempDirs);
+  return makeTrackedTempDir("afora-plugin-registry-inspection", tempDirs);
 }
 
 function hermeticEnv(): NodeJS.ProcessEnv {
   return {
-    OPENCLAW_BUNDLED_PLUGINS_DIR: undefined,
-    OPENCLAW_VERSION: "2026.4.25",
+    AFORA_BUNDLED_PLUGINS_DIR: undefined,
+    AFORA_VERSION: "2026.4.25",
     VITEST: "true",
   };
 }
@@ -41,7 +41,7 @@ function createCandidate(rootDir: string): PluginCandidate {
   const source = path.join(rootDir, "index.ts");
   fs.writeFileSync(source, "export default { register() {} };\n", "utf8");
   fs.writeFileSync(
-    path.join(rootDir, "openclaw.plugin.json"),
+    path.join(rootDir, "afora.plugin.json"),
     JSON.stringify({ id: "demo", name: "Demo", configSchema: { type: "object" } }),
     "utf8",
   );
@@ -119,7 +119,7 @@ describe("plugin registry inspection", () => {
     expect(policy.refreshReasons).toEqual(["policy-changed"]);
 
     fs.writeFileSync(
-      path.join(pluginDir, "openclaw.plugin.json"),
+      path.join(pluginDir, "afora.plugin.json"),
       JSON.stringify({
         id: "demo",
         name: "Demo",
@@ -177,10 +177,10 @@ describe("plugin registry inspection", () => {
   it("uses the configured system-agent workspace for the freshness verdict", async () => {
     const stateDir = makeTempDir();
     const workspaceDir = makeTempDir();
-    const pluginDir = path.join(workspaceDir, ".openclaw", "extensions", "demo");
+    const pluginDir = path.join(workspaceDir, ".afora", "extensions", "demo");
     fs.mkdirSync(pluginDir, { recursive: true });
     createCandidate(pluginDir);
-    const env = { ...hermeticEnv(), OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1" };
+    const env = { ...hermeticEnv(), AFORA_DISABLE_BUNDLED_PLUGINS: "1" };
     const config = {
       agents: {
         ownership: "explicit" as const,

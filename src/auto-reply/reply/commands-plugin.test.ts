@@ -2,9 +2,9 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { parseSqliteSessionFileMarker } from "../../config/sessions/legacy-sqlite-marker.js";
 import {
   deleteSessionEntryLifecycle,
@@ -20,7 +20,7 @@ import { createEmptyPluginRegistry } from "../../plugins/registry-empty.js";
 import type { PluginRegistry } from "../../plugins/registry-types.js";
 import { resetPluginRuntimeStateForTest, setActivePluginRegistry } from "../../plugins/runtime.js";
 import type { PluginCommandContext, PluginCommandResult } from "../../plugins/types.js";
-import { resolveIncognitoOpenClawAgentSqlitePath } from "../../state/openclaw-agent-db.js";
+import { resolveIncognitoAforaAgentSqlitePath } from "../../state/afora-agent-db.js";
 import { handlePluginCommand } from "./commands-plugin.js";
 import type { HandleCommandsParams } from "./commands-types.js";
 import { shouldBypassPluginOwnedBindingForCommand } from "./dispatch-from-config.plugin-binding.js";
@@ -57,7 +57,7 @@ function firstCommandContext(handler: ReturnType<typeof registerTestCommand>) {
 
 function buildPluginParams(
   commandBodyNormalized: string,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): HandleCommandsParams {
   return {
     cfg,
@@ -84,7 +84,7 @@ function buildPluginParams(
     },
     provider: "openai",
     model: "gpt-5.4",
-    workspaceDir: "/tmp/openclaw-plugin-command",
+    workspaceDir: "/tmp/afora-plugin-command",
     contextTokens: 10_000,
     isGroup: false,
     resolveDefaultThinkingLevel: async () => "medium",
@@ -107,7 +107,7 @@ describe("handlePluginCommand", () => {
       buildPluginParams("/card", {
         commands: { text: true },
         channels: { whatsapp: { allowFrom: ["*"] } },
-      } as OpenClawConfig),
+      } as AforaConfig),
       true,
     );
 
@@ -122,7 +122,7 @@ describe("handlePluginCommand", () => {
   });
 
   it("compacts the bound session through the host runtime and records fresh tokens", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-plugin-compact-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-plugin-compact-"));
     const sessionKey = "agent:main:whatsapp:direct:test-user";
     const storePath = path.join(tempDir, "sessions.json");
     const handler = vi.fn(async (ctx: PluginCommandContext) => ({
@@ -144,7 +144,7 @@ describe("handlePluginCommand", () => {
     const params = buildPluginParams("/card", {
       commands: { text: true },
       session: { store: storePath },
-    } as OpenClawConfig);
+    } as AforaConfig);
     params.storePath = storePath;
     const entry = { sessionId: "session-plugin-command", updatedAt: Date.now() };
     params.sessionStore = { [sessionKey]: entry };
@@ -174,7 +174,7 @@ describe("handlePluginCommand", () => {
 
   it("omits session compaction when no bound session exists", async () => {
     const handler = registerTestCommand();
-    const params = buildPluginParams("/card", { commands: { text: true } } as OpenClawConfig);
+    const params = buildPluginParams("/card", { commands: { text: true } } as AforaConfig);
     params.sessionEntry = undefined;
 
     await handlePluginCommand(params, true);
@@ -190,7 +190,7 @@ describe("handlePluginCommand", () => {
       requireAuth: false,
       handler,
     });
-    const params = buildPluginParams("/card", { commands: { text: true } } as OpenClawConfig);
+    const params = buildPluginParams("/card", { commands: { text: true } } as AforaConfig);
     params.command = { ...params.command, isAuthorizedSender: false };
 
     const result = await handlePluginCommand(params, true);
@@ -215,7 +215,7 @@ describe("handlePluginCommand", () => {
     });
 
     await handlePluginCommand(
-      buildPluginParams("/card", { commands: { text: true } } as OpenClawConfig),
+      buildPluginParams("/card", { commands: { text: true } } as AforaConfig),
       true,
     );
 
@@ -227,7 +227,7 @@ describe("handlePluginCommand", () => {
   });
 
   it("closes unawaited session compaction when the command handler settles", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-plugin-compact-detached-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-plugin-compact-detached-"));
     const sessionKey = "agent:main:whatsapp:direct:test-user";
     const storePath = path.join(tempDir, "sessions.json");
     const entry = { sessionId: "session-plugin-command", updatedAt: Date.now() };
@@ -251,7 +251,7 @@ describe("handlePluginCommand", () => {
     const params = buildPluginParams("/card", {
       commands: { text: true },
       session: { store: storePath },
-    } as OpenClawConfig);
+    } as AforaConfig);
     params.storePath = storePath;
     params.sessionStore = { [sessionKey]: entry };
     params.resolveDefaultThinkingLevel = async () => {
@@ -274,7 +274,7 @@ describe("handlePluginCommand", () => {
   });
 
   it("rejects session compaction when the bound session disappeared", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-plugin-compact-gone-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-plugin-compact-gone-"));
     const sessionKey = "agent:main:whatsapp:direct:test-user";
     const storePath = path.join(tempDir, "sessions.json");
     const entry = { sessionId: "session-plugin-command", updatedAt: Date.now() };
@@ -292,7 +292,7 @@ describe("handlePluginCommand", () => {
     const params = buildPluginParams("/card", {
       commands: { text: true },
       session: { store: storePath },
-    } as OpenClawConfig);
+    } as AforaConfig);
     params.storePath = storePath;
     params.sessionStore = { [sessionKey]: entry };
 
@@ -308,7 +308,7 @@ describe("handlePluginCommand", () => {
   });
 
   it("rejects session compaction when its lifecycle changes during admission", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-plugin-compact-race-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-plugin-compact-race-"));
     const sessionKey = "agent:main:whatsapp:direct:test-user";
     const storePath = path.join(tempDir, "sessions.json");
     const entry = {
@@ -325,7 +325,7 @@ describe("handlePluginCommand", () => {
     const params = buildPluginParams("/card", {
       commands: { text: true },
       session: { store: storePath },
-    } as OpenClawConfig);
+    } as AforaConfig);
     params.storePath = storePath;
     params.sessionStore = { [sessionKey]: entry };
     params.resolveDefaultThinkingLevel = async () => {
@@ -348,7 +348,7 @@ describe("handlePluginCommand", () => {
   });
 
   it("rejects session replacement before the compact capability is invoked", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-plugin-compact-rebound-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-plugin-compact-rebound-"));
     const sessionKey = "agent:main:whatsapp:direct:test-user";
     const storePath = path.join(tempDir, "sessions.json");
     const entry = {
@@ -365,7 +365,7 @@ describe("handlePluginCommand", () => {
     const params = buildPluginParams("/card", {
       commands: { text: true },
       session: { store: storePath },
-    } as OpenClawConfig);
+    } as AforaConfig);
     params.storePath = storePath;
     params.sessionStore = { [sessionKey]: entry };
     registerTestCommand(undefined, {
@@ -400,7 +400,7 @@ describe("handlePluginCommand", () => {
     const params = buildPluginParams("/card", {
       commands: { text: true },
       channels: { whatsapp: { allowFrom: ["*"] } },
-    } as OpenClawConfig);
+    } as AforaConfig);
     params.agentId = "requester";
     params.sessionKey = "agent:target:whatsapp:direct:test-user";
     params.sessionEntry = {
@@ -440,7 +440,7 @@ describe("handlePluginCommand", () => {
     const params = buildPluginParams("/card", {
       commands: { text: true },
       session: { store: "/tmp/durable/{agentId}/sessions.json" },
-    } as OpenClawConfig);
+    } as AforaConfig);
     params.agentId = "main";
     params.sessionKey = "agent:main:dashboard:incognito-plugin-command";
     params.storePath = "/tmp/durable/main/sessions.json";
@@ -455,7 +455,7 @@ describe("handlePluginCommand", () => {
     await handlePluginCommand(params, true);
 
     const commandParams = firstCommandContext(handler);
-    const expectedStorePath = resolveIncognitoOpenClawAgentSqlitePath({ agentId: "main" });
+    const expectedStorePath = resolveIncognitoAforaAgentSqlitePath({ agentId: "main" });
     expect(commandParams.sessionTarget?.storePath).toBe(expectedStorePath);
     expect(parseSqliteSessionFileMarker(commandParams.sessionFile)?.storePath).toBe(
       expectedStorePath,
@@ -468,7 +468,7 @@ describe("handlePluginCommand", () => {
     const params = buildPluginParams("/card", {
       commands: { text: true },
       session: { store: "/tmp/durable/{agentId}/sessions.json" },
-    } as OpenClawConfig);
+    } as AforaConfig);
     params.agentId = "other";
     params.sessionKey = "global";
 
@@ -491,7 +491,7 @@ describe("handlePluginCommand", () => {
       buildPluginParams("/card", {
         commands: { text: true },
         channels: { whatsapp: { allowFrom: ["*"] } },
-      } as OpenClawConfig),
+      } as AforaConfig),
       true,
     );
 
@@ -519,7 +519,7 @@ describe("handlePluginCommand", () => {
       buildPluginParams("/approve-deploy", {
         commands: { text: true },
         channels: { whatsapp: { allowFrom: ["*"] } },
-      } as OpenClawConfig),
+      } as AforaConfig),
       true,
     );
 
@@ -532,7 +532,7 @@ describe("handlePluginCommand", () => {
     const allowedParams = buildPluginParams("/approve-deploy", {
       commands: { text: true },
       channels: { whatsapp: { allowFrom: ["*"] } },
-    } as OpenClawConfig);
+    } as AforaConfig);
     allowedParams.ctx.GatewayClientScopes = ["operator.approvals"];
 
     const allowed = await handlePluginCommand(allowedParams, true);
@@ -548,7 +548,7 @@ describe("handlePluginCommand", () => {
     const originalHandler = registerTestCommand();
     const replyOptions: NonNullable<HandleCommandsParams["opts"]> &
       PluginCommandExecutionReplyOptions = {};
-    const cfg = { commands: { text: true } } as OpenClawConfig;
+    const cfg = { commands: { text: true } } as AforaConfig;
     expect(
       shouldBypassPluginOwnedBindingForCommand(
         {
@@ -586,7 +586,7 @@ describe("handlePluginCommand", () => {
 
   it("treats an explicit non-plugin catalog winner as terminal for plugin matching", async () => {
     const handler = registerTestCommand();
-    const params = buildPluginParams("/card", { commands: { text: true } } as OpenClawConfig);
+    const params = buildPluginParams("/card", { commands: { text: true } } as AforaConfig);
     params.opts = {
       [PLUGIN_COMMAND_DISPATCH]: { kind: "non-plugin" },
     } as NonNullable<HandleCommandsParams["opts"]> & PluginCommandExecutionReplyOptions;

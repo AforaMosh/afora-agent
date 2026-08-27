@@ -74,7 +74,7 @@ export function showSessionPlacementMoveDialog(
       const nodes = catalog.nodes.filter(isDraftNodeSessionEligible);
       render(
         html`
-          <openclaw-modal-dialog
+          <afora-modal-dialog
             label=${t("sessionsView.moveSessionTitle")}
             @modal-cancel=${() => finish(null)}
           >
@@ -155,7 +155,7 @@ export function showSessionPlacementMoveDialog(
                 </button>
               </div>
             </form>
-          </openclaw-modal-dialog>
+          </afora-modal-dialog>
         `,
         host,
       );

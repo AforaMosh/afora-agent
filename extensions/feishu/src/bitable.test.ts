@@ -1,8 +1,8 @@
 // Feishu tests cover bitable plugin behavior.
 import type * as Lark from "@larksuiteoapi/node-sdk";
-import type { AgentToolResult } from "openclaw/plugin-sdk/tool-results";
+import type { AgentToolResult } from "afora-agent/plugin-sdk/tool-results";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawPluginApi } from "../runtime-api.js";
+import type { AforaPluginApi } from "../runtime-api.js";
 import { createToolFactoryHarness } from "./tool-factory-test-harness.js";
 
 const createFeishuClientMock = vi.hoisted(() => vi.fn());
@@ -18,7 +18,7 @@ type MockRecord = {
   fields?: Record<string, unknown>;
 };
 
-function createConfig(): OpenClawPluginApi["config"] {
+function createConfig(): AforaPluginApi["config"] {
   return {
     channels: {
       feishu: {
@@ -31,7 +31,7 @@ function createConfig(): OpenClawPluginApi["config"] {
         },
       },
     },
-  } as OpenClawPluginApi["config"];
+  } as AforaPluginApi["config"];
 }
 
 function createBitableClient(records: MockRecord[]) {

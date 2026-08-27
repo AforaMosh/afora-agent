@@ -4,7 +4,7 @@ export type MediaCleanupStopResult = "drained" | "timed-out";
 export const MEDIA_CLEANUP_STOP_TIMEOUT_MS = 5_000;
 
 const mediaCleanupDrains = resolveGlobalSingleton(
-  Symbol.for("openclaw.gateway.mediaCleanupDrains"),
+  Symbol.for("afora.gateway.mediaCleanupDrains"),
   () => new Set<Promise<void>>(),
 );
 

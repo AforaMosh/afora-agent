@@ -1,8 +1,8 @@
 /** Tests materializing MCP catalog tools into agent tool definitions and results. */
 
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { expectDefined } from "@openclaw/normalization-core";
-import { validateToolArguments } from "openclaw/plugin-sdk/llm";
+import { expectDefined } from "@afora/normalization-core";
+import { validateToolArguments } from "afora-agent/plugin-sdk/llm";
 import { afterEach, describe, expect, it } from "vitest";
 import { getPluginToolMeta } from "../plugins/tools.js";
 import {

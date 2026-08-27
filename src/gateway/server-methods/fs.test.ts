@@ -2,7 +2,7 @@ import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import { fsHandlers } from "./fs.js";
@@ -35,7 +35,7 @@ function workspaceContext(workspace: string) {
 
 describe("fs.listDir", () => {
   it("lists only directories, visible before hidden, in byte order", async () => {
-    const root = tempDirs.make("openclaw-fs-listdir-");
+    const root = tempDirs.make("afora-fs-listdir-");
     await fs.mkdir(path.join(root, "zeta"));
     await fs.mkdir(path.join(root, "alpha"));
     await fs.mkdir(path.join(root, ".hidden"));
@@ -59,7 +59,7 @@ describe("fs.listDir", () => {
   });
 
   it("follows directory symlinks and skips file or broken symlinks", async () => {
-    const root = tempDirs.make("openclaw-fs-listdir-");
+    const root = tempDirs.make("afora-fs-listdir-");
     await fs.mkdir(path.join(root, "real"));
     await fs.writeFile(path.join(root, "plain.txt"), "file");
     fsSync.symlinkSync(path.join(root, "real"), path.join(root, "linked-dir"));
@@ -100,7 +100,7 @@ describe("fs.listDir", () => {
   });
 
   it("reports missing directories as request errors", async () => {
-    const root = tempDirs.make("openclaw-fs-listdir-");
+    const root = tempDirs.make("afora-fs-listdir-");
     const missing = path.join(root, "does-not-exist");
     const [ok, , error] = expectDefined(
       await call({ path: missing }),
@@ -114,7 +114,7 @@ describe("fs.listDir", () => {
   });
 
   it("allows write-scoped browsing inside a configured workspace", async () => {
-    const workspace = tempDirs.make("openclaw-fs-workspace-");
+    const workspace = tempDirs.make("afora-fs-workspace-");
     const nested = path.join(workspace, "packages");
     await fs.mkdir(nested);
 
@@ -128,7 +128,7 @@ describe("fs.listDir", () => {
   });
 
   it("defaults write-scoped browsing to the workspace root and clamps its parent", async () => {
-    const workspace = tempDirs.make("openclaw-fs-workspace-");
+    const workspace = tempDirs.make("afora-fs-workspace-");
 
     const [ok, result] = expectDefined(
       await call({}, workspaceContext(workspace), writeClient),
@@ -141,8 +141,8 @@ describe("fs.listDir", () => {
   });
 
   it("rejects write-scoped browsing outside configured workspaces", async () => {
-    const workspace = tempDirs.make("openclaw-fs-workspace-");
-    const outside = tempDirs.make("openclaw-fs-outside-");
+    const workspace = tempDirs.make("afora-fs-workspace-");
+    const outside = tempDirs.make("afora-fs-outside-");
 
     const [ok, , error] = expectDefined(
       await call({ path: outside }, workspaceContext(workspace), writeClient),
@@ -154,8 +154,8 @@ describe("fs.listDir", () => {
   });
 
   it("rejects write-scoped browsing through a workspace symlink that escapes", async () => {
-    const workspace = tempDirs.make("openclaw-fs-workspace-");
-    const outside = tempDirs.make("openclaw-fs-outside-");
+    const workspace = tempDirs.make("afora-fs-workspace-");
+    const outside = tempDirs.make("afora-fs-outside-");
     const escape = path.join(workspace, "escape");
     fsSync.symlinkSync(outside, escape);
 
@@ -169,7 +169,7 @@ describe("fs.listDir", () => {
   });
 
   it("keeps missing workspace descendants as filesystem errors instead of scope errors", async () => {
-    const workspace = tempDirs.make("openclaw-fs-workspace-");
+    const workspace = tempDirs.make("afora-fs-workspace-");
     const missing = path.join(workspace, "missing", "child");
 
     const [ok, , error] = expectDefined(

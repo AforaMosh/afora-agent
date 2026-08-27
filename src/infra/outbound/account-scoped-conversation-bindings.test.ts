@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   createAccountScopedConversationBindingManager,
   resetAccountScopedConversationBindingsForTests,
@@ -9,13 +9,13 @@ import { getSessionBindingService } from "./session-binding-service.js";
 
 type TestBindingKind = "subagent" | "acp";
 
-const stateKey = Symbol("openclaw.accountScopedConversationBindingExpiry.test");
+const stateKey = Symbol("afora.accountScopedConversationBindingExpiry.test");
 const startedAt = 1_700_000_000_000;
 const baseCfg = {
   session: { threadBindings: { idleHours: 1, maxAgeHours: 0 } },
-} satisfies OpenClawConfig;
+} satisfies AforaConfig;
 
-function createManager(params: { accountId?: string; cfg?: OpenClawConfig } = {}) {
+function createManager(params: { accountId?: string; cfg?: AforaConfig } = {}) {
   return createAccountScopedConversationBindingManager<TestBindingKind>({
     channel: "imessage",
     cfg: params.cfg ?? baseCfg,

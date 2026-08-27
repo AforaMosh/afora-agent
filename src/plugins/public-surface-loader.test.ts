@@ -1,15 +1,15 @@
 // Verifies plugin public surface loading and fallback behavior.
 import fs from "node:fs";
 import path from "node:path";
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { MissingPublicSurfaceError } from "../plugin-sdk/facade-loader.js";
 import { withMockedWindowsPlatform } from "../test-utils/vitest-spies.js";
 
 const tempDirs = createTempDirTracker();
-const originalBundledPluginsDir = process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
-const originalTrustBundledPluginsDir = process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR;
+const originalBundledPluginsDir = process.env.AFORA_BUNDLED_PLUGINS_DIR;
+const originalTrustBundledPluginsDir = process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR;
 
 function captureThrownError(run: () => unknown): Error {
   try {
@@ -32,14 +32,14 @@ afterEach(() => {
   vi.doUnmock("./public-surface-runtime.js");
   vi.doUnmock("node:module");
   if (originalBundledPluginsDir === undefined) {
-    delete process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
+    delete process.env.AFORA_BUNDLED_PLUGINS_DIR;
   } else {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = originalBundledPluginsDir;
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = originalBundledPluginsDir;
   }
   if (originalTrustBundledPluginsDir === undefined) {
-    delete process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR;
+    delete process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR;
   } else {
-    process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR = originalTrustBundledPluginsDir;
+    process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR = originalTrustBundledPluginsDir;
   }
 });
 
@@ -47,7 +47,7 @@ describe("bundled plugin public surface loader", () => {
   it("keeps auto-resolved bundled roots on built public artifacts", async () => {
     // The non-isolated plugin shard may have already imported the native loader.
     vi.resetModules();
-    const tempRoot = tempDirs.make("openclaw-public-surface-loader-");
+    const tempRoot = tempDirs.make("afora-public-surface-loader-");
     const bundledPluginsDir = path.join(tempRoot, "dist", "extensions");
     const modulePath = path.join(bundledPluginsDir, "demo", "provider-policy-api.js");
     fs.mkdirSync(path.dirname(modulePath), { recursive: true });
@@ -109,9 +109,9 @@ describe("bundled plugin public surface loader", () => {
       const publicSurfaceLoader = await importFreshModule<
         typeof import("./public-surface-loader.js")
       >(import.meta.url, "./public-surface-loader.js?scope=windows-dist-jiti");
-      const tempRoot = tempDirs.make("openclaw-public-surface-loader-");
+      const tempRoot = tempDirs.make("afora-public-surface-loader-");
       const bundledPluginsDir = path.join(tempRoot, "dist");
-      process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
+      process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
 
       const modulePath = path.join(bundledPluginsDir, "demo", "provider-policy-api.js");
       fs.mkdirSync(path.dirname(modulePath), { recursive: true });
@@ -150,9 +150,9 @@ describe("bundled plugin public surface loader", () => {
     const publicSurfaceLoader = await importFreshModule<
       typeof import("./public-surface-loader.js")
     >(import.meta.url, "./public-surface-loader.js?scope=source-require-fast-path");
-    const tempRoot = tempDirs.make("openclaw-public-surface-loader-");
+    const tempRoot = tempDirs.make("afora-public-surface-loader-");
     const bundledPluginsDir = path.join(tempRoot, "extensions");
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
 
     const modulePath = path.join(bundledPluginsDir, "demo", "secret-contract-api.ts");
     fs.mkdirSync(path.dirname(modulePath), { recursive: true });
@@ -183,11 +183,11 @@ describe("bundled plugin public surface loader", () => {
     const publicSurfaceLoader = await importFreshModule<
       typeof import("./public-surface-loader.js")
     >(import.meta.url, "./public-surface-loader.js?scope=bundled-native-public-artifacts");
-    const tempRoot = tempDirs.make("openclaw-public-surface-loader-");
+    const tempRoot = tempDirs.make("afora-public-surface-loader-");
     const bundledPluginsDir = path.join(tempRoot, "dist");
     fs.mkdirSync(bundledPluginsDir, { recursive: true });
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
-    process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
+    process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
 
     const firstPath = path.join(bundledPluginsDir, "demo-a", "api.js");
     const secondPath = path.join(bundledPluginsDir, "demo-b", "api.js");
@@ -229,10 +229,10 @@ describe("bundled plugin public surface loader", () => {
     const publicSurfaceLoader = await importFreshModule<
       typeof import("./public-surface-loader.js")
     >(import.meta.url, "./public-surface-loader.js?scope=source-root-local-dist-public-artifacts");
-    const tempRoot = tempDirs.make("openclaw-public-surface-loader-");
+    const tempRoot = tempDirs.make("afora-public-surface-loader-");
     const bundledPluginsDir = path.join(tempRoot, "extensions");
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
-    process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
+    process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
 
     const sourcePath = path.join(bundledPluginsDir, "demo", "api.ts");
     const distPath = path.join(bundledPluginsDir, "demo", "dist", "api.js");
@@ -263,13 +263,13 @@ describe("bundled plugin public surface loader", () => {
         `./public-surface-loader.js?scope=esm-artifact-relocation-${firstLocation}-${nextLocation}`,
       );
       const { clearPluginMetadataLifecycleCaches } = await import("./plugin-metadata-lifecycle.js");
-      const tempRoot = tempDirs.make("openclaw-public-surface-loader-");
+      const tempRoot = tempDirs.make("afora-public-surface-loader-");
       const bundledPluginsDir = path.join(tempRoot, "extensions");
       const pluginDir = path.join(bundledPluginsDir, "demo");
       fs.mkdirSync(pluginDir, { recursive: true });
       fs.writeFileSync(path.join(pluginDir, "package.json"), '{"type":"module"}\n', "utf8");
-      process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
-      process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
+      process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
+      process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
 
       const artifactPath = (location: "root" | "dist") =>
         path.join(pluginDir, ...(location === "dist" ? ["dist"] : []), "api.js");
@@ -314,15 +314,15 @@ describe("bundled plugin public surface loader", () => {
       const publicSurfaceLoader = await importFreshModule<
         typeof import("./public-surface-loader.js")
       >(import.meta.url, "./public-surface-loader.js?scope=bundled-hardlink-public-artifacts");
-      const tempRoot = tempDirs.make("openclaw-public-surface-loader-");
+      const tempRoot = tempDirs.make("afora-public-surface-loader-");
       const bundledPluginsDir = path.join(tempRoot, "dist");
       const sourcePath = path.join(tempRoot, "api-source.js");
       const modulePath = path.join(bundledPluginsDir, "demo", "api.js");
       fs.mkdirSync(path.dirname(modulePath), { recursive: true });
       fs.writeFileSync(sourcePath, 'export const marker = "demo";\n', "utf8");
       fs.linkSync(sourcePath, modulePath);
-      process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
-      process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
+      process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
+      process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
 
       expect(
         publicSurfaceLoader.loadBundledPluginPublicArtifactModuleSync<{ marker: string }>({
@@ -344,7 +344,7 @@ describe("bundled plugin public surface loader", () => {
         import.meta.url,
         `./public-surface-loader.js?scope=installed-hardlink-${artifact.replace(".js", "")}`,
       );
-      const tempRoot = tempDirs.make("openclaw-public-surface-loader-");
+      const tempRoot = tempDirs.make("afora-public-surface-loader-");
       const pluginRoot = path.join(tempRoot, "installed-plugin");
       const outsidePath = path.join(tempRoot, "outside.js");
       const artifactPath = path.join(pluginRoot, artifact);
@@ -370,11 +370,11 @@ describe("bundled plugin public surface loader", () => {
       }),
     }));
 
-    const tempRoot = tempDirs.make("openclaw-public-surface-loader-");
+    const tempRoot = tempDirs.make("afora-public-surface-loader-");
     const bundledPluginsDir = path.join(tempRoot, "dist");
     fs.mkdirSync(bundledPluginsDir, { recursive: true });
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
-    process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
+    process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
     const publicSurfaceLoader = await importFreshModule<
       typeof import("./public-surface-loader.js")
     >(import.meta.url, "./public-surface-loader.js?scope=missing-location-retry");
@@ -410,9 +410,9 @@ describe("bundled plugin public surface loader", () => {
     const publicSurfaceLoader = await importFreshModule<
       typeof import("./public-surface-loader.js")
     >(import.meta.url, "./public-surface-loader.js?scope=post-validation-identity");
-    const tempRoot = tempDirs.make("openclaw-public-surface-loader-");
+    const tempRoot = tempDirs.make("afora-public-surface-loader-");
     const bundledPluginsDir = path.join(tempRoot, "dist");
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
 
     const modulePath = path.join(bundledPluginsDir, "demo", "api.js");
     fs.mkdirSync(path.dirname(modulePath), { recursive: true });
@@ -447,11 +447,11 @@ describe("bundled plugin public surface loader", () => {
       import.meta.url,
       "./public-surface-loader.js?scope=candidate-catcher-instanceof",
     );
-    const tempRoot = tempDirs.make("openclaw-public-surface-loader-");
+    const tempRoot = tempDirs.make("afora-public-surface-loader-");
     const bundledPluginsDir = path.join(tempRoot, "dist");
     fs.mkdirSync(bundledPluginsDir, { recursive: true });
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
-    process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
+    process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
 
     const result = fresh.loadBundledPluginPublicArtifactModuleFromCandidatesSync<{
       marker: string;
@@ -467,7 +467,7 @@ describe("bundled plugin public surface loader", () => {
       import.meta.url,
       "./public-surface-loader.js?scope=candidate-fallback-success",
     );
-    const tempRoot = tempDirs.make("openclaw-public-surface-loader-");
+    const tempRoot = tempDirs.make("afora-public-surface-loader-");
     const bundledPluginsDir = path.join(tempRoot, "dist");
     const pluginDir = path.join(bundledPluginsDir, "demo");
     fs.mkdirSync(pluginDir, { recursive: true });
@@ -476,8 +476,8 @@ describe("bundled plugin public surface loader", () => {
       'export const marker = "runtime-fallback";\n',
       "utf8",
     );
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
-    process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
+    process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
 
     const result = fresh.loadBundledPluginPublicArtifactModuleFromCandidatesSync<{
       marker: string;
@@ -494,7 +494,7 @@ describe("bundled plugin public surface loader", () => {
       import.meta.url,
       "./public-surface-loader.js?scope=candidate-catcher-generic-error",
     );
-    const tempRoot = tempDirs.make("openclaw-public-surface-loader-");
+    const tempRoot = tempDirs.make("afora-public-surface-loader-");
     const bundledPluginsDir = path.join(tempRoot, "dist");
     const pluginDir = path.join(bundledPluginsDir, "demo");
     fs.mkdirSync(pluginDir, { recursive: true });
@@ -503,8 +503,8 @@ describe("bundled plugin public surface loader", () => {
       'throw new Error("Unable to resolve bundled plugin public surface synthetic loader failure");\n',
       "utf8",
     );
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
-    process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
+    process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
 
     const error = captureThrownError(() =>
       fresh.loadBundledPluginPublicArtifactModuleFromCandidatesSync({
@@ -528,13 +528,13 @@ describe("bundled plugin public surface loader", () => {
       import.meta.url,
       "./public-surface-loader.js?scope=candidate-catcher-nested-missing-error",
     );
-    const tempRoot = tempDirs.make("openclaw-public-surface-loader-");
+    const tempRoot = tempDirs.make("afora-public-surface-loader-");
     const bundledPluginsDir = path.join(tempRoot, "dist");
     const modulePath = path.join(bundledPluginsDir, "demo", "api.js");
     fs.mkdirSync(path.dirname(modulePath), { recursive: true });
     fs.writeFileSync(modulePath, 'export const marker = "demo";\n', "utf8");
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
-    process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
+    process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
 
     const error = captureThrownError(() =>
       fresh.loadBundledPluginPublicArtifactModuleFromCandidatesSync({

@@ -1,9 +1,9 @@
-import { defineBundledChannelEntry } from "openclaw/plugin-sdk/channel-entry-contract";
+import { defineBundledChannelEntry } from "afora-agent/plugin-sdk/channel-entry-contract";
 
 export default defineBundledChannelEntry({
   id: "buzz",
   name: "Buzz",
-  description: "Connect OpenClaw agents to Buzz rooms",
+  description: "Connect Afora agents to Buzz rooms",
   importMetaUrl: import.meta.url,
   plugin: {
     specifier: "./channel-plugin-api.js",

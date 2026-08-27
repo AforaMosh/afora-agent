@@ -13,8 +13,8 @@ import {
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 const noBundledPluginOverrideEnv = {
   ...process.env,
-  OPENCLAW_BUNDLED_PLUGINS_DIR: undefined,
-  OPENCLAW_DISABLE_BUNDLED_PLUGINS: undefined,
+  AFORA_BUNDLED_PLUGINS_DIR: undefined,
+  AFORA_DISABLE_BUNDLED_PLUGINS: undefined,
 } satisfies NodeJS.ProcessEnv;
 
 describe("bundled plugin public surface runtime", () => {
@@ -32,7 +32,7 @@ describe("bundled plugin public surface runtime", () => {
   it.each(["my-ngc:nvidia", "../outside", "..\\outside", ".", ".."])(
     "continues rejecting %s as an actual bundled plugin directory",
     (dirName) => {
-      const rootDir = tempDirs.make("openclaw-public-surface-runtime-");
+      const rootDir = tempDirs.make("afora-public-surface-runtime-");
 
       expect(() =>
         resolveBundledPluginSourcePublicSurfacePath({
@@ -52,7 +52,7 @@ describe("bundled plugin public surface runtime", () => {
   );
 
   it("resolves source public surfaces from the shared extension list", () => {
-    const sourceRoot = tempDirs.make("openclaw-public-surface-runtime-");
+    const sourceRoot = tempDirs.make("afora-public-surface-runtime-");
     const modulePath = path.join(sourceRoot, "demo", "api.mts");
     fs.mkdirSync(path.dirname(modulePath), { recursive: true });
     fs.writeFileSync(modulePath, "export {};\n", "utf8");
@@ -67,7 +67,7 @@ describe("bundled plugin public surface runtime", () => {
   });
 
   it("falls back from package dist overrides to the source extension tree", () => {
-    const packageRoot = tempDirs.make("openclaw-public-surface-runtime-");
+    const packageRoot = tempDirs.make("afora-public-surface-runtime-");
     const sourceModulePath = path.join(packageRoot, "extensions", "demo", "api.ts");
     fs.mkdirSync(path.dirname(sourceModulePath), { recursive: true });
     fs.writeFileSync(sourceModulePath, "export const marker = 'source';\n", "utf8");
@@ -86,7 +86,7 @@ describe("bundled plugin public surface runtime", () => {
   });
 
   it("prefers package-local dist artifacts before source artifacts in source plugin trees", () => {
-    const packageRoot = tempDirs.make("openclaw-public-surface-runtime-");
+    const packageRoot = tempDirs.make("afora-public-surface-runtime-");
     const sourceModulePath = path.join(packageRoot, "extensions", "demo", "api.ts");
     const packageLocalDistModulePath = path.join(
       packageRoot,
@@ -111,7 +111,7 @@ describe("bundled plugin public surface runtime", () => {
   });
 
   it("prefers source public surfaces over stale auto-resolved dist artifacts in source checkouts", () => {
-    const packageRoot = tempDirs.make("openclaw-public-surface-runtime-");
+    const packageRoot = tempDirs.make("afora-public-surface-runtime-");
     const sourceModulePath = path.join(packageRoot, "extensions", "demo", "api.ts");
     const staleDistModulePath = path.join(packageRoot, "dist", "extensions", "demo", "api.js");
     fs.mkdirSync(path.dirname(sourceModulePath), { recursive: true });
@@ -132,7 +132,7 @@ describe("bundled plugin public surface runtime", () => {
   });
 
   it("keeps explicit bundled dist roots ahead of source public surfaces", () => {
-    const packageRoot = tempDirs.make("openclaw-public-surface-runtime-");
+    const packageRoot = tempDirs.make("afora-public-surface-runtime-");
     const sourceModulePath = path.join(packageRoot, "extensions", "demo", "api.ts");
     const distModulePath = path.join(packageRoot, "dist", "extensions", "demo", "api.js");
     fs.mkdirSync(path.dirname(sourceModulePath), { recursive: true });
@@ -151,7 +151,7 @@ describe("bundled plugin public surface runtime", () => {
   });
 
   it("falls back from an incomplete package dist-runtime override to packaged dist", () => {
-    const packageRoot = tempDirs.make("openclaw-public-surface-runtime-");
+    const packageRoot = tempDirs.make("afora-public-surface-runtime-");
     const distModulePath = path.join(packageRoot, "dist", "extensions", "demo", "api.js");
     fs.mkdirSync(path.dirname(distModulePath), { recursive: true });
     fs.writeFileSync(distModulePath, "export const marker = 'dist';\n", "utf8");

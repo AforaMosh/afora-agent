@@ -19,7 +19,7 @@ describe("live Docker state staging", () => {
   });
 
   it("adds private SDK source exports only to the disposable source stage", () => {
-    const root = tempDirs.make("openclaw-live-stage-sdk-");
+    const root = tempDirs.make("afora-live-stage-sdk-");
     mkdirSync(path.join(root, "scripts", "lib"), { recursive: true });
     mkdirSync(path.join(root, "src", "plugin-sdk"), { recursive: true });
     writeFileSync(

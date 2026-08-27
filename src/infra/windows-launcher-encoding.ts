@@ -25,8 +25,8 @@ const WHATWG_VERIFIABLE_ENCODINGS = new Set(["gbk", "big5", "shift_jis", "window
 // readback never has to guess: some code-page byte sequences are also valid
 // UTF-8 (GBK "隆" is C2 A1, which UTF-8 reads as "¡"), so content sniffing
 // silently corrupts paths.
-const LAUNCHER_ENCODING_MARKER_PREFIX = "@rem openclaw-launcher-encoding=";
-const LAUNCHER_ENCODING_MARKER_RE = /^@rem openclaw-launcher-encoding=(\S+)\s*$/;
+const LAUNCHER_ENCODING_MARKER_PREFIX = "@rem afora-launcher-encoding=";
+const LAUNCHER_ENCODING_MARKER_RE = /^@rem afora-launcher-encoding=(\S+)\s*$/;
 const LAUNCHER_CODEPAGE_PREAMBLE_RE = /^@chcp \d+ >nul\s*$/;
 
 function isAsciiOnly(value: string): boolean {
@@ -98,7 +98,7 @@ export function encodeWindowsLauncherScript(params: {
   return encoded;
 }
 
-/** Decodes launcher scripts written by any OpenClaw version (UTF-16 LE BOM, marked code page, or UTF-8). */
+/** Decodes launcher scripts written by any Afora version (UTF-16 LE BOM, marked code page, or UTF-8). */
 export function decodeWindowsLauncherScript(params: { buffer: Buffer }): string {
   const { buffer } = params;
   if (buffer.length >= 2 && buffer[0] === 0xff && buffer[1] === 0xfe) {

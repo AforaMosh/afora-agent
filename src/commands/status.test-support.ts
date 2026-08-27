@@ -17,7 +17,7 @@ import type { MemoryPluginStatus, MemoryStatusSnapshot } from "./status.scan.sha
 type StatusCommandOverviewRowsParams = Parameters<typeof buildStatusCommandOverviewRows>[0];
 type StatusCommandReportDataParams = Parameters<typeof buildStatusCommandReportData>[0];
 
-const STATUS_TEST_STATE_DIR = path.join(os.tmpdir(), `openclaw-status-test-${process.pid}-absent`);
+const STATUS_TEST_STATE_DIR = path.join(os.tmpdir(), `afora-status-test-${process.pid}-absent`);
 
 export const baseStatusCfg = {
   update: { channel: "stable" },
@@ -79,7 +79,7 @@ export const baseStatusOverviewScanFields = {
 const baseStatusGatewayService = {
   label: "LaunchAgent",
   installed: true,
-  managedByOpenClaw: true,
+  managedByAfora: true,
   loadedText: "loaded",
   runtimeShort: "running",
 };
@@ -125,7 +125,7 @@ const baseStatusSummary = {
         configuredModel: "openai/gpt-5.5",
         selectedModel: "openai/gpt-5.5",
         modelSelectionReason: null,
-        runtime: "OpenClaw Default",
+        runtime: "Afora Default",
         totalTokens: 12_000,
         totalTokensFresh: true,
         remainingTokens: 4_000,
@@ -169,7 +169,7 @@ export function createStatusScanResultFixture(
   overrides: Partial<StatusScanResult> = {},
 ): StatusScanResult {
   return {
-    env: { OPENCLAW_STATE_DIR: STATUS_TEST_STATE_DIR },
+    env: { AFORA_STATE_DIR: STATUS_TEST_STATE_DIR },
     cfg: baseStatusCfg,
     sourceConfig: baseStatusCfg,
     secretDiagnostics: [],
@@ -259,7 +259,7 @@ export function createStatusCommandOverviewRowsParams(
   overrides: Partial<StatusCommandOverviewRowsParams> = {},
 ): StatusCommandOverviewRowsParams {
   return {
-    env: { OPENCLAW_STATE_DIR: STATUS_TEST_STATE_DIR },
+    env: { AFORA_STATE_DIR: STATUS_TEST_STATE_DIR },
     opts: { deep: true },
     surface: baseStatusOverviewSurface,
     osLabel: "macOS",
@@ -282,7 +282,7 @@ export function createStatusCommandReportDataParams(
   overrides: Partial<StatusCommandReportDataParams> = {},
 ): StatusCommandReportDataParams {
   return {
-    env: { OPENCLAW_STATE_DIR: STATUS_TEST_STATE_DIR },
+    env: { AFORA_STATE_DIR: STATUS_TEST_STATE_DIR },
     opts: { deep: true, verbose: true },
     surface: baseStatusOverviewSurface,
     osSummary: { label: "macOS" } as never,

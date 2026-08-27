@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   createChannelInboundEnvelopeBuilder,
   resolveChannelInboundRouteEnvelope,
@@ -24,7 +24,7 @@ vi.mock("../../routing/resolve-route.js", () => ({ resolveAgentRoute }));
 const cfg = {
   agents: { defaults: { userTimezone: "UTC" } },
   session: { store: "/state/{agentId}/sessions.json" },
-} as OpenClawConfig;
+} as AforaConfig;
 
 describe("channel inbound envelope", () => {
   beforeEach(() => vi.clearAllMocks());

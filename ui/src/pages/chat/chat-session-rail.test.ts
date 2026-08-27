@@ -37,7 +37,7 @@ function input(overrides: Partial<SessionRailInput> = {}): SessionRailInput {
   };
 }
 
-const displayPreferenceKey = "openclaw.chat.observerHud.display";
+const displayPreferenceKey = "afora.chat.observerHud.display";
 
 describe("ChatSessionRailState", () => {
   beforeEach(() => {
@@ -441,7 +441,7 @@ describe("ChatSessionRailElement", () => {
   });
 
   async function mount(overrides: Partial<ChatSessionRailElement> = {}) {
-    const element = document.createElement("openclaw-chat-session-rail") as ChatSessionRailElement;
+    const element = document.createElement("afora-chat-session-rail") as ChatSessionRailElement;
     element.sessionKey = "agent:main:run";
     element.digest = digest();
     element.running = true;
@@ -462,7 +462,7 @@ describe("ChatSessionRailElement", () => {
 
   it("uses the shared surface empty state before the first side-chat exchange", async () => {
     const element = await mount();
-    const empty = element.querySelector("openclaw-panel-empty-state");
+    const empty = element.querySelector("afora-panel-empty-state");
     await empty?.updateComplete;
 
     expect(empty?.shadowRoot?.querySelector(".empty-state__title")?.textContent).toBe("Side chat");

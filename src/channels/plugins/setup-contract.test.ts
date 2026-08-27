@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   defineChannelSetupContract,
   resolveChannelSetupExecutionAdapter,
@@ -7,7 +7,7 @@ import {
 
 describe("defineChannelSetupContract", () => {
   it("keeps released adapters intact while preferring channel-owned contracts", () => {
-    const setup = { applyAccountConfig: ({ cfg }: { cfg: OpenClawConfig }) => cfg };
+    const setup = { applyAccountConfig: ({ cfg }: { cfg: AforaConfig }) => cfg };
     const setupContract = defineChannelSetupContract({ fields: {}, adapter: setup });
 
     expect(resolveChannelSetupExecutionAdapter({ setup })).toBe(setup);

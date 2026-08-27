@@ -1,18 +1,18 @@
-import { readManifestProviderDefaultModelRef } from "openclaw/plugin-sdk/provider-catalog-shared";
+import { readManifestProviderDefaultModelRef } from "afora-agent/plugin-sdk/provider-catalog-shared";
 import {
   applyAgentDefaultModelPrimary,
   createModelCatalogPresetAppliers,
-  type OpenClawConfig,
-} from "openclaw/plugin-sdk/provider-onboard";
+  type AforaConfig,
+} from "afora-agent/plugin-sdk/provider-onboard";
 import { CHUTES_BASE_URL, CHUTES_MODEL_CATALOG } from "./models.js";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import manifest from "./afora.plugin.json" with { type: "json" };
 
 export const CHUTES_DEFAULT_MODEL_ID = manifest.modelCatalog.providers.chutes.defaultModel;
 export const CHUTES_DEFAULT_MODEL_REF = readManifestProviderDefaultModelRef(manifest, "chutes")!;
 
 const chutesPresetAppliers = createModelCatalogPresetAppliers({
   primaryModelRef: CHUTES_DEFAULT_MODEL_REF,
-  resolveParams: (_cfg: OpenClawConfig) => ({
+  resolveParams: (_cfg: AforaConfig) => ({
     providerId: "chutes",
     api: "openai-completions",
     baseUrl: CHUTES_BASE_URL,
@@ -28,11 +28,11 @@ const chutesPresetAppliers = createModelCatalogPresetAppliers({
   }),
 });
 
-export function applyChutesProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyChutesProviderConfig(cfg: AforaConfig): AforaConfig {
   return chutesPresetAppliers.applyProviderConfig(cfg);
 }
 
-export function applyChutesConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyChutesConfig(cfg: AforaConfig): AforaConfig {
   const next = applyChutesProviderConfig(cfg);
   return {
     ...next,
@@ -53,6 +53,6 @@ export function applyChutesConfig(cfg: OpenClawConfig): OpenClawConfig {
   };
 }
 
-export function applyChutesApiKeyConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyChutesApiKeyConfig(cfg: AforaConfig): AforaConfig {
   return applyAgentDefaultModelPrimary(applyChutesProviderConfig(cfg), CHUTES_DEFAULT_MODEL_REF);
 }

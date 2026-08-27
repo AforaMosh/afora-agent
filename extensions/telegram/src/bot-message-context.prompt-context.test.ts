@@ -7,7 +7,7 @@ import {
   resolveAmbientTranscriptWatermarkKey,
   updateAmbientTranscriptWatermark,
   upsertSessionEntry,
-} from "openclaw/plugin-sdk/session-store-runtime";
+} from "afora-agent/plugin-sdk/session-store-runtime";
 import { afterEach, describe, expect, it } from "vitest";
 import { createTelegramMessageContextRuntime } from "./bot-handlers.message-context.js";
 import { buildTelegramMessageContextForTest } from "./bot-message-context.test-harness.js";
@@ -34,7 +34,7 @@ const telegramChatWindowContext: TelegramPromptContextEntry = {
 const tempDirs: string[] = [];
 
 function createTempSessionStorePath(): string {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-telegram-watermark-"));
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-telegram-watermark-"));
   tempDirs.push(tempDir);
   return path.join(tempDir, "sessions.json");
 }

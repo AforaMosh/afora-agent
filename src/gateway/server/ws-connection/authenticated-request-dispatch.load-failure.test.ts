@@ -19,7 +19,7 @@ describe("authenticated request dispatcher load failures", () => {
   });
 
   it("returns typed restart guidance when the running install changed", async () => {
-    vi.stubEnv("OPENCLAW_PROFILE", "r13");
+    vi.stubEnv("AFORA_PROFILE", "r13");
     const missingChunk = path.join(
       path.dirname(fileURLToPath(import.meta.url)),
       "missing-request-dispatch-chunk.js",
@@ -73,10 +73,10 @@ describe("authenticated request dispatcher load failures", () => {
           error: expect.objectContaining({
             code: "UNAVAILABLE",
             retryable: false,
-            message: expect.stringContaining("openclaw --profile r13 gateway restart"),
+            message: expect.stringContaining("afora --profile r13 gateway restart"),
             details: {
               code: "STALE_INSTALL",
-              restartCommand: "openclaw --profile r13 gateway restart",
+              restartCommand: "afora --profile r13 gateway restart",
             },
           }),
         }),

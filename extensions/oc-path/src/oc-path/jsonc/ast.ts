@@ -9,9 +9,9 @@
  * **Byte-fidelity**: `raw` is preserved on the root for round-trip
  * emit. The minimal prototype parser doesn't preserve every formatting
  * detail in the structural tree — for production, a fuller
- * comment-preserving parser ports from `openclaw-workspace`.
+ * comment-preserving parser ports from `afora-workspace`.
  *
- * @module @openclaw/oc-path/jsonc/ast
+ * @module @afora/oc-path/jsonc/ast
  */
 
 /** The root JSONC AST. `raw` round-trips byte-identical via emit. */

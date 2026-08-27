@@ -1,7 +1,7 @@
 // Imported by dispatch-from-config.test.ts to keep its mocked suite in one Vitest module graph.
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { readAgentRunTerminalOutcome } from "../../channels/turn/agent-run-terminal-outcome.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { createApprovalNativeRouteReporter } from "../../infra/approval-native-route-coordinator.js";
 import type { SessionBindingRecord } from "../../infra/outbound/session-binding-service.js";
 import { createTestRegistry } from "../../test-utils/channel-plugins.js";
@@ -86,7 +86,7 @@ function setupResolvedAcpSessionNotice(params: { bound: boolean; messageThreadId
     ]);
   }
   return {
-    cfg: { acp: { enabled: true, dispatch: { enabled: true } } } as OpenClawConfig,
+    cfg: { acp: { enabled: true, dispatch: { enabled: true } } } as AforaConfig,
     dispatcher: createDispatcher(),
     ctx: buildTestCtx({
       Provider: "discord",
@@ -101,7 +101,7 @@ function setupResolvedAcpSessionNotice(params: { bound: boolean; messageThreadId
 
 type NativeApprovalTestChannel = "discord" | "signal";
 
-function createNativeApprovalTestConfig(channel: NativeApprovalTestChannel): OpenClawConfig {
+function createNativeApprovalTestConfig(channel: NativeApprovalTestChannel): AforaConfig {
   return channel === "discord"
     ? ({
         channels: {
@@ -110,11 +110,11 @@ function createNativeApprovalTestConfig(channel: NativeApprovalTestChannel): Ope
             execApprovals: { enabled: true, approvers: ["123"] },
           },
         },
-      } as OpenClawConfig)
+      } as AforaConfig)
     : ({
         channels: { signal: { enabled: true } },
         approvals: { exec: { enabled: true } },
-      } as OpenClawConfig);
+      } as AforaConfig);
 }
 
 function createNativeApprovalReplyResolver(channel: NativeApprovalTestChannel) {
@@ -157,7 +157,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       await opts?.onPlanUpdate?.({
         phase: "update",
@@ -307,7 +307,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       await opts?.onToolResult?.({ mediaUrl: "https://example.com/tts-preview.opus" });
       return { text: "done" } satisfies ReplyPayload;
@@ -340,7 +340,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       await opts?.onToolResult?.({
         text: "Approval required.\n\n```txt\n/approve 117ba06d allow-once\n```",
@@ -631,7 +631,7 @@ describe("dispatchReplyFromConfig", () => {
         dispatch: { enabled: true },
         stream: { deliveryMode: "live", coalesceIdleMs: 0, maxChunkChars: 128 },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const dispatcher = createDispatcher();
     const ctx = buildTestCtx({
       Provider: "discord",
@@ -698,7 +698,7 @@ describe("dispatchReplyFromConfig", () => {
           dispatch: { enabled: true },
           stream: { coalesceIdleMs: 0, maxChunkChars: 128 },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       dispatcher,
       replyOptions: {
         runId: "run-acp-lifecycle-end",
@@ -764,7 +764,7 @@ describe("dispatchReplyFromConfig", () => {
           dispatch: { enabled: true },
           stream: { coalesceIdleMs: 0, maxChunkChars: 128 },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       dispatcher,
       replyOptions: {
         runId: "run-acp-lifecycle-error",
@@ -852,7 +852,7 @@ describe("dispatchReplyFromConfig", () => {
           dispatch: { enabled: true },
           stream: { coalesceIdleMs: 0, maxChunkChars: 128 },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       dispatcher: createDispatcher(),
     });
 
@@ -941,7 +941,7 @@ describe("dispatchReplyFromConfig", () => {
           defaultAccount: "work",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const dispatcher = createDispatcher();
     const replyResolver = vi.fn(async () => undefined);
     const ctx = buildTestCtx({
@@ -998,7 +998,7 @@ describe("dispatchReplyFromConfig", () => {
       { type: "done" },
     ]);
     acpMocks.readAcpSessionEntry.mockImplementation(
-      (params: { sessionKey: string; cfg?: OpenClawConfig }) =>
+      (params: { sessionKey: string; cfg?: AforaConfig }) =>
         params.sessionKey === boundSessionKey
           ? {
               sessionKey: boundSessionKey,
@@ -1044,7 +1044,7 @@ describe("dispatchReplyFromConfig", () => {
         dispatch: { enabled: true },
         stream: { deliveryMode: "live", coalesceIdleMs: 0, maxChunkChars: 256 },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const dispatcher = createDispatcher();
     const replyResolver = vi.fn(async () => ({ text: "fallback reply" }) satisfies ReplyPayload);
     const ctx = buildTestCtx({
@@ -1162,7 +1162,7 @@ describe("dispatchReplyFromConfig", () => {
         dispatch: { enabled: true },
         stream: { deliveryMode: "live", coalesceIdleMs: 0, maxChunkChars: 256 },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const dispatcher = createDispatcher();
     const ctx = buildTestCtx({
       Provider: "discord",
@@ -1218,7 +1218,7 @@ describe("dispatchReplyFromConfig", () => {
         dispatch: { enabled: true },
         stream: { deliveryMode: "live", coalesceIdleMs: 0, maxChunkChars: 256 },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const dispatcher = createDispatcher();
     const ctx = buildTestCtx({
       Provider: "discord",
@@ -1241,8 +1241,8 @@ describe("dispatchReplyFromConfig", () => {
     replyMediaPathMocks.createReplyMediaPathNormalizer.mockReturnValue(
       async (payload: ReplyPayload) => ({
         ...payload,
-        mediaUrl: "/tmp/openclaw-media/normalized-tts.ogg",
-        mediaUrls: ["/tmp/openclaw-media/normalized-tts.ogg"],
+        mediaUrl: "/tmp/afora-media/normalized-tts.ogg",
+        mediaUrls: ["/tmp/afora-media/normalized-tts.ogg"],
       }),
     );
     const dispatcher = createDispatcher();
@@ -1265,8 +1265,8 @@ describe("dispatchReplyFromConfig", () => {
       .calls[0]?.[0] as { messageProvider?: unknown } | undefined;
     expect(normalizerOptions?.messageProvider).toBe("feishu");
     const finalPayload = firstFinalReplyPayload(dispatcher);
-    expect(finalPayload?.mediaUrl).toBe("/tmp/openclaw-media/normalized-tts.ogg");
-    expect(finalPayload?.mediaUrls).toStrictEqual(["/tmp/openclaw-media/normalized-tts.ogg"]);
+    expect(finalPayload?.mediaUrl).toBe("/tmp/afora-media/normalized-tts.ogg");
+    expect(finalPayload?.mediaUrls).toStrictEqual(["/tmp/afora-media/normalized-tts.ogg"]);
     expect(finalPayload?.audioAsVoice).toBe(true);
     expect(finalPayload?.spokenText).toBe("Hello from block streaming.");
     expect(finalPayload?.trustedLocalMedia).toBe(true);
@@ -1300,7 +1300,7 @@ describe("dispatchReplyFromConfig", () => {
         enabled: true,
         dispatch: { enabled: true },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const dispatcher = createDispatcher();
     const ctx = buildTestCtx({
       Provider: "discord",
@@ -1344,7 +1344,7 @@ describe("dispatchReplyFromConfig", () => {
       messages: {
         groupChat: { visibleReplies: "message_tool" },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const ctx = buildTestCtx({
       Provider: "telegram",
       Surface: "telegram",
@@ -1373,7 +1373,7 @@ describe("dispatchReplyFromConfig", () => {
         groupChat: { visibleReplies: "message_tool" },
       },
       tools: { allow: ["read"] },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const ctx = buildTestCtx({
       Provider: "telegram",
       Surface: "telegram",
@@ -1468,7 +1468,7 @@ describe("dispatchReplyFromConfig", () => {
           enabled: false,
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const reporter = createApprovalNativeRouteReporter({
       handledKinds: new Set(["exec"]),
       channel: "signal",

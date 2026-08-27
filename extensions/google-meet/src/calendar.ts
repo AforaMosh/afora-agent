@@ -1,6 +1,6 @@
-import { readProviderJsonResponse } from "openclaw/plugin-sdk/provider-http";
+import { readProviderJsonResponse } from "afora-agent/plugin-sdk/provider-http";
 // Google Meet plugin module implements calendar behavior.
-import { fetchWithSsrFGuard } from "openclaw/plugin-sdk/ssrf-runtime";
+import { fetchWithSsrFGuard } from "afora-agent/plugin-sdk/ssrf-runtime";
 import { googleApiError } from "./google-api-errors.js";
 import { normalizeMeetUrl } from "./meet-url.js";
 

@@ -22,7 +22,7 @@ describe("QA report source CLIs", () => {
     const result = runSourceScript("scripts/qa-coverage-report.ts", "--help");
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("Usage: openclaw qa coverage");
+    expect(result.stdout).toContain("Usage: afora qa coverage");
     expect(result.stderr).toBe("");
   });
 
@@ -30,7 +30,7 @@ describe("QA report source CLIs", () => {
     const result = runSourceScript("scripts/qa-parity-report.ts", "--help");
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("Usage: openclaw qa parity-report");
+    expect(result.stdout).toContain("Usage: afora qa parity-report");
     expect(result.stderr).toBe("");
   });
 

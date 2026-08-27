@@ -7,7 +7,7 @@ import type { ChannelSetupAdapter } from "../channels/plugins/types.adapters.js"
 import type { ChannelId } from "../channels/plugins/types.core.js";
 // Shared account-aware DM policy descriptors for channel setup surfaces.
 import type { DmPolicy } from "../config/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
 
 type DmPolicyAccountConfig = {
@@ -21,7 +21,7 @@ type ResolvedDmPolicyAccount<TConfig extends DmPolicyAccountConfig> = {
 };
 
 type DmPolicyContext<TConfig extends DmPolicyAccountConfig> = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   requestedAccountId?: string;
   account: ResolvedDmPolicyAccount<TConfig>;
 };
@@ -38,7 +38,7 @@ type CreateChannelDmPolicyParams<TConfig extends DmPolicyAccountConfig> = {
   allowFromKey?: string;
   policyPath?: string;
   allowFromPath?: string;
-  resolveAccount: (cfg: OpenClawConfig, accountId?: string) => ResolvedDmPolicyAccount<TConfig>;
+  resolveAccount: (cfg: AforaConfig, accountId?: string) => ResolvedDmPolicyAccount<TConfig>;
   resolveConfigKeys?: (context: DmPolicyContext<TConfig>) => {
     policyKey: string;
     allowFromKey: string;
@@ -47,7 +47,7 @@ type CreateChannelDmPolicyParams<TConfig extends DmPolicyAccountConfig> = {
   buildPatch?: (context: DmPolicyPatchContext<TConfig>) => Record<string, unknown>;
   applyPatch?: (
     context: DmPolicyContext<TConfig> & { patch: Record<string, unknown> },
-  ) => OpenClawConfig;
+  ) => AforaConfig;
   setupSurface?: ChannelSetupAdapter | (() => ChannelSetupAdapter);
   promptAllowFrom: NonNullable<ChannelSetupDmPolicy["promptAllowFrom"]>;
 };
@@ -61,7 +61,7 @@ export function createChannelDmPolicy<TConfig extends DmPolicyAccountConfig>(
   const policyPath = params.policyPath ?? "dmPolicy";
   const allowFromPath = params.allowFromPath ?? "allowFrom";
   const rootPath = `channels.${params.channel}`;
-  const resolveContext = (cfg: OpenClawConfig, requestedAccountId?: string) => ({
+  const resolveContext = (cfg: AforaConfig, requestedAccountId?: string) => ({
     cfg,
     requestedAccountId,
     account: params.resolveAccount(cfg, requestedAccountId),

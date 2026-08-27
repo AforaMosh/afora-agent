@@ -24,9 +24,9 @@ async function gitWorkspace(name: string) {
     ["add", ".gitignore"],
     [
       "-c",
-      "user.name=OpenClaw Test",
+      "user.name=Afora Test",
       "-c",
-      "user.email=test@openclaw.invalid",
+      "user.email=test@afora.invalid",
       "commit",
       "--quiet",
       "-m",
@@ -46,7 +46,7 @@ async function gitWorkspace(name: string) {
 }
 
 it("rejects a full workspace above 4 GiB before hashing its files", async () => {
-  const { home, workspace, baseCommit } = await gitWorkspace("openclaw-manifest-byte-budget");
+  const { home, workspace, baseCommit } = await gitWorkspace("afora-manifest-byte-budget");
   const oversizedPath = path.join(workspace, "oversized.bin");
   await fs.writeFile(oversizedPath, "");
   await fs.truncate(oversizedPath, MAX_WORKSPACE_INVENTORY_TOTAL_BYTES + 1);
@@ -61,8 +61,8 @@ it("rejects a full workspace above 4 GiB before hashing its files", async () => 
 });
 
 it("rejects prior manifests above the full-inventory entry limit", async () => {
-  const { home, workspace, baseCommit } = await gitWorkspace("openclaw-manifest-entry-budget");
-  const manifestRoot = path.join(home, ".openclaw-worker", "manifests");
+  const { home, workspace, baseCommit } = await gitWorkspace("afora-manifest-entry-budget");
+  const manifestRoot = path.join(home, ".afora-worker", "manifests");
   await fs.mkdir(manifestRoot, { recursive: true });
   const priorRaw = JSON.stringify({
     version: 1,
@@ -91,14 +91,14 @@ it("rejects prior manifests above the full-inventory entry limit", async () => {
 
 it("budgets raw Git candidates separately from materialized eligible inventory", async () => {
   expect(MAX_WORKSPACE_GIT_CANDIDATES).toBe(4 * MAX_WORKSPACE_INVENTORY_ENTRIES);
-  const { home, workspace, baseCommit } = await gitWorkspace("openclaw-raw-git-candidate-budget");
+  const { home, workspace, baseCommit } = await gitWorkspace("afora-raw-git-candidate-budget");
   const bin = path.join(home, "bin");
   const mockGit = path.join(bin, "git");
   await fs.mkdir(bin);
   await fs.writeFile(
     mockGit,
     `#!/usr/bin/env node
-const count = Number(process.env.OPENCLAW_TEST_GIT_CANDIDATES);
+const count = Number(process.env.AFORA_TEST_GIT_CANDIDATES);
 process.stdout.write("missing\\0".repeat(count));
 `,
     { mode: 0o755 },
@@ -107,7 +107,7 @@ process.stdout.write("missing\\0".repeat(count));
     ...process.env,
     HOME: home,
     PATH: `${bin}${path.delimiter}${process.env.PATH ?? ""}`,
-    OPENCLAW_TEST_GIT_CANDIDATES: String(MAX_WORKSPACE_INVENTORY_ENTRIES + 1),
+    AFORA_TEST_GIT_CANDIDATES: String(MAX_WORKSPACE_INVENTORY_ENTRIES + 1),
   };
 
   const accepted = await runCommandWithTimeout(
@@ -119,7 +119,7 @@ process.stdout.write("missing\\0".repeat(count));
   expect(manifestRef).toMatch(/^sha256:[a-f0-9]{64}$/u);
   const manifest = JSON.parse(
     await fs.readFile(
-      path.join(home, ".openclaw-worker", "manifests", `${manifestRef.slice(7)}.json`),
+      path.join(home, ".afora-worker", "manifests", `${manifestRef.slice(7)}.json`),
       "utf8",
     ),
   );
@@ -131,7 +131,7 @@ process.stdout.write("missing\\0".repeat(count));
       timeoutMs: 20_000,
       baseEnv: {
         ...baseEnv,
-        OPENCLAW_TEST_GIT_CANDIDATES: String(MAX_WORKSPACE_GIT_CANDIDATES + 1),
+        AFORA_TEST_GIT_CANDIDATES: String(MAX_WORKSPACE_GIT_CANDIDATES + 1),
       },
     },
   );

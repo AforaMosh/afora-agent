@@ -1,6 +1,6 @@
 // Covers safe-bin audit decisions for exec commands.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { collectSecurityAuditFindings } from "./audit.test-support.js";
 import type { SecurityAuditFinding } from "./audit.types.js";
 
@@ -47,7 +47,7 @@ describe("security audit exec safe-bin findings", () => {
             },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       expected: true,
     },
     {
@@ -80,7 +80,7 @@ describe("security audit exec safe-bin findings", () => {
             },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       expected: false,
     },
   ])(
@@ -105,7 +105,7 @@ describe("security audit exec safe-bin findings", () => {
             safeBins: ["jq"],
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       expected: true,
     },
     {
@@ -117,7 +117,7 @@ describe("security audit exec safe-bin findings", () => {
             safeBins: ["cut"],
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       expected: false,
     },
   ])(
@@ -133,7 +133,7 @@ describe("security audit exec safe-bin findings", () => {
     const riskyGlobalTrustedDirs =
       process.platform === "win32"
         ? [String.raw`C:\Users\ci-user\bin`, String.raw`C:\Users\ci-user\.local\bin`]
-        : ["/usr/local/bin", "/tmp/openclaw-safe-bins"];
+        : ["/usr/local/bin", "/tmp/afora-safe-bins"];
     const findings = await collectSecurityAuditFindings({
       tools: {
         exec: {
@@ -152,7 +152,7 @@ describe("security audit exec safe-bin findings", () => {
           },
         },
       },
-    } satisfies OpenClawConfig);
+    } satisfies AforaConfig);
 
     const riskyFinding = requireFinding("tools.exec.safe_bin_trusted_dirs_risky", findings);
     expect(riskyFinding.severity).toBe("warn");
@@ -172,7 +172,7 @@ describe("security audit exec safe-bin findings", () => {
               safeBinTrustedDirs: ["/usr/libexec"],
             },
           },
-        } satisfies OpenClawConfig),
+        } satisfies AforaConfig),
       ),
     ).toBe(false);
   });

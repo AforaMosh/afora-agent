@@ -1,7 +1,7 @@
 // Channel setup prompt tests cover prompt choices and validation.
 import { describe, expect, it, vi } from "vitest";
 import type { ChannelSetupDmPolicy } from "../channels/plugins/setup-wizard-types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 import { maybeConfigureDmPolicies } from "./channel-setup.prompts.js";
@@ -21,10 +21,10 @@ describe("maybeConfigureDmPolicies", () => {
       policyKey: "channels.telegram.dmPolicy",
       allowFromKey: "channels.telegram.allowFrom",
       getCurrent: () => "pairing",
-      setPolicy: (cfg: OpenClawConfig) => cfg,
+      setPolicy: (cfg: AforaConfig) => cfg,
     };
 
-    await withEnvAsync({ OPENCLAW_LOCALE: "zh-CN" }, async () => {
+    await withEnvAsync({ AFORA_LOCALE: "zh-CN" }, async () => {
       await maybeConfigureDmPolicies({
         cfg: {},
         selection: ["telegram" as never],

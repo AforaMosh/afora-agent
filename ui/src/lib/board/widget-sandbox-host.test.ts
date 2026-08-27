@@ -31,13 +31,13 @@ async function offerBridgePort(
       onHostMessage?.(event);
       if (
         !initialTicketAdopted &&
-        event.data?.type === "openclaw:widget-host-init" &&
+        event.data?.type === "afora:widget-host-init" &&
         typeof event.data.ticket === "string"
       ) {
         initialTicketAdopted = true;
         channel.port2.postMessage(
           {
-            type: "openclaw:widget-host-init-ack",
+            type: "afora:widget-host-init-ack",
             ticket: event.data.ticket,
           },
           [],
@@ -51,7 +51,7 @@ async function offerBridgePort(
     new MessageEvent("message", {
       source: frame.contentWindow,
       origin: "https://sandbox.example",
-      data: { type: "openclaw:widget-bridge-port-offer" },
+      data: { type: "afora:widget-bridge-port-offer" },
       ports: [channel.port1],
     }),
   );
@@ -62,7 +62,7 @@ async function offerBridgePort(
 async function sendBridgeRequest(port: MessagePort, request: Record<string, unknown>) {
   return await new Promise<Record<string, unknown>>((resolve) => {
     const listener = (event: MessageEvent) => {
-      if (event.data?.type !== "openclaw:widget-bridge-response" || event.data.id !== request.id) {
+      if (event.data?.type !== "afora:widget-bridge-response" || event.data.id !== request.id) {
         return;
       }
       port.removeEventListener("message", listener);
@@ -94,7 +94,7 @@ describe("BoardWidgetSandboxHost", () => {
       sandboxUrl: SANDBOX_URL,
       sourceOrigin: "https://gateway.example",
       client: { request: vi.fn(async () => ({ ok: true })) },
-      resolveFrameUrl: () => "/__openclaw__/board/weather?bt=ticket",
+      resolveFrameUrl: () => "/__afora__/board/weather?bt=ticket",
       confirmPrompt: () => true,
       onFrameUrl: vi.fn(),
       onLoadFailed: vi.fn(),
@@ -117,7 +117,7 @@ describe("BoardWidgetSandboxHost", () => {
 
     await vi.waitFor(() => expect(onLoaded).toHaveBeenCalledOnce());
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://gateway.example/__openclaw__/board/weather?bt=ticket",
+      "https://gateway.example/__afora__/board/weather?bt=ticket",
       { cache: "no-store" },
     );
     expect(postMessage).toHaveBeenCalledWith(
@@ -145,7 +145,7 @@ describe("BoardWidgetSandboxHost", () => {
       sandboxUrl: SANDBOX_URL,
       sourceOrigin: "https://gateway.example",
       client: { request: vi.fn(async () => ({ ok: true })) },
-      resolveFrameUrl: () => "/__openclaw__/board/weather?bt=ticket",
+      resolveFrameUrl: () => "/__afora__/board/weather?bt=ticket",
       confirmPrompt: () => true,
       onFrameUrl: vi.fn(),
       onLoadFailed,
@@ -212,13 +212,13 @@ describe("BoardWidgetSandboxHost", () => {
       new MessageEvent("message", {
         source: frame.contentWindow,
         origin: "https://sandbox.example",
-        data: { type: "openclaw:widget-bridge-ready" },
+        data: { type: "afora:widget-bridge-ready" },
       }),
     );
 
     expect(hostMessage).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: { type: "openclaw:widget-host-init", ticket: "ticket" },
+        data: { type: "afora:widget-host-init", ticket: "ticket" },
       }),
     );
   });
@@ -275,7 +275,7 @@ describe("BoardWidgetSandboxHost", () => {
 
     bridgePort.postMessage(
       {
-        type: "openclaw:widget-bridge-request",
+        type: "afora:widget-bridge-request",
         id: "old-request",
         method: "data.read",
         params: { bindingId: "health" },
@@ -294,7 +294,7 @@ describe("BoardWidgetSandboxHost", () => {
 
     expect(bridgeResponse).not.toHaveBeenCalled();
     expect(postMessage).not.toHaveBeenCalledWith(
-      { type: "openclaw:widget-host-init", ticket: "next-ticket" },
+      { type: "afora:widget-host-init", ticket: "next-ticket" },
       "https://sandbox.example",
     );
   });
@@ -339,7 +339,7 @@ describe("BoardWidgetSandboxHost", () => {
     );
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
     const promptRequest = {
-      type: "openclaw:widget-bridge-request",
+      type: "afora:widget-bridge-request",
       id: "prompt-request",
       method: "prompt.send",
       params: { text: "Injected" },
@@ -392,7 +392,7 @@ describe("BoardWidgetSandboxHost", () => {
             method === "board.prompt.authorize" ? { confirmationRequired: false } : { ok: true },
           ),
         },
-        resolveFrameUrl: () => `/__openclaw__/board/${sessionId}/weather/index.html?bt=ticket`,
+        resolveFrameUrl: () => `/__afora__/board/${sessionId}/weather/index.html?bt=ticket`,
         confirmPrompt: () => true,
         onFrameUrl: vi.fn(),
         onLoadFailed: vi.fn(),
@@ -419,7 +419,7 @@ describe("BoardWidgetSandboxHost", () => {
     for (let index = 0; index < 10; index += 1) {
       await expect(
         sendBridgeRequest(first.port, {
-          type: "openclaw:widget-bridge-request",
+          type: "afora:widget-bridge-request",
           id: `first-${index}`,
           method: "prompt.send",
           params: { text: `Prompt ${index}` },
@@ -432,7 +432,7 @@ describe("BoardWidgetSandboxHost", () => {
     activeFrame = otherSession.frame;
     await expect(
       sendBridgeRequest(otherSession.port, {
-        type: "openclaw:widget-bridge-request",
+        type: "afora:widget-bridge-request",
         id: "other-session",
         method: "prompt.send",
         params: { text: "Independent session" },
@@ -444,7 +444,7 @@ describe("BoardWidgetSandboxHost", () => {
     activeFrame = recreated.frame;
     await expect(
       sendBridgeRequest(recreated.port, {
-        type: "openclaw:widget-bridge-request",
+        type: "afora:widget-bridge-request",
         id: "recreated-view",
         method: "prompt.send",
         params: { text: "Independent generation" },
@@ -504,16 +504,16 @@ describe("BoardWidgetSandboxHost", () => {
     const responses: unknown[] = [];
     let renewalTicket = "";
     bridgePort.addEventListener("message", (event) => {
-      if (event.data?.type === "openclaw:widget-host-init") {
+      if (event.data?.type === "afora:widget-host-init") {
         renewalTicket = event.data.ticket;
-      } else if (event.data?.type === "openclaw:widget-bridge-response") {
+      } else if (event.data?.type === "afora:widget-bridge-response") {
         responses.push(event.data);
       }
     });
 
     bridgePort.postMessage(
       {
-        type: "openclaw:widget-bridge-request",
+        type: "afora:widget-bridge-request",
         id: "in-flight",
         method: "data.read",
         params: { bindingId: "health" },
@@ -529,7 +529,7 @@ describe("BoardWidgetSandboxHost", () => {
     });
     bridgePort.postMessage(
       {
-        type: "openclaw:widget-bridge-request",
+        type: "afora:widget-bridge-request",
         id: "before-ack",
         method: "state.emit",
         params: { payload: { phase: "renewing" } },
@@ -542,7 +542,7 @@ describe("BoardWidgetSandboxHost", () => {
 
     bridgePort.postMessage(
       {
-        type: "openclaw:widget-host-init-ack",
+        type: "afora:widget-host-init-ack",
         ticket: renewalTicket,
       },
       [],
@@ -553,7 +553,7 @@ describe("BoardWidgetSandboxHost", () => {
     );
     bridgePort.postMessage(
       {
-        type: "openclaw:widget-bridge-request",
+        type: "afora:widget-bridge-request",
         id: "after-ack",
         method: "state.emit",
         params: { payload: { phase: "renewed" } },
@@ -620,14 +620,14 @@ describe("BoardWidgetSandboxHost", () => {
     const bridgePort = await offerBridgePort(host, frame);
     const responses: unknown[] = [];
     bridgePort.addEventListener("message", (event) => {
-      if (event.data?.type === "openclaw:widget-bridge-response") {
+      if (event.data?.type === "afora:widget-bridge-response") {
         responses.push(event.data);
       }
     });
 
     bridgePort.postMessage(
       {
-        type: "openclaw:widget-bridge-request",
+        type: "afora:widget-bridge-request",
         id: "old-client",
         method: "data.read",
         params: { bindingId: "health" },
@@ -639,7 +639,7 @@ describe("BoardWidgetSandboxHost", () => {
     host.update({ ...baseOptions, client: newClient });
     await vi.waitFor(() =>
       expect(responses).toContainEqual({
-        type: "openclaw:widget-bridge-response",
+        type: "afora:widget-bridge-response",
         id: "old-client",
         ok: false,
         error: "Gateway connection changed",
@@ -652,7 +652,7 @@ describe("BoardWidgetSandboxHost", () => {
 
     await expect(
       sendBridgeRequest(bridgePort, {
-        type: "openclaw:widget-bridge-request",
+        type: "afora:widget-bridge-request",
         id: "new-client",
         method: "state.emit",
         params: { payload: { phase: "reconnected" } },
@@ -679,7 +679,7 @@ describe("BoardWidgetSandboxHost", () => {
       sandboxUrl: SANDBOX_URL,
       sourceOrigin: "https://gateway.example",
       client: { request: vi.fn(async () => ({ ok: true })) },
-      resolveFrameUrl: () => "/__openclaw__/board/session-a/weather/index.html?bt=one",
+      resolveFrameUrl: () => "/__afora__/board/session-a/weather/index.html?bt=one",
       confirmPrompt: () => true,
       onFrameUrl: vi.fn(),
       onLoadFailed: vi.fn(),
@@ -705,11 +705,11 @@ describe("BoardWidgetSandboxHost", () => {
     host.update({
       ...baseOptions,
       widget: { ...widget(), viewTicket: "next-ticket" },
-      resolveFrameUrl: () => "/__openclaw__/board/session-b/weather/index.html?bt=two",
+      resolveFrameUrl: () => "/__afora__/board/session-b/weather/index.html?bt=two",
     });
 
     expect(postMessage).not.toHaveBeenCalledWith(
-      { type: "openclaw:widget-host-init", ticket: "next-ticket" },
+      { type: "afora:widget-host-init", ticket: "next-ticket" },
       "https://sandbox.example",
     );
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
@@ -728,7 +728,7 @@ describe("BoardWidgetSandboxHost", () => {
       sandboxOrigin: "https://sandbox.example",
       sandboxUrl: wideSandboxUrl,
       sourceOrigin: "https://gateway.example",
-      resolveFrameUrl: () => "/__openclaw__/board/session/weather/index.html?bt=ticket",
+      resolveFrameUrl: () => "/__afora__/board/session/weather/index.html?bt=ticket",
       confirmPrompt: () => true,
       onFrameUrl: vi.fn(),
       onLoadFailed: vi.fn(),
@@ -761,7 +761,7 @@ describe("BoardWidgetSandboxHost", () => {
         viewTicket: "replacement-ticket",
         viewGeneration: "b".repeat(32),
       },
-      resolveFrameUrl: () => "/__openclaw__/board/session/weather/index.html?bt=replacement-ticket",
+      resolveFrameUrl: () => "/__afora__/board/session/weather/index.html?bt=replacement-ticket",
     });
 
     ready(wideSandboxUrl);
@@ -784,7 +784,7 @@ describe("BoardWidgetSandboxHost", () => {
       sandboxOrigin: "https://sandbox.example",
       sandboxUrl: SANDBOX_URL,
       sourceOrigin: "https://gateway.example",
-      resolveFrameUrl: () => "/__openclaw__/board/session/weather/index.html?bt=ticket",
+      resolveFrameUrl: () => "/__afora__/board/session/weather/index.html?bt=ticket",
       confirmPrompt: () => true,
       onFrameUrl: vi.fn(),
       onLoadFailed: vi.fn(),
@@ -809,7 +809,7 @@ describe("BoardWidgetSandboxHost", () => {
     host.update({
       ...baseOptions,
       widget: { ...widget(), viewTicket: "renewed-ticket" },
-      resolveFrameUrl: () => "/__openclaw__/board/session/weather/index.html?bt=renewed-ticket",
+      resolveFrameUrl: () => "/__afora__/board/session/weather/index.html?bt=renewed-ticket",
     });
     await Promise.resolve();
     expect(fetchMock).toHaveBeenCalledOnce();
@@ -821,7 +821,7 @@ describe("BoardWidgetSandboxHost", () => {
         viewTicket: "replacement-ticket",
         viewGeneration: "b".repeat(32),
       },
-      resolveFrameUrl: () => "/__openclaw__/board/session/weather/index.html?bt=replacement-ticket",
+      resolveFrameUrl: () => "/__afora__/board/session/weather/index.html?bt=replacement-ticket",
     });
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
   });
@@ -917,7 +917,7 @@ describe("BoardWidgetSandboxHost", () => {
     await vi.advanceTimersByTimeAsync(20_000);
     await expect(
       sendBridgeRequest(bridgePort, {
-        type: "openclaw:widget-bridge-request",
+        type: "afora:widget-bridge-request",
         id: "inactive",
         method: "data.read",
         params: { bindingId: "health" },
@@ -934,7 +934,7 @@ describe("BoardWidgetSandboxHost", () => {
     expect(reloadFrame).not.toHaveBeenCalled();
     await expect(
       sendBridgeRequest(bridgePort, {
-        type: "openclaw:widget-bridge-request",
+        type: "afora:widget-bridge-request",
         id: "resumed",
         method: "data.read",
         params: { bindingId: "health" },

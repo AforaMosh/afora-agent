@@ -336,7 +336,7 @@ describe("TelnyxProvider answer control", () => {
     expect(request.auditContext).toBe("voice-call.telnyx.api");
     expect(request.policy).toEqual({ allowedHostnames: ["api.telnyx.com"] });
     expect(request.init?.method).toBe("POST");
-    expect(request.init?.body).toBe(JSON.stringify({ command_id: "openclaw-answer-call-1" }));
+    expect(request.init?.body).toBe(JSON.stringify({ command_id: "afora-answer-call-1" }));
     expect(release).toHaveBeenCalledTimes(1);
   });
 });
@@ -423,7 +423,7 @@ describe("TelnyxProvider Media Streaming (PCMU)", () => {
     });
 
     const body = JSON.parse(requireFetchRequest().init?.body as string) as Record<string, unknown>;
-    expect(body.command_id).toBe("openclaw-answer-call-1");
+    expect(body.command_id).toBe("afora-answer-call-1");
     expect(body.stream_url).toBe("wss://example.test/voice/stream/realtime/token-xyz");
     expect(body.stream_codec).toBe("PCMU");
     expect(body.stream_bidirectional_target_legs).toBe("self");

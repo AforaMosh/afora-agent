@@ -23,12 +23,12 @@ import { renderDocsLink, renderSettingsPage } from "../../components/settings-ui
 import { renderSettingsWorkspace } from "../../components/settings-workspace.ts";
 import { i18n, t } from "../../i18n/index.ts";
 import { formatUiError } from "../../lib/format-error.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 
 const APPROVAL_HISTORY_PAGE_SIZE = 50;
 const APPROVAL_HISTORY_REQUIRED_SCOPE = "operator.approvals";
-const APPROVALS_DOCS_URL = "https://docs.openclaw.ai/tools/exec-approvals";
+const APPROVALS_DOCS_URL = "https://docs.afora.ai/tools/exec-approvals";
 
 function formatResolvedAt(timestampMs: number): string {
   return new Intl.DateTimeFormat(i18n.getLocale(), {
@@ -117,7 +117,7 @@ function resolverLabel(item: TerminalApprovalSnapshot): string {
   return item.resolver.id ? `${item.resolver.kind} · ${item.resolver.id}` : item.resolver.kind;
 }
 
-class ApprovalsPage extends OpenClawLightDomElement {
+class ApprovalsPage extends AforaLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
   private context!: ApplicationContext;
 
@@ -369,6 +369,6 @@ class ApprovalsPage extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-approvals-page")) {
-  customElements.define("openclaw-approvals-page", ApprovalsPage);
+if (!customElements.get("afora-approvals-page")) {
+  customElements.define("afora-approvals-page", ApprovalsPage);
 }

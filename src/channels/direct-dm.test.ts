@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { dispatchInboundDirectDm } from "./direct-dm.js";
 import { buildChannelInboundEventContext } from "./inbound-event/context.js";
 import { resolveStableChannelMessageIngress } from "./message-access/runtime.js";
@@ -46,7 +46,7 @@ describe("dispatchInboundDirectDm", () => {
     });
     await dispatchInboundDirectDm({
       channelIngress,
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       channel: "nostr",
       channelLabel: "Nostr",
       accountId: "account-1",
@@ -84,7 +84,7 @@ describe("dispatchInboundDirectDm", () => {
 
     await dispatchInboundDirectDm({
       channelIngress: "unsupported",
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       channel: "nostr",
       channelLabel: "Nostr",
       accountId: "account-1",
@@ -128,7 +128,7 @@ describe("dispatchInboundDirectDm", () => {
 
     await dispatchInboundDirectDm({
       resolveChannelIngress,
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       channel: "nostr",
       channelLabel: "Nostr",
       accountId: "account-1",
@@ -158,7 +158,7 @@ describe("dispatchInboundDirectDm", () => {
 
   it("preserves the shipped SDK contract for callers without ingress provenance", async () => {
     await dispatchInboundDirectDm({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       channel: "external",
       channelLabel: "External",
       accountId: "default",
@@ -182,7 +182,7 @@ describe("dispatchInboundDirectDm", () => {
   it("preserves Reef's explicit unsupported trust-path classification", async () => {
     await dispatchInboundDirectDm({
       channelIngress: "unsupported",
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       channel: "reef",
       channelLabel: "Reef",
       accountId: "default",

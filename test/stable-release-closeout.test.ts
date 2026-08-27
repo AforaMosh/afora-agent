@@ -10,9 +10,9 @@ const release = {
   isDraft: false,
   isPrerelease: false,
   assets: [
-    { name: "OpenClaw-2026.6.8.zip", digest: `sha256:${"a".repeat(64)}` },
-    { name: "OpenClaw-2026.6.8.dmg", digest: `sha256:${"b".repeat(64)}` },
-    { name: "OpenClaw-2026.6.8.dSYM.zip", digest: `sha256:${"c".repeat(64)}` },
+    { name: "Afora-2026.6.8.zip", digest: `sha256:${"a".repeat(64)}` },
+    { name: "Afora-2026.6.8.dmg", digest: `sha256:${"b".repeat(64)}` },
+    { name: "Afora-2026.6.8.dSYM.zip", digest: `sha256:${"c".repeat(64)}` },
   ],
 };
 const changelog =
@@ -24,7 +24,7 @@ const validCloseoutParams = {
   mainChangelog: changelog,
   tagChangelog: changelog,
   mainAppcast:
-    "https://github.com/openclaw/openclaw/releases/download/v2026.6.8/OpenClaw-2026.6.8.zip\n",
+    "https://github.com/AforaMosh/afora-agent/releases/download/v2026.6.8/Afora-2026.6.8.zip\n",
   release,
   releaseTagSha: "tag-sha",
   mainSha: "main-sha",
@@ -106,11 +106,11 @@ describe("stable release closeout", () => {
         assets: [
           ...release.assets,
           {
-            name: "openclaw-2026.6.8-stable-main-closeout.json",
+            name: "afora-2026.6.8-stable-main-closeout.json",
             digest: `sha256:${"d".repeat(64)}`,
           },
           {
-            name: "openclaw-2026.6.8-stable-main-closeout.json.sha256",
+            name: "afora-2026.6.8-stable-main-closeout.json.sha256",
             digest: `sha256:${"e".repeat(64)}`,
           },
         ],
@@ -141,15 +141,15 @@ describe("stable release closeout", () => {
       ...validCloseoutParams,
       release: {
         ...release,
-        assets: [{ name: "openclaw-2026.6.8-dependency-evidence.zip" }],
+        assets: [{ name: "afora-2026.6.8-dependency-evidence.zip" }],
       },
       mainAppcast:
-        "https://github.com/openclaw/openclaw/releases/download/v2026.6.8/openclaw-2026.6.8-dependency-evidence.zip\n",
+        "https://github.com/AforaMosh/afora-agent/releases/download/v2026.6.8/afora-2026.6.8-dependency-evidence.zip\n",
       nowMs: Date.parse("2026-06-17T00:00:00Z"),
     });
 
     expect(result.errors).toContain(
-      "GitHub release v2026.6.8 is missing required macOS asset(s): OpenClaw-2026.6.8.zip, OpenClaw-2026.6.8.dmg, OpenClaw-2026.6.8.dSYM.zip.",
+      "GitHub release v2026.6.8 is missing required macOS asset(s): Afora-2026.6.8.zip, Afora-2026.6.8.dmg, Afora-2026.6.8.dSYM.zip.",
     );
   });
 
@@ -171,7 +171,7 @@ describe("stable release closeout", () => {
       tagChangelog: changelog.replaceAll("2026.6.8", "2026.6.8-2"),
       release: correctionRelease,
       mainAppcast:
-        "https://github.com/openclaw/openclaw/releases/download/v2026.6.8-2/OpenClaw-2026.6.8-2.zip\n",
+        "https://github.com/AforaMosh/afora-agent/releases/download/v2026.6.8-2/Afora-2026.6.8-2.zip\n",
       nowMs: Date.parse("2026-06-17T00:00:00Z"),
     });
 
@@ -193,7 +193,7 @@ describe("stable release closeout", () => {
         tagName: "v2026.6.8-2",
       },
       mainAppcast:
-        "https://github.com/openclaw/openclaw/releases/download/v2026.6.8-2/OpenClaw-2026.6.8.zip\n",
+        "https://github.com/AforaMosh/afora-agent/releases/download/v2026.6.8-2/Afora-2026.6.8.zip\n",
       nowMs: Date.parse("2026-06-17T00:00:00Z"),
     });
 
@@ -213,13 +213,13 @@ describe("stable release closeout", () => {
     });
 
     expect(missing.errors).toContain(
-      "GitHub release v2026.6.8 Android asset names do not match the recovery contract: expected OpenClaw-Android-SHA256SUMS.txt, OpenClaw-Android.apk; got <none>.",
+      "GitHub release v2026.6.8 Android asset names do not match the recovery contract: expected Afora-Android-SHA256SUMS.txt, Afora-Android.apk; got <none>.",
     );
     expect(missing.errors).toContain(
-      "GitHub release v2026.6.8 Windows asset names do not match the recovery contract: expected OpenClawCompanion-SHA256SUMS.txt, OpenClawCompanion-Setup-arm64.exe, OpenClawCompanion-Setup-x64.exe; got <none>.",
+      "GitHub release v2026.6.8 Windows asset names do not match the recovery contract: expected AforaCompanion-SHA256SUMS.txt, AforaCompanion-Setup-arm64.exe, AforaCompanion-Setup-x64.exe; got <none>.",
     );
     expect(missing.errors).toContain(
-      "GitHub release v2026.6.8 Android recovery asset(s) lack GitHub SHA-256 digests: OpenClaw-Android-SHA256SUMS.txt, OpenClaw-Android.apk.",
+      "GitHub release v2026.6.8 Android recovery asset(s) lack GitHub SHA-256 digests: Afora-Android-SHA256SUMS.txt, Afora-Android.apk.",
     );
     expect(missing.errors).toContain(
       "failed-publish recovery is missing the exact candidate-approved Windows installer digests.",
@@ -233,25 +233,25 @@ describe("stable release closeout", () => {
       requireCompletePlatformAssets: true,
       windowsNodeReleaseRunId: "42",
       windowsNodeInstallerDigests: {
-        "OpenClawCompanion-Setup-arm64.exe": `sha256:${"1".repeat(64)}`,
-        "OpenClawCompanion-Setup-x64.exe": `sha256:${"2".repeat(64)}`,
+        "AforaCompanion-Setup-arm64.exe": `sha256:${"1".repeat(64)}`,
+        "AforaCompanion-Setup-x64.exe": `sha256:${"2".repeat(64)}`,
       },
       release: {
         ...release,
         assets: [
           ...release.assets,
-          { name: "OpenClaw-Android-SHA256SUMS.txt", digest: `sha256:${"d".repeat(64)}` },
-          { name: "OpenClaw-Android.apk", digest: `sha256:${"e".repeat(64)}` },
+          { name: "Afora-Android-SHA256SUMS.txt", digest: `sha256:${"d".repeat(64)}` },
+          { name: "Afora-Android.apk", digest: `sha256:${"e".repeat(64)}` },
           {
-            name: "OpenClawCompanion-SHA256SUMS.txt",
+            name: "AforaCompanion-SHA256SUMS.txt",
             digest: `sha256:${"f".repeat(64)}`,
           },
           {
-            name: "OpenClawCompanion-Setup-arm64.exe",
+            name: "AforaCompanion-Setup-arm64.exe",
             digest: `sha256:${"1".repeat(64)}`,
           },
           {
-            name: "OpenClawCompanion-Setup-x64.exe",
+            name: "AforaCompanion-Setup-x64.exe",
             digest: `sha256:${"2".repeat(64)}`,
           },
         ],
@@ -265,8 +265,8 @@ describe("stable release closeout", () => {
         completePlatformAssetsRequired: true,
         windowsNodeReleaseRunId: "42",
         windowsNodeInstallerDigests: {
-          "OpenClawCompanion-Setup-arm64.exe": `sha256:${"1".repeat(64)}`,
-          "OpenClawCompanion-Setup-x64.exe": `sha256:${"2".repeat(64)}`,
+          "AforaCompanion-Setup-arm64.exe": `sha256:${"1".repeat(64)}`,
+          "AforaCompanion-Setup-x64.exe": `sha256:${"2".repeat(64)}`,
         },
       },
     });
@@ -294,13 +294,13 @@ describe("stable release closeout", () => {
     });
 
     expect(result.errors).toContain(
-      "main package.json version is 2026.6.7, expected shipped version 2026.6.8 or a later stable OpenClaw CalVer.",
+      "main package.json version is 2026.6.7, expected shipped version 2026.6.8 or a later stable Afora CalVer.",
     );
     expect(result.errors).toContain(
       "main CHANGELOG.md ## 2026.6.8 does not exactly match the shipped release section.",
     );
     expect(result.errors).toContain(
-      "main appcast.xml does not point at OpenClaw-2026.6.8.zip from v2026.6.8.",
+      "main appcast.xml does not point at Afora-2026.6.8.zip from v2026.6.8.",
     );
     expect(result.errors).toContain(
       "rollback drill is older than 90 days: 2026-03-01. Run the private rollback drill before stable closeout.",
@@ -315,7 +315,7 @@ describe("stable release closeout", () => {
     });
 
     expect(result.errors).toContain(
-      "main package.json version is 2026.6.9-beta.1, expected shipped version 2026.6.8 or a later stable OpenClaw CalVer.",
+      "main package.json version is 2026.6.9-beta.1, expected shipped version 2026.6.8 or a later stable Afora CalVer.",
     );
   });
 });

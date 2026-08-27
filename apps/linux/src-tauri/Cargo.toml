@@ -1,12 +1,12 @@
 [package]
-name = "openclaw-desktop-linux"
+name = "afora-desktop-linux"
 version = "0.1.0"
-description = "OpenClaw desktop companion for Linux"
+description = "Afora desktop companion for Linux"
 edition = "2021"
 rust-version = "1.93"
 
 [[bin]]
-name = "openclaw-desktop"
+name = "afora-desktop"
 path = "src/main.rs"
 
 [build-dependencies]

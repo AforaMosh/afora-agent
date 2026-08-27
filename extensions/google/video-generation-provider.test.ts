@@ -1,6 +1,6 @@
 // Google tests cover video generation provider plugin behavior.
-import { mockPinnedHostnameResolution } from "openclaw/plugin-sdk/test-env";
-import { oversizedJsonResponse } from "openclaw/plugin-sdk/test-fixtures";
+import { mockPinnedHostnameResolution } from "afora-agent/plugin-sdk/test-env";
+import { oversizedJsonResponse } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { createGoogleGenAIMock, downloadMock, generateVideosMock, getVideosOperationMock } =
@@ -33,8 +33,8 @@ vi.mock("./google-genai-runtime.js", () => ({
   createGoogleGenAI: createGoogleGenAIMock,
 }));
 
-import * as providerAuthRuntime from "openclaw/plugin-sdk/provider-auth-runtime";
-import { expectExplicitVideoGenerationCapabilities } from "openclaw/plugin-sdk/provider-test-contracts";
+import * as providerAuthRuntime from "afora-agent/plugin-sdk/provider-auth-runtime";
+import { expectExplicitVideoGenerationCapabilities } from "afora-agent/plugin-sdk/provider-test-contracts";
 import { buildGoogleVideoGenerationProvider } from "./video-generation-provider.js";
 
 type MockWithCalls = {

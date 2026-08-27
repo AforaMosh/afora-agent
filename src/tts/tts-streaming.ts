@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import type { TtsDirectiveOverrides } from "./provider-types.js";
 import { assertSpeechRuntimeAvailable } from "./runtime-availability.js";
 import type { TtsStreamResult, TtsSynthesisStreamResult } from "./tts-runtime-types.js";
@@ -7,7 +7,7 @@ import { resolveTtsSynthesisTarget } from "./tts-synthesis.js";
 
 export async function streamSpeech(params: {
   text: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   prefsPath?: string;
   channel?: string;
   overrides?: TtsDirectiveOverrides;
@@ -79,7 +79,7 @@ export async function streamSpeech(params: {
 
 export async function textToSpeechStream(params: {
   text: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   prefsPath?: string;
   channel?: string;
   overrides?: TtsDirectiveOverrides;

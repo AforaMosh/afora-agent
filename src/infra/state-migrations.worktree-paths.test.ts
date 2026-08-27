@@ -6,36 +6,36 @@ import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { getRegistryWorktree, insertRegistryWorktree } from "../agents/worktrees/registry.js";
 import { ManagedWorktreeService } from "../agents/worktrees/service.js";
 import { initializeManagedWorktreeTestRepository } from "../agents/worktrees/service.test-support.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { EMPTY_LEGACY_SESSION_SURFACES } from "../plugins/legacy-session-surfaces.types.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { requireNodeSqlite } from "./node-sqlite.js";
 import { detectLegacyStateMigrations, runLegacyStateMigrations } from "./state-migrations.js";
 
 describe("managed worktree path state migrations", () => {
   beforeEach(() => {
-    vi.stubEnv("OPENCLAW_DISABLE_BUNDLED_PLUGINS", "1");
+    vi.stubEnv("AFORA_DISABLE_BUNDLED_PLUGINS", "1");
   });
 
   const tempDirs = useAutoCleanupTempDirTracker((cleanup) => {
     afterEach(() => {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       cleanup();
     });
   });
 
   it("does not create the worktrees directory during detection", async () => {
-    const root = tempDirs.make("openclaw-worktree-path-detection-");
+    const root = tempDirs.make("afora-worktree-path-detection-");
     const stateDir = path.join(root, "state");
     const worktreesDir = path.join(stateDir, "worktrees");
     await fs.mkdir(stateDir, { recursive: true });
-    const env = { ...process.env, HOME: root, OPENCLAW_STATE_DIR: stateDir };
+    const env = { ...process.env, HOME: root, AFORA_STATE_DIR: stateDir };
 
     const detected = await detectLegacyStateMigrations({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       env,
       homedir: () => root,
       legacySessionSurfaces: EMPTY_LEGACY_SESSION_SURFACES,
@@ -49,7 +49,7 @@ describe("managed worktree path state migrations", () => {
     "canonicalizes persisted paths when the latest additive worktree column is absent",
     async () => {
       const root = tempDirs.make(
-        "openclaw-worktree-path-migration-",
+        "afora-worktree-path-migration-",
         await fs.realpath(os.tmpdir()),
       );
       const repo = await initializeManagedWorktreeTestRepository(root);
@@ -57,7 +57,7 @@ describe("managed worktree path state migrations", () => {
       const linkedStateDir = path.join(root, "linked-state");
       await fs.mkdir(realStateDir, { recursive: true });
       await fs.symlink(realStateDir, linkedStateDir, "dir");
-      const env = { ...process.env, HOME: root, OPENCLAW_STATE_DIR: linkedStateDir };
+      const env = { ...process.env, HOME: root, AFORA_STATE_DIR: linkedStateDir };
       const service = new ManagedWorktreeService({ env });
       const live = await service.create({ repoRoot: repo, name: "live", baseRef: "HEAD" });
       const canonicalRoot = path.dirname(path.dirname(live.path));
@@ -68,7 +68,7 @@ describe("managed worktree path state migrations", () => {
         live.repoFingerprint,
         "removed",
       );
-      const database = openOpenClawStateDatabase({ env });
+      const database = openAforaStateDatabase({ env });
       const db = database.db;
       db.prepare("UPDATE worktrees SET path = ? WHERE id = ?").run(rawLivePath, live.id);
       const removed = {
@@ -76,7 +76,7 @@ describe("managed worktree path state migrations", () => {
         id: "legacy-removed",
         name: "removed",
         path: rawRemovedPath,
-        branch: "openclaw/removed",
+        branch: "afora-agent/removed",
         removedAt: 1,
       };
       const canonical = {
@@ -84,7 +84,7 @@ describe("managed worktree path state migrations", () => {
         id: "canonical-row",
         name: "canonical",
         path: path.join(canonicalRoot, live.repoFingerprint, "canonical"),
-        branch: "openclaw/canonical",
+        branch: "afora-agent/canonical",
       };
       const movedPath = path.join(root, "relocated-worktrees", "moved");
       const moved = {
@@ -92,13 +92,13 @@ describe("managed worktree path state migrations", () => {
         id: "moved-row",
         name: "moved",
         path: movedPath,
-        branch: "openclaw/moved",
+        branch: "afora-agent/moved",
       };
       insertRegistryWorktree(env, removed, { provisionedPaths: [] });
       insertRegistryWorktree(env, canonical, { provisionedPaths: [] });
       insertRegistryWorktree(env, moved, { provisionedPaths: [] });
 
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       const { DatabaseSync } = requireNodeSqlite();
       const beforeCleanupOutcome = new DatabaseSync(database.path);
       try {
@@ -107,7 +107,7 @@ describe("managed worktree path state migrations", () => {
         beforeCleanupOutcome.close();
       }
 
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       // Doctor's read-only SELECT * follows the physical columns. Compatibility
       // validation must allow this additive column to be absent before that query.
       const detected = await detectLegacyStateMigrations({

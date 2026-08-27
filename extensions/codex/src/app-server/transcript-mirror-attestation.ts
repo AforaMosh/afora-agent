@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-harness-runtime";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import { readUpstreamUserText } from "./upstream-prompt-provenance.js";
 
 type MirroredAgentMessage = Extract<AgentMessage, { role: "user" | "assistant" | "toolResult" }>;
@@ -7,7 +7,7 @@ type MirroredAgentMessage = Extract<AgentMessage, { role: "user" | "assistant" |
 const MIRROR_ORIGIN_META_KEY = "mirrorOrigin" as const;
 const MIRROR_SOURCE_FINGERPRINT_META_KEY = "mirrorSourceFingerprint" as const;
 const CODEX_APP_SERVER_MIRROR_ORIGIN = "codex-app-server" as const;
-const CODEX_META_KEY = "__openclaw";
+const CODEX_META_KEY = "__afora";
 
 export function attachCodexMirrorAttestation(
   message: AgentMessage,

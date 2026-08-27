@@ -2,7 +2,7 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { resolveAuthStorePathForDisplay } from "../../agents/auth-profiles.js";
 import type { AuthProfileCredential } from "../../agents/auth-profiles/types.js";
 import { resolveAgentHarnessPolicy } from "../../agents/harness/policy.js";
@@ -24,7 +24,7 @@ import { resolveSessionRuntimeOverrideForProvider } from "../../agents/session-r
 import { resolveEffectiveAgentRuntime } from "../../agents/thinking-runtime.js";
 import { getChannelPlugin } from "../../channels/plugins/index.js";
 import type { SessionEntry } from "../../config/sessions.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { shortenHomePath } from "../../utils.js";
 import { resolveSelectedAndActiveModel } from "../model-runtime.js";
 import { resolveSupportedThinkingLevel } from "../thinking.js";
@@ -51,7 +51,7 @@ function resolveStatusHarnessRuntime(params: {
   sessionEntry?: Pick<SessionEntry, "agentHarnessId" | "agentRuntimeOverride">;
   defaultRuntime: string;
   provider: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 }): string {
   const sessionRuntime = resolveSessionRuntimeOverrideForProvider({
     provider: params.provider,
@@ -77,7 +77,7 @@ function resolveStatusAcceptedProfileTypes(params: {
 async function resolveStatusAuthLabel(params: {
   provider: string;
   modelId: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   modelsPath: string;
   agentDir: string;
   activeAgentId: string;
@@ -167,7 +167,7 @@ function pushUniqueCatalogEntry(params: {
 }
 
 function buildModelPickerCatalog(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   defaultProvider: string;
   defaultModel: string;
   agentId: string;
@@ -332,7 +332,7 @@ function buildModelPickerCatalog(params: {
 }
 
 function filterMissingAuthNestedProviderDuplicates(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   entries: ModelPickerCatalogEntry[];
   authByProvider: Map<string, string>;
 }): ModelPickerCatalogEntry[] {
@@ -373,7 +373,7 @@ function filterMissingAuthNestedProviderDuplicates(params: {
 
 export async function maybeHandleModelDirectiveInfo(params: {
   directives: InlineDirectives;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentDir: string;
   activeAgentId: string;
   provider: string;

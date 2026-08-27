@@ -1,5 +1,5 @@
 // Channel id normalization through the active plugin registry.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import type { ChannelId } from "./plugins/channel-id.types.js";
 import { findRegisteredChannelPluginEntry } from "./registry-lookup.js";
 

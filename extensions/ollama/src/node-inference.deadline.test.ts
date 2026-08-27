@@ -1,6 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { Socket } from "node:net";
-import type { LookupFn } from "openclaw/plugin-sdk/ssrf-runtime";
+import type { LookupFn } from "afora-agent/plugin-sdk/ssrf-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createOllamaNodeHostCommands } from "./node-inference.js";
 import { fetchOllamaModels } from "./provider-models.js";
@@ -133,7 +133,7 @@ describe("Ollama node inference deadline", () => {
   });
 
   it("applies the requested catalog timeout to guarded DNS preflight", async () => {
-    vi.stubEnv("OPENCLAW_PROXY_ACTIVE", "0");
+    vi.stubEnv("AFORA_PROXY_ACTIVE", "0");
     const stalledLookup = vi.fn(() => new Promise<never>(() => {})) as unknown as LookupFn;
     const fetchSpy = vi.fn(async () => new Response("DNS should not complete"));
     const startedAtMs = performance.now();

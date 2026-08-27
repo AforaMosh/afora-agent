@@ -112,7 +112,7 @@ suite.define(() => {
       const finalText = "Browser prompt stayed synchronized.";
       await gateway.setHistoryMessages([
         {
-          __openclaw: {
+          __afora: {
             id: "browser-local-authoritative-user",
             idempotencyKey: `${runId}:user`,
             seq: 1,
@@ -122,7 +122,7 @@ suite.define(() => {
           timestamp: Date.now(),
         },
         {
-          __openclaw: { id: "browser-local-authoritative-assistant", seq: 2 },
+          __afora: { id: "browser-local-authoritative-assistant", seq: 2 },
           content: [{ text: finalText, type: "text" }],
           role: "assistant",
           timestamp: Date.now(),
@@ -257,7 +257,7 @@ suite.define(() => {
       const gateway = await installMockGateway(page, { historyMessages: [] });
       const prompt = "Both clients independently sent the same prompt.";
       const persistedMessages = ["web", "tui"].map((client, index) => ({
-        __openclaw: {
+        __afora: {
           id: `canonical-${client}-same-text`,
           idempotencyKey: `${client}-same-text-run:user`,
           seq: index + 1,
@@ -339,7 +339,7 @@ suite.define(() => {
         const partial = "Streaming into both clients.";
         const userMessage = {
           ...(includeMessageMetadata
-            ? { __openclaw: { id: "shared-session-user", idempotencyKey: `${runId}:user`, seq: 1 } }
+            ? { __afora: { id: "shared-session-user", idempotencyKey: `${runId}:user`, seq: 1 } }
             : {}),
           content: [{ text: prompt, type: "text" }],
           role: "user",
@@ -348,7 +348,7 @@ suite.define(() => {
         const secondUserMessage = {
           ...(includeMessageMetadata
             ? {
-                __openclaw: {
+                __afora: {
                   id: "shared-session-second-user",
                   idempotencyKey: `${runId}:user`,
                   seq: 2,
@@ -437,7 +437,7 @@ suite.define(() => {
         await gateway.setHistoryMessages([
           {
             ...userMessage,
-            __openclaw: {
+            __afora: {
               id: "shared-session-user",
               idempotencyKey: `${runId}:user`,
               seq: 1,
@@ -445,14 +445,14 @@ suite.define(() => {
           },
           {
             ...secondUserMessage,
-            __openclaw: {
+            __afora: {
               id: "shared-session-second-user",
               idempotencyKey: `${runId}:user`,
               seq: 2,
             },
           },
           {
-            __openclaw: { id: "shared-session-assistant", seq: 3 },
+            __afora: { id: "shared-session-assistant", seq: 3 },
             content: [{ text: finalText, type: "text" }],
             role: "assistant",
             timestamp: Date.now(),
@@ -480,13 +480,13 @@ suite.define(() => {
         const prompt = "The persisted prompt arrived after the final.";
         const finalText = "The reply was already finished.";
         const userMessage = {
-          __openclaw: { id: "finalized-run-user", idempotencyKey: `${runId}:user`, seq: 1 },
+          __afora: { id: "finalized-run-user", idempotencyKey: `${runId}:user`, seq: 1 },
           content: [{ text: prompt, type: "text" }],
           role: "user",
           timestamp: Date.now(),
         };
         const assistantMessage = {
-          __openclaw: { id: "finalized-run-assistant", seq: 2 },
+          __afora: { id: "finalized-run-assistant", seq: 2 },
           content: [{ text: finalText, type: "text" }],
           role: "assistant",
           timestamp: Date.now(),
@@ -651,7 +651,7 @@ suite.define(() => {
       const finalText = "One authoritative final response.";
       const messageId = "assistant-authoritative-final";
       const authoritative = {
-        __openclaw: { id: messageId, seq: 2 },
+        __afora: { id: messageId, seq: 2 },
         content: [{ text: finalText, type: "text" }],
         role: "assistant",
         timestamp: Date.now(),
@@ -670,7 +670,7 @@ suite.define(() => {
       await page.locator(".chat-bubble.streaming", { hasText: finalText }).waitFor();
       await gateway.setHistoryMessages([
         {
-          __openclaw: { id: "user-reconcile", seq: 1 },
+          __afora: { id: "user-reconcile", seq: 1 },
           content: [{ text: "reconcile the terminal event ordering", type: "text" }],
           role: "user",
           timestamp: Date.now() - 1,
@@ -768,7 +768,7 @@ suite.define(() => {
 
   it("sends /stop to the exact selected channel session and clears its working indicator", async () => {
     await withChatPage(async (page) => {
-      const channelSessionKey = "agent:main:openclaw-weixin:direct:wechat-user";
+      const channelSessionKey = "agent:main:afora-weixin:direct:wechat-user";
       const gateway = await installMockGateway(page, {
         sessionKey: channelSessionKey,
         methodResponses: {

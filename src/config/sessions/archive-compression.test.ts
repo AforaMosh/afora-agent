@@ -32,7 +32,7 @@ describe("archive compression", () => {
     if (encoded.suffix !== SESSION_ARCHIVE_ZSTD_SUFFIX) {
       return;
     }
-    const dir = tempDirs.make("openclaw-archive-zstd-");
+    const dir = tempDirs.make("afora-archive-zstd-");
     const archivePath = path.join(dir, `removed.jsonl.deleted.2026-07-11${encoded.suffix}`);
     fs.writeFileSync(archivePath, encoded.bytes);
     const cachePath = materializeSessionArchiveForRead(archivePath);
@@ -47,7 +47,7 @@ describe("archive compression", () => {
   it("round-trips archived transcript content through encode and read", () => {
     const content = `${JSON.stringify({ type: "message", body: "hello" })}\n`.repeat(200);
     const encoded = encodeSessionArchiveContent(content);
-    const dir = tempDirs.make("openclaw-archive-zstd-");
+    const dir = tempDirs.make("afora-archive-zstd-");
     const archivePath = path.join(
       dir,
       `sess.jsonl.deleted.2026-07-11T00-00-00.000Z${encoded.suffix}`,
@@ -62,7 +62,7 @@ describe("archive compression", () => {
   });
 
   it("keeps plain archives readable regardless of runtime zstd support", () => {
-    const dir = tempDirs.make("openclaw-archive-zstd-");
+    const dir = tempDirs.make("afora-archive-zstd-");
     const archivePath = path.join(dir, "sess.jsonl.reset.2026-07-11T00-00-00.000Z");
     fs.writeFileSync(archivePath, "plain\n", "utf8");
 
@@ -72,7 +72,7 @@ describe("archive compression", () => {
   it("materializes compressed archives to a stable plain JSONL cache path", () => {
     const content = `${JSON.stringify({ type: "message", body: "cold" })}\n`;
     const encoded = encodeSessionArchiveContent(content);
-    const dir = tempDirs.make("openclaw-archive-zstd-");
+    const dir = tempDirs.make("afora-archive-zstd-");
     const archivePath = path.join(
       dir,
       `sess.jsonl.deleted.2026-07-11T00-00-00.000Z${encoded.suffix}`,

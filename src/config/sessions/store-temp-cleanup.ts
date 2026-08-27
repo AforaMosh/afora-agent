@@ -1,7 +1,7 @@
 // Session startup reclaims stale atomic-write temps without adding work to store reads.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { runTasksWithConcurrency } from "../../utils/run-with-concurrency.js";
 import { isSessionStoreTempArtifactName, SESSION_STORE_TEMP_STALE_MS } from "./artifacts.js";
 

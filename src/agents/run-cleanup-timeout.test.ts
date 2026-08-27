@@ -46,11 +46,11 @@ describe("agent cleanup timeout", () => {
     const result = runAgentCleanupStep({
       runId: "run-trajectory",
       sessionId: "session-trajectory",
-      step: "openclaw-trajectory-flush",
+      step: "afora-trajectory-flush",
       cleanup,
       log,
       env: {
-        OPENCLAW_TRAJECTORY_FLUSH_TIMEOUT_MS: "25000",
+        AFORA_TRAJECTORY_FLUSH_TIMEOUT_MS: "25000",
       },
     });
 
@@ -62,7 +62,7 @@ describe("agent cleanup timeout", () => {
 
     expect(cleanup).toHaveBeenCalledTimes(1);
     expect(log.warn).toHaveBeenCalledWith(
-      "agent cleanup timed out: runId=run-trajectory sessionId=session-trajectory step=openclaw-trajectory-flush timeoutMs=25000",
+      "agent cleanup timed out: runId=run-trajectory sessionId=session-trajectory step=afora-trajectory-flush timeoutMs=25000",
     );
   });
 
@@ -73,7 +73,7 @@ describe("agent cleanup timeout", () => {
     const result = runAgentCleanupStep({
       runId: "run-trajectory",
       sessionId: "session-trajectory",
-      step: "openclaw-trajectory-flush",
+      step: "afora-trajectory-flush",
       cleanup,
       log,
       timeoutMs: 5,
@@ -84,7 +84,7 @@ describe("agent cleanup timeout", () => {
     await expect(result).resolves.toBeUndefined();
 
     expect(log.warn).toHaveBeenCalledWith(
-      "agent cleanup timed out: runId=run-trajectory sessionId=session-trajectory step=openclaw-trajectory-flush timeoutMs=5 details=pendingWrites=2 queuedBytes=128 activeOperation=file-append",
+      "agent cleanup timed out: runId=run-trajectory sessionId=session-trajectory step=afora-trajectory-flush timeoutMs=5 details=pendingWrites=2 queuedBytes=128 activeOperation=file-append",
     );
   });
 
@@ -149,7 +149,7 @@ describe("agent cleanup timeout", () => {
     const result = runAgentCleanupStep({
       runId: "run-trajectory",
       sessionId: "session-trajectory",
-      step: "openclaw-trajectory-flush",
+      step: "afora-trajectory-flush",
       cleanup,
       log,
       timeoutMs: 5,
@@ -162,7 +162,7 @@ describe("agent cleanup timeout", () => {
     await expect(result).resolves.toBeUndefined();
 
     expect(log.warn).toHaveBeenCalledWith(
-      "agent cleanup timed out: runId=run-trajectory sessionId=session-trajectory step=openclaw-trajectory-flush timeoutMs=5 detailsError=details unavailable",
+      "agent cleanup timed out: runId=run-trajectory sessionId=session-trajectory step=afora-trajectory-flush timeoutMs=5 detailsError=details unavailable",
     );
   });
 
@@ -206,7 +206,7 @@ describe("agent cleanup timeout", () => {
       cleanup,
       log,
       env: {
-        OPENCLAW_AGENT_CLEANUP_TIMEOUT_MS: "1500",
+        AFORA_AGENT_CLEANUP_TIMEOUT_MS: "1500",
       },
     });
 
@@ -224,13 +224,13 @@ describe("agent cleanup timeout", () => {
     const result = runAgentCleanupStep({
       runId: "run-explicit",
       sessionId: "session-explicit",
-      step: "openclaw-trajectory-flush",
+      step: "afora-trajectory-flush",
       timeoutMs: 2_000,
       cleanup,
       log,
       env: {
-        OPENCLAW_TRAJECTORY_FLUSH_TIMEOUT_MS: "25000",
-        OPENCLAW_AGENT_CLEANUP_TIMEOUT_MS: "15000",
+        AFORA_TRAJECTORY_FLUSH_TIMEOUT_MS: "25000",
+        AFORA_AGENT_CLEANUP_TIMEOUT_MS: "15000",
       },
     });
 
@@ -241,7 +241,7 @@ describe("agent cleanup timeout", () => {
     await expect(result).resolves.toBeUndefined();
 
     expect(log.warn).toHaveBeenCalledWith(
-      "agent cleanup timed out: runId=run-explicit sessionId=session-explicit step=openclaw-trajectory-flush timeoutMs=2000",
+      "agent cleanup timed out: runId=run-explicit sessionId=session-explicit step=afora-trajectory-flush timeoutMs=2000",
     );
   });
 
@@ -251,12 +251,12 @@ describe("agent cleanup timeout", () => {
     const result = runAgentCleanupStep({
       runId: "run-zero",
       sessionId: "session-zero",
-      step: "openclaw-trajectory-flush",
+      step: "afora-trajectory-flush",
       timeoutMs: 0,
       cleanup,
       log,
       env: {
-        OPENCLAW_TRAJECTORY_FLUSH_TIMEOUT_MS: "25000",
+        AFORA_TRAJECTORY_FLUSH_TIMEOUT_MS: "25000",
       },
     });
 
@@ -264,7 +264,7 @@ describe("agent cleanup timeout", () => {
     await expect(result).resolves.toBeUndefined();
 
     expect(log.warn).toHaveBeenCalledWith(
-      "agent cleanup timed out: runId=run-zero sessionId=session-zero step=openclaw-trajectory-flush timeoutMs=1",
+      "agent cleanup timed out: runId=run-zero sessionId=session-zero step=afora-trajectory-flush timeoutMs=1",
     );
   });
 
@@ -273,16 +273,16 @@ describe("agent cleanup timeout", () => {
       runId: "run-invalid-env-number",
       sessionId: "session-invalid-env-number",
       env: {
-        OPENCLAW_TRAJECTORY_FLUSH_TIMEOUT_MS: "0",
-        OPENCLAW_AGENT_CLEANUP_TIMEOUT_MS: "not-a-number",
+        AFORA_TRAJECTORY_FLUSH_TIMEOUT_MS: "0",
+        AFORA_AGENT_CLEANUP_TIMEOUT_MS: "not-a-number",
       },
     },
     {
       runId: "run-invalid-env-format",
       sessionId: "session-invalid-env-format",
       env: {
-        OPENCLAW_TRAJECTORY_FLUSH_TIMEOUT_MS: "1e3",
-        OPENCLAW_AGENT_CLEANUP_TIMEOUT_MS: "0x10",
+        AFORA_TRAJECTORY_FLUSH_TIMEOUT_MS: "1e3",
+        AFORA_AGENT_CLEANUP_TIMEOUT_MS: "0x10",
       },
     },
   ])("ignores invalid cleanup timeout environment values", async ({ runId, sessionId, env }) => {
@@ -291,7 +291,7 @@ describe("agent cleanup timeout", () => {
     const result = runAgentCleanupStep({
       runId,
       sessionId,
-      step: "openclaw-trajectory-flush",
+      step: "afora-trajectory-flush",
       cleanup,
       log,
       env,
@@ -304,7 +304,7 @@ describe("agent cleanup timeout", () => {
     await expect(result).resolves.toBeUndefined();
 
     expect(log.warn).toHaveBeenCalledWith(
-      `agent cleanup timed out: runId=${runId} sessionId=${sessionId} step=openclaw-trajectory-flush timeoutMs=10000`,
+      `agent cleanup timed out: runId=${runId} sessionId=${sessionId} step=afora-trajectory-flush timeoutMs=10000`,
     );
   });
 

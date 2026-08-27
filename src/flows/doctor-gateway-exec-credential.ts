@@ -1,7 +1,7 @@
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 export async function hasActiveGatewayExecCredential(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
 }): Promise<boolean> {
   const [{ resolveSecretInputRef }, { gatewaySecretInputPathCanWin }, secretPaths] =

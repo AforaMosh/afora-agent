@@ -1,16 +1,16 @@
 // OpenAI-compatible embeddings HTTP endpoint.
-// Bridges /v1/embeddings requests to configured OpenClaw memory providers.
+// Bridges /v1/embeddings requests to configured Afora memory providers.
 import { Buffer } from "node:buffer";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { resolveAgentDir } from "../agents/agent-scope.js";
 import { resolveMemorySearchConfig } from "../agents/memory-search.js";
 import { createConfiguredProviderLocalServiceAcquirer } from "../agents/provider-local-service.js";
 import { getRuntimeConfig } from "../config/io.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { logWarn } from "../logger.js";
 import { getMemoryEmbeddingProvider } from "../plugins/memory-embedding-provider-runtime.js";
@@ -23,13 +23,13 @@ import {
   authorizeOpenAiCompatibleHttpModelOverride,
   getHeader,
   isAgentSelectionRequiredError,
-  isOpenClawAgentModelId,
+  isAforaAgentModelId,
   isUnknownGatewayAgentError,
   resolveAgentIdForRequest,
   resolveOpenAiCompatibleHttpOperatorScopes,
 } from "./http-utils.js";
 
-// OpenAI-compatible `/v1/embeddings` bridge. It maps OpenClaw agent/model
+// OpenAI-compatible `/v1/embeddings` bridge. It maps Afora agent/model
 // routing onto configured memory embedding providers while preserving the
 // response shape expected by OpenAI SDK clients.
 type OpenAiEmbeddingsHttpOptions = {
@@ -230,7 +230,7 @@ function resolveEmbeddingProviderRemoteConfig(remote: MemorySearchEmbeddingConfi
 }
 
 function isLocalEmbeddingProvider(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   provider: EmbeddingProviderRequest;
 }): boolean {
   const providerId =
@@ -239,7 +239,7 @@ function isLocalEmbeddingProvider(params: {
 }
 
 async function createConfiguredEmbeddingProvider(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentDir: string;
   provider: EmbeddingProviderRequest;
   model: string;
@@ -341,10 +341,10 @@ export async function handleOpenAiEmbeddingsHttpRequest(
   }
 
   const cfg = getRuntimeConfig();
-  if (!isOpenClawAgentModelId(requestModel)) {
+  if (!isAforaAgentModelId(requestModel)) {
     sendJson(res, 400, {
       error: {
-        message: "Invalid `model`. Use `openclaw` or `openclaw/<agentId>`.",
+        message: "Invalid `model`. Use `afora` or `afora/<agentId>`.",
         type: "invalid_request_error",
       },
     });
@@ -385,7 +385,7 @@ export async function handleOpenAiEmbeddingsHttpRequest(
   const memorySearch = resolveMemorySearchConfig(cfg, agentId);
   const configuredProvider = memorySearch?.provider ?? "openai";
   const overrideModel =
-    normalizeOptionalString(getHeader(req, "x-openclaw-model")) ||
+    normalizeOptionalString(getHeader(req, "x-afora-model")) ||
     normalizeOptionalString(memorySearch?.model) ||
     "";
   const target = resolveEmbeddingsTarget({

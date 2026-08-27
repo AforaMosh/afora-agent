@@ -12,7 +12,7 @@ type ThreadBindingsTestState = {
   lastPersistedAtMs: number;
 };
 
-const THREAD_BINDINGS_STATE_KEY = Symbol.for("openclaw.discordThreadBindingsState");
+const THREAD_BINDINGS_STATE_KEY = Symbol.for("afora.discordThreadBindingsState");
 
 export function resetThreadBindingsForTests() {
   const globalStore = globalThis as Record<PropertyKey, unknown>;

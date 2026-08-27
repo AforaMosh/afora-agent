@@ -6,9 +6,9 @@ import {
   clearMemoryPluginState,
   type MemoryPluginPublicArtifact,
   registerMemoryCapability,
-} from "openclaw/plugin-sdk/memory-host-core";
+} from "afora-agent/plugin-sdk/memory-host-core";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../api.js";
+import type { AforaConfig } from "../api.js";
 import { syncMemoryWikiBridgeSources } from "./bridge.js";
 import { createMemoryWikiTestHarness } from "./test-helpers.js";
 
@@ -108,7 +108,7 @@ describe("syncMemoryWikiBridgeSources", () => {
       },
     ]);
 
-    const appConfig: OpenClawConfig = {
+    const appConfig: AforaConfig = {
       agents: {
         list: [{ id: "main", default: true, workspace: workspaceDir }],
       },
@@ -140,7 +140,7 @@ describe("syncMemoryWikiBridgeSources", () => {
     expect(second.skippedCount).toBe(3);
     expect(second.removedCount).toBe(0);
 
-    const logLines = (await fs.readFile(path.join(vaultDir, ".openclaw-wiki", "log.jsonl"), "utf8"))
+    const logLines = (await fs.readFile(path.join(vaultDir, ".afora-wiki", "log.jsonl"), "utf8"))
       .trim()
       .split("\n");
     expect(logLines).toHaveLength(3);
@@ -201,7 +201,7 @@ describe("syncMemoryWikiBridgeSources", () => {
       },
     ]);
 
-    const appConfig: OpenClawConfig = {
+    const appConfig: AforaConfig = {
       agents: {
         list: [{ id: "main", default: true, workspace: workspaceDir }],
       },
@@ -243,7 +243,7 @@ describe("syncMemoryWikiBridgeSources", () => {
       } as Omit<MemoryPluginPublicArtifact, "agentIds"> as MemoryPluginPublicArtifact,
     ]);
 
-    const appConfig: OpenClawConfig = {
+    const appConfig: AforaConfig = {
       agents: {
         list: [{ id: "main", default: true, workspace: workspaceDir }],
       },
@@ -324,7 +324,7 @@ describe("syncMemoryWikiBridgeSources", () => {
     });
     const supportConfig = { ...unresolvedSupportConfig, agentId: "support" };
     const marketingConfig = { ...unresolvedMarketingConfig, agentId: "marketing" };
-    const appConfig: OpenClawConfig = {
+    const appConfig: AforaConfig = {
       agents: {
         list: [
           { id: "support", default: true, workspace: supportWorkspace },
@@ -402,7 +402,7 @@ describe("syncMemoryWikiBridgeSources", () => {
 
     await fs.writeFile(path.join(workspaceDir, "MEMORY.md"), "# Durable Memory\n", "utf8");
 
-    const appConfig: OpenClawConfig = {
+    const appConfig: AforaConfig = {
       agents: {
         list: [{ id: "main", default: true, workspace: workspaceDir }],
       },
@@ -460,7 +460,7 @@ describe("syncMemoryWikiBridgeSources", () => {
       },
     ]);
 
-    const appConfig: OpenClawConfig = {
+    const appConfig: AforaConfig = {
       agents: {
         list: [{ id: "main", default: true, workspace: workspaceDir }],
       },
@@ -512,7 +512,7 @@ describe("syncMemoryWikiBridgeSources", () => {
         contentType: "markdown",
       },
     ]);
-    const appConfig: OpenClawConfig = {
+    const appConfig: AforaConfig = {
       agents: {
         list: [{ id: "main", default: true, workspace: workspaceDir }],
       },
@@ -527,8 +527,8 @@ describe("syncMemoryWikiBridgeSources", () => {
       await fs.writeFile(
         firstPageAbsPath,
         firstPage.replace(
-          "<!-- openclaw:human:start -->\n<!-- openclaw:human:end -->",
-          `<!-- openclaw:human:start -->\n${humanNotes}\n<!-- openclaw:human:end -->`,
+          "<!-- afora:human:start -->\n<!-- afora:human:end -->",
+          `<!-- afora:human:start -->\n${humanNotes}\n<!-- afora:human:end -->`,
         ),
         "utf8",
       );
@@ -576,7 +576,7 @@ describe("syncMemoryWikiBridgeSources", () => {
         contentType: "markdown",
       },
     ]);
-    const appConfig: OpenClawConfig = {
+    const appConfig: AforaConfig = {
       agents: {
         list: [{ id: "main", default: true, workspace: workspaceDir }],
       },
@@ -625,7 +625,7 @@ describe("syncMemoryWikiBridgeSources", () => {
         contentType: "markdown",
       },
     ]);
-    const appConfig: OpenClawConfig = {
+    const appConfig: AforaConfig = {
       agents: {
         list: [{ id: "main", default: true, workspace: workspaceDir }],
       },
@@ -695,7 +695,7 @@ describe("syncMemoryWikiBridgeSources", () => {
         contentType: "markdown",
       },
     ]);
-    const appConfig: OpenClawConfig = {
+    const appConfig: AforaConfig = {
       agents: {
         list: [{ id: "main", default: true, workspace: workspaceDir }],
       },
@@ -745,7 +745,7 @@ describe("syncMemoryWikiBridgeSources", () => {
       },
     ]);
 
-    const appConfig: OpenClawConfig = {
+    const appConfig: AforaConfig = {
       agents: {
         list: [{ id: "main", default: true, workspace: workspaceDir }],
       },

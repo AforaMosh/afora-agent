@@ -6,7 +6,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
-import { safeParseJson } from "@openclaw/normalization-core";
+import { safeParseJson } from "@afora/normalization-core";
 import { sha256HexPrefixCore } from "../../infra/crypto-digest.js";
 import {
   clearNodeSqliteKyselyCacheForDatabase,
@@ -20,34 +20,34 @@ import { isPathInside } from "../../infra/path-guards.js";
 import { resolveSqliteDatabaseFilePaths } from "../../infra/sqlite-files.js";
 import { readSqliteUserVersion } from "../../infra/sqlite-user-version.js";
 import { registerSqliteCacheExitClose } from "../../infra/sqlite-wal.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
+import type { DB as AforaAgentKyselyDatabase } from "../../state/afora-agent-db.generated.js";
 import {
-  deferOpenClawAgentPostCommitPublication,
-  OPENCLAW_AGENT_SCHEMA_VERSION,
-  runOpenClawAgentWriteTransaction,
-  type OpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "../../state/openclaw-state-db-readonly.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../../state/openclaw-state-db.generated.js";
+  deferAforaAgentPostCommitPublication,
+  AFORA_AGENT_SCHEMA_VERSION,
+  runAforaAgentWriteTransaction,
+  type AforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
+import { withExistingAforaStateDatabaseReadOnly } from "../../state/afora-state-db-readonly.js";
+import type { DB as AforaStateKyselyDatabase } from "../../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  OPENCLAW_SQLITE_BUSY_TIMEOUT_MS,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabase,
-} from "../../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  AFORA_SQLITE_BUSY_TIMEOUT_MS,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabase,
+} from "../../state/afora-state-db.js";
 import { resolveUserPath } from "../../utils.js";
 import { resolveRegisteredAgentIdForDir } from "../agent-dir-registry.js";
 import { resolveSharedAuthStoreOwnership, resolveSharedAuthStorePath } from "./path-resolve.js";
 
 type AgentAuthProfileDatabase = Pick<
-  OpenClawAgentKyselyDatabase,
+  AforaAgentKyselyDatabase,
   "auth_profile_store" | "auth_profile_state"
 >;
 type SharedAuthProfileDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "auth_profile_stores" | "auth_profile_state"
 >;
-export type AuthProfileDatabase = OpenClawAgentDatabase | OpenClawStateDatabase;
+export type AuthProfileDatabase = AforaAgentDatabase | AforaStateDatabase;
 
 type AuthProfileDatabaseTarget =
   | { kind: "agent"; agentId: string; path: string; env: NodeJS.ProcessEnv }
@@ -59,7 +59,7 @@ const PRIMARY_ROW_KEY = "primary";
 const SHARED_ROW_KEY = "shared";
 const AUTH_PROFILE_READ_HANDLE_CAP = 8;
 const authProfileReadDatabases = new Map<string, DatabaseSync>();
-const sharedAuthPostCommitPublications = new WeakMap<OpenClawStateDatabase, Array<() => void>>();
+const sharedAuthPostCommitPublications = new WeakMap<AforaStateDatabase, Array<() => void>>();
 let unregisterReadHandleExitClose: (() => void) | null = null;
 
 type AuthProfileReadPoolCloseScope =
@@ -72,7 +72,7 @@ export function deferAuthProfilePostCommitPublication(
   publish: () => void,
 ): boolean {
   if ("agentId" in database) {
-    return deferOpenClawAgentPostCommitPublication(database, publish);
+    return deferAforaAgentPostCommitPublication(database, publish);
   }
   const publications = sharedAuthPostCommitPublications.get(database);
   if (!publications) {
@@ -93,7 +93,7 @@ function inferAgentIdFromDir(agentDir: string): string {
   return `custom-${sha256HexPrefixCore(normalized, 12)}`;
 }
 
-// The auth database lives in the agent dir and shares the openclaw-agent schema
+// The auth database lives in the agent dir and shares the afora-agent schema
 // so auth store/state can move with the rest of agent-local durable state.
 function resolveAuthProfileDatabaseOptions(
   agentDir?: string,
@@ -116,7 +116,7 @@ function resolveAuthProfileDatabaseOptions(
   return {
     kind: "agent",
     agentId: resolveRegisteredAgentIdForDir(dir) ?? inferAgentIdFromDir(dir),
-    path: path.join(dir, "openclaw-agent.sqlite"),
+    path: path.join(dir, "afora-agent.sqlite"),
     env,
   };
 }
@@ -338,8 +338,8 @@ function acquireAuthProfileReadDatabase(
     enableNodeSqliteKyselyStatementCache(db);
     // The pooled reader bypasses canonical agent DB bootstrap, but it shares
     // the same busy policy and validates the process-stable schema on open.
-    db.exec(`PRAGMA busy_timeout = ${OPENCLAW_SQLITE_BUSY_TIMEOUT_MS};`);
-    if (readSqliteUserVersion(db) > OPENCLAW_AGENT_SCHEMA_VERSION) {
+    db.exec(`PRAGMA busy_timeout = ${AFORA_SQLITE_BUSY_TIMEOUT_MS};`);
+    if (readSqliteUserVersion(db) > AFORA_AGENT_SCHEMA_VERSION) {
       clearNodeSqliteKyselyCacheForDatabase(db);
       db.close();
       return { status: "unreadable" };
@@ -361,7 +361,7 @@ function inspectAuthProfileJsonCellReadOnly(
   if (databaseTarget.kind === "shared-state") {
     try {
       return (
-        withExistingOpenClawStateDatabaseReadOnly(
+        withExistingAforaStateDatabaseReadOnly(
           ({ db }) => inspectAuthProfileJsonCell(db, target, "shared-state"),
           { env: databaseTarget.env, path: databaseTarget.path },
         ) ?? { status: "missing", reason: "database" }
@@ -662,13 +662,13 @@ export function runAuthProfileWriteTransaction<T>(
 ): T {
   const env =
     options.env ??
-    (options.stateDir ? { ...process.env, OPENCLAW_STATE_DIR: options.stateDir } : process.env);
+    (options.stateDir ? { ...process.env, AFORA_STATE_DIR: options.stateDir } : process.env);
   const databaseTarget = resolveAuthProfileDatabaseOptions(agentDir, env);
   if (databaseTarget.kind === "agent") {
-    return runOpenClawAgentWriteTransaction(operation, databaseTarget);
+    return runAforaAgentWriteTransaction(operation, databaseTarget);
   }
 
-  const database = openOpenClawStateDatabase({ env, path: databaseTarget.path });
+  const database = openAforaStateDatabase({ env, path: databaseTarget.path });
   const enteredNestedTransaction = database.db.isTransaction;
   const publications: Array<() => void> | undefined = enteredNestedTransaction
     ? sharedAuthPostCommitPublications.get(database)
@@ -679,7 +679,7 @@ export function runAuthProfileWriteTransaction<T>(
   }
   let result: T;
   try {
-    result = runOpenClawStateWriteTransaction(operation, { env, database });
+    result = runAforaStateWriteTransaction(operation, { env, database });
   } catch (error) {
     publications?.splice(publicationStart);
     throw error;

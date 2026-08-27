@@ -6,10 +6,10 @@ import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { isDeepStrictEqual } from "node:util";
 import type { SessionUpdate } from "@agentclientprotocol/sdk";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { z } from "zod";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
-import { runOpenClawStateWriteTransaction } from "../state/openclaw-state-db.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
+import { runAforaStateWriteTransaction } from "../state/afora-state-db.js";
 import { withFileLock } from "./file-lock.js";
 import {
   executeSqliteQuerySync,
@@ -60,7 +60,7 @@ type LegacySourceIdentity = {
 };
 
 type AcpReplayMigrationDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "acp_replay_events" | "acp_replay_sessions"
 >;
 
@@ -344,7 +344,7 @@ export async function migrateLegacyAcpReplayLedger(params: {
             }
           }
 
-          runOpenClawStateWriteTransaction(
+          runAforaStateWriteTransaction(
             ({ db }) => {
               const replayDb = getNodeSqliteKysely<AcpReplayMigrationDatabase>(db);
               const missingSessions: LegacyAcpReplaySession[] = [];
@@ -416,7 +416,7 @@ export async function migrateLegacyAcpReplayLedger(params: {
                 importedSessions += 1;
               }
             },
-            { env: { ...process.env, OPENCLAW_STATE_DIR: params.stateDir } },
+            { env: { ...process.env, AFORA_STATE_DIR: params.stateDir } },
           );
           await fs.unlink(claimPath);
           return {

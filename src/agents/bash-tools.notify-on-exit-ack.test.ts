@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { runHeartbeatOnce } from "../infra/heartbeat-runner.js";
 import {
   seedMainSessionStore,
@@ -109,7 +109,7 @@ it("invalidates a heartbeat snapshot when terminal poll consumes its occurrence"
 
 it("keeps an identical successor queued when heartbeat consumes a stale snapshot", async () => {
   await withTempTelegramHeartbeatSandbox(async ({ tmpDir, storePath, replySpy }) => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           workspace: tmpDir,

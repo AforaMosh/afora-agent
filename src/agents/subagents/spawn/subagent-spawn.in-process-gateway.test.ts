@@ -42,7 +42,7 @@ import { callSubagentGateway } from "./subagent-spawn-gateway.js";
 import { spawnSubagentDirect } from "./subagent-spawn.js";
 import { testing as subagentSpawnTesting } from "./subagent-spawn.test-support.js";
 
-const envSnapshot = captureEnv(["OPENCLAW_CONFIG_PATH", "OPENCLAW_STATE_DIR"]);
+const envSnapshot = captureEnv(["AFORA_CONFIG_PATH", "AFORA_STATE_DIR"]);
 let stateDir = "";
 
 function makeGatewayContext(): GatewayRequestContext {
@@ -117,11 +117,11 @@ describe("spawnSubagentDirect in-process Gateway collector launch", () => {
       restoreSubagentRunsFromDisk: () => 0,
     });
 
-    stateDir = await mkdtemp(path.join(os.tmpdir(), "openclaw-swarm-gateway-"));
-    setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
-    setTestEnvValue("OPENCLAW_CONFIG_PATH", path.join(stateDir, "openclaw.json"));
+    stateDir = await mkdtemp(path.join(os.tmpdir(), "afora-swarm-gateway-"));
+    setTestEnvValue("AFORA_STATE_DIR", stateDir);
+    setTestEnvValue("AFORA_CONFIG_PATH", path.join(stateDir, "afora.json"));
     await writeFile(
-      path.join(stateDir, "openclaw.json"),
+      path.join(stateDir, "afora.json"),
       `${JSON.stringify({
         session: { mainKey: "main", scope: "per-sender" },
         tools: { swarm: { enabled: true, maxConcurrent: 1 } },

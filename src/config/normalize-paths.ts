@@ -1,6 +1,6 @@
 // Normalizes path-like config values to canonical user paths.
 import { isPlainObject, resolveUserPath } from "../utils.js";
-import type { OpenClawConfig } from "./types.js";
+import type { AforaConfig } from "./types.js";
 
 const PATH_VALUE_RE = /^~(?=$|[\\/])/;
 
@@ -61,7 +61,7 @@ function normalizeAny(key: string | undefined, value: unknown): unknown {
  * Goal: accept `~/...` consistently across config file + env overrides, while
  * keeping the surface area small and predictable.
  */
-export function normalizeConfigPaths(cfg: OpenClawConfig): OpenClawConfig {
+export function normalizeConfigPaths(cfg: AforaConfig): AforaConfig {
   if (!cfg || typeof cfg !== "object") {
     return cfg;
   }

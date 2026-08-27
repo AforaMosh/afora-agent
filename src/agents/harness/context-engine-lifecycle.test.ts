@@ -1,10 +1,10 @@
 // Covers context-engine message filtering, assemble validation, and turn finalization.
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-core";
 import { describe, expect, it, vi } from "vitest";
 import { buildMemorySystemPromptAddition } from "../../context-engine/delegate.js";
 import {
   CODEX_APP_SERVER_CONTEXT_ENGINE_HOST,
-  OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST,
+  AFORA_EMBEDDED_CONTEXT_ENGINE_HOST,
 } from "../../context-engine/host-compat.js";
 import {
   registerContextEngineForOwner,
@@ -22,7 +22,7 @@ import {
   registerTestMemoryPromptBuilder,
 } from "../../plugins/memory-state.test-fixtures.js";
 import { compactContextEngineWithSafetyTimeout } from "../embedded-agent-runner/compaction-safety-timeout.js";
-import { OPENCLAW_RUNTIME_CONTEXT_CUSTOM_TYPE } from "../internal-runtime-context.js";
+import { AFORA_RUNTIME_CONTEXT_CUSTOM_TYPE } from "../internal-runtime-context.js";
 import {
   assembleHarnessContextEngine,
   bootstrapHarnessContextEngine,
@@ -51,10 +51,10 @@ function runtimeContextMessage(content: string, timestamp: number): AgentMessage
   // user/assistant transcript messages, not this internal custom channel.
   return {
     role: "custom",
-    customType: OPENCLAW_RUNTIME_CONTEXT_CUSTOM_TYPE,
+    customType: AFORA_RUNTIME_CONTEXT_CUSTOM_TYPE,
     content,
     display: false,
-    details: { source: "openclaw-runtime-context" },
+    details: { source: "afora-runtime-context" },
     timestamp,
   } as AgentMessage;
 }
@@ -222,7 +222,7 @@ describe("harness context engine lifecycle", () => {
     expect(assembleParams?.runtimeSettings).toMatchObject({
       schemaVersion: 1,
       runtime: {
-        host: "openclaw",
+        host: "afora",
         mode: "normal",
       },
       model: {
@@ -254,7 +254,7 @@ describe("harness context engine lifecycle", () => {
       agentId: "main",
       sessionId: sessionParams.sessionId,
       sessionKey: sessionParams.sessionKey,
-      storePath: "/tmp/state/openclaw.sqlite",
+      storePath: "/tmp/state/afora.sqlite",
     };
     const bootstrapRuntimeContext = {
       transcriptStorage: { kind: "sqlite" as const },
@@ -371,7 +371,7 @@ describe("harness context engine lifecycle", () => {
     });
 
     const compactRuntimeSettings = buildContextEngineRuntimeSettings({
-      contextEngineHost: OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST,
+      contextEngineHost: AFORA_EMBEDDED_CONTEXT_ENGINE_HOST,
       provider: "openai",
       requestedModel: "openai/gpt-5.5",
       resolvedModel: "anthropic/claude-sonnet-4-6",

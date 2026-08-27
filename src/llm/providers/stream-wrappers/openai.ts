@@ -1,7 +1,7 @@
 import {
   resolveOpenAIReasoningEffortForModel,
   supportsOpenAIReasoningEffort,
-} from "@openclaw/ai/internal/openai";
+} from "@afora/ai/internal/openai";
 import {
   filterCodeModePayloadTools,
   isCodeModeModelVisibleToolName,
@@ -10,15 +10,15 @@ import {
   stripCompletionMessagesToRoleContent,
   applyOpenAIResponsesPayloadPolicy,
   resolveOpenAIResponsesPayloadPolicy,
-} from "@openclaw/ai/transports";
-import { isPromiseLike } from "@openclaw/normalization-core/promise-like";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+} from "@afora/ai/transports";
+import { isPromiseLike } from "@afora/normalization-core/promise-like";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 // OpenAI stream wrapper normalizes OpenAI-compatible streamed tool and text events.
 import {
   normalizeFastMode,
   normalizeOptionalLowercaseString,
   readStringValue,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import {
   patchCodexNativeWebSearchPayload,
   resolveCodexNativeSearchActivation,
@@ -32,7 +32,7 @@ import { resolveProviderRequestPolicyConfig } from "../../../agents/provider-req
 import type { StreamFn } from "../../../agents/runtime/index.js";
 import type { SandboxToolPolicy } from "../../../agents/sandbox.js";
 import type { ThinkLevel } from "../../../auto-reply/thinking.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { createSubsystemLogger } from "../../../logging/subsystem.js";
 import { streamSimple } from "../../stream.js";
 import type { SimpleStreamOptions } from "../../types.js";
@@ -43,9 +43,9 @@ const log = createSubsystemLogger("llm/providers/stream-wrappers");
 
 type OpenAIServiceTier = "auto" | "default" | "flex" | "priority";
 type DynamicFastMode = boolean | (() => boolean | undefined);
-type OpenClawSimpleStreamOptions = SimpleStreamOptions & {
-  openclawCodeModeToolSurface?: boolean;
-  openclawCodeModeAllowedHostedToolTypes?: Set<string>;
+type AforaSimpleStreamOptions = SimpleStreamOptions & {
+  aforaCodeModeToolSurface?: boolean;
+  aforaCodeModeAllowedHostedToolTypes?: Set<string>;
 };
 type OpenAIResponsesReplayOptions = Parameters<StreamFn>[2] & {
   replayResponsesItemIds?: boolean;
@@ -115,7 +115,7 @@ function shouldApplyOpenAIServiceTier(model: {
   return resolveOpenAIResponsesPayloadPolicy(model, { storeMode: "disable" }).allowsServiceTier;
 }
 
-function isCodeModeEnabled(config?: OpenClawConfig): boolean {
+function isCodeModeEnabled(config?: AforaConfig): boolean {
   const tools = config?.tools;
   if (!tools || typeof tools !== "object") {
     return false;
@@ -580,7 +580,7 @@ export function createOpenAITextVerbosityWrapper(
 export function createCodexNativeWebSearchWrapper(
   baseStreamFn: StreamFn | undefined,
   params: {
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     agentDir?: string;
     agentId?: string;
     sessionKey?: string;
@@ -605,7 +605,7 @@ export function createCodexNativeWebSearchWrapper(
     // surface; the run-level wrapper passes it down via stream options so the
     // provider-family wrapper stays aligned for the same request.
     const codeModeSurfaceFromOptions =
-      (options as OpenClawSimpleStreamOptions | undefined)?.openclawCodeModeToolSurface === true;
+      (options as AforaSimpleStreamOptions | undefined)?.aforaCodeModeToolSurface === true;
     const codeModeVisibleToolNames = resolveCodeModeVisibleToolNames(context);
     const resolveNativeSearchActivation = () =>
       resolveCodexNativeSearchActivation({
@@ -637,8 +637,8 @@ export function createCodexNativeWebSearchWrapper(
       // Every spread below must retain this request-scoped Set so the provider policy owner
       // and final Responses egress agree on the same hosted-tool authorization fact.
       const allowedHostedToolTypes =
-        (options as OpenClawSimpleStreamOptions | undefined)
-          ?.openclawCodeModeAllowedHostedToolTypes ?? new Set<string>();
+        (options as AforaSimpleStreamOptions | undefined)
+          ?.aforaCodeModeAllowedHostedToolTypes ?? new Set<string>();
       const activation =
         params.nativeWebSearchAllowedByToolPolicy === false
           ? undefined
@@ -656,10 +656,10 @@ export function createCodexNativeWebSearchWrapper(
         );
       }
       const originalOnPayload = options?.onPayload;
-      const codeModeOptions: OpenClawSimpleStreamOptions = {
+      const codeModeOptions: AforaSimpleStreamOptions = {
         ...options,
-        openclawCodeModeToolSurface: true,
-        openclawCodeModeAllowedHostedToolTypes: allowedHostedToolTypes,
+        aforaCodeModeToolSurface: true,
+        aforaCodeModeAllowedHostedToolTypes: allowedHostedToolTypes,
         onPayload: (payload) => {
           if (activation?.state === "native_active") {
             patchCodexNativeWebSearchPayload({ payload, config: params.config });

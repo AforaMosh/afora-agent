@@ -22,7 +22,7 @@ import {
   listPairedNode,
   CODEX_TERMINAL_RESUME_COMMAND,
   CODEX_LOCAL_SESSION_HOST_ID,
-  type OpenClawConfig,
+  type AforaConfig,
   type PluginRuntime,
   originalPath,
 } from "./session-catalog.test-helpers.js";
@@ -535,7 +535,7 @@ describe("Codex supervision catalog", () => {
   });
 
   it("binds paired-node catalog commands to the invocation agent after config reload", async () => {
-    let runtimeConfig = { agents: { list: [{ id: "main" }] } } as OpenClawConfig;
+    let runtimeConfig = { agents: { list: [{ id: "main" }] } } as AforaConfig;
     const alphaListPage = vi.fn(async () => {
       throw new Error("alpha control must not serve beta");
     });
@@ -560,7 +560,7 @@ describe("Codex supervision catalog", () => {
     );
     runtimeConfig = {
       agents: { ownership: "explicit", list: [{ id: "alpha" }, { id: "beta" }] },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const listCommand = commands.find(
       (candidate) => candidate.command === CODEX_APP_SERVER_THREADS_LIST_COMMAND,
     );
@@ -606,7 +606,7 @@ describe("Codex supervision catalog", () => {
 
   it("resolves node terminal eligibility and cwd from the node-owned catalog record", async () => {
     const threadId = "123e4567-e89b-12d3-a456-426614174000";
-    const binDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-node-terminal-"));
+    const binDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-codex-node-terminal-"));
     tempDirs.push(binDir);
     const executable = path.join(binDir, process.platform === "win32" ? "codex.cmd" : "codex");
     if (process.platform === "win32") {
@@ -619,7 +619,7 @@ describe("Codex supervision catalog", () => {
     process.env.PATH = binDir;
     const explicitConfig = {
       agents: { ownership: "explicit", list: [{ id: "alpha" }, { id: "beta" }] },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const command = createCodexSessionCatalogNodeHostCommands(
       createEligibleControl({
         listPage: vi.fn(async () => ({

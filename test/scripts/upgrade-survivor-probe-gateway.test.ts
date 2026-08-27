@@ -15,7 +15,7 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 const LOAD_SENSITIVE_PROCESS_TIMEOUT_MS = process.env.CI ? 30_000 : 15_000;
 
 function writeProbeImport(source: string): string[] {
-  const fixturePath = path.join(tempDirs.make("openclaw-upgrade-probe-"), "probe-import.mjs");
+  const fixturePath = path.join(tempDirs.make("afora-upgrade-probe-"), "probe-import.mjs");
   fs.writeFileSync(fixturePath, source);
   return ["--import", pathToFileURL(fixturePath).href];
 }
@@ -94,7 +94,7 @@ describe("scripts/e2e/lib/upgrade-survivor/probe-gateway.mjs", () => {
   });
 
   it("rejects loose numeric probe limits instead of parsing prefixes", async () => {
-    const out = path.join(tempDirs.make("openclaw-upgrade-probe-"), "invalid.json");
+    const out = path.join(tempDirs.make("afora-upgrade-probe-"), "invalid.json");
     const timeoutResult = await runProbe([
       "--base-url",
       "http://127.0.0.1:9",
@@ -115,13 +115,13 @@ describe("scripts/e2e/lib/upgrade-survivor/probe-gateway.mjs", () => {
       ["--base-url", "http://127.0.0.1:9", "--path", "/readyz", "--expect", "ready", "--out", out],
       5_000,
       {
-        OPENCLAW_UPGRADE_SURVIVOR_PROBE_MAX_BODY_BYTES: "64bytes",
+        AFORA_UPGRADE_SURVIVOR_PROBE_MAX_BODY_BYTES: "64bytes",
       },
     );
 
     expect(bodyLimitResult.status).not.toBe(0);
     expect(bodyLimitResult.stderr).toContain(
-      "invalid OPENCLAW_UPGRADE_SURVIVOR_PROBE_MAX_BODY_BYTES: 64bytes",
+      "invalid AFORA_UPGRADE_SURVIVOR_PROBE_MAX_BODY_BYTES: 64bytes",
     );
   });
 
@@ -131,7 +131,7 @@ describe("scripts/e2e/lib/upgrade-survivor/probe-gateway.mjs", () => {
       response.end(JSON.stringify({ ready: true }));
     });
     const baseUrl = await listen(server);
-    const out = path.join(tempDirs.make("openclaw-upgrade-probe-"), "ready.json");
+    const out = path.join(tempDirs.make("afora-upgrade-probe-"), "ready.json");
     try {
       const result = await runProbe([
         "--base-url",
@@ -164,7 +164,7 @@ describe("scripts/e2e/lib/upgrade-survivor/probe-gateway.mjs", () => {
       response.end(JSON.stringify({ ready: false, failing: ["telegram"] }));
     });
     const baseUrl = await listen(server);
-    const out = path.join(tempDirs.make("openclaw-upgrade-probe-"), "ready-degraded.json");
+    const out = path.join(tempDirs.make("afora-upgrade-probe-"), "ready-degraded.json");
     try {
       const result = await runProbe([
         "--base-url",
@@ -191,7 +191,7 @@ describe("scripts/e2e/lib/upgrade-survivor/probe-gateway.mjs", () => {
 
   it("keeps failed probe retries inside the total timeout", async () => {
     const baseUrl = "http://probe.test";
-    const out = path.join(tempDirs.make("openclaw-upgrade-probe-"), "ready-timeout.json");
+    const out = path.join(tempDirs.make("afora-upgrade-probe-"), "ready-timeout.json");
     const nodeArgs = writeProbeImport(
       [
         "const realSetTimeout = globalThis.setTimeout;",
@@ -235,7 +235,7 @@ describe("scripts/e2e/lib/upgrade-survivor/probe-gateway.mjs", () => {
 
   it("allows degraded ready responses only when degraded readiness is explicit", async () => {
     const baseUrl = "http://probe.test";
-    const out = path.join(tempDirs.make("openclaw-upgrade-probe-"), "ready-degraded.json");
+    const out = path.join(tempDirs.make("afora-upgrade-probe-"), "ready-degraded.json");
     const nodeArgs = writeProbeImport(
       'globalThis.fetch = async () => new Response(JSON.stringify({ ready: false, failing: ["telegram"] }), { status: 503, headers: { "content-type": "application/json" } });',
     );
@@ -274,7 +274,7 @@ describe("scripts/e2e/lib/upgrade-survivor/probe-gateway.mjs", () => {
       response.end(JSON.stringify({ ready: true }));
     });
     const baseUrl = await listen(server);
-    const out = path.join(tempDirs.make("openclaw-upgrade-probe-"), "ready-server-error.json");
+    const out = path.join(tempDirs.make("afora-upgrade-probe-"), "ready-server-error.json");
     try {
       const result = await runProbe([
         "--base-url",
@@ -302,7 +302,7 @@ describe("scripts/e2e/lib/upgrade-survivor/probe-gateway.mjs", () => {
 
   it("rejects declared oversized probe bodies before waiting on the stream", async () => {
     const baseUrl = "http://probe.test";
-    const out = path.join(tempDirs.make("openclaw-upgrade-probe-"), "oversized.json");
+    const out = path.join(tempDirs.make("afora-upgrade-probe-"), "oversized.json");
     const nodeArgs = writeProbeImport(
       'globalThis.fetch = async () => new Response(new ReadableStream({ start() {} }), { status: 200, headers: { "content-length": "65", "content-type": "application/json" } });',
     );
@@ -322,7 +322,7 @@ describe("scripts/e2e/lib/upgrade-survivor/probe-gateway.mjs", () => {
         "100",
       ],
       LOAD_SENSITIVE_PROCESS_TIMEOUT_MS,
-      { OPENCLAW_UPGRADE_SURVIVOR_PROBE_MAX_BODY_BYTES: "64" },
+      { AFORA_UPGRADE_SURVIVOR_PROBE_MAX_BODY_BYTES: "64" },
       nodeArgs,
     );
 
@@ -340,7 +340,7 @@ describe("scripts/e2e/lib/upgrade-survivor/probe-gateway.mjs", () => {
       socket.on("data", () => {});
     });
     const baseUrl = await listen(server);
-    const out = path.join(tempDirs.make("openclaw-upgrade-probe-"), "stall.json");
+    const out = path.join(tempDirs.make("afora-upgrade-probe-"), "stall.json");
     const startedAt = Date.now();
     try {
       const result = await runProbe([
@@ -383,7 +383,7 @@ describe("scripts/e2e/lib/upgrade-survivor/probe-gateway.mjs", () => {
       socket.on("close", () => sockets.delete(socket));
     });
     const baseUrl = await listen(server);
-    const out = path.join(tempDirs.make("openclaw-upgrade-probe-"), "body-stall.json");
+    const out = path.join(tempDirs.make("afora-upgrade-probe-"), "body-stall.json");
     const startedAt = Date.now();
     try {
       const result = await runProbe([
@@ -417,7 +417,7 @@ describe("scripts/e2e/lib/upgrade-survivor/probe-gateway.mjs", () => {
 
   it("caps response bodies before parsing probe JSON", async () => {
     const baseUrl = "http://probe.test";
-    const out = path.join(tempDirs.make("openclaw-upgrade-probe-"), "oversized.json");
+    const out = path.join(tempDirs.make("afora-upgrade-probe-"), "oversized.json");
     const nodeArgs = writeProbeImport(
       'globalThis.fetch = async () => new Response("x".repeat(256), { status: 200, headers: { "content-type": "application/json" } });',
     );

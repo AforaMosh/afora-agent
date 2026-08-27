@@ -38,7 +38,7 @@ vi.mock("../../utils/message-channel.js", () => ({
   normalizeMessageChannel: (value: string) => value.trim().toLowerCase(),
 }));
 
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 
 let resolveAgentDeliveryPlanWithSessionRoute: typeof import("./agent-delivery.js").resolveAgentDeliveryPlanWithSessionRoute;
 let resolveAgentOutboundTarget: typeof import("./agent-delivery.js").resolveAgentOutboundTarget;
@@ -75,7 +75,7 @@ describe("agent delivery target resolution", () => {
     });
 
     const plan = await resolveAgentDeliveryPlanWithSessionRoute({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       agentId: "agent",
       requestedChannel: "workspace",
       explicitTo: "1470130713209602050",
@@ -107,7 +107,7 @@ describe("agent delivery target resolution", () => {
     });
 
     const plan = await resolveAgentDeliveryPlanWithSessionRoute({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       agentId: "agent",
       currentSessionKey: "agent:main",
       requestedChannel: "workspace",
@@ -139,7 +139,7 @@ describe("agent delivery target resolution", () => {
     mocks.resolveChannelTarget.mockResolvedValue({ ok: false, error: targetError });
 
     const plan = await resolveAgentDeliveryPlanWithSessionRoute({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       agentId: "agent",
       requestedChannel: "workspace",
       explicitTo: "channel:missing",
@@ -166,7 +166,7 @@ describe("agent delivery target resolution", () => {
     });
 
     const plan = await resolveAgentDeliveryPlanWithSessionRoute({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       agentId: "agent",
       requestedChannel: "workspace",
       wantsDelivery: true,
@@ -194,7 +194,7 @@ describe("agent delivery target resolution", () => {
     mocks.resolveOutboundTarget.mockClear();
     mocks.resolveOutboundTarget.mockReturnValue({ ok: true, to: "channel:final" });
     resolveAgentOutboundTarget({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       plan,
       targetMode: "implicit",
       validateExplicitTarget: true,
@@ -224,7 +224,7 @@ describe("agent delivery target resolution", () => {
     });
 
     const plan = await resolveAgentDeliveryPlanWithSessionRoute({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       agentId: "agent",
       requestedChannel: "workspace",
       explicitTo: "some-channel",
@@ -262,7 +262,7 @@ describe("agent delivery target resolution", () => {
     });
 
     const plan = await resolveAgentDeliveryPlanWithSessionRoute({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       agentId: "agent",
       requestedChannel: "workspace",
       explicitTo: "some-channel",

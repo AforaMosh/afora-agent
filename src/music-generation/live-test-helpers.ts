@@ -1,5 +1,5 @@
 // Live-test helpers for music generation provider configuration.
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import {
   resolveConfiguredLiveProviderModels,
   resolveLiveAuthStore,
@@ -21,7 +21,7 @@ export const DEFAULT_LIVE_MUSIC_MODELS: Record<string, string> = {
 };
 
 /** Resolve configured provider/model refs from the musicGenerationModel defaults. */
-export function resolveConfiguredLiveMusicModels(cfg: OpenClawConfig): Map<string, string> {
+export function resolveConfiguredLiveMusicModels(cfg: AforaConfig): Map<string, string> {
   return resolveConfiguredLiveProviderModels(cfg.agents?.defaults?.mediaModels?.music);
 }
 

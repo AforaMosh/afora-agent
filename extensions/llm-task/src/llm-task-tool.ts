@@ -1,20 +1,20 @@
 // Llm Task plugin module implements llm task tool behavior.
-import { buildModelAliasIndex, resolveModelRefFromString } from "openclaw/plugin-sdk/agent-runtime";
+import { buildModelAliasIndex, resolveModelRefFromString } from "afora-agent/plugin-sdk/agent-runtime";
 import {
   optionalFiniteNumberSchema,
   optionalPositiveIntegerSchema,
-} from "openclaw/plugin-sdk/channel-actions";
+} from "afora-agent/plugin-sdk/channel-actions";
 import {
   type JsonSchemaObject,
   validateJsonSchemaValue,
-} from "openclaw/plugin-sdk/json-schema-runtime";
-import { readFiniteNumberParam, readPositiveIntegerParam } from "openclaw/plugin-sdk/param-readers";
+} from "afora-agent/plugin-sdk/json-schema-runtime";
+import { readFiniteNumberParam, readPositiveIntegerParam } from "afora-agent/plugin-sdk/param-readers";
 import {
   asPositiveSafeInteger,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { Type } from "typebox";
-import type { OpenClawPluginApi } from "../api.js";
+import type { AforaPluginApi } from "../api.js";
 
 function stripCodeFences(s: string): string {
   const trimmed = s.trim();
@@ -45,7 +45,7 @@ function stripDuplicateProviderPrefix(provider: string | undefined, model: strin
 }
 
 function resolveLlmTaskModelRef(params: {
-  api: OpenClawPluginApi;
+  api: AforaPluginApi;
   provider?: string;
   rawModel?: string;
 }): { provider?: string; model?: string } {
@@ -107,7 +107,7 @@ export const llmTaskToolDefinition = {
   name: "llm-task",
   label: "LLM Task",
   description:
-    "Run a generic JSON-only LLM task and return schema-validated JSON. Designed for orchestration from Lobster workflows via openclaw.invoke.",
+    "Run a generic JSON-only LLM task and return schema-validated JSON. Designed for orchestration from Lobster workflows via afora.invoke.",
   parameters: Type.Object({
     prompt: Type.String({ description: "Task instruction for the LLM." }),
     input: Type.Optional(Type.Unknown({ description: "Optional input payload for the task." })),
@@ -128,7 +128,7 @@ export const llmTaskToolDefinition = {
   }),
 };
 
-export function createLlmTaskTool(api: OpenClawPluginApi) {
+export function createLlmTaskTool(api: AforaPluginApi) {
   return {
     ...llmTaskToolDefinition,
 
@@ -186,7 +186,7 @@ export function createLlmTaskTool(api: OpenClawPluginApi) {
 
       const thinkingRaw =
         typeof params.thinking === "string" && params.thinking.trim() ? params.thinking : undefined;
-      let thinkLevel: ReturnType<OpenClawPluginApi["runtime"]["agent"]["normalizeThinkingLevel"]> =
+      let thinkLevel: ReturnType<AforaPluginApi["runtime"]["agent"]["normalizeThinkingLevel"]> =
         undefined;
       if (thinkingRaw) {
         thinkLevel = api.runtime.agent.normalizeThinkingLevel(thinkingRaw);

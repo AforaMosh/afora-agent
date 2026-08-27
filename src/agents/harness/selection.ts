@@ -1,7 +1,7 @@
 /**
  * Selects and invokes native agent harnesses for embedded run attempts.
  */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   createChildDiagnosticTraceContext,
   createDiagnosticTraceContext,
@@ -39,7 +39,7 @@ import {
 } from "../tool-policy.js";
 import type { SystemAgentToolOptions } from "../tools/system-agent-tool.js";
 import { resolveAgentHarnessAutoSelectionHint } from "./auto-selection.js";
-import { createOpenClawAgentHarness, isBuiltInOpenClawAgentHarness } from "./builtin-openclaw.js";
+import { createAforaAgentHarness, isBuiltInAforaAgentHarness } from "./builtin-afora.js";
 import { selectContextEngineForTranscriptHost } from "./context-engine-logical-turn.js";
 import { drainPendingContextEngineTurnsBeforeRun } from "./context-engine-turn-attempt.js";
 import { AgentHarnessPreflightError, MissingAgentHarnessError } from "./errors.js";
@@ -72,7 +72,7 @@ type AgentHarnessAvailabilityParams = {
   provider?: string;
   modelId?: string;
   modelProvider?: AgentHarnessSupportContext["modelProvider"];
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string;
   sessionKey?: string;
   env?: NodeJS.ProcessEnv;
@@ -83,7 +83,7 @@ type AgentHarnessSelectionParams = {
   provider: string;
   modelId?: string;
   modelProvider?: AgentHarnessSupportContext["modelProvider"];
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string;
   sessionKey?: string;
   agentHarnessId?: string;
@@ -128,20 +128,20 @@ type AgentHarnessSelectionDecision = {
   policy: AgentHarnessPolicy;
   selectedHarnessId: string;
   selectedReason:
-    | "forced_openclaw"
+    | "forced_afora"
     | "forced_plugin"
-    // Implicit Codex preference found no registered Codex harness, so OpenClaw handled the run.
-    | "implicit_plugin_unavailable_openclaw"
-    // Implicit Codex preference cannot reproduce the prepared transport, so OpenClaw handled it.
-    | "implicit_plugin_unsupported_openclaw"
-    // The requested plugin declared OpenClaw as a lossless fallback for this prepared request.
-    | "plugin_declared_fallback_openclaw"
+    // Implicit Codex preference found no registered Codex harness, so Afora handled the run.
+    | "implicit_plugin_unavailable_afora"
+    // Implicit Codex preference cannot reproduce the prepared transport, so Afora handled it.
+    | "implicit_plugin_unsupported_afora"
+    // The requested plugin declared Afora as a lossless fallback for this prepared request.
+    | "plugin_declared_fallback_afora"
     // Provider-owned CLI runtime aliases have no agent harness plugin counterpart.
-    | "cli_runtime_passthrough_openclaw"
+    | "cli_runtime_passthrough_afora"
     // Auto mode chose a registered plugin harness that supports the provider/model.
     | "auto_plugin"
-    // Auto mode found no supporting plugin harness, so OpenClaw handled the run.
-    | "auto_openclaw";
+    // Auto mode found no supporting plugin harness, so Afora handled the run.
+    | "auto_afora";
   candidates: AgentHarnessSelectionCandidate[];
 };
 
@@ -213,7 +213,7 @@ function resolveAgentHarnessAvailabilityDecision(
   if (!codexHarness) {
     return {
       kind: "implicit-unavailable",
-      policy: { ...policy, runtime: "openclaw" },
+      policy: { ...policy, runtime: "afora" },
     };
   }
   const provider = params.provider?.trim();
@@ -237,7 +237,7 @@ function resolveAgentHarnessAvailabilityDecision(
   }
   return {
     kind: "implicit-unsupported",
-    policy: { ...policy, runtime: "openclaw" },
+    policy: { ...policy, runtime: "afora" },
   };
 }
 
@@ -272,19 +272,19 @@ export function selectAgentHarnessForPreparedModelProviders(
   // One embedded runtime owns the complete retry set. Auto selection and plugin-declared
   // fallbacks may resolve individual prepared routes to different harnesses.
   return (
-    decisions.find((decision) => decision.selectedHarnessId === "openclaw")?.harness ??
-    createOpenClawAgentHarness()
+    decisions.find((decision) => decision.selectedHarnessId === "afora")?.harness ??
+    createAforaAgentHarness()
   );
 }
 
-/** Returns whether a plugin harness constructs OpenClaw tools inside its runtime. */
-export function agentHarnessBuildsOpenClawTools(harnessId: string): boolean {
+/** Returns whether a plugin harness constructs Afora tools inside its runtime. */
+export function agentHarnessBuildsAforaTools(harnessId: string): boolean {
   return harnessId === "codex" || harnessId === "copilot";
 }
 
-/** Returns whether the selected harness exposes OpenClaw's agent-tool surface. */
-export function agentHarnessExposesOpenClawTools(harnessId: string): boolean {
-  return harnessId === "openclaw" || agentHarnessBuildsOpenClawTools(harnessId);
+/** Returns whether the selected harness exposes Afora's agent-tool surface. */
+export function agentHarnessExposesAforaTools(harnessId: string): boolean {
+  return harnessId === "afora" || agentHarnessBuildsAforaTools(harnessId);
 }
 
 function selectAgentHarnessDecision(
@@ -318,21 +318,21 @@ function selectAgentHarnessDecision(
         runtimeSource: "model",
       } as AgentHarnessPolicy)
     : resolvedPolicy;
-  // OpenClaw's built-in harness is intentionally not part of the plugin candidate list. Explicit plugin
-  // runtimes fail closed unless the selected plugin declares OpenClaw as a lossless fallback.
+  // Afora's built-in harness is intentionally not part of the plugin candidate list. Explicit plugin
+  // runtimes fail closed unless the selected plugin declares Afora as a lossless fallback.
   const pluginHarnesses = listPluginAgentHarnesses();
-  const openClawHarness = createOpenClawAgentHarness();
+  const aforaHarness = createAforaAgentHarness();
   const runtime = policy.runtime;
-  if (runtime === "openclaw") {
+  if (runtime === "afora") {
     const selectedReason = selectedRuntimeOverride
-      ? "forced_openclaw"
+      ? "forced_afora"
       : availability.kind === "implicit-unavailable"
-        ? "implicit_plugin_unavailable_openclaw"
+        ? "implicit_plugin_unavailable_afora"
         : availability.kind === "implicit-unsupported"
-          ? "implicit_plugin_unsupported_openclaw"
-          : "forced_openclaw";
+          ? "implicit_plugin_unsupported_afora"
+          : "forced_afora";
     return buildSelectionDecision({
-      harness: openClawHarness,
+      harness: aforaHarness,
       policy,
       selectedReason,
       candidates: listHarnessCandidates(pluginHarnesses),
@@ -374,22 +374,22 @@ function selectAgentHarnessDecision(
           candidates: listHarnessCandidates(pluginHarnesses),
         });
       }
-      if (support.fallbackRuntime === "openclaw") {
+      if (support.fallbackRuntime === "afora") {
         return buildSelectionDecision({
-          harness: openClawHarness,
-          policy: { ...policy, runtime: "openclaw" },
-          selectedReason: "plugin_declared_fallback_openclaw",
+          harness: aforaHarness,
+          policy: { ...policy, runtime: "afora" },
+          selectedReason: "plugin_declared_fallback_afora",
           candidates: listHarnessCandidates(pluginHarnesses),
         });
       }
       if (isCliRuntimeAliasForProvider({ runtime, provider: params.provider })) {
         return buildSelectionDecision({
-          harness: openClawHarness,
+          harness: aforaHarness,
           policy: {
             ...policy,
-            runtime: "openclaw",
+            runtime: "afora",
           },
-          selectedReason: "cli_runtime_passthrough_openclaw",
+          selectedReason: "cli_runtime_passthrough_afora",
           candidates: listHarnessCandidates(pluginHarnesses),
         });
       }
@@ -401,12 +401,12 @@ function selectAgentHarnessDecision(
     }
     if (runtime === "codex" && policy.runtimeSource === "implicit") {
       return buildSelectionDecision({
-        harness: openClawHarness,
+        harness: aforaHarness,
         policy: {
           ...policy,
-          runtime: "openclaw",
+          runtime: "afora",
         },
-        selectedReason: "implicit_plugin_unavailable_openclaw",
+        selectedReason: "implicit_plugin_unavailable_afora",
         candidates: listHarnessCandidates(pluginHarnesses),
       });
     }
@@ -418,12 +418,12 @@ function selectAgentHarnessDecision(
       })
     ) {
       return buildSelectionDecision({
-        harness: openClawHarness,
+        harness: aforaHarness,
         policy: {
           ...policy,
-          runtime: "openclaw",
+          runtime: "afora",
         },
-        selectedReason: "cli_runtime_passthrough_openclaw",
+        selectedReason: "cli_runtime_passthrough_afora",
         candidates: listHarnessCandidates(pluginHarnesses),
       });
     }
@@ -480,9 +480,9 @@ function selectAgentHarnessDecision(
     });
   }
   return buildSelectionDecision({
-    harness: openClawHarness,
+    harness: aforaHarness,
     policy,
-    selectedReason: "auto_openclaw",
+    selectedReason: "auto_afora",
     candidates: candidates.map(toSelectionCandidate),
   });
 }
@@ -507,14 +507,14 @@ export async function runAgentHarnessSettledTurnFinalization(
     throw new Error(`Agent harness ${harness.id} cannot safely finalize a settled tool turn.`);
   }
   if (internalParams.systemAgentTool && !isSystemAgentOnlyAllowlist(internalParams.toolsAllow)) {
-    throw new Error('OpenClaw host authority requires toolsAllow: ["openclaw"]');
+    throw new Error('Afora host authority requires toolsAllow: ["afora"]');
   }
   const attemptParams = prepareHarnessFinalizationParams(
     {
       ...internalParams,
       operation: "settled-tool-finalization",
     },
-    isBuiltInOpenClawAgentHarness(harness),
+    isBuiltInAforaAgentHarness(harness),
   );
   return await runAgentHarnessOperation(harness, params, () =>
     runWithAgentRingZeroTools([], () =>
@@ -558,7 +558,7 @@ async function runSelectedAgentHarnessAttempt(
     };
   }
   if (internalParams.systemAgentTool && !isSystemAgentOnlyAllowlist(internalParams.toolsAllow)) {
-    throw new Error('OpenClaw host authority requires toolsAllow: ["openclaw"]');
+    throw new Error('Afora host authority requires toolsAllow: ["afora"]');
   }
   const ringZeroTools = internalParams.systemAgentTool
     ? [
@@ -586,14 +586,14 @@ async function runSelectedAgentHarnessAttempt(
       runWithAgentRingZeroTools(ringZeroTools, () => {
         // Resolve plugin policy after entering the host scope. Ring-zero tools are
         // trusted setup authority and must survive ordinary deny-all policy.
-        const hostOpenClawAuthority =
-          isHostScopedAgentToolActive("openclaw") &&
+        const hostAforaAuthority =
+          isHostScopedAgentToolActive("afora") &&
           isSystemAgentOnlyAllowlist(pluginAttempt.params.toolsAllow);
         const preparedParams = selection.builtIn
           ? pluginAttempt.params
           : preparePluginHarnessParams(pluginAttempt.params, harness);
         const effectiveAttemptParams =
-          hostOpenClawAuthority && preparedParams.pluginHarnessToolPolicyRestricted
+          hostAforaAuthority && preparedParams.pluginHarnessToolPolicyRestricted
             ? { ...preparedParams, pluginHarnessToolPolicyRestricted: false }
             : preparedParams;
         assertPluginHarnessConversationToolPolicySupport(
@@ -679,14 +679,14 @@ async function runAgentHarnessOperation<T>(
   const harnessTrace = freezeDiagnosticTraceContext(
     activeTrace ? createChildDiagnosticTraceContext(activeTrace) : createDiagnosticTraceContext(),
   );
-  if (isBuiltInOpenClawAgentHarness(harness)) {
+  if (isBuiltInAforaAgentHarness(harness)) {
     return await runWithDiagnosticTraceContext(harnessTrace, execute);
   }
 
   try {
     return await runWithDiagnosticTraceContext(harnessTrace, execute);
   } catch (error) {
-    log.warn(`${harness.label} failed; not falling back to embedded OpenClaw backend`, {
+    log.warn(`${harness.label} failed; not falling back to embedded Afora backend`, {
       harnessId: harness.id,
       provider: params.provider,
       modelId: params.modelId,
@@ -697,7 +697,7 @@ async function runAgentHarnessOperation<T>(
 }
 
 function isSystemAgentOnlyAllowlist(toolsAllow: readonly string[] | undefined): boolean {
-  return toolsAllow?.length === 1 && normalizeToolPolicyName(toolsAllow[0] ?? "") === "openclaw";
+  return toolsAllow?.length === 1 && normalizeToolPolicyName(toolsAllow[0] ?? "") === "afora";
 }
 
 function withoutHarnessSetupAuthority(
@@ -779,10 +779,10 @@ function withoutPluginHarnessPrivateState(
     hostCapabilities: _hostCapabilities,
     onContextEngineTurnCandidate: _onContextEngineTurnCandidate,
     trajectoryRecorder: _trajectoryRecorder,
-    __openclawSourceReplyDeliveryRuntime: _sourceReplyDeliveryRuntime,
+    __aforaSourceReplyDeliveryRuntime: _sourceReplyDeliveryRuntime,
     ...pluginParams
   } = params as EmbeddedRunAttemptParams & {
-    __openclawSourceReplyDeliveryRuntime?: unknown;
+    __aforaSourceReplyDeliveryRuntime?: unknown;
   };
   return pluginParams;
 }
@@ -822,7 +822,7 @@ function assertPluginHarnessConversationToolPolicySupport(
   restricted: boolean,
 ): void {
   if (
-    harness.id !== "openclaw" &&
+    harness.id !== "afora" &&
     restricted &&
     harness.conversationToolPolicySupport !== "exact"
   ) {
@@ -838,9 +838,9 @@ function applyPluginHarnessDenyAllToolPolicy(
   policies: ResolvedPluginHarnessToolPolicies,
 ): import("./types.js").AgentHarnessAttemptParamsV2 {
   if (
-    isHostScopedAgentToolActive("openclaw") &&
+    isHostScopedAgentToolActive("afora") &&
     params.toolsAllow?.length === 1 &&
-    normalizeToolPolicyName(params.toolsAllow[0] ?? "") === "openclaw"
+    normalizeToolPolicyName(params.toolsAllow[0] ?? "") === "afora"
   ) {
     return params;
   }
@@ -1102,7 +1102,7 @@ function buildSelectionDecision(params: {
   selectedReason: AgentHarnessSelectionDecision["selectedReason"];
   candidates: AgentHarnessSelectionCandidate[];
 }): AgentHarnessSelectionDecision {
-  const builtIn = isBuiltInOpenClawAgentHarness(params.harness);
+  const builtIn = isBuiltInAforaAgentHarness(params.harness);
   return {
     harness: params.harness,
     builtIn,

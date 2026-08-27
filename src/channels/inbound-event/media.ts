@@ -1,4 +1,4 @@
-import { kindFromMime, mimeTypeFromFilePath } from "@openclaw/media-core/mime";
+import { kindFromMime, mimeTypeFromFilePath } from "@afora/media-core/mime";
 /** Channel inbound media normalization and compatibility projection. */
 import type { HistoryMediaEntry } from "../../auto-reply/reply/history.types.js";
 import { resolveLocalMediaPath } from "../../media/local-media-path.js";

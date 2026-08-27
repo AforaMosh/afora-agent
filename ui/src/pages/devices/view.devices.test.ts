@@ -1,5 +1,5 @@
 /* @vitest-environment jsdom */
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { render } from "lit";
 import { describe, expect, it, vi } from "vitest";
 import type { InventoryRemovalRequest } from "../../lib/nodes/index.ts";
@@ -652,7 +652,7 @@ describe("devices exec approvals rendering", () => {
         onSelect: (value: string) => void;
         updateComplete: Promise<boolean>;
       }
-    >("openclaw-agent-select");
+    >("afora-agent-select");
     await picker?.updateComplete;
 
     expect(picker?.options.map((option) => option.value)).toEqual([

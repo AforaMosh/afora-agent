@@ -1,7 +1,7 @@
 import { hasAgentRosterProperty, listAgentEntries } from "../agents/agent-scope-config.js";
 import { isRecord } from "../utils.js";
 import { INCLUDE_KEY } from "./includes.js";
-import type { ConfigFileSnapshot } from "./types.openclaw.js";
+import type { ConfigFileSnapshot } from "./types.afora.js";
 
 function rosterEntryBoundaryContainsInclude(value: unknown): boolean {
   if (!isRecord(value)) {

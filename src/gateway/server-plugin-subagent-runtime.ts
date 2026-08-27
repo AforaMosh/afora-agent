@@ -1,8 +1,8 @@
-import { parseModelCatalogRef } from "@openclaw/model-catalog-core/model-catalog-refs";
+import { parseModelCatalogRef } from "@afora/model-catalog-core/model-catalog-refs";
 import {
   normalizeBuiltInProviderModelId,
   stripSelfProviderModelPrefix,
-} from "@openclaw/model-catalog-core/provider-model-id-normalization";
+} from "@afora/model-catalog-core/provider-model-id-normalization";
 import { normalizeModelRef } from "../agents/model-ref-shared.js";
 import { parseModelRef } from "../agents/model-selection-normalize.js";
 import type { PluginRuntime } from "../plugins/runtime/types.js";

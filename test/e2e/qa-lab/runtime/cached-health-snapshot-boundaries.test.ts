@@ -36,7 +36,7 @@ describe("cached health snapshot boundary producer", () => {
     }
   });
 
-  it.runIf(process.env.OPENCLAW_QA_REAL_GATEWAY === "1")(
+  it.runIf(process.env.AFORA_QA_REAL_GATEWAY === "1")(
     "crosses the real Gateway plugin-tool boundary",
     async () => {
       const proof = await runCachedHealthSnapshotBoundariesProof(

@@ -1,4 +1,4 @@
-// Public OpenClaw SDK entrypoint. Re-export client namespaces, event helpers,
+// Public Afora SDK entrypoint. Re-export client namespaces, event helpers,
 // transport, and stable SDK types from focused modules.
 export {
   Agent,
@@ -7,14 +7,14 @@ export {
   ArtifactsNamespace,
   EnvironmentsNamespace,
   ModelsNamespace,
-  OpenClaw,
+  Afora,
   Run,
   RunsNamespace,
   Session,
   SessionsNamespace,
   TasksNamespace,
   ToolsNamespace,
-  type OpenClawOptions,
+  type AforaOptions,
 } from "./client.js";
 export { EventHub, isGatewayEvent } from "./event-hub.js";
 export { normalizeGatewayEvent } from "./normalize.js";
@@ -31,7 +31,7 @@ export type {
   ArtifactsDownloadResult,
   ArtifactsGetResult,
   ArtifactsListResult,
-  ConnectableOpenClawTransport,
+  ConnectableAforaTransport,
   EnvironmentCreateParams,
   EnvironmentSelection,
   EnvironmentSummary,
@@ -46,9 +46,9 @@ export type {
   GatewayEnvironmentsListResult,
   GatewayRequestOptions,
   JsonObject,
-  OpenClawEvent,
-  OpenClawEventType,
-  OpenClawTransport,
+  AforaEvent,
+  AforaEventType,
+  AforaTransport,
   RunCreateParams,
   RunResult,
   RunStatus,

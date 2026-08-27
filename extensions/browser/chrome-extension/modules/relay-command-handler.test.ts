@@ -19,7 +19,7 @@ function createHarness() {
     send,
     attachDebugger: vi.fn(),
     detachDebugger: vi.fn(async () => undefined),
-    addTabToOpenClawGroup: vi.fn(),
+    addTabToAforaGroup: vi.fn(),
     focusWindowForTab,
     scheduleTabsSync: vi.fn(),
     captureAccess: vi.fn(() => epoch),

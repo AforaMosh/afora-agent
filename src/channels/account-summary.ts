@@ -3,8 +3,8 @@
  *
  * Builds safe status snapshots and resolves enabled/configured account state.
  */
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
+import type { AforaConfig } from "../config/types.afora.js";
 import { isRecord } from "../utils.js";
 import {
   projectSafeChannelAccountSnapshotFields,
@@ -19,7 +19,7 @@ import type { ChannelPlugin } from "./plugins/types.plugin.js";
 export function buildChannelAccountSummary(params: {
   plugin: ChannelPlugin;
   account: unknown;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   enabled: boolean;
   configured: boolean;
@@ -39,7 +39,7 @@ export function buildChannelAccountSummary(params: {
  */
 export function formatChannelAllowFrom(params: {
   plugin: ChannelPlugin;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   allowFrom: Array<string | number>;
 }): string[] {
@@ -59,7 +59,7 @@ export function formatChannelAllowFrom(params: {
 export function resolveChannelAccountEnabled(params: {
   plugin: ChannelPlugin;
   account: unknown;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 }): boolean {
   if (params.plugin.config.isEnabled) {
     return params.plugin.config.isEnabled(params.account, params.cfg);
@@ -74,7 +74,7 @@ export function resolveChannelAccountEnabled(params: {
 export async function resolveChannelAccountConfigured(params: {
   plugin: ChannelPlugin;
   account: unknown;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   readAccountConfiguredField?: boolean;
 }): Promise<boolean> {
   if (params.plugin.config.isConfigured) {

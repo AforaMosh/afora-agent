@@ -67,7 +67,7 @@
       "class": "default-runtime-initially",
       "risk": ["provider-sdk", "network"]
     },
-    "@openclaw/ai": {
+    "@afora/ai": {
       "owner": "core:ai-runtime",
       "class": "core-runtime",
       "risk": ["provider-routing", "model-io"]

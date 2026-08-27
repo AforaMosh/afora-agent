@@ -1,9 +1,9 @@
-import { expectDefined } from "@openclaw/normalization-core";
-import type { ProviderAuthMethod } from "openclaw/plugin-sdk/plugin-entry";
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
-import { clearLiveCatalogCacheForTests } from "openclaw/plugin-sdk/provider-catalog-shared";
+import { expectDefined } from "@afora/normalization-core";
+import type { ProviderAuthMethod } from "afora-agent/plugin-sdk/plugin-entry";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
+import { clearLiveCatalogCacheForTests } from "afora-agent/plugin-sdk/provider-catalog-shared";
 // Ollama tests cover index plugin behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import plugin from "./index.js";
 import { OLLAMA_DEFAULT_API_KEY } from "./src/discovery-shared.js";
@@ -65,8 +65,8 @@ vi.mock("./src/provider-models.js", async (importOriginal) => ({
   queryOllamaModelShowInfo: queryOllamaModelShowInfoMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/secret-input-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/secret-input-runtime")>();
+vi.mock("afora-agent/plugin-sdk/secret-input-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/secret-input-runtime")>();
   return {
     ...actual,
     resolveConfiguredSecretInputString: resolveConfiguredSecretInputStringMock.mockImplementation(
@@ -607,7 +607,7 @@ describe("ollama plugin", () => {
 
     await provider.auth[0].appGuidedSetup?.detectAvailability?.({
       config: {},
-      env: { OPENCLAW_DOCKER_SETUP: "1" },
+      env: { AFORA_DOCKER_SETUP: "1" },
     });
 
     expect(fetchOllamaModelsMock).toHaveBeenCalledWith("http://host.docker.internal:11434", {});

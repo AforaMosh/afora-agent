@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createSolidPngBuffer } from "../../test/helpers/image-fixtures.js";
 import { toInboundMediaFactsWithMetadata } from "../channels/inbound-event/media.js";
 import { createManagedOutgoingMediaBlocks } from "../gateway/managed-image-attachments.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { resolveLocalMediaPath } from "./local-media-path.js";
 import { appendLocalMediaParentRoots } from "./local-roots.js";
@@ -25,11 +25,11 @@ function toSingleSlashUppercaseFileUrl(filePath: string): string {
 }
 
 async function withTempRoot<T>(run: (root: string) => Promise<T>): Promise<T> {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-local-media-url-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-local-media-url-"));
   try {
     return await run(root);
   } finally {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await fs.rm(root, { recursive: true, force: true });
   }
 }
@@ -40,7 +40,7 @@ describe.runIf(process.platform === "win32")("Windows local media file URLs", ()
   });
 
   afterEach(() => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
   });
 
   it("resolves single-slash mixed-case file schemes and rejects unsafe file URLs", async () => {
@@ -96,7 +96,7 @@ describe.runIf(process.platform === "win32")("Windows local media file URLs", ()
       sourceUrl.searchParams.set("sig", "secret");
       sourceUrl.hash = "preview";
 
-      await withEnvAsync({ OPENCLAW_STATE_DIR: root }, async () => {
+      await withEnvAsync({ AFORA_STATE_DIR: root }, async () => {
         const blocks = await createManagedOutgoingMediaBlocks({
           stateDir: root,
           sessionKey: "agent:main:main",

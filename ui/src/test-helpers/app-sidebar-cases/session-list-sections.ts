@@ -112,7 +112,7 @@ describe("AppSidebar session section visibility", () => {
 
     // The identity card is the main-session entry; the list stays empty.
     expect(sidebar.querySelectorAll(".sidebar-recent-session")).toHaveLength(0);
-    expect(sidebar.querySelector("openclaw-sidebar-agent-card")).not.toBeNull();
+    expect(sidebar.querySelector("afora-sidebar-agent-card")).not.toBeNull();
   });
 
   it("keeps a selected child reachable when its parent is outside the loaded window", async () => {

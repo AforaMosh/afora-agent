@@ -16,16 +16,16 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  delete process.env.OPENCLAW_TEST_FILE_LOG;
-  delete process.env.OPENCLAW_LOG_LEVEL;
+  delete process.env.AFORA_TEST_FILE_LOG;
+  delete process.env.AFORA_LOG_LEVEL;
   readLoggingConfigMock.mockClear();
   logging.resetLogger();
   logging.setLoggerOverride(null);
 });
 
 afterEach(() => {
-  delete process.env.OPENCLAW_TEST_FILE_LOG;
-  delete process.env.OPENCLAW_LOG_LEVEL;
+  delete process.env.AFORA_TEST_FILE_LOG;
+  delete process.env.AFORA_LOG_LEVEL;
   logging.resetLogger();
   logging.setLoggerOverride(null);
   vi.restoreAllMocks();

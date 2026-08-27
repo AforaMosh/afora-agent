@@ -2,13 +2,13 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { WebSocket } from "ws";
 import adminHttpRpcPlugin from "../../../../extensions/admin-http-rpc/index.js";
 import canvasPlugin from "../../../../extensions/canvas/index.js";
 import { clearConfigCache, clearRuntimeConfigSnapshot } from "../../../../src/config/config.js";
-import type { OpenClawConfig } from "../../../../src/config/types.openclaw.js";
+import type { AforaConfig } from "../../../../src/config/types.afora.js";
 import { startGatewayServer } from "../../../../src/gateway/server.js";
 import {
   connectGatewayClient,
@@ -110,11 +110,11 @@ describe("Gateway hosted web surfaces", () => {
     "serves the Control UI, admin RPC, and capability-scoped Canvas/A2UI routes",
     { timeout: 90_000 },
     async () => {
-      const root = tempDirs.make("openclaw-qa-hosted-web-");
+      const root = tempDirs.make("afora-qa-hosted-web-");
       const stateDir = path.join(root, "state");
       const controlUiRoot = path.join(root, "control-ui");
       const canvasRoot = path.join(root, "canvas");
-      const configPath = path.join(root, "openclaw.json");
+      const configPath = path.join(root, "afora.json");
       await Promise.all([
         fs.mkdir(stateDir, { recursive: true }),
         fs.mkdir(controlUiRoot, { recursive: true }),
@@ -133,7 +133,7 @@ describe("Gateway hosted web surfaces", () => {
         ),
       ]);
 
-      const config: OpenClawConfig = {
+      const config: AforaConfig = {
         gateway: {
           mode: "local",
           bind: "loopback",
@@ -147,15 +147,15 @@ describe("Gateway hosted web surfaces", () => {
         {
           ...snapshotGatewayStartupEnv(),
           HOME: root,
-          OPENCLAW_CONFIG_PATH: configPath,
-          OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-          OPENCLAW_HOME: root,
-          OPENCLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
-          OPENCLAW_SKIP_CHANNELS: "1",
-          OPENCLAW_SKIP_CRON: "1",
-          OPENCLAW_SKIP_GMAIL_WATCHER: "1",
-          OPENCLAW_SKIP_PROVIDERS: "1",
-          OPENCLAW_STATE_DIR: stateDir,
+          AFORA_CONFIG_PATH: configPath,
+          AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+          AFORA_HOME: root,
+          AFORA_SKIP_BROWSER_CONTROL_SERVER: "1",
+          AFORA_SKIP_CHANNELS: "1",
+          AFORA_SKIP_CRON: "1",
+          AFORA_SKIP_GMAIL_WATCHER: "1",
+          AFORA_SKIP_PROVIDERS: "1",
+          AFORA_STATE_DIR: stateDir,
         },
         async () => {
           clearConfigCache();
@@ -224,9 +224,9 @@ describe("Gateway hosted web surfaces", () => {
             expect(registry.httpRoutes.map((route) => route.path)).toEqual(
               expect.arrayContaining([
                 "/api/v1/admin/rpc",
-                "/__openclaw__/a2ui",
-                "/__openclaw__/canvas",
-                "/__openclaw__/ws",
+                "/__afora__/a2ui",
+                "/__afora__/canvas",
+                "/__afora__/ws",
               ]),
             );
 
@@ -282,32 +282,32 @@ describe("Gateway hosted web surfaces", () => {
               },
             });
             expect(helloCanvasUrl).toMatch(
-              /^http:\/\/127\.0\.0\.1:\d+\/__openclaw__\/cap\/[^/]+$/u,
+              /^http:\/\/127\.0\.0\.1:\d+\/__afora__\/cap\/[^/]+$/u,
             );
             vi.useRealTimers();
             const scopedCanvasUrl = helloCanvasUrl ?? "";
             const wrongCapabilityUrl = replaceCapability(scopedCanvasUrl, "wrong-capability");
 
             await withEnvAsync({ NODE_ENV: undefined, VITEST: undefined }, async () => {
-              const canvas = await fetch(`${scopedCanvasUrl}/__openclaw__/canvas/`);
+              const canvas = await fetch(`${scopedCanvasUrl}/__afora__/canvas/`);
               expect(canvas.status).toBe(200);
               expect(canvas.headers.get("content-type")).toContain("text/html");
               expect(await canvas.text()).toContain("Gateway hosted Canvas");
 
-              const a2ui = await fetch(`${scopedCanvasUrl}/__openclaw__/a2ui/`);
+              const a2ui = await fetch(`${scopedCanvasUrl}/__afora__/a2ui/`);
               expect(a2ui.status).toBe(200);
               expect(a2ui.headers.get("content-type")).toContain("text/html");
-              expect(await a2ui.text()).toContain("<title>OpenClaw Canvas</title>");
+              expect(await a2ui.text()).toContain("<title>Afora Canvas</title>");
 
-              const a2uiBundle = await fetch(`${scopedCanvasUrl}/__openclaw__/a2ui/a2ui.bundle.js`);
+              const a2uiBundle = await fetch(`${scopedCanvasUrl}/__afora__/a2ui/a2ui.bundle.js`);
               expect(a2uiBundle.status).toBe(200);
               expect(a2uiBundle.headers.get("content-type")).toContain("javascript");
               expect((await a2uiBundle.text()).length).toBeGreaterThan(100);
 
-              const wrongCapability = await fetch(`${wrongCapabilityUrl}/__openclaw__/canvas/`);
+              const wrongCapability = await fetch(`${wrongCapabilityUrl}/__afora__/canvas/`);
               expect(wrongCapability.status).toBe(401);
 
-              const wsUrl = `${scopedCanvasUrl.replace(/^http/u, "ws")}/__openclaw__/ws`;
+              const wsUrl = `${scopedCanvasUrl.replace(/^http/u, "ws")}/__afora__/ws`;
               canvasWs = new WebSocket(wsUrl);
               await waitForWebSocketOpen(canvasWs);
               await triggerCanvasReload(canvasWs, path.join(canvasRoot, "index.html"));
@@ -316,7 +316,7 @@ describe("Gateway hosted web surfaces", () => {
 
               vi.useFakeTimers({ toFake: ["Date"] });
               vi.setSystemTime(capabilityIssuedAtMs + 24 * 60 * 60_000);
-              const expiredCapability = await fetch(`${scopedCanvasUrl}/__openclaw__/canvas/`);
+              const expiredCapability = await fetch(`${scopedCanvasUrl}/__afora__/canvas/`);
               expect(expiredCapability.status).toBe(401);
             });
           } finally {

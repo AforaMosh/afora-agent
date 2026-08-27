@@ -1,19 +1,19 @@
 // Xai plugin module implements tts behavior.
-import { toStringifiedError } from "openclaw/plugin-sdk/error-runtime";
-import { canonicalizeBase64 } from "openclaw/plugin-sdk/media-runtime";
+import { toStringifiedError } from "afora-agent/plugin-sdk/error-runtime";
+import { canonicalizeBase64 } from "afora-agent/plugin-sdk/media-runtime";
 import {
   assertOkOrThrowProviderError,
   postJsonRequest,
   readProviderBinaryResponse,
   readProviderJsonResponse,
-} from "openclaw/plugin-sdk/provider-http";
-import { trimToUndefined, type SpeechVoiceOption } from "openclaw/plugin-sdk/speech";
+} from "afora-agent/plugin-sdk/provider-http";
+import { trimToUndefined, type SpeechVoiceOption } from "afora-agent/plugin-sdk/speech";
 import {
   fetchWithSsrFGuard,
   ssrfPolicyFromHttpBaseUrlAllowedHostname,
-} from "openclaw/plugin-sdk/ssrf-runtime";
-import { asOptionalRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { rawDataToString } from "openclaw/plugin-sdk/webhook-ingress";
+} from "afora-agent/plugin-sdk/ssrf-runtime";
+import { asOptionalRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { rawDataToString } from "afora-agent/plugin-sdk/webhook-ingress";
 import WebSocket from "ws";
 import { XAI_BASE_URL } from "./model-definitions.js";
 import {

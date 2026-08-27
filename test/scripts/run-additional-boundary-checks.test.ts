@@ -133,16 +133,16 @@ describe("run-additional-boundary-checks", () => {
   });
 
   it("rejects malformed timeout and output limit integers", () => {
-    expect(resolvePositiveInteger("25", 50, "OPENCLAW_ADDITIONAL_BOUNDARY_TIMEOUT_MS")).toBe(25);
-    expect(resolvePositiveInteger(undefined, 50, "OPENCLAW_ADDITIONAL_BOUNDARY_TIMEOUT_MS")).toBe(
+    expect(resolvePositiveInteger("25", 50, "AFORA_ADDITIONAL_BOUNDARY_TIMEOUT_MS")).toBe(25);
+    expect(resolvePositiveInteger(undefined, 50, "AFORA_ADDITIONAL_BOUNDARY_TIMEOUT_MS")).toBe(
       50,
     );
     expect(() =>
-      resolvePositiveInteger("1000ms", 50, "OPENCLAW_ADDITIONAL_BOUNDARY_TIMEOUT_MS"),
-    ).toThrow("OPENCLAW_ADDITIONAL_BOUNDARY_TIMEOUT_MS must be a positive integer; got: 1000ms");
+      resolvePositiveInteger("1000ms", 50, "AFORA_ADDITIONAL_BOUNDARY_TIMEOUT_MS"),
+    ).toThrow("AFORA_ADDITIONAL_BOUNDARY_TIMEOUT_MS must be a positive integer; got: 1000ms");
     expect(() =>
-      resolvePositiveInteger("1e3", 50, "OPENCLAW_ADDITIONAL_BOUNDARY_OUTPUT_MAX_BYTES"),
-    ).toThrow("OPENCLAW_ADDITIONAL_BOUNDARY_OUTPUT_MAX_BYTES must be a positive integer; got: 1e3");
+      resolvePositiveInteger("1e3", 50, "AFORA_ADDITIONAL_BOUNDARY_OUTPUT_MAX_BYTES"),
+    ).toThrow("AFORA_ADDITIONAL_BOUNDARY_OUTPUT_MAX_BYTES must be a positive integer; got: 1e3");
   });
 
   it("formats command display text", () => {
@@ -201,7 +201,7 @@ describe("run-additional-boundary-checks", () => {
     expect(parseCliArgs(["--help"], {})).toEqual({ help: true, shardSpec: "" });
     expect(parseCliArgs(["--shard", "2/4"], {})).toEqual({ help: false, shardSpec: "2/4" });
     expect(parseCliArgs(["--shard=3/4"], {})).toEqual({ help: false, shardSpec: "3/4" });
-    expect(parseCliArgs([], { OPENCLAW_ADDITIONAL_BOUNDARY_SHARD: "4/4" })).toEqual({
+    expect(parseCliArgs([], { AFORA_ADDITIONAL_BOUNDARY_SHARD: "4/4" })).toEqual({
       help: false,
       shardSpec: "4/4",
     });
@@ -381,7 +381,7 @@ describe("run-additional-boundary-checks", () => {
   it.skipIf(process.platform === "win32")(
     "waits for timed-out process groups after the wrapper exits",
     async () => {
-      const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-boundary-timeout-"));
+      const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-boundary-timeout-"));
       const childPidPath = path.join(tempDir, "child.pid");
       let childPid: number | undefined;
       try {
@@ -393,7 +393,7 @@ describe("run-additional-boundary-checks", () => {
           "const { spawn } = require('node:child_process');",
           "const fs = require('node:fs');",
           `const child = spawn(process.execPath, ['-e', ${JSON.stringify(childScript)}], { stdio: 'ignore' });`,
-          "fs.writeFileSync(process.env.OPENCLAW_TEST_CHILD_PID, String(child.pid));",
+          "fs.writeFileSync(process.env.AFORA_TEST_CHILD_PID, String(child.pid));",
           "setInterval(() => {}, 1000);",
         ].join("");
 
@@ -406,7 +406,7 @@ describe("run-additional-boundary-checks", () => {
           {
             checkTimeoutMs: 100,
             cwd: process.cwd(),
-            env: { ...process.env, OPENCLAW_TEST_CHILD_PID: childPidPath },
+            env: { ...process.env, AFORA_TEST_CHILD_PID: childPidPath },
             outputMaxBytes: 4096,
           },
         );
@@ -430,7 +430,7 @@ describe("run-additional-boundary-checks", () => {
   it.skipIf(process.platform === "win32")(
     "cleans active check descendants on parent signal",
     async () => {
-      const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-boundary-signal-"));
+      const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-boundary-signal-"));
       const readyPath = path.join(tempDir, "ready");
       const childPidPath = path.join(tempDir, "child.pid");
       let childPid: number | undefined;
@@ -444,8 +444,8 @@ describe("run-additional-boundary-checks", () => {
           "const { spawn } = require('node:child_process');",
           "const fs = require('node:fs');",
           `const child = spawn(process.execPath, ['-e', ${JSON.stringify(childScript)}], { stdio: 'ignore' });`,
-          "fs.writeFileSync(process.env.OPENCLAW_TEST_CHILD_PID, String(child.pid));",
-          "fs.writeFileSync(process.env.OPENCLAW_TEST_READY, 'ready');",
+          "fs.writeFileSync(process.env.AFORA_TEST_CHILD_PID, String(child.pid));",
+          "fs.writeFileSync(process.env.AFORA_TEST_READY, 'ready');",
           "process.on('SIGTERM', () => process.exit(0));",
           "setInterval(() => {}, 1000);",
         ].join("");
@@ -475,8 +475,8 @@ await runChecks(
           cwd: process.cwd(),
           env: {
             ...process.env,
-            OPENCLAW_TEST_CHILD_PID: childPidPath,
-            OPENCLAW_TEST_READY: readyPath,
+            AFORA_TEST_CHILD_PID: childPidPath,
+            AFORA_TEST_READY: readyPath,
           },
           stdio: ["ignore", "ignore", "pipe"],
         });

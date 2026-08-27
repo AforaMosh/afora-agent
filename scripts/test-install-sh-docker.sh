@@ -2,14 +2,14 @@
 set -euo pipefail
 
 HARNESS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ROOT_DIR="${OPENCLAW_INSTALL_SMOKE_SOURCE_DIR:-$HARNESS_ROOT}"
+ROOT_DIR="${AFORA_INSTALL_SMOKE_SOURCE_DIR:-$HARNESS_ROOT}"
 ROOT_DIR="$(cd "$ROOT_DIR" && pwd)"
 # shellcheck source=./docker/install-sh-common/version-parse.sh
 source "$HARNESS_ROOT/scripts/docker/install-sh-common/version-parse.sh"
 source "$HARNESS_ROOT/scripts/lib/docker-build.sh"
 source "$HARNESS_ROOT/scripts/lib/docker-e2e-package.sh"
-DOCKER_COMMAND_TIMEOUT="${DOCKER_COMMAND_TIMEOUT:-${OPENCLAW_INSTALL_SMOKE_DOCKER_COMMAND_TIMEOUT:-600s}}"
-INSTALL_SMOKE_DOCKER_RUN_TIMEOUT="${OPENCLAW_INSTALL_SMOKE_DOCKER_RUN_TIMEOUT:-2700s}"
+DOCKER_COMMAND_TIMEOUT="${DOCKER_COMMAND_TIMEOUT:-${AFORA_INSTALL_SMOKE_DOCKER_COMMAND_TIMEOUT:-600s}}"
+INSTALL_SMOKE_DOCKER_RUN_TIMEOUT="${AFORA_INSTALL_SMOKE_DOCKER_RUN_TIMEOUT:-2700s}"
 
 normalize_npm_pack_json_file() {
   local pack_json_file="$1"
@@ -36,8 +36,8 @@ run_install_smoke_container() {
 
 resolve_default_smoke_platform() {
   local host_arch
-  if [[ -n "${OPENCLAW_INSTALL_SMOKE_PLATFORM:-}" ]]; then
-    printf "%s" "$OPENCLAW_INSTALL_SMOKE_PLATFORM"
+  if [[ -n "${AFORA_INSTALL_SMOKE_PLATFORM:-}" ]]; then
+    printf "%s" "$AFORA_INSTALL_SMOKE_PLATFORM"
     return
   fi
   host_arch="$(uname -m)"
@@ -107,11 +107,11 @@ const label = process.argv[2];
 const packJsonFile = process.argv[3];
 const raw = readFileSync(packJsonFile, "utf8") || "[]";
 const parsed = JSON.parse(raw);
-const budgetOverride = process.env.OPENCLAW_INSTALL_SMOKE_PACK_UNPACKED_BUDGET_BYTES;
+const budgetOverride = process.env.AFORA_INSTALL_SMOKE_PACK_UNPACKED_BUDGET_BYTES;
 const budgetBytes = budgetOverride ? Number(budgetOverride) : undefined;
 if (budgetOverride && !Number.isFinite(budgetBytes)) {
   throw new Error(
-    `OPENCLAW_INSTALL_SMOKE_PACK_UNPACKED_BUDGET_BYTES must be numeric, got ${JSON.stringify(
+    `AFORA_INSTALL_SMOKE_PACK_UNPACKED_BUDGET_BYTES must be numeric, got ${JSON.stringify(
       budgetOverride,
     )}`,
   );
@@ -197,30 +197,30 @@ process.stdout.write(filename);
 ' "$pack_json_file"
 }
 
-SMOKE_IMAGE="${OPENCLAW_INSTALL_SMOKE_IMAGE:-openclaw-install-smoke:local}"
-NONROOT_IMAGE="${OPENCLAW_INSTALL_NONROOT_IMAGE:-openclaw-install-nonroot:local}"
+SMOKE_IMAGE="${AFORA_INSTALL_SMOKE_IMAGE:-afora-install-smoke:local}"
+NONROOT_IMAGE="${AFORA_INSTALL_NONROOT_IMAGE:-afora-install-nonroot:local}"
 SMOKE_PLATFORM="$(resolve_default_smoke_platform)"
-NONROOT_PLATFORM="${OPENCLAW_INSTALL_NONROOT_PLATFORM:-$SMOKE_PLATFORM}"
-INSTALL_URL="${OPENCLAW_INSTALL_URL:-https://openclaw.bot/install.sh}"
-CLI_INSTALL_URL="${OPENCLAW_INSTALL_CLI_URL:-https://openclaw.bot/install-cli.sh}"
-PACKAGE_NAME="${OPENCLAW_INSTALL_PACKAGE:-openclaw}"
-SKIP_NONROOT="${OPENCLAW_INSTALL_SMOKE_SKIP_NONROOT:-0}"
-SKIP_SMOKE_IMAGE_BUILD="${OPENCLAW_INSTALL_SMOKE_SKIP_IMAGE_BUILD:-0}"
-SKIP_NONROOT_IMAGE_BUILD="${OPENCLAW_INSTALL_NONROOT_SKIP_IMAGE_BUILD:-0}"
-SKIP_UPDATE="${OPENCLAW_INSTALL_SMOKE_SKIP_UPDATE:-0}"
-SKIP_NPM_GLOBAL="${OPENCLAW_INSTALL_SMOKE_SKIP_NPM_GLOBAL:-0}"
-SKIP_FRESHNESS="${OPENCLAW_INSTALL_SMOKE_SKIP_FRESHNESS:-0}"
-FRESHNESS_INSTALL_URL="${OPENCLAW_INSTALL_SMOKE_FRESHNESS_INSTALL_URL:-file:///tmp/openclaw-install.sh}"
+NONROOT_PLATFORM="${AFORA_INSTALL_NONROOT_PLATFORM:-$SMOKE_PLATFORM}"
+INSTALL_URL="${AFORA_INSTALL_URL:-https://afora.bot/install.sh}"
+CLI_INSTALL_URL="${AFORA_INSTALL_CLI_URL:-https://afora.bot/install-cli.sh}"
+PACKAGE_NAME="${AFORA_INSTALL_PACKAGE:-afora}"
+SKIP_NONROOT="${AFORA_INSTALL_SMOKE_SKIP_NONROOT:-0}"
+SKIP_SMOKE_IMAGE_BUILD="${AFORA_INSTALL_SMOKE_SKIP_IMAGE_BUILD:-0}"
+SKIP_NONROOT_IMAGE_BUILD="${AFORA_INSTALL_NONROOT_SKIP_IMAGE_BUILD:-0}"
+SKIP_UPDATE="${AFORA_INSTALL_SMOKE_SKIP_UPDATE:-0}"
+SKIP_NPM_GLOBAL="${AFORA_INSTALL_SMOKE_SKIP_NPM_GLOBAL:-0}"
+SKIP_FRESHNESS="${AFORA_INSTALL_SMOKE_SKIP_FRESHNESS:-0}"
+FRESHNESS_INSTALL_URL="${AFORA_INSTALL_SMOKE_FRESHNESS_INSTALL_URL:-file:///tmp/afora-install.sh}"
 # npm min-release-age is days; 10000 keeps the control failure independent of normal release cadence.
-FRESHNESS_MIN_RELEASE_AGE="${OPENCLAW_INSTALL_FRESHNESS_MIN_RELEASE_AGE:-10000}"
-FRESHNESS_NPM_VERSION="${OPENCLAW_INSTALL_FRESHNESS_NPM_VERSION:-11.14.1}"
-UPDATE_BASELINE_VERSION="${OPENCLAW_INSTALL_SMOKE_UPDATE_BASELINE:-latest}"
-UPDATE_PACKAGE_SPEC="${OPENCLAW_INSTALL_SMOKE_UPDATE_PACKAGE_SPEC:-}"
-UPDATE_DIST_IMAGE="${OPENCLAW_INSTALL_SMOKE_UPDATE_DIST_IMAGE:-}"
-UPDATE_SKIP_LOCAL_BUILD="${OPENCLAW_INSTALL_SMOKE_UPDATE_SKIP_LOCAL_BUILD:-0}"
-UPDATE_HOST_ALIAS="${OPENCLAW_INSTALL_SMOKE_UPDATE_HOST:-host.docker.internal}"
-UPDATE_PORT="${OPENCLAW_INSTALL_SMOKE_UPDATE_PORT:-}"
-UPDATE_EXPECT_VERSION="${OPENCLAW_INSTALL_SMOKE_UPDATE_EXPECT_VERSION:-}"
+FRESHNESS_MIN_RELEASE_AGE="${AFORA_INSTALL_FRESHNESS_MIN_RELEASE_AGE:-10000}"
+FRESHNESS_NPM_VERSION="${AFORA_INSTALL_FRESHNESS_NPM_VERSION:-11.14.1}"
+UPDATE_BASELINE_VERSION="${AFORA_INSTALL_SMOKE_UPDATE_BASELINE:-latest}"
+UPDATE_PACKAGE_SPEC="${AFORA_INSTALL_SMOKE_UPDATE_PACKAGE_SPEC:-}"
+UPDATE_DIST_IMAGE="${AFORA_INSTALL_SMOKE_UPDATE_DIST_IMAGE:-}"
+UPDATE_SKIP_LOCAL_BUILD="${AFORA_INSTALL_SMOKE_UPDATE_SKIP_LOCAL_BUILD:-0}"
+UPDATE_HOST_ALIAS="${AFORA_INSTALL_SMOKE_UPDATE_HOST:-host.docker.internal}"
+UPDATE_PORT="${AFORA_INSTALL_SMOKE_UPDATE_PORT:-}"
+UPDATE_EXPECT_VERSION="${AFORA_INSTALL_SMOKE_UPDATE_EXPECT_VERSION:-}"
 LATEST_DIR="$(mktemp -d)"
 LATEST_FILE="${LATEST_DIR}/latest"
 UPDATE_DIR="$(mktemp -d)"
@@ -232,23 +232,23 @@ BASELINE_TAG_URL=""
 FRESH_TAG_URL=""
 UPDATE_TAG_URL=""
 UPDATE_DOCKER_HOST_ARGS=()
-NPM_CACHE_DIR="${OPENCLAW_INSTALL_SMOKE_NPM_CACHE_DIR:-}"
+NPM_CACHE_DIR="${AFORA_INSTALL_SMOKE_NPM_CACHE_DIR:-}"
 NPM_CACHE_OWNED=0
 NPM_CACHE_PREPARED=0
 NPM_CACHE_DOCKER_ARGS=()
 INSTALL_SCRIPT_DOCKER_ARGS=(
-  -v "$ROOT_DIR/scripts/install.sh:/tmp/openclaw-install.sh:ro"
-  -v "$ROOT_DIR/scripts/install-cli.sh:/tmp/openclaw-install-cli.sh:ro"
+  -v "$ROOT_DIR/scripts/install.sh:/tmp/afora-install.sh:ro"
+  -v "$ROOT_DIR/scripts/install-cli.sh:/tmp/afora-install-cli.sh:ro"
 )
 SMOKE_RUNNER_ENV_ARGS=()
 
 for env_name in \
-  OPENCLAW_INSTALL_ALLOW_LEGACY_UPDATE_WARNING \
-  OPENCLAW_INSTALL_SELF_UPDATE_WARNING_FIXED_VERSION \
-  OPENCLAW_INSTALL_SMOKE_COMMAND_TIMEOUT \
-  OPENCLAW_INSTALL_SMOKE_HEARTBEAT_INTERVAL \
-  OPENCLAW_INSTALL_SMOKE_PREVIOUS \
-  OPENCLAW_INSTALL_SMOKE_SKIP_PREVIOUS; do
+  AFORA_INSTALL_ALLOW_LEGACY_UPDATE_WARNING \
+  AFORA_INSTALL_SELF_UPDATE_WARNING_FIXED_VERSION \
+  AFORA_INSTALL_SMOKE_COMMAND_TIMEOUT \
+  AFORA_INSTALL_SMOKE_HEARTBEAT_INTERVAL \
+  AFORA_INSTALL_SMOKE_PREVIOUS \
+  AFORA_INSTALL_SMOKE_SKIP_PREVIOUS; do
   env_value="${!env_name:-}"
   if [[ -n "$env_value" && "$env_value" != "undefined" && "$env_value" != "null" ]]; then
     SMOKE_RUNNER_ENV_ARGS+=(-e "$env_name")
@@ -349,16 +349,16 @@ prepare_update_tarball() {
       --pack-json "$pack_json_file"
       --skip-build
     )
-    if [[ "${OPENCLAW_INSTALL_SMOKE_ALLOW_UNRELEASED_CHANGELOG:-true}" == "true" ]]; then
+    if [[ "${AFORA_INSTALL_SMOKE_ALLOW_UNRELEASED_CHANGELOG:-true}" == "true" ]]; then
       package_args+=(--allow-unreleased-changelog)
     fi
     package_tgz="$(
-      node "$HARNESS_ROOT/scripts/package-openclaw-for-docker.mjs" "${package_args[@]}"
+      node "$HARNESS_ROOT/scripts/package-afora-for-docker.mjs" "${package_args[@]}"
     )"
     UPDATE_TGZ_FILE="$(basename "$package_tgz")"
   fi
   if [[ -z "$UPDATE_PACKAGE_SPEC" ]]; then
-    node "$HARNESS_ROOT/scripts/check-openclaw-package-tarball.mjs" \
+    node "$HARNESS_ROOT/scripts/check-afora-package-tarball.mjs" \
       --require-bundled-workspace-deps \
       "${UPDATE_DIR}/${UPDATE_TGZ_FILE}"
   else
@@ -464,7 +464,7 @@ else
 fi
 
 if [[ "$SKIP_UPDATE" == "1" ]]; then
-  echo "==> Skip update smoke (OPENCLAW_INSTALL_SMOKE_SKIP_UPDATE=1)"
+  echo "==> Skip update smoke (AFORA_INSTALL_SMOKE_SKIP_UPDATE=1)"
 else
   prepare_update_tarball
   prepare_update_host_access
@@ -479,14 +479,14 @@ else
     "${INSTALL_SCRIPT_DOCKER_ARGS[@]}" \
     ${SMOKE_RUNNER_ENV_ARGS[@]+"${SMOKE_RUNNER_ENV_ARGS[@]}"} \
     -v "${LATEST_DIR}:/out" \
-    -e OPENCLAW_INSTALL_URL="$INSTALL_URL" \
-    -e OPENCLAW_INSTALL_PACKAGE="$PACKAGE_NAME" \
-    -e OPENCLAW_INSTALL_METHOD=npm \
-    -e OPENCLAW_INSTALL_FRESH_VERSION="$UPDATE_EXPECT_VERSION" \
-    -e OPENCLAW_INSTALL_FRESH_TAG_URL="$FRESH_TAG_URL" \
-    -e OPENCLAW_INSTALL_LATEST_OUT="/out/latest" \
-    -e OPENCLAW_NO_ONBOARD=1 \
-    -e OPENCLAW_NO_PROMPT=1 \
+    -e AFORA_INSTALL_URL="$INSTALL_URL" \
+    -e AFORA_INSTALL_PACKAGE="$PACKAGE_NAME" \
+    -e AFORA_INSTALL_METHOD=npm \
+    -e AFORA_INSTALL_FRESH_VERSION="$UPDATE_EXPECT_VERSION" \
+    -e AFORA_INSTALL_FRESH_TAG_URL="$FRESH_TAG_URL" \
+    -e AFORA_INSTALL_LATEST_OUT="/out/latest" \
+    -e AFORA_NO_ONBOARD=1 \
+    -e AFORA_NO_PROMPT=1 \
     -e DEBIAN_FRONTEND=noninteractive \
     "$SMOKE_IMAGE"
 
@@ -505,19 +505,19 @@ else
     ${UPDATE_DOCKER_HOST_ARGS[@]+"${UPDATE_DOCKER_HOST_ARGS[@]}"} \
     ${NPM_CACHE_DOCKER_ARGS[@]+"${NPM_CACHE_DOCKER_ARGS[@]}"} \
     ${SMOKE_RUNNER_ENV_ARGS[@]+"${SMOKE_RUNNER_ENV_ARGS[@]}"} \
-    -e OPENCLAW_INSTALL_PACKAGE="$PACKAGE_NAME" \
-    -e OPENCLAW_INSTALL_SMOKE_MODE=update \
-    -e OPENCLAW_INSTALL_UPDATE_BASELINE="$UPDATE_BASELINE_VERSION" \
-    -e OPENCLAW_INSTALL_UPDATE_BASELINE_TAG_URL="$BASELINE_TAG_URL" \
-    -e OPENCLAW_INSTALL_UPDATE_EXPECT_VERSION="$UPDATE_EXPECT_VERSION" \
-    -e OPENCLAW_INSTALL_UPDATE_TAG_URL="$UPDATE_TAG_URL" \
-    -e OPENCLAW_NO_ONBOARD=1 \
-    -e OPENCLAW_NO_PROMPT=1 \
+    -e AFORA_INSTALL_PACKAGE="$PACKAGE_NAME" \
+    -e AFORA_INSTALL_SMOKE_MODE=update \
+    -e AFORA_INSTALL_UPDATE_BASELINE="$UPDATE_BASELINE_VERSION" \
+    -e AFORA_INSTALL_UPDATE_BASELINE_TAG_URL="$BASELINE_TAG_URL" \
+    -e AFORA_INSTALL_UPDATE_EXPECT_VERSION="$UPDATE_EXPECT_VERSION" \
+    -e AFORA_INSTALL_UPDATE_TAG_URL="$UPDATE_TAG_URL" \
+    -e AFORA_NO_ONBOARD=1 \
+    -e AFORA_NO_PROMPT=1 \
     -e DEBIAN_FRONTEND=noninteractive \
     "$SMOKE_IMAGE"
 
   if [[ "$SKIP_NPM_GLOBAL" == "1" ]]; then
-    echo "==> Skip direct npm global smoke (OPENCLAW_INSTALL_SMOKE_SKIP_NPM_GLOBAL=1)"
+    echo "==> Skip direct npm global smoke (AFORA_INSTALL_SMOKE_SKIP_NPM_GLOBAL=1)"
   else
     echo "==> Run direct npm global smoke (${UPDATE_BASELINE_VERSION} -> ${UPDATE_EXPECT_VERSION})"
     run_install_smoke_container --rm -t \
@@ -525,21 +525,21 @@ else
       ${UPDATE_DOCKER_HOST_ARGS[@]+"${UPDATE_DOCKER_HOST_ARGS[@]}"} \
       ${NPM_CACHE_DOCKER_ARGS[@]+"${NPM_CACHE_DOCKER_ARGS[@]}"} \
       ${SMOKE_RUNNER_ENV_ARGS[@]+"${SMOKE_RUNNER_ENV_ARGS[@]}"} \
-      -e OPENCLAW_INSTALL_PACKAGE="$PACKAGE_NAME" \
-      -e OPENCLAW_INSTALL_SMOKE_MODE=npm-global \
-      -e OPENCLAW_INSTALL_UPDATE_BASELINE="$UPDATE_BASELINE_VERSION" \
-      -e OPENCLAW_INSTALL_UPDATE_BASELINE_TAG_URL="$BASELINE_TAG_URL" \
-      -e OPENCLAW_INSTALL_UPDATE_EXPECT_VERSION="$UPDATE_EXPECT_VERSION" \
-      -e OPENCLAW_INSTALL_UPDATE_TAG_URL="$UPDATE_TAG_URL" \
-      -e OPENCLAW_NO_ONBOARD=1 \
-      -e OPENCLAW_NO_PROMPT=1 \
+      -e AFORA_INSTALL_PACKAGE="$PACKAGE_NAME" \
+      -e AFORA_INSTALL_SMOKE_MODE=npm-global \
+      -e AFORA_INSTALL_UPDATE_BASELINE="$UPDATE_BASELINE_VERSION" \
+      -e AFORA_INSTALL_UPDATE_BASELINE_TAG_URL="$BASELINE_TAG_URL" \
+      -e AFORA_INSTALL_UPDATE_EXPECT_VERSION="$UPDATE_EXPECT_VERSION" \
+      -e AFORA_INSTALL_UPDATE_TAG_URL="$UPDATE_TAG_URL" \
+      -e AFORA_NO_ONBOARD=1 \
+      -e AFORA_NO_PROMPT=1 \
       -e DEBIAN_FRONTEND=noninteractive \
       "$SMOKE_IMAGE"
   fi
 fi
 
 if [[ "$SKIP_FRESHNESS" == "1" ]]; then
-  echo "==> Skip installer npm freshness smoke (OPENCLAW_INSTALL_SMOKE_SKIP_FRESHNESS=1)"
+  echo "==> Skip installer npm freshness smoke (AFORA_INSTALL_SMOKE_SKIP_FRESHNESS=1)"
 else
   prepare_npm_cache
   echo "==> Run installer npm freshness smoke"
@@ -548,14 +548,14 @@ else
     ${NPM_CACHE_DOCKER_ARGS[@]+"${NPM_CACHE_DOCKER_ARGS[@]}"} \
     "${INSTALL_SCRIPT_DOCKER_ARGS[@]}" \
     ${SMOKE_RUNNER_ENV_ARGS[@]+"${SMOKE_RUNNER_ENV_ARGS[@]}"} \
-    -e OPENCLAW_INSTALL_URL="$FRESHNESS_INSTALL_URL" \
-    -e OPENCLAW_INSTALL_PACKAGE="$PACKAGE_NAME" \
-    -e OPENCLAW_INSTALL_SMOKE_MODE=freshness \
-    -e OPENCLAW_INSTALL_FRESHNESS_VERSION="${OPENCLAW_INSTALL_FRESHNESS_VERSION:-latest}" \
-    -e OPENCLAW_INSTALL_FRESHNESS_MIN_RELEASE_AGE="$FRESHNESS_MIN_RELEASE_AGE" \
-    -e OPENCLAW_INSTALL_FRESHNESS_NPM_VERSION="$FRESHNESS_NPM_VERSION" \
-    -e OPENCLAW_NO_ONBOARD=1 \
-    -e OPENCLAW_NO_PROMPT=1 \
+    -e AFORA_INSTALL_URL="$FRESHNESS_INSTALL_URL" \
+    -e AFORA_INSTALL_PACKAGE="$PACKAGE_NAME" \
+    -e AFORA_INSTALL_SMOKE_MODE=freshness \
+    -e AFORA_INSTALL_FRESHNESS_VERSION="${AFORA_INSTALL_FRESHNESS_VERSION:-latest}" \
+    -e AFORA_INSTALL_FRESHNESS_MIN_RELEASE_AGE="$FRESHNESS_MIN_RELEASE_AGE" \
+    -e AFORA_INSTALL_FRESHNESS_NPM_VERSION="$FRESHNESS_NPM_VERSION" \
+    -e AFORA_NO_ONBOARD=1 \
+    -e AFORA_NO_PROMPT=1 \
     -e DEBIAN_FRONTEND=noninteractive \
     "$SMOKE_IMAGE"
 fi
@@ -563,7 +563,7 @@ fi
 LATEST_VERSION="${LATEST_VERSION:-}"
 
 if [[ "$SKIP_NONROOT" == "1" ]]; then
-  echo "==> Skip non-root installer smoke (OPENCLAW_INSTALL_SMOKE_SKIP_NONROOT=1)"
+  echo "==> Skip non-root installer smoke (AFORA_INSTALL_SMOKE_SKIP_NONROOT=1)"
 else
   if [[ "$SKIP_NONROOT_IMAGE_BUILD" == "1" ]]; then
     echo "==> Reuse prebuilt non-root image: $NONROOT_IMAGE"
@@ -580,18 +580,18 @@ else
   run_install_smoke_container --rm -t \
     --platform "$NONROOT_PLATFORM" \
     "${INSTALL_SCRIPT_DOCKER_ARGS[@]}" \
-    -e OPENCLAW_INSTALL_URL="$INSTALL_URL" \
-    -e OPENCLAW_INSTALL_PACKAGE="$PACKAGE_NAME" \
-    -e OPENCLAW_INSTALL_METHOD=npm \
-    -e OPENCLAW_INSTALL_EXPECT_VERSION="$LATEST_VERSION" \
-    -e OPENCLAW_NO_ONBOARD=1 \
-    -e OPENCLAW_NO_PROMPT=1 \
+    -e AFORA_INSTALL_URL="$INSTALL_URL" \
+    -e AFORA_INSTALL_PACKAGE="$PACKAGE_NAME" \
+    -e AFORA_INSTALL_METHOD=npm \
+    -e AFORA_INSTALL_EXPECT_VERSION="$LATEST_VERSION" \
+    -e AFORA_NO_ONBOARD=1 \
+    -e AFORA_NO_PROMPT=1 \
     -e DEBIAN_FRONTEND=noninteractive \
     "$NONROOT_IMAGE"
 fi
 
-if [[ "${OPENCLAW_INSTALL_SMOKE_SKIP_CLI:-0}" == "1" ]]; then
-  echo "==> Skip CLI installer smoke (OPENCLAW_INSTALL_SMOKE_SKIP_CLI=1)"
+if [[ "${AFORA_INSTALL_SMOKE_SKIP_CLI:-0}" == "1" ]]; then
+  echo "==> Skip CLI installer smoke (AFORA_INSTALL_SMOKE_SKIP_CLI=1)"
   exit 0
 fi
 
@@ -605,9 +605,9 @@ run_install_smoke_container --rm -t \
   --platform "$NONROOT_PLATFORM" \
   --entrypoint /bin/bash \
   "${INSTALL_SCRIPT_DOCKER_ARGS[@]}" \
-  -e OPENCLAW_INSTALL_URL="$INSTALL_URL" \
-  -e OPENCLAW_INSTALL_CLI_URL="$CLI_INSTALL_URL" \
-  -e OPENCLAW_NO_ONBOARD=1 \
-  -e OPENCLAW_NO_PROMPT=1 \
+  -e AFORA_INSTALL_URL="$INSTALL_URL" \
+  -e AFORA_INSTALL_CLI_URL="$CLI_INSTALL_URL" \
+  -e AFORA_NO_ONBOARD=1 \
+  -e AFORA_NO_PROMPT=1 \
   -e DEBIAN_FRONTEND=noninteractive \
-  "$NONROOT_IMAGE" -lc 'set -o pipefail; curl -fsSL --connect-timeout 30 --max-time 300 -- "$OPENCLAW_INSTALL_CLI_URL" | bash -s -- --set-npm-prefix --no-onboard'
+  "$NONROOT_IMAGE" -lc 'set -o pipefail; curl -fsSL --connect-timeout 30 --max-time 300 -- "$AFORA_INSTALL_CLI_URL" | bash -s -- --set-npm-prefix --no-onboard'

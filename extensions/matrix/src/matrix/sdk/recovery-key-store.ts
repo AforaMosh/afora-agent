@@ -1,7 +1,7 @@
 import path from "node:path";
 // Matrix plugin module implements recovery key store behavior.
 import { decodeRecoveryKey } from "matrix-js-sdk/lib/crypto-api/recovery-key.js";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import {
   migrateLegacyMatrixRecoveryKeyFilePathToStore,
   readLegacyMatrixRecoveryKeyFile,

@@ -1,7 +1,7 @@
 // Sends session maintenance warnings before warn-only cleanup.
 import type { SessionMaintenanceWarning } from "../config/sessions/store-maintenance.js";
 import type { SessionEntry } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { createLazyPromiseLoader } from "../shared/lazy-runtime.js";
 import { deliveryContextFromSession } from "../utils/delivery-context.shared.js";
@@ -14,7 +14,7 @@ import { enqueueSystemEvent } from "./system-events.js";
 // Session maintenance warnings notify an active session before warn-only
 // cleanup would prune it, with per-session dedupe and system-event fallback.
 type WarningParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
   entry: SessionEntry;
   warning: SessionMaintenanceWarning;

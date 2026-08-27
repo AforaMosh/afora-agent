@@ -1,5 +1,5 @@
 // Discord tests cover exec approvals plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import {
   getDiscordExecApprovalApprovers,
@@ -8,9 +8,9 @@ import {
 } from "./exec-approvals.js";
 
 function buildConfig(
-  execApprovals?: NonNullable<NonNullable<OpenClawConfig["channels"]>["discord"]>["execApprovals"],
-  channelOverrides?: Partial<NonNullable<NonNullable<OpenClawConfig["channels"]>["discord"]>>,
-): OpenClawConfig {
+  execApprovals?: NonNullable<NonNullable<AforaConfig["channels"]>["discord"]>["execApprovals"],
+  channelOverrides?: Partial<NonNullable<NonNullable<AforaConfig["channels"]>["discord"]>>,
+): AforaConfig {
   return {
     channels: {
       discord: {
@@ -19,7 +19,7 @@ function buildConfig(
         execApprovals,
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 describe("discord exec approvals", () => {
@@ -40,7 +40,7 @@ describe("discord exec approvals", () => {
         cfg: {
           ...buildConfig(),
           commands: { ownerAllowFrom: ["discord:789"] },
-        } as OpenClawConfig,
+        } as AforaConfig,
       }),
     ).toBe(false);
     expect(
@@ -80,7 +80,7 @@ describe("discord exec approvals", () => {
     const cfg = {
       ...buildConfig(),
       commands: { ownerAllowFrom: ["discord:123", "user:456", "789"] },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(getDiscordExecApprovalApprovers({ cfg })).toEqual(["123", "456", "789"]);
     expect(isDiscordExecApprovalApprover({ cfg, senderId: "456" })).toBe(true);

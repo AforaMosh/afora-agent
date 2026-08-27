@@ -4,28 +4,28 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import {
-  resolvePreferredOpenClawTmpDir,
+  resolvePreferredAforaTmpDir,
   tempWorkspace,
   type TempWorkspace,
-} from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/temp-path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { OPENCLAW_CODEX_CONFIG_ARG } from "./codex-adapter.js";
+import { AFORA_CODEX_CONFIG_ARG } from "./codex-adapter.js";
 import { prepareAcpxCodexAuthConfig } from "./codex-auth-bridge.js";
 import { resolveAcpxPluginConfig } from "./config.js";
-import { OPENCLAW_ACPX_LEASE_ID_ARG, OPENCLAW_GATEWAY_INSTANCE_ID_ARG } from "./process-lease.js";
+import { AFORA_ACPX_LEASE_ID_ARG, AFORA_GATEWAY_INSTANCE_ID_ARG } from "./process-lease.js";
 
 const execFileAsync = promisify(execFile);
 const WRAPPER_STDERR_LOG_MAX_CHARS = 256 * 1024;
 let testWorkspace: TempWorkspace;
 const previousEnv = {
   CODEX_HOME: process.env.CODEX_HOME,
-  OPENCLAW_AGENT_DIR: process.env.OPENCLAW_AGENT_DIR,
+  AFORA_AGENT_DIR: process.env.AFORA_AGENT_DIR,
 };
 
 beforeEach(async () => {
   testWorkspace = await tempWorkspace({
-    rootDir: resolvePreferredOpenClawTmpDir(),
-    prefix: "openclaw-acpx-codex-auth-",
+    rootDir: resolvePreferredAforaTmpDir(),
+    prefix: "afora-acpx-codex-auth-",
   });
 });
 
@@ -116,12 +116,12 @@ async function captureGeneratedCodexWrapperStderr(
     process.execPath,
     [
       generated.wrapperPath,
-      "--openclaw-run-configured",
+      "--afora-run-configured",
       process.execPath,
       stderrScript,
-      OPENCLAW_ACPX_LEASE_ID_ARG,
+      AFORA_ACPX_LEASE_ID_ARG,
       leaseId,
-      OPENCLAW_GATEWAY_INSTANCE_ID_ARG,
+      AFORA_GATEWAY_INSTANCE_ID_ARG,
       "gateway-test",
     ],
     { maxBuffer: WRAPPER_STDERR_LOG_MAX_CHARS * 2 },
@@ -141,12 +141,12 @@ async function captureGeneratedCodexWrapperStderr(
 afterEach(async () => {
   vi.restoreAllMocks();
   restoreEnv("CODEX_HOME");
-  restoreEnv("OPENCLAW_AGENT_DIR");
+  restoreEnv("AFORA_AGENT_DIR");
   await testWorkspace.cleanup();
 });
 
 describe("prepareAcpxCodexAuthConfig", () => {
-  it("installs an isolated Codex ACP wrapper without synthesizing auth from canonical OpenClaw OAuth", async () => {
+  it("installs an isolated Codex ACP wrapper without synthesizing auth from canonical Afora OAuth", async () => {
     const root = testWorkspace.dir;
     const agentDir = path.join(root, "agent");
     const stateDir = path.join(root, "state");
@@ -160,7 +160,7 @@ describe("prepareAcpxCodexAuthConfig", () => {
       "dist",
       "index.js",
     );
-    process.env.OPENCLAW_AGENT_DIR = agentDir;
+    process.env.AFORA_AGENT_DIR = agentDir;
 
     const pluginConfig = resolveAcpxPluginConfig({
       rawConfig: {},
@@ -355,13 +355,13 @@ describe("prepareAcpxCodexAuthConfig", () => {
       process.execPath,
       [
         generated.wrapperPath,
-        "--openclaw-acpx-lease-id",
+        "--afora-acpx-lease-id",
         "lease-1",
-        "--openclaw-gateway-instance-id",
+        "--afora-gateway-instance-id",
         "gateway-1",
-        OPENCLAW_CODEX_CONFIG_ARG,
+        AFORA_CODEX_CONFIG_ARG,
         JSON.stringify({ model_providers: { custom: { wire_api: "responses" } } }),
-        OPENCLAW_CODEX_CONFIG_ARG,
+        AFORA_CODEX_CONFIG_ARG,
         JSON.stringify({ model: "gpt-5.6-sol", model_reasoning_effort: "medium" }),
       ],
       {
@@ -582,7 +582,7 @@ describe("prepareAcpxCodexAuthConfig", () => {
       ].join("\n"),
     );
     process.env.CODEX_HOME = sourceCodexHome;
-    process.env.OPENCLAW_AGENT_DIR = agentDir;
+    process.env.AFORA_AGENT_DIR = agentDir;
 
     const pluginConfig = resolveAcpxPluginConfig({
       rawConfig: {},
@@ -748,14 +748,14 @@ describe("prepareAcpxCodexAuthConfig", () => {
     });
 
     const wrapperArgs = [
-      OPENCLAW_ACPX_LEASE_ID_ARG,
+      AFORA_ACPX_LEASE_ID_ARG,
       "quiet-lease",
-      OPENCLAW_GATEWAY_INSTANCE_ID_ARG,
+      AFORA_GATEWAY_INSTANCE_ID_ARG,
       "gateway-test",
     ];
     await execFileAsync(process.execPath, [
       generated.wrapperPath,
-      "--openclaw-run-configured",
+      "--afora-run-configured",
       process.execPath,
       noisyScript,
       ...wrapperArgs,
@@ -765,7 +765,7 @@ describe("prepareAcpxCodexAuthConfig", () => {
 
     await execFileAsync(process.execPath, [
       generated.wrapperPath,
-      "--openclaw-run-configured",
+      "--afora-run-configured",
       process.execPath,
       quietScript,
       ...wrapperArgs,
@@ -794,12 +794,12 @@ describe("prepareAcpxCodexAuthConfig", () => {
     await expect(
       execFileAsync(process.execPath, [
         generated.wrapperPath,
-        "--openclaw-run-configured",
+        "--afora-run-configured",
         process.execPath,
         quietScript,
-        OPENCLAW_ACPX_LEASE_ID_ARG,
+        AFORA_ACPX_LEASE_ID_ARG,
         "blocked-lease",
-        OPENCLAW_GATEWAY_INSTANCE_ID_ARG,
+        AFORA_GATEWAY_INSTANCE_ID_ARG,
         "gateway-test",
       ]),
     ).resolves.toMatchObject({ stderr: "" });

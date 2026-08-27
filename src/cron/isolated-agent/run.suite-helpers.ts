@@ -14,7 +14,7 @@ export function setupRunCronIsolatedAgentTurnSuite(options?: { fast?: boolean })
   beforeEach(() => {
     previousFastTestEnv = clearFastTestEnv();
     if (options?.fast) {
-      process.env.OPENCLAW_TEST_FAST = "1";
+      process.env.AFORA_TEST_FAST = "1";
     }
     resetRunCronIsolatedAgentTurnHarness();
     resolveCronSessionMock.mockReturnValue(makeCronSession());

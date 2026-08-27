@@ -78,7 +78,7 @@ async function createEscapedBundledSkillFixture(params?: {
 }
 
 beforeAll(async () => {
-  tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-skills-containment-"));
+  tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-skills-containment-"));
   fakeHome = path.join(tempRoot, "home");
   await fs.mkdir(fakeHome, { recursive: true });
   envSnapshot = setMockSkillsHomeEnv(fakeHome);
@@ -133,7 +133,7 @@ describe("skill path containment", () => {
       const warningLine = firstWarningLine(warn);
       expect(warningLine).toContain("Skipping escaped skill path outside its configured root:");
       expect(warningLine).toContain("reason=symlink-escape");
-      expect(warningLine).toContain("source=openclaw-workspace");
+      expect(warningLine).toContain("source=afora-workspace");
       expect(warningLine).toContain(`root=${path.join(workspaceDir, "skills")}`);
       expect(warningLine).toContain(`requested=${requestedPath}`);
       expect(warningLine).toContain("resolved=");
@@ -236,7 +236,7 @@ describe("skill path containment", () => {
         expect(entries.map((entry) => entry.skill.name)).not.toContain(skillName);
         const warningLine = firstWarningLine(warn);
         expect(warningLine).toContain("Skipping escaped skill path outside its configured root:");
-        expect(warningLine).toContain("source=openclaw-managed");
+        expect(warningLine).toContain("source=afora-managed");
         expect(warningLine).toContain("reason=symlink-escape");
       } finally {
         await fs.unlink(symlinkPath).catch(() => undefined);
@@ -257,7 +257,7 @@ describe("skill path containment", () => {
       expect(entries.map((entry) => entry.skill.name)).not.toContain("outside-bundled-skill");
       const warningLine = firstWarningLine(warn);
       expect(warningLine).toContain("Skipping escaped skill path outside its configured root:");
-      expect(warningLine).toContain("source=openclaw-bundled");
+      expect(warningLine).toContain("source=afora-bundled");
       expect(warningLine).toContain("reason=bundled-symlink-escape");
       expect(warningLine).toContain("hint=likely-stray-local-symlink-or-checkout-mutation");
       expect(warningLine).toContain(`requested=${requestedPath}`);

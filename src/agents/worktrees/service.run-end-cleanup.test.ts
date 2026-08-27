@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import {
   getRegistryWorktree,
   listRegistryWorktrees,
@@ -35,16 +35,16 @@ describe("ManagedWorktreeService run-end cleanup outcomes", () => {
   const now = 1_700_000_000_000;
 
   beforeEach(async () => {
-    root = await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()), "openclaw-run-end-cleanup-"));
+    root = await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()), "afora-run-end-cleanup-"));
     repo = await initializeManagedWorktreeTestRepository(root);
     stateDir = path.join(root, "state");
-    env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    env = { ...process.env, AFORA_STATE_DIR: stateDir };
     service = new ManagedWorktreeService({ env, now: () => now });
   });
 
   afterEach(async () => {
     runLeaseTesting.resetForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await fs.rm(root, { recursive: true, force: true });
   });
 
@@ -77,7 +77,7 @@ describe("ManagedWorktreeService run-end cleanup outcomes", () => {
     ).rejects.toThrow("authority closed");
 
     expect(await git(repo, "worktree", "list", "--porcelain")).not.toContain("closed-authority");
-    expect(await git(repo, "branch", "--list", "openclaw/closed-authority")).toBe("");
+    expect(await git(repo, "branch", "--list", "afora-agent/closed-authority")).toBe("");
     expect(listRegistryWorktrees(env)).toEqual([]);
   });
 

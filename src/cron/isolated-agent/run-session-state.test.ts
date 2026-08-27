@@ -384,7 +384,7 @@ describe("createPersistCronSessionEntry", () => {
   });
 
   it("restores resumable cron fields once the transcript exists", async () => {
-    const dir = makeTempDir(cronSessionTempDirs, "openclaw-cron-session-");
+    const dir = makeTempDir(cronSessionTempDirs, "afora-cron-session-");
     const storePath = path.join(dir, "sessions.json");
     await appendTranscriptMessage(
       {

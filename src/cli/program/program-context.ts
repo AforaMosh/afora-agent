@@ -2,7 +2,7 @@
 import type { Command } from "commander";
 import type { ProgramContext } from "./context.js";
 
-const PROGRAM_CONTEXT_SYMBOL: unique symbol = Symbol.for("openclaw.cli.programContext");
+const PROGRAM_CONTEXT_SYMBOL: unique symbol = Symbol.for("afora.cli.programContext");
 
 /** Attach the current root ProgramContext to a Commander program. */
 export function setProgramContext(program: Command, ctx: ProgramContext): void {

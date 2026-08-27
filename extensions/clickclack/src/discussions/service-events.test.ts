@@ -1,14 +1,14 @@
 import type {
-  OpenClawPluginGatewayEvents,
-  OpenClawPluginSessionsChangedEvent,
-} from "openclaw/plugin-sdk/core";
+  AforaPluginGatewayEvents,
+  AforaPluginSessionsChangedEvent,
+} from "afora-agent/plugin-sdk/core";
 import { describe, expect, it, vi } from "vitest";
 import type { ClickClackDiscussionBinding } from "./binding-store.js";
 import { resolveClickClackDiscussionRoute } from "./routing.js";
 import { createHarness } from "./service-test-support.js";
 
 function createGatewayEventsHarness() {
-  const handlers = new Set<(event: OpenClawPluginSessionsChangedEvent) => void>();
+  const handlers = new Set<(event: AforaPluginSessionsChangedEvent) => void>();
   const unsubscribe = vi.fn();
   const gatewayEvents = {
     emit: vi.fn(),
@@ -24,11 +24,11 @@ function createGatewayEventsHarness() {
         unsubscribe();
       };
     }),
-  } satisfies OpenClawPluginGatewayEvents;
+  } satisfies AforaPluginGatewayEvents;
   return {
     gatewayEvents,
     unsubscribe,
-    emit(event: OpenClawPluginSessionsChangedEvent) {
+    emit(event: AforaPluginSessionsChangedEvent) {
       for (const handler of handlers) {
         handler(event);
       }

@@ -1,7 +1,7 @@
 // Matrix plugin module implements crypto bootstrap behavior.
 import { setTimeout as sleep } from "node:timers/promises";
 import { CryptoEvent } from "matrix-js-sdk/lib/crypto-api/CryptoEvent.js";
-import { toStringifiedError } from "openclaw/plugin-sdk/error-runtime";
+import { toStringifiedError } from "afora-agent/plugin-sdk/error-runtime";
 import type { MatrixDecryptBridge } from "./decrypt-bridge.js";
 import { LogService } from "./logger.js";
 import type { MatrixRecoveryKeyStore } from "./recovery-key-store.js";

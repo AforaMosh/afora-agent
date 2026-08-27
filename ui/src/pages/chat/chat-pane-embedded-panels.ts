@@ -83,28 +83,28 @@ export function sidebarPanelDefinitions(
   });
   const terminal =
     state && terminalAvailable
-      ? html`<openclaw-terminal-panel
+      ? html`<afora-terminal-panel
           embedded
           .client=${state.connected ? state.client : null}
           .available=${state.terminalAvailable}
           .agentId=${params?.agentId ?? null}
           .themeMode=${document.documentElement.dataset.theme === "light" ? "light" : "dark"}
           .basePath=${state.basePath}
-        ></openclaw-terminal-panel>`
+        ></afora-terminal-panel>`
       : null;
   const browser =
     state && browserAvailable
-      ? html`<openclaw-browser-panel
+      ? html`<afora-browser-panel
           embedded
           data-chat-autotype-exempt
           .client=${state.connected ? state.client : null}
           .available=${state.browserPanelAvailable}
           .basePath=${state.basePath}
           .authToken=${resolveAssistantAttachmentAuthToken(state)}
-        ></openclaw-browser-panel>`
+        ></afora-browser-panel>`
       : null;
   const companion = params
-    ? html`<openclaw-chat-session-rail
+    ? html`<afora-chat-session-rail
         embedded
         .sessionKey=${state?.sessionKey}
         .digest=${params.digest}
@@ -119,26 +119,26 @@ export function sidebarPanelDefinitions(
         .onSubmit=${params.onCompanionSubmit}
         .onDraftChange=${params.onCompanionDraftChange}
         .onVisibilityChange=${params.onCompanionVisibilityChange}
-      ></openclaw-chat-session-rail>`
+      ></afora-chat-session-rail>`
     : null;
   const desktop =
     state && desktopAvailable
-      ? html`<openclaw-desktop-panel
+      ? html`<afora-desktop-panel
           embedded
           data-chat-autotype-exempt
           .client=${state.connected ? state.client : null}
           .available=${desktopAvailable}
-        ></openclaw-desktop-panel>`
+        ></afora-desktop-panel>`
       : null;
   const discussion = params?.discussion
-    ? html`<openclaw-session-discussion
+    ? html`<afora-session-discussion
         .sessionKey=${params.discussion.sessionKey}
         .canOpen=${params.discussion.canOpen}
         .sourceGeneration=${params.discussionSourceGeneration}
         .loadInfo=${params.discussion.loadInfo}
         .openDiscussion=${params.discussion.openDiscussion}
         .onStateChange=${params.discussion.onStateChange}
-      ></openclaw-session-discussion>`
+      ></afora-session-discussion>`
     : null;
   const detailContent =
     state?.sidebarContent ??

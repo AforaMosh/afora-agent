@@ -87,7 +87,7 @@ async fn run_listener_on_connection(
 
 async fn acquire_inhibitor(proxy: &Login1ManagerProxy<'_>) -> Result<OwnedFd, String> {
     proxy
-        .inhibit("sleep", "OpenClaw", "Suspending local gateway", "delay")
+        .inhibit("sleep", "Afora", "Suspending local gateway", "delay")
         .await
         .map_err(|error| format!("could not acquire the logind sleep inhibitor: {error}"))
 }

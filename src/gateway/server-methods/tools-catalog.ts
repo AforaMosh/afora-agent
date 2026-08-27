@@ -1,5 +1,5 @@
 // Gateway RPC handler for the tool catalog shown by clients and Control UI.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   type ToolsCatalogResult,
   validateToolsCatalogParams,
@@ -12,7 +12,7 @@ import {
   resolveCoreToolProfiles,
 } from "../../agents/tool-catalog.js";
 import { summarizeToolDescriptionText } from "../../agents/tool-description-summary.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { PluginRegistry } from "../../plugins/registry-types.js";
 import { getActivePluginRegistry } from "../../plugins/runtime.js";
 import {
@@ -45,7 +45,7 @@ type ToolCatalogGroup = {
   tools: ToolCatalogEntry[];
 };
 
-function buildCoreGroups(params: { cfg: OpenClawConfig; agentId: string }): ToolCatalogGroup[] {
+function buildCoreGroups(params: { cfg: AforaConfig; agentId: string }): ToolCatalogGroup[] {
   // Core catalog rows come from static tool sections so profile chips remain
   // stable even before any runtime agent session exists.
   const swarmEnabled = resolveSwarmConfig(params.cfg, params.agentId).enabled;
@@ -64,7 +64,7 @@ function buildCoreGroups(params: { cfg: OpenClawConfig; agentId: string }): Tool
 }
 
 function buildPluginGroups(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   existingToolNames: Set<string>;
 }): ToolCatalogGroup[] {
@@ -191,7 +191,7 @@ function buildPluginGroups(params: {
 
 /** Build the merged core/plugin tool catalog for one agent. */
 function buildToolsCatalogResult(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   includePlugins?: boolean;
 }): ToolsCatalogResult {

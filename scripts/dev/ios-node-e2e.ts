@@ -1,6 +1,6 @@
-// Ios Node E2E script supports OpenClaw repository automation.
+// Ios Node E2E script supports Afora repository automation.
 import { randomUUID } from "node:crypto";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import {
   MIN_CLIENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION,
@@ -21,7 +21,7 @@ function writeStderrLine(message: string): void {
 function usage(): string {
   return [
     "Usage: bun scripts/dev/ios-node-e2e.ts --url <wss://host[:port]> --token <gateway.auth.token> [options]",
-    "Or set env: OPENCLAW_GATEWAY_URL / OPENCLAW_GATEWAY_TOKEN",
+    "Or set env: AFORA_GATEWAY_URL / AFORA_GATEWAY_TOKEN",
     "",
     "Options:",
     "  --node <id|name-substring>  Select a connected iOS node",
@@ -89,10 +89,10 @@ type NodeListPayload = {
 
 type NodeListNode = NonNullable<NodeListPayload["nodes"]>[number];
 
-const urlRaw = getArg("--url") ?? process.env.OPENCLAW_GATEWAY_URL;
-const token = getArg("--token") ?? process.env.OPENCLAW_GATEWAY_TOKEN;
+const urlRaw = getArg("--url") ?? process.env.AFORA_GATEWAY_URL;
+const token = getArg("--token") ?? process.env.AFORA_GATEWAY_TOKEN;
 const nodeHint = getArg("--node");
-const dangerous = hasFlag("--dangerous") || process.env.OPENCLAW_RUN_DANGEROUS === "1";
+const dangerous = hasFlag("--dangerous") || process.env.AFORA_RUN_DANGEROUS === "1";
 const jsonOut = hasFlag("--json");
 
 if (!urlRaw || !token) {
@@ -217,11 +217,11 @@ async function main() {
     maxProtocol: PROTOCOL_VERSION,
     client: {
       id: "cli",
-      displayName: "openclaw ios node e2e",
+      displayName: "afora ios node e2e",
       version: "dev",
       platform: "dev",
       mode: "cli",
-      instanceId: "openclaw-dev-ios-node-e2e",
+      instanceId: "afora-dev-ios-node-e2e",
     },
     locale: "en-US",
     userAgent: "ios-node-e2e",
@@ -278,7 +278,7 @@ async function main() {
     {
       id: "system.notify",
       command: "system.notify",
-      params: { title: "OpenClaw E2E", body: `ios-node-e2e @ ${isoNow()}`, delivery: "system" },
+      params: { title: "Afora E2E", body: `ios-node-e2e @ ${isoNow()}`, delivery: "system" },
     },
     {
       id: "contacts.search",

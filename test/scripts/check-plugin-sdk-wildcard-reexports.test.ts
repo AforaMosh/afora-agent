@@ -13,18 +13,18 @@ describe("check-plugin-sdk-wildcard-reexports", () => {
     expect(
       findPluginSdkWildcardReexports(
         [
-          'export * from "openclaw/plugin-sdk/foo";',
-          'export * as sdk from "openclaw/plugin-sdk/foo";',
-          'export type * from "openclaw/plugin-sdk/bar";',
-          'export type * as sdkTypes from "openclaw/plugin-sdk/bar";',
-          'export { named } from "openclaw/plugin-sdk/foo";',
+          'export * from "afora-agent/plugin-sdk/foo";',
+          'export * as sdk from "afora-agent/plugin-sdk/foo";',
+          'export type * from "afora-agent/plugin-sdk/bar";',
+          'export type * as sdkTypes from "afora-agent/plugin-sdk/bar";',
+          'export { named } from "afora-agent/plugin-sdk/foo";',
         ].join("\n"),
       ),
     ).toEqual([
-      { line: 1, text: 'export * from "openclaw/plugin-sdk/foo";' },
-      { line: 2, text: 'export * as sdk from "openclaw/plugin-sdk/foo";' },
-      { line: 3, text: 'export type * from "openclaw/plugin-sdk/bar";' },
-      { line: 4, text: 'export type * as sdkTypes from "openclaw/plugin-sdk/bar";' },
+      { line: 1, text: 'export * from "afora-agent/plugin-sdk/foo";' },
+      { line: 2, text: 'export * as sdk from "afora-agent/plugin-sdk/foo";' },
+      { line: 3, text: 'export type * from "afora-agent/plugin-sdk/bar";' },
+      { line: 4, text: 'export type * as sdkTypes from "afora-agent/plugin-sdk/bar";' },
     ]);
   });
 
@@ -32,8 +32,8 @@ describe("check-plugin-sdk-wildcard-reexports", () => {
     expect(
       findPluginSdkWildcardReexports(
         [
-          'export { named } from "openclaw/plugin-sdk/foo";',
-          'export type { Named } from "openclaw/plugin-sdk/foo";',
+          'export { named } from "afora-agent/plugin-sdk/foo";',
+          'export type { Named } from "afora-agent/plugin-sdk/foo";',
           'export * from "./src/runtime-api.js";',
           'export * as runtime from "./src/runtime-api.js";',
         ].join("\n"),
@@ -42,7 +42,7 @@ describe("check-plugin-sdk-wildcard-reexports", () => {
   });
 
   it("follows extension-root API barrel symlinks", () => {
-    const root = tempDirs.make("openclaw-plugin-sdk-wildcard-");
+    const root = tempDirs.make("afora-plugin-sdk-wildcard-");
     const scriptsDir = path.join(root, "scripts");
     const scriptsLibDir = path.join(scriptsDir, "lib");
     const extensionDir = path.join(root, "extensions", "fixture");
@@ -62,7 +62,7 @@ describe("check-plugin-sdk-wildcard-reexports", () => {
     }
     writeFileSync(
       path.join(extensionDir, "actual-api.ts"),
-      'export * from "openclaw/plugin-sdk/foo";\n',
+      'export * from "afora-agent/plugin-sdk/foo";\n',
     );
     symlinkSync("actual-api.ts", path.join(extensionDir, "api.ts"));
 
@@ -82,7 +82,7 @@ describe("check-plugin-sdk-wildcard-reexports", () => {
       {
         file: "extensions/fixture/api.ts",
         line: 1,
-        text: 'export * from "openclaw/plugin-sdk/foo";',
+        text: 'export * from "afora-agent/plugin-sdk/foo";',
       },
     ]);
   });

@@ -17,8 +17,8 @@ describe("resolveGatewayTokenForUrlEdit", () => {
   it("preserves the current token for same normalized gateway endpoint edits", () => {
     expect(
       resolveGatewayTokenForUrlEdit(
-        "wss://gateway.example/openclaw",
-        " wss://gateway.example/openclaw/ ",
+        "wss://gateway.example/afora",
+        " wss://gateway.example/afora/ ",
         "abc123",
       ),
     ).toBe("abc123");
@@ -27,14 +27,14 @@ describe("resolveGatewayTokenForUrlEdit", () => {
   it("loads a scoped token when the normalized gateway endpoint changes", () => {
     vi.stubGlobal("sessionStorage", createStorageMock());
     sessionStorage.setItem(
-      "openclaw.control.token.v1:wss://other-gateway.example/openclaw",
+      "afora.control.token.v1:wss://other-gateway.example/afora",
       "other-token",
     );
 
     expect(
       resolveGatewayTokenForUrlEdit(
-        "wss://gateway.example/openclaw",
-        "wss://other-gateway.example/openclaw/",
+        "wss://gateway.example/afora",
+        "wss://other-gateway.example/afora/",
         "abc123",
       ),
     ).toBe("other-token");
@@ -45,8 +45,8 @@ describe("resolveGatewayTokenForUrlEdit", () => {
 
     expect(
       resolveGatewayTokenForUrlEdit(
-        "wss://gateway.example/openclaw",
-        "wss://other-gateway.example/openclaw",
+        "wss://gateway.example/afora",
+        "wss://other-gateway.example/afora",
         "abc123",
       ),
     ).toBe("");
@@ -56,17 +56,17 @@ describe("resolveGatewayTokenForUrlEdit", () => {
     vi.stubGlobal("localStorage", createStorageMock());
     vi.stubGlobal("sessionStorage", createStorageMock());
     localStorage.setItem(
-      "openclaw.control.settings.v1",
+      "afora.control.settings.v1",
       JSON.stringify({
-        gatewayUrl: "wss://other-gateway.example/openclaw",
+        gatewayUrl: "wss://other-gateway.example/afora",
         token: "gateway-token",
       }),
     );
 
     expect(
       resolveGatewayTokenForUrlEdit(
-        "wss://gateway.example/openclaw",
-        "wss://other-gateway.example/openclaw",
+        "wss://gateway.example/afora",
+        "wss://other-gateway.example/afora",
         "abc123",
       ),
     ).toBe("");

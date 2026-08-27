@@ -6,7 +6,7 @@ type StageSandboxMediaTestApi = {
 
 function getTestApi(): StageSandboxMediaTestApi {
   const api = (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.stageSandboxMediaTestApi")
+    Symbol.for("afora.stageSandboxMediaTestApi")
   ];
   if (!api) {
     throw new Error("sandbox media test API is unavailable");

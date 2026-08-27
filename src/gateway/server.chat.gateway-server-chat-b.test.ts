@@ -2,7 +2,7 @@
 // history limits, model overrides, inbound dispatch, and streaming event fanout.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 import { createDeferred } from "../../test/helpers/promise.js";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
@@ -26,7 +26,7 @@ import {
 } from "../config/sessions/session-accessor.js";
 import { waitForSessionTranscriptIndexReconcile } from "../config/sessions/session-transcript-reconcile.js";
 import type { AgentModelConfig } from "../config/types.agents-shared.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { rotateAgentEventLifecycleGeneration } from "../infra/agent-events.js";
 import { onDiagnosticEvent, type DiagnosticPayloadLargeEvent } from "../infra/diagnostic-events.js";
 import { ExecApprovalsMigrationRequiredError } from "../infra/exec-approvals-migration-gate.js";
@@ -41,9 +41,9 @@ import {
 } from "../sessions/session-lifecycle-admission.js";
 import { buildPersistedUserTurnMessage } from "../sessions/user-turn-transcript.js";
 import { recordAgentProvenance } from "../state/agent-provenance.js";
-import { openOpenClawAgentDatabase } from "../state/openclaw-agent-db.js";
+import { openAforaAgentDatabase } from "../state/afora-agent-db.js";
 import { captureEnv, setTestEnvValue } from "../test-utils/env.js";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";
 import { assertPluginMetadataSnapshotConsistency } from "./plugin-metadata.test-helpers.js";
 import {
@@ -145,7 +145,7 @@ type GatewayHarness = Awaited<ReturnType<typeof createGatewaySuiteHarness>>;
 type GatewaySocket = Awaited<ReturnType<GatewayHarness["openWs"]>>;
 let harness: GatewayHarness;
 
-function createGatewayPluginMetadataSnapshot(config: OpenClawConfig): PluginMetadataSnapshot {
+function createGatewayPluginMetadataSnapshot(config: AforaConfig): PluginMetadataSnapshot {
   const policyHash = resolveInstalledPluginIndexPolicyHash(config);
   const emptySnapshot: PluginMetadataSnapshot = {
     policyHash,
@@ -210,7 +210,7 @@ function createGatewayPluginMetadataSnapshot(config: OpenClawConfig): PluginMeta
         origin: "bundled",
         rootDir: "/test/openai",
         source: "/test/openai/index.ts",
-        manifestPath: "/test/openai/openclaw.plugin.json",
+        manifestPath: "/test/openai/afora.plugin.json",
       },
     ],
     diagnostics: [],
@@ -252,8 +252,8 @@ async function withGatewayChatHarness(
   try {
     await run({ ws, createSessionDir });
   } finally {
-    if (process.env.OPENCLAW_CONFIG_PATH) {
-      await fs.rm(process.env.OPENCLAW_CONFIG_PATH, { force: true });
+    if (process.env.AFORA_CONFIG_PATH) {
+      await fs.rm(process.env.AFORA_CONFIG_PATH, { force: true });
     }
     clearConfigCache();
     testState.sessionStorePath = undefined;
@@ -276,11 +276,11 @@ function futureFixtureUpdatedAt(): number {
   return Date.now() + 60_000;
 }
 
-function readOpenClawSeq(message: unknown): number | undefined {
+function readAforaSeq(message: unknown): number | undefined {
   if (!message || typeof message !== "object" || Array.isArray(message)) {
     return undefined;
   }
-  const metadata = (message as Record<string, unknown>)["__openclaw"];
+  const metadata = (message as Record<string, unknown>)["__afora"];
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
     return undefined;
   }
@@ -289,9 +289,9 @@ function readOpenClawSeq(message: unknown): number | undefined {
 }
 
 async function writeGatewayConfig(config: Record<string, unknown>) {
-  const configPath = process.env.OPENCLAW_CONFIG_PATH;
+  const configPath = process.env.AFORA_CONFIG_PATH;
   if (!configPath) {
-    throw new Error("OPENCLAW_CONFIG_PATH missing in gateway test environment");
+    throw new Error("AFORA_CONFIG_PATH missing in gateway test environment");
   }
   await fs.mkdir(path.dirname(configPath), { recursive: true });
   await fs.writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
@@ -342,7 +342,7 @@ async function withDirectChatSession(
 type StoredSessionEntry = Parameters<typeof writeSessionStore>[0]["entries"][string];
 
 function openDirectChatSession() {
-  const sessionDir = autoCleanupTempDirs.make("openclaw-gw-");
+  const sessionDir = autoCleanupTempDirs.make("afora-gw-");
   const storePath = path.join(sessionDir, "sessions.json");
   testState.sessionStorePath = storePath;
   return { sessionDir, storePath };
@@ -1231,7 +1231,7 @@ describe("gateway server chat", () => {
         defaults: {},
         list: [{ id: "main", default: true }, { id: "work" }],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const context = createDirectChatContext({
       getRuntimeConfig: () => config,
       loadGatewayModelCatalogSnapshot: vi.fn(async () => ({
@@ -1344,17 +1344,17 @@ describe("gateway server chat", () => {
   });
 
   test("chat.startup projects route thinking metadata per agent and session auth", async () => {
-    await withOpenClawTestState(
+    await withAforaTestState(
       {
         layout: "state-only",
-        prefix: "openclaw-gw-startup-routes-",
+        prefix: "afora-gw-startup-routes-",
         agentEnv: "main",
         env: {
           CHATGPT_OAUTH_TOKEN: undefined,
           CODEX_API_KEY: undefined,
-          CODEX_HOME: "/__openclaw_gateway_startup_routes__/codex",
-          OPENCLAW_BUNDLED_PLUGINS_DIR: path.resolve("extensions"),
-          OPENCLAW_DISABLE_BUNDLED_PLUGINS: undefined,
+          CODEX_HOME: "/__afora_gateway_startup_routes__/codex",
+          AFORA_BUNDLED_PLUGINS_DIR: path.resolve("extensions"),
+          AFORA_DISABLE_BUNDLED_PLUGINS: undefined,
           OPENAI_API_KEY: undefined,
           OPENAI_BASE_URL: undefined,
           OPENAI_OAUTH_TOKEN: undefined,
@@ -1812,7 +1812,7 @@ describe("gateway server chat", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
       await writeGatewayConfig(config);
       const responses: Array<{ ok: boolean; payload?: unknown; error?: unknown }> = [];
       const readChatMetadata = vi.fn(async () => ({
@@ -1997,7 +1997,7 @@ describe("gateway server chat", () => {
       await connectOk(ws);
 
       const legacyExecApprovalsPath = path.join(
-        autoCleanupTempDirs.make("openclaw-chat-metadata-exec-approvals-"),
+        autoCleanupTempDirs.make("afora-chat-metadata-exec-approvals-"),
         "exec-approvals.json",
       );
       const commandsListResult = await import("./server-methods/commands-list-result.js");
@@ -3079,7 +3079,7 @@ describe("gateway server chat", () => {
             message: expect.objectContaining({
               role: "user",
               content: "prompt from alice",
-              __openclaw: expect.objectContaining({
+              __afora: expect.objectContaining({
                 senderId: "0d9f4c35-d221-49da-9a3f-b8c73921066b",
                 senderName: "Alice",
               }),
@@ -3090,7 +3090,7 @@ describe("gateway server chat", () => {
             message: expect.objectContaining({
               role: "user",
               content: "prompt from bob",
-              __openclaw: expect.objectContaining({
+              __afora: expect.objectContaining({
                 senderId: "77ad3957-b2c8-428a-83d3-fc09e696492e",
                 senderName: "Bob",
               }),
@@ -3101,7 +3101,7 @@ describe("gateway server chat", () => {
             message: expect.objectContaining({
               role: "user",
               content: "prompt without identity",
-              __openclaw: expect.not.objectContaining({ senderId: expect.anything() }),
+              __afora: expect.not.objectContaining({ senderId: expect.anything() }),
             }),
           }),
         ]),
@@ -4295,7 +4295,7 @@ describe("gateway server chat", () => {
       expect(dispatchOptions[0]?.runId).toBe("idem-sequential-a");
       expect(dispatchOptions[1]?.runId).toBe("idem-sequential-b");
       expect(dispatchOptions[0]?.promptCacheKey).toEqual(
-        expect.stringMatching(/^openclaw-webchat-[a-f0-9]{32}$/u),
+        expect.stringMatching(/^afora-webchat-[a-f0-9]{32}$/u),
       );
       expect(dispatchOptions[1]?.promptCacheKey).toBe(dispatchOptions[0]?.promptCacheKey);
       expect(dispatchOptions[0]?.promptCacheKey).not.toContain("main");
@@ -4688,7 +4688,7 @@ describe("gateway server chat", () => {
             message: {
               role: "user",
               content:
-                'Sender: ⟦openclaw:ctx⟧\n```json\n{"label":"openclaw-control-ui"}\n```\n\n[Thu 2026-03-26 16:29 GMT] hi',
+                'Sender: ⟦afora:ctx⟧\n```json\n{"label":"afora-control-ui"}\n```\n\n[Thu 2026-03-26 16:29 GMT] hi',
             },
           }),
           JSON.stringify({
@@ -4721,7 +4721,7 @@ describe("gateway server chat", () => {
           makeClaudeCliSessionEntry(sessionDir, sessionId, cliSessionId),
         );
         const history = await rpcReq<{
-          messages?: Array<{ __openclaw?: { id?: string } }>;
+          messages?: Array<{ __afora?: { id?: string } }>;
           hasMore?: boolean;
           nextOffset?: number;
           totalMessages?: number;
@@ -4747,7 +4747,7 @@ describe("gateway server chat", () => {
         expect(history.payload?.nextOffset).toBeUndefined();
         expect(history.payload?.totalMessages).toBe(107);
         expect(history.payload?.completeSnapshot).toBe(true);
-        expect(new Set(messages.map((message) => message["__openclaw"]?.id)).size).toBe(107);
+        expect(new Set(messages.map((message) => message["__afora"]?.id)).size).toBe(107);
       } finally {
         homeEnvSnapshot.restore();
       }
@@ -4796,7 +4796,7 @@ describe("gateway server chat", () => {
                   },
                   { type: "audio", url: managedAudioUrl, openUrl: managedAudioUrl },
                 ],
-                openclawDelivery: { replyToId: "delivery-run-1" },
+                aforaDelivery: { replyToId: "delivery-run-1" },
               },
             }),
           ],
@@ -4890,14 +4890,14 @@ describe("gateway server chat", () => {
         }, 5);
         const [startup, history] = await Promise.all([
           rpcReq<{
-            messages?: Array<{ __openclaw?: Record<string, unknown> }>;
+            messages?: Array<{ __afora?: Record<string, unknown> }>;
             completeSnapshot?: boolean;
             hasMore?: boolean;
             nextOffset?: number;
             totalMessages?: number;
           }>(ws, "chat.startup", makeMainSessionParams()),
           rpcReq<{
-            messages?: Array<{ __openclaw?: Record<string, unknown> }>;
+            messages?: Array<{ __afora?: Record<string, unknown> }>;
             completeSnapshot?: boolean;
             hasMore?: boolean;
             nextOffset?: number;
@@ -4915,7 +4915,7 @@ describe("gateway server chat", () => {
         for (const externalId of ["large-snapshot-user", "large-snapshot-assistant"]) {
           expect(messages).toContainEqual(
             expect.objectContaining({
-              __openclaw: expect.objectContaining({
+              __afora: expect.objectContaining({
                 cliSessionId,
                 externalId,
                 importedFrom: "claude-cli",
@@ -4981,7 +4981,7 @@ describe("gateway server chat", () => {
         );
 
         const history = await rpcReq<{
-          messages?: Array<{ __openclaw?: { id?: string; seq?: number } }>;
+          messages?: Array<{ __afora?: { id?: string; seq?: number } }>;
           hasMore?: boolean;
           nextOffset?: number;
           totalMessages?: number;
@@ -4994,7 +4994,7 @@ describe("gateway server chat", () => {
         expect(history.payload?.completeSnapshot).toBe(true);
         const deliveredIdentities = new Set(
           (history.payload?.messages ?? []).map((message) => {
-            const metadata = expectDefined(message["__openclaw"], "history metadata");
+            const metadata = expectDefined(message["__afora"], "history metadata");
             return metadata.seq !== undefined
               ? `seq:${metadata.seq}`
               : `id:${expectDefined(metadata.id, "history id")}`;
@@ -5035,19 +5035,19 @@ describe("gateway server chat", () => {
         );
 
         const firstPage = await rpcReq<{
-          messages?: Array<{ __openclaw?: { seq?: number } }>;
+          messages?: Array<{ __afora?: { seq?: number } }>;
           hasMore?: boolean;
           nextOffset?: number;
           totalMessages?: number;
         }>(ws, "chat.history", makeMainSessionParams({ limit: 2 }));
         expect(firstPage.ok).toBe(true);
-        expect(firstPage.payload?.messages?.map(readOpenClawSeq)).toEqual([4, 5]);
+        expect(firstPage.payload?.messages?.map(readAforaSeq)).toEqual([4, 5]);
         expect(firstPage.payload?.hasMore).toBe(true);
         expect(firstPage.payload?.nextOffset).toBe(2);
         expect(firstPage.payload?.totalMessages).toBe(5);
 
         const secondPage = await rpcReq<{
-          messages?: Array<{ __openclaw?: { seq?: number } }>;
+          messages?: Array<{ __afora?: { seq?: number } }>;
           hasMore?: boolean;
           nextOffset?: number;
         }>(
@@ -5059,7 +5059,7 @@ describe("gateway server chat", () => {
           }),
         );
         expect(secondPage.ok).toBe(true);
-        expect(secondPage.payload?.messages?.map(readOpenClawSeq)).toEqual([2, 3]);
+        expect(secondPage.payload?.messages?.map(readAforaSeq)).toEqual([2, 3]);
         expect(secondPage.payload?.hasMore).toBe(true);
         expect(secondPage.payload?.nextOffset).toBe(4);
       } finally {
@@ -5276,7 +5276,7 @@ describe("gateway server chat", () => {
       ]);
 
       const page = await rpcReq<{
-        messages?: Array<{ __openclaw?: { seq?: number } }>;
+        messages?: Array<{ __afora?: { seq?: number } }>;
         nextOffset?: number;
         hasMore?: boolean;
       }>(
@@ -5310,7 +5310,7 @@ describe("gateway server chat", () => {
       const page = await rpcReq<{
         messages?: Array<{
           content?: Array<{ text?: string }>;
-          __openclaw?: { turnBoundary?: boolean };
+          __afora?: { turnBoundary?: boolean };
         }>;
       }>(
         ws,
@@ -5324,7 +5324,7 @@ describe("gateway server chat", () => {
       expect(page.ok).toBe(true);
       expect(page.payload?.messages).toHaveLength(1);
       expect(page.payload?.messages?.[0]?.content?.[0]?.text).toBe("heartbeat run output");
-      expect(page.payload?.messages?.[0]?.["__openclaw"]?.turnBoundary).toBe(true);
+      expect(page.payload?.messages?.[0]?.["__afora"]?.turnBoundary).toBe(true);
     });
   });
 
@@ -5364,12 +5364,12 @@ describe("gateway server chat", () => {
   });
 
   test("chat.send diagnostics timeline carries run correlation attributes", async () => {
-    const timelineDir = autoCleanupTempDirs.make("openclaw-chat-timeline-");
+    const timelineDir = autoCleanupTempDirs.make("afora-chat-timeline-");
     const timelinePath = path.join(timelineDir, "timeline.jsonl");
-    const previousDiagnostics = process.env.OPENCLAW_DIAGNOSTICS;
-    const previousTimelinePath = process.env.OPENCLAW_DIAGNOSTICS_TIMELINE_PATH;
-    process.env.OPENCLAW_DIAGNOSTICS = "timeline";
-    process.env.OPENCLAW_DIAGNOSTICS_TIMELINE_PATH = timelinePath;
+    const previousDiagnostics = process.env.AFORA_DIAGNOSTICS;
+    const previousTimelinePath = process.env.AFORA_DIAGNOSTICS_TIMELINE_PATH;
+    process.env.AFORA_DIAGNOSTICS = "timeline";
+    process.env.AFORA_DIAGNOSTICS_TIMELINE_PATH = timelinePath;
     try {
       await withGatewayChatHarness(
         async ({ ws, createSessionDir }) => {
@@ -5432,14 +5432,14 @@ describe("gateway server chat", () => {
       );
     } finally {
       if (previousDiagnostics === undefined) {
-        delete process.env.OPENCLAW_DIAGNOSTICS;
+        delete process.env.AFORA_DIAGNOSTICS;
       } else {
-        process.env.OPENCLAW_DIAGNOSTICS = previousDiagnostics;
+        process.env.AFORA_DIAGNOSTICS = previousDiagnostics;
       }
       if (previousTimelinePath === undefined) {
-        delete process.env.OPENCLAW_DIAGNOSTICS_TIMELINE_PATH;
+        delete process.env.AFORA_DIAGNOSTICS_TIMELINE_PATH;
       } else {
-        process.env.OPENCLAW_DIAGNOSTICS_TIMELINE_PATH = previousTimelinePath;
+        process.env.AFORA_DIAGNOSTICS_TIMELINE_PATH = previousTimelinePath;
       }
     }
   });
@@ -5602,7 +5602,7 @@ describe("gateway server chat", () => {
       expect(Buffer.byteLength(serialized, "utf8")).toBeLessThanOrEqual(historyMaxBytes);
       expect(serialized).toContain("[chat.history omitted: message too large]");
       expect(messages[0]).toMatchObject({
-        __openclaw: { id: "msg-huge", truncated: true, reason: "oversized" },
+        __afora: { id: "msg-huge", truncated: true, reason: "oversized" },
       });
       expect(serialized.includes(hugeNestedText.slice(0, 256))).toBe(false);
     });
@@ -5675,7 +5675,7 @@ describe("gateway server chat", () => {
         ],
         mediaImageLayout: { slots: [{ kind: "offloaded", factIndex: 1 }] },
       }) as unknown as Record<string, unknown>;
-      const metadata = persisted["__openclaw"] as Record<string, unknown>;
+      const metadata = persisted["__afora"] as Record<string, unknown>;
       const facts = metadata.media as Array<Record<string, unknown>>;
       Object.assign(expectDefined(facts[2], "local media fact"), {
         data: "private-inline-data",
@@ -5714,7 +5714,7 @@ describe("gateway server chat", () => {
         expect(messages[0], boundary).toMatchObject({
           role: "user",
           content: "inspect mixed attachments",
-          __openclaw: {
+          __afora: {
             keepMe: { durable: true },
             mediaImageLayout: { slots: [{ kind: "offloaded", factIndex: 1 }] },
             media: [
@@ -5764,7 +5764,7 @@ describe("gateway server chat", () => {
           },
         });
         const projectedMedia = (
-          (messages[0] as { __openclaw?: { media?: Array<Record<string, unknown>> } })["__openclaw"]
+          (messages[0] as { __afora?: { media?: Array<Record<string, unknown>> } })["__afora"]
             ?.media ?? []
         ).map((fact) => fact.path ?? fact.url ?? null);
         expect(projectedMedia, boundary).toEqual([
@@ -5992,7 +5992,7 @@ describe("gateway server chat", () => {
       const quoted = "Use `[[reply_to_current]]` and `[[tts]]` literally.";
       const lines = [
         makeTranscriptTextEvent(quoted, {
-          message: { openclawDelivery: { replyToCurrent: true }, timestamp: Date.now() },
+          message: { aforaDelivery: { replyToCurrent: true }, timestamp: Date.now() },
         }),
       ];
       await writeMainSessionTranscript(lines);
@@ -6000,7 +6000,7 @@ describe("gateway server chat", () => {
       expect(messages).toHaveLength(1);
       expect(messages[0]).toMatchObject({
         content: [{ text: quoted }],
-        openclawDelivery: { replyToCurrent: true },
+        aforaDelivery: { replyToCurrent: true },
       });
     });
   });
@@ -6254,7 +6254,7 @@ describe("gateway server chat", () => {
       ]);
       await waitForSessionTranscriptIndexReconcile({
         agentId: "main",
-        path: path.join(sessionDir, "openclaw-agent.sqlite"),
+        path: path.join(sessionDir, "afora-agent.sqlite"),
       });
 
       const stale = await fetchChatMessage(ws, makeMainMessageParams("msg-stale"));
@@ -6424,9 +6424,9 @@ describe("gateway server chat", () => {
       ]);
       const databaseOptions = {
         agentId: "main",
-        path: path.join(sessionDir, "openclaw-agent.sqlite"),
+        path: path.join(sessionDir, "afora-agent.sqlite"),
       };
-      const database = openOpenClawAgentDatabase(databaseOptions);
+      const database = openAforaAgentDatabase(databaseOptions);
       database.db
         .prepare("UPDATE session_transcript_index_state SET needs_rebuild = 1 WHERE session_id = ?")
         .run("sess-main");
@@ -6460,7 +6460,7 @@ describe("gateway server chat", () => {
       ]);
 
       const firstPage = await rpcReq<{
-        messages?: Array<{ __openclaw?: { seq?: number } }>;
+        messages?: Array<{ __afora?: { seq?: number } }>;
         nextOffset?: number;
         hasMore?: boolean;
         totalMessages?: number;
@@ -6474,13 +6474,13 @@ describe("gateway server chat", () => {
         }),
       );
       expect(firstPage.ok).toBe(true);
-      expect(firstPage.payload?.messages?.map(readOpenClawSeq)).toEqual([3, 5]);
+      expect(firstPage.payload?.messages?.map(readAforaSeq)).toEqual([3, 5]);
       expect(firstPage.payload?.nextOffset).toBe(3);
       expect(firstPage.payload?.hasMore).toBe(true);
       expect(firstPage.payload?.totalMessages).toBe(5);
 
       const secondPage = await rpcReq<{
-        messages?: Array<{ __openclaw?: { seq?: number } }>;
+        messages?: Array<{ __afora?: { seq?: number } }>;
         hasMore?: boolean;
         nextOffset?: number;
       }>(
@@ -6493,7 +6493,7 @@ describe("gateway server chat", () => {
         }),
       );
       expect(secondPage.ok).toBe(true);
-      expect(secondPage.payload?.messages?.map(readOpenClawSeq)).toEqual([1, 2]);
+      expect(secondPage.payload?.messages?.map(readAforaSeq)).toEqual([1, 2]);
       expect(JSON.stringify(secondPage.payload?.messages)).not.toContain("visible boundary");
       expect(secondPage.payload?.hasMore).toBe(false);
       expect(secondPage.payload?.nextOffset).toBeUndefined();
@@ -6593,7 +6593,7 @@ describe("gateway server chat", () => {
         await writeMainSessionTranscript(events);
 
         type HistoryPage = {
-          messages?: Array<{ __openclaw?: { seq?: number } }>;
+          messages?: Array<{ __afora?: { seq?: number } }>;
           nextOffset?: number;
           hasMore?: boolean;
           totalMessages?: number;
@@ -6605,7 +6605,7 @@ describe("gateway server chat", () => {
         );
         expect(first.ok).toBe(true);
         expect(
-          first.payload?.messages?.map(readOpenClawSeq),
+          first.payload?.messages?.map(readAforaSeq),
           JSON.stringify(first.payload),
         ).toEqual(expectedFirstSeqs);
         expect(JSON.stringify(first.payload?.messages)).toContain(marker);
@@ -6622,7 +6622,7 @@ describe("gateway server chat", () => {
           makeMainSessionParams({ limit: 4, offset: first.payload?.nextOffset }),
         );
         expect(older.ok).toBe(true);
-        expect(older.payload?.messages?.map(readOpenClawSeq)).toEqual(expectedOlderSeqs);
+        expect(older.payload?.messages?.map(readAforaSeq)).toEqual(expectedOlderSeqs);
         expect(older.payload?.hasMore).toBe(false);
         expect(older.payload?.nextOffset).toBeUndefined();
       });
@@ -6643,7 +6643,7 @@ describe("gateway server chat", () => {
       );
 
       type HistoryPage = {
-        messages?: Array<{ __openclaw?: { seq?: number } }>;
+        messages?: Array<{ __afora?: { seq?: number } }>;
         nextOffset?: number;
         hasMore?: boolean;
         totalMessages?: number;
@@ -6664,7 +6664,7 @@ describe("gateway server chat", () => {
         offset = page.payload?.nextOffset;
       } while (pages.at(-1)?.hasMore);
 
-      expect(pages.map((page) => page.messages?.map(readOpenClawSeq))).toEqual([
+      expect(pages.map((page) => page.messages?.map(readAforaSeq))).toEqual([
         [6, 7],
         [4, 5],
         [2, 3],
@@ -6676,7 +6676,7 @@ describe("gateway server chat", () => {
       expect(
         pages
           .flatMap((page) => page.messages ?? [])
-          .map(readOpenClawSeq)
+          .map(readAforaSeq)
           .toSorted((a, b) => (a ?? 0) - (b ?? 0)),
       ).toEqual([1, 2, 3, 4, 5, 6, 7]);
     });
@@ -6711,7 +6711,7 @@ describe("gateway server chat", () => {
       }
 
       type HistoryPage = {
-        messages?: Array<{ __openclaw?: { seq?: number } }>;
+        messages?: Array<{ __afora?: { seq?: number } }>;
         nextOffset?: number;
         hasMore?: boolean;
         totalMessages?: number;
@@ -6732,7 +6732,7 @@ describe("gateway server chat", () => {
         offset = page.payload?.nextOffset;
       } while (pages.at(-1)?.hasMore);
 
-      expect(pages.map((page) => page.messages?.map(readOpenClawSeq))).toEqual([
+      expect(pages.map((page) => page.messages?.map(readAforaSeq))).toEqual([
         [4, 5],
         [2, 3],
         [1],
@@ -6766,11 +6766,11 @@ describe("gateway server chat", () => {
       }
       await waitForSessionTranscriptIndexReconcile({
         agentId: "main",
-        path: path.join(sessionDir, "openclaw-agent.sqlite"),
+        path: path.join(sessionDir, "afora-agent.sqlite"),
       });
 
       const history = await rpcReq<{
-        messages?: Array<{ __openclaw?: { seq?: number } }>;
+        messages?: Array<{ __afora?: { seq?: number } }>;
         hasMore?: boolean;
         nextOffset?: number;
         offset?: number;
@@ -6787,7 +6787,7 @@ describe("gateway server chat", () => {
       );
 
       expect(history.ok).toBe(true);
-      expect(history.payload?.messages?.map(readOpenClawSeq)).toEqual([2, 3, 4]);
+      expect(history.payload?.messages?.map(readAforaSeq)).toEqual([2, 3, 4]);
       expect(history.payload?.offset).toBeUndefined();
       expect(history.payload?.nextOffset).toBeUndefined();
       expect(history.payload?.hasMore).toBeUndefined();
@@ -6913,7 +6913,7 @@ describe("gateway server chat", () => {
       );
 
       const firstPage = await rpcReq<{
-        messages?: Array<{ __openclaw?: { seq?: number } }>;
+        messages?: Array<{ __afora?: { seq?: number } }>;
         nextOffset?: number;
         hasMore?: boolean;
         totalMessages?: number;
@@ -6927,7 +6927,7 @@ describe("gateway server chat", () => {
         }),
       );
       expect(firstPage.ok).toBe(true);
-      const sequences = firstPage.payload?.messages?.map(readOpenClawSeq) ?? [];
+      const sequences = firstPage.payload?.messages?.map(readAforaSeq) ?? [];
       expect(sequences.length).toBeGreaterThan(0);
       expect(sequences.length).toBeLessThan(messageCount);
       const oldestSeq = expectDefined(sequences[0], "oldest returned sequence");
@@ -6976,7 +6976,7 @@ describe("gateway server chat", () => {
         ]);
 
         type HistoryPage = {
-          messages?: Array<{ __openclaw?: { seq?: number } }>;
+          messages?: Array<{ __afora?: { seq?: number } }>;
           nextOffset?: number;
           hasMore?: boolean;
         };
@@ -6990,7 +6990,7 @@ describe("gateway server chat", () => {
           }),
         );
         expect(firstPage.ok).toBe(true);
-        const firstPageSequences = firstPage.payload?.messages?.map(readOpenClawSeq) ?? [];
+        const firstPageSequences = firstPage.payload?.messages?.map(readAforaSeq) ?? [];
         expect(firstPageSequences.length).toBeGreaterThan(0);
         expect(firstPageSequences.every((seq) => seq === 3)).toBe(true);
         expect(firstPage.payload?.hasMore).toBe(true);

@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import http, { createServer } from "node:http";
 import os from "node:os";
 import path from "node:path";
-import { captureEnv } from "openclaw/plugin-sdk/test-env";
+import { captureEnv } from "afora-agent/plugin-sdk/test-env";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { saveMediaStreamWithIdleTimeout } from "./media-chunk-idle.js";
 
@@ -18,9 +18,9 @@ describe("saveMediaStreamWithIdleTimeout", () => {
   let envSnapshot: ReturnType<typeof captureEnv>;
 
   beforeAll(async () => {
-    stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-feishu-idle-"));
-    envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
-    process.env.OPENCLAW_STATE_DIR = stateDir;
+    stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-feishu-idle-"));
+    envSnapshot = captureEnv(["AFORA_STATE_DIR"]);
+    process.env.AFORA_STATE_DIR = stateDir;
   });
 
   afterAll(async () => {

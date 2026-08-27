@@ -1,6 +1,6 @@
 // Discord plugin module implements draft stream behavior.
-import { createFinalizableDraftLifecycle } from "openclaw/plugin-sdk/channel-outbound";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { createFinalizableDraftLifecycle } from "afora-agent/plugin-sdk/channel-outbound";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import {
   createChannelMessage,
   deleteChannelMessage,

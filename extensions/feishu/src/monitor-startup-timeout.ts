@@ -1,7 +1,7 @@
-import { parseStrictPositiveInteger } from "openclaw/plugin-sdk/number-runtime";
+import { parseStrictPositiveInteger } from "afora-agent/plugin-sdk/number-runtime";
 
 const FEISHU_STARTUP_BOT_INFO_TIMEOUT_DEFAULT_MS = 30_000;
-const FEISHU_STARTUP_BOT_INFO_TIMEOUT_ENV = "OPENCLAW_FEISHU_STARTUP_PROBE_TIMEOUT_MS";
+const FEISHU_STARTUP_BOT_INFO_TIMEOUT_ENV = "AFORA_FEISHU_STARTUP_PROBE_TIMEOUT_MS";
 
 export function resolveStartupProbeTimeoutMs(env: NodeJS.ProcessEnv = process.env): number {
   const raw = env[FEISHU_STARTUP_BOT_INFO_TIMEOUT_ENV];

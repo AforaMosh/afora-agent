@@ -1,5 +1,5 @@
 import { isDeepStrictEqual } from "node:util";
-import { normalizeOptionalString as normalizeRunId } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString as normalizeRunId } from "@afora/normalization-core/string-coerce";
 import {
   normalizeDeliveryContext,
   type DeliveryContext,

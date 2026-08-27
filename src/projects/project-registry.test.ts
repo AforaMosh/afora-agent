@@ -5,12 +5,12 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { requireNodeSqlite } from "../infra/node-sqlite.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { cloneProjectCheckout, ProjectCloneError } from "./project-clone-runtime.js";
 import { materializeProjectClone } from "./project-clone.js";
 import { parseProjectGitUrl } from "./project-git-url.js";
@@ -26,15 +26,15 @@ const execFileAsync = promisify(execFile);
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 async function initializeRepository(root: string, name: string): Promise<string> {
   const repo = path.join(root, name);
   await fs.mkdir(repo, { recursive: true });
   await execFileAsync("git", ["init", "-b", "main", repo]);
-  await execFileAsync("git", ["-C", repo, "config", "user.name", "OpenClaw Tests"]);
-  await execFileAsync("git", ["-C", repo, "config", "user.email", "tests@openclaw.invalid"]);
+  await execFileAsync("git", ["-C", repo, "config", "user.name", "Afora Tests"]);
+  await execFileAsync("git", ["-C", repo, "config", "user.email", "tests@afora.invalid"]);
   await fs.writeFile(path.join(repo, "README.md"), `${name}\n`);
   await execFileAsync("git", ["-C", repo, "add", "README.md"]);
   await execFileAsync("git", ["-C", repo, "commit", "-m", "initial"]);
@@ -43,52 +43,52 @@ async function initializeRepository(root: string, name: string): Promise<string>
 
 describe("project registry", () => {
   it.each([
-    ["https://github.com/OpenClaw/OpenClaw", "https://github.com/openclaw/openclaw.git"],
-    ["https://github.com/OpenClaw/OpenClaw.git", "https://github.com/openclaw/openclaw.git"],
-    ["git@github.com:OpenClaw/OpenClaw.git", "https://github.com/openclaw/openclaw.git"],
-    ["ssh://git@github.com/OpenClaw/OpenClaw.git", "https://github.com/openclaw/openclaw.git"],
-    ["ssh://git@github.com:22/OpenClaw/OpenClaw", "https://github.com/openclaw/openclaw.git"],
+    ["https://github.com/AforaMosh/afora-agent", "https://github.com/AforaMosh/afora-agent.git"],
+    ["https://github.com/AforaMosh/afora-agent.git", "https://github.com/AforaMosh/afora-agent.git"],
+    ["git@github.com:AforaMosh/afora-agent.git", "https://github.com/AforaMosh/afora-agent.git"],
+    ["ssh://git@github.com/AforaMosh/afora-agent.git", "https://github.com/AforaMosh/afora-agent.git"],
+    ["ssh://git@github.com:22/AforaMosh/afora-agent", "https://github.com/AforaMosh/afora-agent.git"],
   ])("canonicalizes accepted GitHub clone URL %s", (input, expected) => {
     expect(parseProjectGitUrl(input)?.url).toBe(expected);
   });
 
   it.each([
-    "http://github.com/openclaw/openclaw.git",
-    "file:///tmp/openclaw.git",
-    "ssh://git@github.com:2222/openclaw/openclaw.git",
-    "/tmp/openclaw",
-    "../openclaw",
+    "http://github.com/AforaMosh/afora-agent.git",
+    "file:///tmp/afora.git",
+    "ssh://git@github.com:2222/AforaMosh/afora-agent.git",
+    "/tmp/afora",
+    "../afora",
     "--upload-pack=touch-pwned",
-    "https://token@github.com/openclaw/openclaw.git",
-    "https://github.com/openclaw/openclaw.git?config=evil",
-    "https://github.com/openclaw/openclaw/extra",
-    "git@github.com:../../tmp/openclaw.git",
-    "https://github.com/openclaw/openclaw.git --config=evil",
+    "https://token@github.com/AforaMosh/afora-agent.git",
+    "https://github.com/AforaMosh/afora-agent.git?config=evil",
+    "https://github.com/AforaMosh/afora-agent/extra",
+    "git@github.com:../../tmp/afora.git",
+    "https://github.com/AforaMosh/afora-agent.git --config=evil",
   ])("rejects unsafe project clone URL %s", (input) => {
     expect(parseProjectGitUrl(input)).toBeNull();
   });
 
   it("lazily ensures the additive table exactly once per database", async () => {
-    const root = tempDirs.make("openclaw-project-schema-");
+    const root = tempDirs.make("afora-project-schema-");
     const options = { path: path.join(root, "state.sqlite") };
-    openOpenClawStateDatabase(options);
-    closeOpenClawStateDatabaseForTest();
+    openAforaStateDatabase(options);
+    closeAforaStateDatabaseForTest();
     const { DatabaseSync } = requireNodeSqlite();
     const legacy = new DatabaseSync(options.path);
     legacy.exec("DROP TABLE projects;");
     legacy.close();
 
-    const state = openOpenClawStateDatabase(options);
+    const state = openAforaStateDatabase(options);
     expect(
       state.db
         .prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name = 'projects'")
         .get(),
     ).toBeUndefined();
 
-    expect(listProjectRegistry({} as OpenClawConfig, options)).toEqual([
+    expect(listProjectRegistry({} as AforaConfig, options)).toEqual([
       expect.objectContaining({ id: "workspace:main", source: "workspace" }),
     ]);
-    expect(listProjectRegistry({} as OpenClawConfig, options)).toHaveLength(1);
+    expect(listProjectRegistry({} as AforaConfig, options)).toHaveLength(1);
 
     const rows = state.db
       .prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name = 'projects'")
@@ -97,21 +97,21 @@ describe("project registry", () => {
   });
 
   it("registers, orders, resolves real paths, suffixes collisions, and removes rows", async () => {
-    const root = tempDirs.make("openclaw-project-roundtrip-");
-    const repo = await initializeRepository(root, "openclaw");
+    const root = tempDirs.make("afora-project-roundtrip-");
+    const repo = await initializeRepository(root, "afora");
     const alias = path.join(root, "repo-link");
     await fs.symlink(repo, alias, "dir");
     const options = { path: path.join(root, "state.sqlite") };
 
-    const first = await registerProjectRegistry({ path: alias, name: "OpenClaw" }, options);
-    const second = await registerProjectRegistry({ path: repo, name: "OpenClaw" }, options);
+    const first = await registerProjectRegistry({ path: alias, name: "Afora" }, options);
+    const second = await registerProjectRegistry({ path: repo, name: "Afora" }, options);
     expect(first).toMatchObject({
-      id: "openclaw",
-      displayName: "OpenClaw",
+      id: "afora",
+      displayName: "Afora",
       repoRoot: repo,
       source: "registered",
     });
-    expect(second.id).toBe("openclaw-2");
+    expect(second.id).toBe("afora-2");
 
     const cfg = {
       agents: {
@@ -120,11 +120,11 @@ describe("project registry", () => {
           { id: "work", workspace: "/workspace/alpha" },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     expect(listProjectRegistry(cfg, options).map((project) => project.displayName)).toEqual([
       "alpha",
-      "OpenClaw",
-      "OpenClaw",
+      "Afora",
+      "Afora",
       "zeta",
     ]);
     expect(removeProjectRegistry(first.id, options)).toBe(true);
@@ -133,14 +133,14 @@ describe("project registry", () => {
   });
 
   it("rejects paths outside a git checkout", async () => {
-    const root = tempDirs.make("openclaw-project-non-git-");
+    const root = tempDirs.make("afora-project-non-git-");
     await expect(
       registerProjectRegistry({ path: root }, { path: path.join(root, "state.sqlite") }),
     ).rejects.toBeInstanceOf(ProjectCheckoutError);
   });
 
   it("clones a local bare fixture through the internal full-history clone boundary", async () => {
-    const root = tempDirs.make("openclaw-project-clone-");
+    const root = tempDirs.make("afora-project-clone-");
     const source = await initializeRepository(root, "source");
     await fs.writeFile(path.join(source, "second.txt"), "second\n");
     await execFileAsync("git", ["-C", source, "add", "second.txt"]);
@@ -169,7 +169,7 @@ describe("project registry", () => {
   });
 
   it("returns an existing registration for the same canonical remote without cloning", async () => {
-    const root = tempDirs.make("openclaw-project-idempotent-");
+    const root = tempDirs.make("afora-project-idempotent-");
     const repo = await initializeRepository(root, "existing");
     await execFileAsync("git", [
       "-C",
@@ -183,12 +183,12 @@ describe("project registry", () => {
     const registered = await registerProjectRegistry({ path: repo, name: "Existing" }, options);
 
     const added = await materializeProjectClone(
-      { cfg: {} as OpenClawConfig, gitUrl: "https://github.com/acme/existing.git" },
+      { cfg: {} as AforaConfig, gitUrl: "https://github.com/acme/existing.git" },
       options,
     );
 
     expect(added).toEqual(registered);
-    expect(listProjectRegistry({} as OpenClawConfig, options)).toHaveLength(2);
+    expect(listProjectRegistry({} as AforaConfig, options)).toHaveLength(2);
   });
 
   it("classifies authentication failures without returning credential material", async () => {
@@ -208,7 +208,7 @@ describe("project registry", () => {
       const error = await cloneProjectCheckout(
         {
           url: `http://127.0.0.1:${address.port}/private.git`,
-          target: path.join(tempDirs.make("openclaw-project-auth-"), "private"),
+          target: path.join(tempDirs.make("afora-project-auth-"), "private"),
         },
         { token },
       ).catch((caught: unknown) => caught);

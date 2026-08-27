@@ -1,5 +1,5 @@
-import { registerComputerUseProvider } from "openclaw/plugin-sdk/computer-use";
-import { buildPluginConfigSchema, definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import { registerComputerUseProvider } from "afora-agent/plugin-sdk/computer-use";
+import { buildPluginConfigSchema, definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
 import { z } from "zod";
 import { registerCuaDriverDoctorChecks } from "./api.js";
 import { createCuaComputerProvider } from "./src/commands.js";

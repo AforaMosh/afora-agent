@@ -1,6 +1,6 @@
 /** Regression coverage for ACP background-task summary truncation boundaries. */
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { AcpRuntimeError } from "../runtime/errors.js";
 import {
   appendBackgroundTaskProgressSummary,
@@ -48,7 +48,7 @@ describe("resolveBackgroundTaskContext", () => {
     // normalized length 164 puts the pair astride the 159-char cut point.
     const context = resolveBackgroundTaskContext({
       deps: fakeDeps(),
-      cfg: {} as unknown as OpenClawConfig,
+      cfg: {} as unknown as AforaConfig,
       sessionKey: "child-session",
       requestId: "run-1",
       text: `${"y".repeat(158)}${LOBSTER}tail`,
@@ -60,7 +60,7 @@ describe("resolveBackgroundTaskContext", () => {
   it("passes short task text through unchanged", () => {
     const context = resolveBackgroundTaskContext({
       deps: fakeDeps(),
-      cfg: {} as unknown as OpenClawConfig,
+      cfg: {} as unknown as AforaConfig,
       sessionKey: "child-session",
       requestId: "run-2",
       text: `summarize ${LOBSTER} feedback`,

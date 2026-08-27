@@ -1,15 +1,15 @@
 import path from "node:path";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { resolveStoredSessionOwnerAgentId } from "../../gateway/session-store-key.js";
 import {
   resolveAgentHarnessSessionStoreError,
   resolveAgentHarnessSessionStoreTransitionError,
 } from "../../sessions/agent-harness-session-key.js";
 import {
-  openOpenClawAgentDatabase,
-  runOpenClawAgentWriteTransaction,
-  type OpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
+  openAforaAgentDatabase,
+  runAforaAgentWriteTransaction,
+  type AforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
 import type { SessionArchivedTranscriptCleanupRule } from "./session-accessor.lifecycle-types.js";
 import {
   prunePublishedSessionArchivesByRetention,
@@ -124,7 +124,7 @@ export async function applySessionStoreProjection<T>(params: {
     storePath: params.storePath,
   });
   const committed = await runExclusiveSqliteSessionWrite(resolved, async () => {
-    const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+    const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
     const before = readSessionEntryStore(database);
     const projected = structuredClone(before);
     const operation = await params.update(projected);
@@ -151,7 +151,7 @@ export async function applySessionStoreProjection<T>(params: {
     }
 
     const maintenancePlans: SessionEntryMaintenancePlan[] = [];
-    runOpenClawAgentWriteTransaction(
+    runAforaAgentWriteTransaction(
       (transactionDb) => {
         for (const sessionKey of changedKeys) {
           const current = readExactSessionEntryRow(transactionDb, sessionKey)?.entry;
@@ -193,7 +193,7 @@ export async function applySessionStoreProjection<T>(params: {
 }
 
 function readProjectedRemovalEntry(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   projected: ProjectedLifecycleMutation["removals"][number],
   allowCanonicalRepair = false,
 ): SessionEntry | undefined {
@@ -235,7 +235,7 @@ export async function applySessionEntryLifecycleMutation(params: {
   /** Doctor-only bypass while exact malformed rows are removed in the same transaction. */
   allowCanonicalRepair?: boolean;
   /** Doctor-only synchronous state transfer that commits with the destination entry. */
-  afterUpsertsInTransaction?: (database: OpenClawAgentDatabase) => void;
+  afterUpsertsInTransaction?: (database: AforaAgentDatabase) => void;
   /** Synchronous caller-authority guard checked immediately before lifecycle writes. */
   beforeCommitInTransaction?: () => void;
 }): Promise<SessionEntryLifecycleMutationResult> {
@@ -255,7 +255,7 @@ export async function applySessionEntryLifecycleMutation(params: {
     throw error;
   };
   const projected = await runExclusiveSqliteSessionWrite(resolved, async () => {
-    const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+    const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
     return await projectSessionEntryLifecycleMutation(database, {
       ...(params.allowCanonicalRepair ? { allowCanonicalRepair: true } : {}),
       archiveDirectory: resolveSqliteTranscriptArchiveDirectory(resolved),
@@ -276,7 +276,7 @@ export async function applySessionEntryLifecycleMutation(params: {
     const removedSessionKeys: string[] = [];
     let archivedTranscripts: SessionLifecycleArchivedTranscript[] = [];
     const maintenancePlans: SessionEntryMaintenancePlan[] = [];
-    runOpenClawAgentWriteTransaction((transactionDb) => {
+    runAforaAgentWriteTransaction((transactionDb) => {
       params.beforeCommitInTransaction?.();
       beforeCount = readSessionEntryCount(transactionDb);
       const validatedRemovals = projected.removals.filter((removal) => {
@@ -449,7 +449,7 @@ export async function applySessionEntryLifecycleMutation(params: {
     captureArtifactCleanupError(error);
   }
   const archivedTranscripts = [...publishedRemovalTranscripts, ...maintenanceArchivedTranscripts];
-  const afterCount = readSessionEntryCount(openOpenClawAgentDatabase(toDatabaseOptions(resolved)));
+  const afterCount = readSessionEntryCount(openAforaAgentDatabase(toDatabaseOptions(resolved)));
   emitArchivedTranscriptUpdates(archivedTranscripts);
   const archivedTranscriptDirectories = uniqueStrings(
     archivedTranscripts.map((transcript) => path.dirname(transcript.archivedPath)),
@@ -488,7 +488,7 @@ export async function purgeDeletedAgentSessionEntries(
 ): Promise<void> {
   const resolved = resolveSqliteStoreScope(params.storePath, { agentId: params.storeAgentId });
   const prepared = await runExclusiveSqliteSessionWrite(resolved, async () => {
-    const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+    const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
     const store = readSessionEntryStore(database);
     const remainingStore = { ...store };
     const entryRemovals: SessionEntryRemovalPlan[] = [];
@@ -530,7 +530,7 @@ export async function purgeDeletedAgentSessionEntries(
   const committed = await runExclusiveSqliteSessionWrite(resolved, async () => {
     let archivedTranscripts: SessionLifecycleArchivedTranscript[] = [];
     const maintenancePlans: SessionEntryMaintenancePlan[] = [];
-    runOpenClawAgentWriteTransaction((transactionDb) => {
+    runAforaAgentWriteTransaction((transactionDb) => {
       const currentOwnedSessionKeys = Object.keys(readSessionEntryStore(transactionDb))
         .filter(
           (sessionKey) =>

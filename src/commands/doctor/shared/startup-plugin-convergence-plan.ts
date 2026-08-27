@@ -1,8 +1,8 @@
 // Plans first-start plugin convergence without loading the repair/catalog runtime.
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import { listAgentEntries } from "../../../agents/agent-scope.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import type { PluginInstallRecord } from "../../../config/types.plugins.js";
 import { inspectBundledPluginStartupMetadata } from "../../../plugins/bundled-plugin-startup-metadata.js";
 import { resolveConfiguredGenericEmbeddingProviderId } from "../../../plugins/embedding-provider-config.js";
@@ -23,7 +23,7 @@ export type StartupPluginConvergencePlan = {
   installRecords: Record<string, PluginInstallRecord>;
 };
 
-function hasPotentialPluginConfig(config: OpenClawConfig, env: NodeJS.ProcessEnv): boolean {
+function hasPotentialPluginConfig(config: AforaConfig, env: NodeJS.ProcessEnv): boolean {
   if (config.plugins?.enabled === false) {
     return false;
   }
@@ -39,7 +39,7 @@ function hasPotentialPluginConfig(config: OpenClawConfig, env: NodeJS.ProcessEnv
   });
 }
 
-function collectConfiguredMemoryEmbeddingProviderIds(config: OpenClawConfig): ReadonlySet<string> {
+function collectConfiguredMemoryEmbeddingProviderIds(config: AforaConfig): ReadonlySet<string> {
   const providerIds = new Set<string>();
   const add = (value: unknown) => {
     const providerId = normalizeOptionalLowercaseString(value);
@@ -68,7 +68,7 @@ function collectConfiguredMemoryEmbeddingProviderIds(config: OpenClawConfig): Re
   return providerIds;
 }
 
-function hasConfiguredCapabilityPlugin(config: OpenClawConfig, env: NodeJS.ProcessEnv): boolean {
+function hasConfiguredCapabilityPlugin(config: AforaConfig, env: NodeJS.ProcessEnv): boolean {
   const memoryEmbeddingProviderIds = collectConfiguredMemoryEmbeddingProviderIds(config);
   if (memoryEmbeddingProviderIds.size > 0) {
     if (
@@ -107,7 +107,7 @@ function hasConfiguredCapabilityPlugin(config: OpenClawConfig, env: NodeJS.Proce
 
 /** True when config or environment state can require a missing managed plugin repair. */
 export function configMayRequireStartupPluginConvergence(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env: NodeJS.ProcessEnv;
 }): boolean {
   if (params.config.plugins?.enabled === false) {
@@ -145,7 +145,7 @@ export function configMayRequireStartupPluginConvergence(params: {
 
 /** Carries the canonical install-record snapshot into the expensive convergence pass. */
 export async function planStartupPluginConvergence(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env: NodeJS.ProcessEnv;
 }): Promise<StartupPluginConvergencePlan> {
   const installRecords = await loadInstalledPluginIndexInstallRecords({ env: params.env });

@@ -34,8 +34,8 @@ async function waitForSocketClose(closed: Promise<void> | undefined): Promise<vo
   }
 }
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/ssrf-runtime")>();
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/ssrf-runtime")>();
   return {
     ...actual,
     fetchWithSsrFGuard: async (...args: Parameters<typeof actual.fetchWithSsrFGuard>) => {
@@ -117,7 +117,7 @@ describe("ollama web search guarded fetch", () => {
       throw new Error("Expected Ollama web search tool");
     }
 
-    await expect(tool.execute({ query: "latest openclaw release" })).rejects.toThrow(
+    await expect(tool.execute({ query: "latest afora release" })).rejects.toThrow(
       "ollama signin",
     );
 
@@ -138,7 +138,7 @@ describe("ollama web search guarded fetch", () => {
       throw new Error("Expected Ollama web search tool");
     }
 
-    await expect(tool.execute({ query: "latest openclaw release" })).rejects.toThrow("unavailable");
+    await expect(tool.execute({ query: "latest afora release" })).rejects.toThrow("unavailable");
 
     expect(loopback.releases.length).toBeGreaterThan(0);
     for (const release of loopback.releases) {

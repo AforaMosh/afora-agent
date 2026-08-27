@@ -1,6 +1,6 @@
 // Shared JSON state helpers for pairing namespaces.
 import path from "node:path";
-import { asNonArrayRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNonArrayRecord } from "@afora/normalization-core/record-coerce";
 import { resolveStateDir } from "../config/paths.js";
 
 export { createAsyncLock, readJsonIfExists } from "./json-files.js";

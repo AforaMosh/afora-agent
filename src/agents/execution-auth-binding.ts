@@ -5,7 +5,7 @@ import type { ResolvedProviderAuth } from "./model-auth-runtime-shared.js";
 /** Ephemeral proof of the credential or opaque runtime that completed one agent run. */
 export type AgentExecutionAuthBinding = {
   authProfileId?: string;
-  /** Exact embedded harness that completed the successful turn, including openclaw. */
+  /** Exact embedded harness that completed the successful turn, including afora. */
   agentHarnessId?: string;
   /** Exact model selected by the successful embedded run. */
   modelId?: string;

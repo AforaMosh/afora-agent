@@ -1,11 +1,11 @@
 /** Safety checks for deleting agents whose workspaces may overlap other agents. */
 import fs from "node:fs";
 import path from "node:path";
-import { lowercasePreservingWhitespace } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { lowercasePreservingWhitespace } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
 import { isPathInside } from "../infra/path-guards.js";
 import { normalizeAgentId } from "../routing/session-key.js";
-import { isSameOpenClawAgentDatabasePath } from "../state/openclaw-agent-db-registry.js";
+import { isSameAforaAgentDatabasePath } from "../state/afora-agent-db-registry.js";
 import { listAgentEntries, resolveAgentWorkspaceDir } from "./agent-scope.js";
 import type { SharedAuthStoreOwnership } from "./auth-profiles/path-resolve.js";
 
@@ -17,12 +17,12 @@ export function isSharedAuthStoreOwner(params: {
 }): boolean {
   return (
     params.ownership.location === "legacy-main" &&
-    isSameOpenClawAgentDatabasePath(params.agentAuthDbPath, params.sharedAuthDbPath)
+    isSameAforaAgentDatabasePath(params.agentAuthDbPath, params.sharedAuthDbPath)
   );
 }
 
 export function formatSharedAuthStoreOwnerDeleteError(agentId: string): string {
-  return `Agent "${agentId}" owns the legacy shared auth store and cannot be deleted. Run openclaw doctor --fix to migrate shared auth, then retry.`;
+  return `Agent "${agentId}" owns the legacy shared auth store and cannot be deleted. Run afora doctor --fix to migrate shared auth, then retry.`;
 }
 
 function normalizeWorkspacePathForComparison(input: string): string {
@@ -49,7 +49,7 @@ function workspacePathsOverlap(left: string, right: string): boolean {
 
 /** Lists other agents whose workspaces overlap a candidate delete target. */
 export function findOverlappingWorkspaceAgentIds(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
   workspaceDir: string,
 ): string[] {

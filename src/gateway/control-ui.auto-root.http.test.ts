@@ -11,7 +11,7 @@ const { handleControlUiHttpRequest } = await import("./control-ui.js");
 const { makeMockHttpResponse } = await import("./test-http-response.js");
 
 async function withControlUiRoot<T>(fn: (tmp: string) => Promise<T>) {
-  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-ui-auto-root-"));
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "afora-ui-auto-root-"));
   try {
     await fs.writeFile(path.join(tmp, "index.html"), "<html>fallback</html>\n");
     return await fn(tmp);
@@ -65,7 +65,7 @@ describe("handleControlUiHttpRequest prepared root lifecycle", () => {
       expect(handled).toBe(true);
       expect(res.statusCode).toBe(200);
       expect(responseBody(end)).toBe(
-        '<html data-openclaw-terminal-enabled="true">fallback-hardlink</html>\n',
+        '<html data-afora-terminal-enabled="true">fallback-hardlink</html>\n',
       );
     });
   });
@@ -120,7 +120,7 @@ describe("handleControlUiHttpRequest prepared root lifecycle", () => {
     expect(res.statusCode).toBe(503);
     expect(setHeader).not.toHaveBeenCalledWith("Retry-After", expect.anything());
     expect(responseBody(end)).toBe(
-      "Control UI assets could not be prepared. Check the Gateway logs or run `openclaw doctor --fix`.",
+      "Control UI assets could not be prepared. Check the Gateway logs or run `afora doctor --fix`.",
     );
     expect(responseBody(end)).not.toContain("private-credential");
     expect(responseBody(end)).not.toContain("/home/operator/private");

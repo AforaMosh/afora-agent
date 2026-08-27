@@ -1,5 +1,5 @@
 /** Model candidate normalization and catalog selection for auth probes. */
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { normalizeProviderId, parseModelRef } from "../../agents/model-selection.js";
 import { DEFAULT_PROVIDER } from "./shared.js";
 

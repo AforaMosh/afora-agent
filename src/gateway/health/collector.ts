@@ -1,6 +1,6 @@
-import { expectDefined } from "@openclaw/normalization-core";
-import { resolveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { expectDefined } from "@afora/normalization-core";
+import { resolveTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { listAgentEntries } from "../../agents/agent-scope.js";
 import { redactChannelStatusSummaryBaseUrl } from "../../channels/account-snapshot-fields.js";
 import { resolveChannelDefaultAccountId } from "../../channels/plugins/helpers.js";
@@ -10,7 +10,7 @@ import type { ChannelAccountSnapshot } from "../../channels/plugins/types.public
 import { tryResolveLegacyCompatibilityAgentId } from "../../config/legacy.default-agent-owner.js";
 import { resolveSessionStorePathCore } from "../../config/sessions/paths.js";
 import { resolveSqliteTargetFromSessionStorePath } from "../../config/sessions/session-sqlite-target.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { isDiagnosticFlagEnabled } from "../../infra/diagnostic-flags.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { resolveHeartbeatSummaryForAgent } from "../../infra/heartbeat-summary.js";
@@ -48,7 +48,7 @@ const healthLog = createSubsystemLogger("health");
 type HealthSnapshotAudience = "public" | "admin";
 
 const debugHealth = (
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
   message: string,
   meta?: Record<string, unknown>,
 ) => {
@@ -57,10 +57,10 @@ const debugHealth = (
   }
 };
 
-const resolveHeartbeatSummary = (cfg: OpenClawConfig, agentId: string) =>
+const resolveHeartbeatSummary = (cfg: AforaConfig, agentId: string) =>
   resolveHeartbeatSummaryForAgent(cfg, agentId);
 
-export function resolveHealthAgentOrder(cfg: OpenClawConfig) {
+export function resolveHealthAgentOrder(cfg: AforaConfig) {
   const defaultAgentId = tryResolveLegacyCompatibilityAgentId(cfg);
   const entries = listAgentEntries(cfg);
   const seen = new Set<string>();
@@ -418,7 +418,7 @@ export async function collectGatewayHealthSnapshot(params: {
   };
 }
 
-async function readRuntimeHealthConfig(): Promise<OpenClawConfig> {
+async function readRuntimeHealthConfig(): Promise<AforaConfig> {
   const { getRuntimeConfig } = await import("../../config/config.js");
   return getRuntimeConfig();
 }

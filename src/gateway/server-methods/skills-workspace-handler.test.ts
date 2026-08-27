@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resolveSkillsAgentWorkspace } from "./skills-workspace-handler.js";
 import type { GatewayRequestContext } from "./types.js";
 
-function context(config: OpenClawConfig): GatewayRequestContext {
+function context(config: AforaConfig): GatewayRequestContext {
   return { getRuntimeConfig: () => config } as GatewayRequestContext;
 }
 
 describe("resolveSkillsAgentWorkspace", () => {
-  const config: OpenClawConfig = {
+  const config: AforaConfig = {
     agents: {
       ownership: "explicit",
       list: [{ id: "ops" }, { id: "research" }],

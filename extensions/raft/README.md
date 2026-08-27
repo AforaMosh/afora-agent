@@ -1,5 +1,5 @@
-# Raft (OpenClaw plugin)
+# Raft (Afora plugin)
 
-Raft CLI wake bridge channel plugin for OpenClaw.
+Raft CLI wake bridge channel plugin for Afora.
 
-Docs: https://docs.openclaw.ai/channels/raft
+Docs: https://docs.afora.ai/channels/raft

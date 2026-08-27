@@ -47,10 +47,10 @@ export function renderIdentitySection(props: IdentitySectionProps) {
           description: t("profilePage.identity.avatarDescription"),
           control: html`
             <span class="identity-avatar-control">
-              <openclaw-viewer-avatar
+              <afora-viewer-avatar
                 .user=${avatarViewer(props.profile, props.avatarUrl)}
                 variant="profile"
-              ></openclaw-viewer-avatar>
+              ></afora-viewer-avatar>
               <label class="btn btn--sm">
                 ${props.busy === "avatar"
                   ? t("profilePage.identity.processingAvatar")

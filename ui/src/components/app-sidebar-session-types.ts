@@ -225,17 +225,17 @@ export function sidebarSessionStateId(key: string): string {
   return `sidebar-session-state-${encodeURIComponent(key)}`;
 }
 
-const SIDEBAR_SESSION_GROUPING_STORAGE_KEY = "openclaw:sidebar:sessions:grouping";
-const SIDEBAR_SESSION_CATALOG_GROUPING_STORAGE_KEY = "openclaw:sidebar:sessions:catalog-grouping";
-const SIDEBAR_SESSION_SHOW_CRON_STORAGE_KEY = "openclaw:sidebar:sessions:show-cron";
-const SIDEBAR_SESSION_SHOW_SYSTEM_STORAGE_KEY = "openclaw:sidebar:sessions:show-system";
-const SIDEBAR_SESSION_STATUS_FILTER_STORAGE_KEY = "openclaw:sidebar:sessions:status-filter";
-const SIDEBAR_SESSION_SORT_MODE_STORAGE_KEY = "openclaw:sidebar:sessions:sort-mode";
+const SIDEBAR_SESSION_GROUPING_STORAGE_KEY = "afora:sidebar:sessions:grouping";
+const SIDEBAR_SESSION_CATALOG_GROUPING_STORAGE_KEY = "afora:sidebar:sessions:catalog-grouping";
+const SIDEBAR_SESSION_SHOW_CRON_STORAGE_KEY = "afora:sidebar:sessions:show-cron";
+const SIDEBAR_SESSION_SHOW_SYSTEM_STORAGE_KEY = "afora:sidebar:sessions:show-system";
+const SIDEBAR_SESSION_STATUS_FILTER_STORAGE_KEY = "afora:sidebar:sessions:status-filter";
+const SIDEBAR_SESSION_SORT_MODE_STORAGE_KEY = "afora:sidebar:sessions:sort-mode";
 const SIDEBAR_SESSION_COLLAPSED_SECTIONS_STORAGE_KEY =
-  "openclaw:sidebar:sessions:collapsed-sections";
-const SIDEBAR_HIDDEN_SESSION_CATALOGS_STORAGE_KEY = "openclaw:sidebar:sessions:hidden-catalogs";
+  "afora:sidebar:sessions:collapsed-sections";
+const SIDEBAR_HIDDEN_SESSION_CATALOGS_STORAGE_KEY = "afora:sidebar:sessions:hidden-catalogs";
 export const SIDEBAR_HIDDEN_SESSION_CATALOGS_CHANGED_EVENT =
-  "openclaw:sidebar-hidden-catalogs-changed";
+  "afora:sidebar-hidden-catalogs-changed";
 
 export function limitSidebarSessionRows(rows: SidebarRecentSession[], limit: number) {
   const requiredCount = rows.filter((row) => row.active || row.pinned).length;

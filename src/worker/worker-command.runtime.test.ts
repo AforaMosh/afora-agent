@@ -15,7 +15,7 @@ vi.mock("./worker.runtime.js", () => ({
 
 const descriptor = {
   version: 4,
-  connectionEndpoint: { kind: "unix", socketPath: "/tmp/openclaw-worker/gateway.sock" },
+  connectionEndpoint: { kind: "unix", socketPath: "/tmp/afora-worker/gateway.sock" },
   admission: {
     environmentId: "environment-1",
     credential: ["worker", "fixture", "value"].join("-"),
@@ -24,7 +24,7 @@ const descriptor = {
     rpcSetVersion: WORKER_RPC_SET_VERSION,
     handshake: {
       bundleHash: "a".repeat(64),
-      openclawVersion: "2026.7.12",
+      aforaVersion: "2026.7.12",
       protocolFeatures: [...WORKER_PROTOCOL_FEATURES],
     },
   },
@@ -36,7 +36,7 @@ const descriptor = {
     turnId: "turn-1",
     prompt: "Inspect the workspace.",
     suppressPromptTranscript: false,
-    workspaceDir: "/tmp/openclaw-worker/workspace",
+    workspaceDir: "/tmp/afora-worker/workspace",
     modelRef: { provider: "provider-1", model: "model-1" },
     inferenceOptions: { reasoning: "medium", maxTokens: 512 },
     initialMessages: [

@@ -1,5 +1,5 @@
 // Whatsapp plugin module implements account ids behavior.
-import { createAccountListHelpers } from "openclaw/plugin-sdk/account-core";
+import { createAccountListHelpers } from "afora-agent/plugin-sdk/account-core";
 
 const {
   listConfiguredAccountIds,

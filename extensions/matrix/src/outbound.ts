@@ -2,18 +2,18 @@
 import {
   createMessageReceiptFromOutboundResults,
   createReplyToFanout,
-} from "openclaw/plugin-sdk/channel-outbound";
-import { attachChannelToResult } from "openclaw/plugin-sdk/channel-send-result";
+} from "afora-agent/plugin-sdk/channel-outbound";
+import { attachChannelToResult } from "afora-agent/plugin-sdk/channel-send-result";
 import {
   renderMessagePresentationFallbackText,
   type MessagePresentation,
-} from "openclaw/plugin-sdk/interactive-runtime";
+} from "afora-agent/plugin-sdk/interactive-runtime";
 import {
   resolveSendableOutboundReplyParts,
   sendPayloadMediaSequence,
-} from "openclaw/plugin-sdk/reply-payload";
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
-import { asOptionalRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/reply-payload";
+import type { ReplyPayload } from "afora-agent/plugin-sdk/reply-runtime";
+import { asOptionalRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { sendMessageMatrix, sendPollMatrix } from "./matrix/send.js";
 import type { MatrixExtraContentFields } from "./matrix/send/types.js";
 import {
@@ -22,8 +22,8 @@ import {
   type ChannelOutboundAdapter,
 } from "./runtime-api.js";
 
-const MATRIX_OPENCLAW_PRESENTATION_KEY = "com.openclaw.presentation" as const;
-const MATRIX_OPENCLAW_PRESENTATION_TYPE = "message.presentation" as const;
+const MATRIX_AFORA_PRESENTATION_KEY = "com.afora.presentation" as const;
+const MATRIX_AFORA_PRESENTATION_TYPE = "message.presentation" as const;
 const MATRIX_EMPTY_PRESENTATION_FALLBACK_TEXT = "---";
 
 type MatrixChannelData = {
@@ -44,7 +44,7 @@ function buildMatrixPresentationContent(presentation: MessagePresentation) {
   return {
     ...presentation,
     version: 1,
-    type: MATRIX_OPENCLAW_PRESENTATION_TYPE,
+    type: MATRIX_AFORA_PRESENTATION_TYPE,
   };
 }
 
@@ -52,11 +52,11 @@ function resolveMatrixPresentationContent(
   payload: ReplyPayload,
 ): Record<string, unknown> | undefined {
   const extraContent = asOptionalRecord(resolveMatrixChannelData(payload).extraContent);
-  const presentation = asOptionalRecord(extraContent?.[MATRIX_OPENCLAW_PRESENTATION_KEY]);
+  const presentation = asOptionalRecord(extraContent?.[MATRIX_AFORA_PRESENTATION_KEY]);
   if (
     !presentation ||
     presentation.version !== 1 ||
-    presentation.type !== MATRIX_OPENCLAW_PRESENTATION_TYPE
+    presentation.type !== MATRIX_AFORA_PRESENTATION_TYPE
   ) {
     return undefined;
   }
@@ -81,7 +81,7 @@ function renderMatrixPresentationPayload(params: {
       matrix: {
         ...matrixData,
         extraContent: {
-          [MATRIX_OPENCLAW_PRESENTATION_KEY]: buildMatrixPresentationContent(params.presentation),
+          [MATRIX_AFORA_PRESENTATION_KEY]: buildMatrixPresentationContent(params.presentation),
         },
       },
     },
@@ -98,7 +98,7 @@ function resolveMatrixPayloadText(payload: ReplyPayload): string {
 
 function resolveMatrixExtraContent(payload: ReplyPayload): MatrixExtraContentFields | undefined {
   const presentation = resolveMatrixPresentationContent(payload);
-  return presentation ? { [MATRIX_OPENCLAW_PRESENTATION_KEY]: presentation } : undefined;
+  return presentation ? { [MATRIX_AFORA_PRESENTATION_KEY]: presentation } : undefined;
 }
 
 function resolveMatrixDeliveryProgress(

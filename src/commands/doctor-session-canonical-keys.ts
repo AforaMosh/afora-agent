@@ -24,16 +24,16 @@ import { resolveDeliveryProvenCanonicalSessionKey } from "../config/sessions/sto
 import { resolveAllAgentSessionStoreTargetsSync } from "../config/sessions/targets.js";
 import { serializeJsonlLines } from "../config/sessions/transcript-jsonl.js";
 import type { SessionEntry } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   resolveSessionStoreAgentId,
   resolveStoredSessionKeyForAgentStore,
 } from "../gateway/session-store-key.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
 import {
-  openOpenClawAgentDatabase,
-  type OpenClawAgentDatabase,
-} from "../state/openclaw-agent-db.js";
+  openAforaAgentDatabase,
+  type AforaAgentDatabase,
+} from "../state/afora-agent-db.js";
 import { applyCanonicalOwnerEvidence } from "./doctor-session-canonical-owner-evidence.js";
 import { resolveTargetSqlitePath } from "./doctor-session-sqlite-readers.js";
 
@@ -94,7 +94,7 @@ type CanonicalSessionStore = {
 };
 
 function listCanonicalSessionStores(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
 }): CanonicalSessionStore[] {
   const stores: CanonicalSessionStore[] = [];
@@ -111,7 +111,7 @@ function listCanonicalSessionStores(params: {
 }
 
 function collectCanonicalSessionCandidates(
-  params: { cfg: OpenClawConfig; env: NodeJS.ProcessEnv },
+  params: { cfg: AforaConfig; env: NodeJS.ProcessEnv },
   stores: readonly CanonicalSessionStore[],
 ): CanonicalSessionCandidate[] {
   const inventory = stores.flatMap((target) =>
@@ -221,7 +221,7 @@ function collectCanonicalSessionCandidates(
 
 function resolveCanonicalDestination(params: {
   canonicalKey: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   sourceAgentId?: string;
 }) {
@@ -279,7 +279,7 @@ function mergeCanonicalSessionEntryCandidates<T>(
 
 function selectCanonicalSessionCandidate(
   candidates: readonly CanonicalSessionCandidate[],
-  params: { cfg: OpenClawConfig; env: NodeJS.ProcessEnv },
+  params: { cfg: AforaConfig; env: NodeJS.ProcessEnv },
 ) {
   const first = candidates[0];
   if (!first) {
@@ -313,7 +313,7 @@ function selectCanonicalSessionCandidate(
 
 function groupRepairCandidates(
   candidates: readonly CanonicalSessionCandidate[],
-  params: { cfg: OpenClawConfig; env: NodeJS.ProcessEnv },
+  params: { cfg: AforaConfig; env: NodeJS.ProcessEnv },
 ): CanonicalSessionRepairGroup[] {
   const byCanonicalKey = new Map<string, CanonicalSessionCandidate[]>();
   for (const candidate of candidates) {
@@ -365,7 +365,7 @@ type SingleDatabaseCanonicalRepairGroup = {
 
 function resolveSingleDatabaseCanonicalRepairGroup(
   candidates: readonly CanonicalSessionCandidate[],
-  params: { cfg: OpenClawConfig; env: NodeJS.ProcessEnv },
+  params: { cfg: AforaConfig; env: NodeJS.ProcessEnv },
 ): SingleDatabaseCanonicalRepairGroup | undefined {
   const selected = selectCanonicalSessionCandidate(candidates, params);
   if (
@@ -412,7 +412,7 @@ function listCanonicalDestinationAliasKeys(
 
 function applyCanonicalDestinationArtifacts(params: {
   copyWinnerAlias: boolean;
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   destinationStore: readonly CanonicalSessionCandidate[];
   rehomeDeliveries: boolean;
   winner: CanonicalSessionCandidate;
@@ -494,7 +494,7 @@ async function repairCanonicalSessionGroupsInSingleDatabase(
 
 async function repairCanonicalSessionGroup(
   candidates: readonly CanonicalSessionCandidate[],
-  params: { cfg: OpenClawConfig; env: NodeJS.ProcessEnv },
+  params: { cfg: AforaConfig; env: NodeJS.ProcessEnv },
 ): Promise<string[]> {
   const selected = selectCanonicalSessionCandidate(candidates, params);
   if (!selected) {
@@ -567,7 +567,7 @@ async function repairCanonicalSessionGroup(
     }
   }
   setCanonicalSqliteSessionMainKey(
-    openOpenClawAgentDatabase({ agentId: destination.agentId, path: destination.sqlitePath }),
+    openAforaAgentDatabase({ agentId: destination.agentId, path: destination.sqlitePath }),
     params.cfg.session?.mainKey,
   );
   const winnerResult = await applySessionEntryLifecycleMutation({
@@ -636,7 +636,7 @@ async function repairCanonicalSessionGroup(
 /** Doctor-owned durable repair; process-held incognito databases are intentionally excluded. */
 export async function repairCanonicalSessionKeys(params: {
   apply: boolean;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
 }): Promise<CanonicalSessionKeyRepairReport> {
   const env = params.env ?? process.env;
@@ -650,7 +650,7 @@ export async function repairCanonicalSessionKeys(params: {
   if (params.apply) {
     for (const store of stores) {
       setCanonicalSqliteSessionMainKey(
-        openOpenClawAgentDatabase({ agentId: store.agentId, path: store.sqlitePath }),
+        openAforaAgentDatabase({ agentId: store.agentId, path: store.sqlitePath }),
         params.cfg.session?.mainKey,
       );
     }

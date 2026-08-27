@@ -3,7 +3,7 @@
  * WebSocket bridge.
  */
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
-import type { SandboxContext } from "openclaw/plugin-sdk/sandbox";
+import type { SandboxContext } from "afora-agent/plugin-sdk/sandbox";
 import type { WebSocketServer } from "ws";
 import type { JsonObject, JsonValue } from "../protocol.js";
 
@@ -82,7 +82,7 @@ export type ManagedProcess = {
 };
 
 /** Shared exec-server instance leased by Codex native sandbox environments. */
-export type OpenClawExecServer = {
+export type AforaExecServer = {
   environmentId: string;
   authPath: string;
   refCount: number;

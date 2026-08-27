@@ -2,15 +2,15 @@ import {
   readProviderJsonResponse,
   resolveProviderHttpRequestConfig,
   sanitizeConfiguredModelProviderRequest,
-} from "openclaw/plugin-sdk/provider-http";
-import type { ModelProviderConfig } from "openclaw/plugin-sdk/provider-model-shared";
+} from "afora-agent/plugin-sdk/provider-http";
+import type { ModelProviderConfig } from "afora-agent/plugin-sdk/provider-model-shared";
 import {
   buildUsageHttpErrorSnapshot,
   parseProviderUsageNonNegativeNumber,
   type ProviderUsageSnapshot,
-} from "openclaw/plugin-sdk/provider-usage";
-import { fetchWithSsrFGuard } from "openclaw/plugin-sdk/ssrf-runtime";
-import { asOptionalRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/provider-usage";
+import { fetchWithSsrFGuard } from "afora-agent/plugin-sdk/ssrf-runtime";
+import { asOptionalRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   OPENROUTER_BASE_URL,
   resolveOpenRouterApiBaseUrl,

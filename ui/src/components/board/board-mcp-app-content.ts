@@ -48,7 +48,7 @@ export function renderBoardMcpAppContent(options: BoardMcpAppContentOptions): Te
           .height=${height}
           .fixedHeight=${true}
           .title=${widget.title || widget.name}
-          @openclaw-mcp-app-view-expired=${options.expired}
+          @afora-mcp-app-view-expired=${options.expired}
         ></mcp-app-view>`
       : !options.nearVisible || !appView
         ? loading

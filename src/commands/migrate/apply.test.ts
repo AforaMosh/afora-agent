@@ -6,7 +6,7 @@ import { createSuiteTempRootTracker } from "../../test-helpers/temp-dir.js";
 import { runMigrationApply } from "./apply.js";
 
 let stateDir = "";
-const suiteTempDirs = createSuiteTempRootTracker({ prefix: "openclaw-migrate-apply-" });
+const suiteTempDirs = createSuiteTempRootTracker({ prefix: "afora-migrate-apply-" });
 
 vi.mock("../../config/paths.js", async (importActual) => {
   const actual = await importActual<typeof import("../../config/paths.js")>();

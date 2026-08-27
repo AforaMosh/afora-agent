@@ -10,11 +10,11 @@ scenario:
   coverage:
     primary:
       - plugins.lifecycle-hot-install
-  objective: Verify a package-installed OpenClaw in a clean Docker home downloads the official Codex runtime on demand during OpenAI onboarding and records a loadable managed install.
+  objective: Verify a package-installed Afora in a clean Docker home downloads the official Codex runtime on demand during OpenAI onboarding and records a loadable managed install.
   successCriteria:
-    - The prepared OpenClaw tarball and clean home contain neither @openclaw/codex nor @openai/codex before onboarding.
-    - Non-interactive OpenAI onboarding emits exactly one successful JSON terminal document and downloads @openclaw/codex into the managed npm root.
-    - The canonical SQLite plugin index records the npm install while openclaw.json contains no legacy plugins.installs record.
+    - The prepared Afora tarball and clean home contain neither @afora/codex nor @openai/codex before onboarding.
+    - Non-interactive OpenAI onboarding emits exactly one successful JSON terminal document and downloads @afora/codex into the managed npm root.
+    - The canonical SQLite plugin index records the npm install while afora.json contains no legacy plugins.installs record.
     - The installed @openai/codex entrypoint executes its native Codex binary, reports a Codex CLI version, and the Codex plugin loads with the codex agent harness.
   docsRefs:
     - docs/cli/plugins.md

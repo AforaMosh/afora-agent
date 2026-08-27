@@ -1,5 +1,5 @@
 // Isolated run test harness builds cron run inputs, mocks, and assertions.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { vi, type Mock } from "vitest";
 import { resolveFastModeState as resolveFastModeStateImpl } from "../../agents/fast-mode.js";
 import { LiveSessionModelSwitchError } from "../../agents/live-model-switch-error.js";
@@ -541,7 +541,7 @@ function resetRunConfigMocks(): void {
   resolveAllowedModelRefMock.mockReturnValue({ ref: { provider: "openai", model: "gpt-5.4" } });
   resolveHooksGmailModelMock.mockReturnValue(null);
   resolveThinkingDefaultMock.mockReturnValue("off");
-  resolveEffectiveAgentRuntimeMock.mockReturnValue("openclaw");
+  resolveEffectiveAgentRuntimeMock.mockReturnValue("afora");
   getModelRefStatusMock.mockReturnValue({ allowed: false });
   resolveCronStyleNowMock.mockReturnValue({
     formattedTime: "2026-02-10 12:00",
@@ -851,17 +851,17 @@ export function resetRunCronIsolatedAgentTurnHarness(): void {
 }
 
 export function clearFastTestEnv(): string | undefined {
-  const previousFastTestEnv = process.env.OPENCLAW_TEST_FAST;
-  delete process.env.OPENCLAW_TEST_FAST;
+  const previousFastTestEnv = process.env.AFORA_TEST_FAST;
+  delete process.env.AFORA_TEST_FAST;
   return previousFastTestEnv;
 }
 
 export function restoreFastTestEnv(previousFastTestEnv: string | undefined): void {
   if (previousFastTestEnv == null) {
-    delete process.env.OPENCLAW_TEST_FAST;
+    delete process.env.AFORA_TEST_FAST;
     return;
   }
-  process.env.OPENCLAW_TEST_FAST = previousFastTestEnv;
+  process.env.AFORA_TEST_FAST = previousFastTestEnv;
 }
 
 export async function loadRunCronIsolatedAgentTurn() {

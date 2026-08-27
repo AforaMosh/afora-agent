@@ -1,4 +1,4 @@
-// Main `openclaw status` command orchestrator.
+// Main `afora status` command orchestrator.
 // It routes all/json/deep modes, collects scan/runtime state, and delegates formatting to report builders.
 
 import {
@@ -9,7 +9,7 @@ import {
 } from "../../packages/gateway-protocol/src/connect-error-details.js";
 import { sanitizeTerminalText } from "../../packages/terminal-core/src/safe-text.js";
 import { withProgress } from "../cli/progress.js";
-import { OPENCLAW_WRAPPER_ENV_KEY } from "../daemon/program-args.js";
+import { AFORA_WRAPPER_ENV_KEY } from "../daemon/program-args.js";
 import { readRestartSentinelReadOnly } from "../infra/restart-sentinel.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { createLazyImportLoader } from "../shared/lazy-promise.js";
@@ -73,7 +73,7 @@ function resolvePairingRecoveryContext(params: {
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.statusCommandTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.statusCommandTestApi")] = {
     resolvePairingRecoveryContext,
   };
 }
@@ -94,10 +94,10 @@ function resolveServiceWrapperContextHint(params: {
   if (normalizeStatusWrapperPath(params.cliWrapperPath) === serviceWrapperPath) {
     return null;
   }
-  return `The installed gateway service uses ${OPENCLAW_WRAPPER_ENV_KEY} (${sanitizeTerminalText(serviceWrapperPath)}), but this CLI process is not running with that same wrapper. Missing-secret diagnostics may describe the current CLI process rather than the installed gateway service context.`;
+  return `The installed gateway service uses ${AFORA_WRAPPER_ENV_KEY} (${sanitizeTerminalText(serviceWrapperPath)}), but this CLI process is not running with that same wrapper. Missing-secret diagnostics may describe the current CLI process rather than the installed gateway service context.`;
 }
 
-/** Runs `openclaw status`, including JSON/all routing and optional deep probes. */
+/** Runs `afora status`, including JSON/all routing and optional deep probes. */
 export async function statusCommand(
   opts: {
     json?: boolean;
@@ -270,7 +270,7 @@ export async function statusCommand(
     }
     const wrapperContextHint = resolveServiceWrapperContextHint({
       serviceWrapperPath: daemon.wrapperPath,
-      cliWrapperPath: process.env[OPENCLAW_WRAPPER_ENV_KEY],
+      cliWrapperPath: process.env[AFORA_WRAPPER_ENV_KEY],
     });
     if (wrapperContextHint) {
       runtime.log(theme.warn(wrapperContextHint));

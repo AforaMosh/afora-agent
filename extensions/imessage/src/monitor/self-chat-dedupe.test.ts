@@ -1,5 +1,5 @@
 // Imessage tests cover self chat dedupe plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { installIMessageStateRuntimeForTest } from "../test-support/runtime.js";
 import { createSentMessageCache } from "./echo-cache.js";
@@ -33,7 +33,7 @@ const DEFAULT_FAKE_TIME = "2026-03-24T12:00:00Z";
 
 type InboundDecisionParams = Parameters<typeof resolveIMessageInboundDecision>[0];
 
-const cfg = {} as OpenClawConfig;
+const cfg = {} as AforaConfig;
 
 beforeEach(() => {
   installIMessageStateRuntimeForTest();

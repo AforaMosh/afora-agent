@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { listAgentIds } from "../agents/agent-scope.js";
 import {
   isConfiguredSessionStoreAgentId,
@@ -16,14 +16,14 @@ import {
   type SessionEntryListScope,
 } from "../config/sessions/session-accessor.js";
 import { canonicalSessionKeyMigrationRequiredError } from "../config/sessions/session-canonical-key.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   DEFAULT_AGENT_ID,
   isIncognitoSessionKey,
   normalizeAgentId,
   parseAgentSessionKey,
 } from "../routing/session-key.js";
-import { resolveIncognitoOpenClawAgentSqlitePath } from "../state/openclaw-agent-db.js";
+import { resolveIncognitoAforaAgentSqlitePath } from "../state/afora-agent-db.js";
 import {
   resolveSessionStoreAgentId,
   resolveSessionStoreKey,
@@ -77,7 +77,7 @@ function findCanonicalStoreMatch(
 }
 
 function buildGatewaySessionStoreScanTargets(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   key: string;
   canonicalKey: string;
   agentId: string;
@@ -106,7 +106,7 @@ type GatewaySessionStoreDiscovery = {
 };
 
 function resolveGatewaySessionStoreCandidates(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
   cache?: GatewaySessionStoreDiscoveryCache,
 ): GatewaySessionStoreDiscovery {
@@ -146,7 +146,7 @@ export type GatewaySessionStoreCache = Map<string, Record<string, SessionEntry>>
 export type GatewaySessionStoreDiscoveryCache = Map<string, GatewaySessionStoreDiscovery>;
 
 export function createGatewaySessionStoreDiscoveryCache(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   targets: readonly SessionStoreTarget[];
   agentIds: Iterable<string>;
 }): GatewaySessionStoreDiscoveryCache {
@@ -249,7 +249,7 @@ function loadGatewaySessionLookupStoreUncached(
 }
 
 function resolveGatewaySessionStoreLookup(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   key: string;
   canonicalKey: string;
   agentId: string;
@@ -350,7 +350,7 @@ function isAgentScopedSentinelSessionKey(canonicalKey: string): boolean {
 }
 
 function resolveExplicitDeletedLegacyMainStoreTarget(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   key: string;
   clone?: boolean;
   deferCanonicalValidation?: boolean;
@@ -450,7 +450,7 @@ function resolveExplicitDeletedLegacyMainStoreTarget(params: {
 }
 
 export function resolveGatewaySessionStoreTargetWithStore(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   key: string;
   agentId?: string;
   clone?: boolean;
@@ -491,7 +491,7 @@ export function resolveGatewaySessionStoreTargetWithStore(params: {
       ? normalizeAgentId(requestedAgentId)
       : resolveSessionStoreAgentId(params.cfg, canonicalKey);
   if (isIncognitoSessionKey(canonicalKey)) {
-    const storePath = resolveIncognitoOpenClawAgentSqlitePath({ agentId });
+    const storePath = resolveIncognitoAforaAgentSqlitePath({ agentId });
     // Session resolution may receive arbitrary stale keys; only creation/write
     // owners may materialize the process-lifetime incognito database.
     const store = loadGatewaySessionLookupStore(storePath, params.clone, agentId, {
@@ -582,7 +582,7 @@ function includeDirectChildEntries(
 }
 
 export function resolveGatewaySessionStoreTarget(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   key: string;
   agentId?: string;
   clone?: boolean;

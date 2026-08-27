@@ -5,5 +5,5 @@ type McpUiResourceTestApi = {
 };
 
 export const testing = (globalThis as Record<PropertyKey, unknown>)[
-  Symbol.for("openclaw.mcpUiResourceTestApi")
+  Symbol.for("afora.mcpUiResourceTestApi")
 ] as McpUiResourceTestApi;

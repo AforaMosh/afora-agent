@@ -6,7 +6,7 @@ import type {
   ChannelMessageActionContext,
   ChannelPlugin,
 } from "../../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import {
   createChannelTestPluginBase,
@@ -234,7 +234,7 @@ describe("runMessageAction context isolation", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       actionParams: {
         channel: "slackdm",
         target: "user:U123",
@@ -344,7 +344,7 @@ describe("runMessageAction context isolation", () => {
             token: "forum-test",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       action: "send" as const,
       actionParams: {
         message: "hi",
@@ -465,7 +465,7 @@ describe("runMessageAction context isolation", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       actionParams: {
         channel: "workspace",
         target: "channel:C99999999",
@@ -486,7 +486,7 @@ describe("runMessageAction context isolation", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       actionParams: {
         channel: "workspace",
         target: "channel:C99999999",
@@ -524,7 +524,7 @@ describe("runMessageAction context isolation", () => {
             },
           ],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       agentId: "sandbox",
       actionParams: {
         channel: "workspace",

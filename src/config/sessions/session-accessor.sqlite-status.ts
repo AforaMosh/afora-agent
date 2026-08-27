@@ -1,6 +1,6 @@
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../../infra/kysely-sync.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
-import type { OpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
+import type { DB as AforaAgentKyselyDatabase } from "../../state/afora-agent-db.generated.js";
+import type { AforaAgentDatabase } from "../../state/afora-agent-db.js";
 import type {
   SessionEntryStatus,
   SessionEntrySummary,
@@ -16,7 +16,7 @@ import {
 import { projectCanonicalSessionEntryShape } from "./store-entry-shape.js";
 import type { SessionEntry } from "./types.js";
 
-type SessionStatusDatabase = Pick<OpenClawAgentKyselyDatabase, "session_nodes">;
+type SessionStatusDatabase = Pick<AforaAgentKyselyDatabase, "session_nodes">;
 
 export function normalizeStatus(value: unknown): SessionEntryStatus | null {
   return value === "running" ||
@@ -42,7 +42,7 @@ export function parseSessionEntryJson(
 }
 
 export function readSessionEntriesByStatus(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   statuses: readonly SessionEntryStatus[],
   sessionKeys?: readonly string[],
 ): SessionEntrySummary[] {

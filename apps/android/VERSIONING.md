@@ -1,4 +1,4 @@
-# OpenClaw Android Versioning
+# Afora Android Versioning
 
 Android release builds use pinned app metadata instead of auto-bumping `build.gradle.kts`.
 
@@ -56,7 +56,7 @@ Recommended workflow:
    emulators.
 7. Run `pnpm android:release:archive` to produce the signed phone Play AAB, Wear AAB, and third-party APK.
 8. Run `pnpm android:release:upload` to upload metadata, screenshots, the phone AAB, and the Wear AAB to their phone and `wear:` tracks in one atomic Google Play edit.
-9. For a regular final or correction OpenClaw release, let `OpenClaw Release Publish` dispatch the protected `Android Release` workflow. It builds the signed third-party APK from the exact tag and attaches the verified APK, checksum manifest, and GitHub provenance before the release draft can publish. Before tagging a correction with its own package version, increment the pinned `versionCode`; the workflow verifies it is higher than the preceding final or correction APK. A same-commit fallback correction reuses the base release's verified APK and adds provenance for the correction tag.
+9. For a regular final or correction Afora release, let `Afora Release Publish` dispatch the protected `Android Release` workflow. It builds the signed third-party APK from the exact tag and attaches the verified APK, checksum manifest, and GitHub provenance before the release draft can publish. Before tagging a correction with its own package version, increment the pinned `versionCode`; the workflow verifies it is higher than the preceding final or correction APK. A same-commit fallback correction reuses the base release's verified APK and adds provenance for the correction tag.
 10. Complete production rollout manually in Google Play Console when needed.
 
 If `pnpm android:release:upload` fails, stop at that failure. Do not continue by
@@ -65,7 +65,7 @@ uploading archived artifacts through `pnpm android:release:archive`,
 Google Play API mutation commands, or Play Console mutation commands. Fix the
 failing release-lane step, then rerun `pnpm android:release:upload`.
 
-The third-party flavor is archived as a signed APK for non-Play distribution. The Play release lane never uploads it. Official GitHub distribution is owned only by `.github/workflows/android-release.yml`, which publishes regular final and correction tags through the protected `android-release` environment as `OpenClaw-Android.apk`.
+The third-party flavor is archived as a signed APK for non-Play distribution. The Play release lane never uploads it. Official GitHub distribution is owned only by `.github/workflows/android-release.yml`, which publishes regular final and correction tags through the protected `android-release` environment as `Afora-Android.apk`.
 
 ## Release SHA tracking
 
@@ -73,18 +73,18 @@ Successful Play build uploads create a non-tag Git ref that records the source
 commit for the uploaded store build:
 
 ```text
-refs/openclaw/mobile-releases/android/<versionName>-<versionCode>
+refs/afora/mobile-releases/android/<versionName>-<versionCode>
 ```
 
 Example:
 
 ```text
-refs/openclaw/mobile-releases/android/2026.6.10-2026061008
+refs/afora/mobile-releases/android/2026.6.10-2026061008
 ```
 
 These refs are intentionally outside `refs/tags/*` and `refs/heads/*`. They do
 not appear on GitHub release or tag pages, and they do not participate in the
-core OpenClaw release machinery.
+core Afora release machinery.
 
 `pnpm android:release:upload` checks the ref before uploading the Play build and
 records it only after the atomic phone and Wear Play edit commits. Existing refs are
@@ -108,7 +108,7 @@ pnpm mobile:release:resolve -- --platform android --version 2026.6.10 --version-
 
 `sync:pull` decrypts the Play upload keystore and Gradle signing properties into `apps/android/build/release-signing/`. That directory is gitignored, and Fastlane exports the materialized values as Gradle project properties for the current release command.
 
-If `MATCH_PASSWORD` is not set, the existing manual Gradle-property signing path still works: provide `OPENCLAW_ANDROID_STORE_FILE`, `OPENCLAW_ANDROID_STORE_PASSWORD`, `OPENCLAW_ANDROID_KEY_ALIAS`, and `OPENCLAW_ANDROID_KEY_PASSWORD` through your local Gradle user properties before running release tasks.
+If `MATCH_PASSWORD` is not set, the existing manual Gradle-property signing path still works: provide `AFORA_ANDROID_STORE_FILE`, `AFORA_ANDROID_STORE_PASSWORD`, `AFORA_ANDROID_KEY_ALIAS`, and `AFORA_ANDROID_KEY_PASSWORD` through your local Gradle user properties before running release tasks.
 
 Agent-driven releases must not use those lower-level signing and upload surfaces
 to bypass a failed `pnpm android:release:upload` attempt. Report the failing

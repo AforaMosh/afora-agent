@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
-import type { PluginCommandContext } from "openclaw/plugin-sdk/plugin-entry";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import type { PluginCommandContext } from "afora-agent/plugin-sdk/plugin-entry";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { bindingStoreKey } from "./app-server/session-binding.js";
 import {
   codexDiagnosticsFeedbackState,
@@ -16,7 +16,7 @@ type ParsedDiagnosticsArgs =
   | { action: "cancel"; token: string }
   | { action: "usage" };
 
-const CODEX_DIAGNOSTICS_SOURCE = "openclaw-diagnostics";
+const CODEX_DIAGNOSTICS_SOURCE = "afora-diagnostics";
 const CODEX_DIAGNOSTICS_REASON_MAX_CHARS = 2048;
 const CODEX_DIAGNOSTICS_COOLDOWN_MS = 60_000;
 const CODEX_DIAGNOSTICS_ERROR_MAX_CHARS = 500;
@@ -308,10 +308,10 @@ function formatCodexDiagnosticsTargetBlock(
     lines.push(`Channel: ${formatCodexValueForDisplay(target.channel)}`);
   }
   if (target.sessionKey) {
-    lines.push(`OpenClaw session key: ${formatCodexCopyableValueForDisplay(target.sessionKey)}`);
+    lines.push(`Afora session key: ${formatCodexCopyableValueForDisplay(target.sessionKey)}`);
   }
   if (target.sessionId) {
-    lines.push(`OpenClaw session id: ${formatCodexCopyableValueForDisplay(target.sessionId)}`);
+    lines.push(`Afora session id: ${formatCodexCopyableValueForDisplay(target.sessionId)}`);
   }
   lines.push(`Codex thread id: ${formatCodexCopyableValueForDisplay(target.threadId)}`);
   lines.push(`Inspect locally: ${formatCodexResumeCommandForDisplay(target.threadId)}`);
@@ -325,7 +325,7 @@ function formatCodexDiagnosticsTargetLine(target: CodexDiagnosticsTarget): strin
   }
   const sessionLabel = target.sessionId || target.sessionKey;
   if (sessionLabel) {
-    parts.push(`OpenClaw session ${formatCodexValueForDisplay(sessionLabel)}`);
+    parts.push(`Afora session ${formatCodexValueForDisplay(sessionLabel)}`);
   }
   parts.push(`Codex thread ${formatCodexThreadIdForDisplay(target.threadId)}`);
   return `- ${parts.join(", ")}`;

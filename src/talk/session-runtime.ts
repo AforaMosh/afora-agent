@@ -1,5 +1,5 @@
 // Talk session runtime manages realtime voice session lifecycle and provider wiring.
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { RealtimeVoiceProviderPlugin } from "../plugins/types.js";
 import type {
   RealtimeVoiceBridge,
@@ -56,7 +56,7 @@ export type RealtimeVoiceBridgeSession = {
  */
 export type RealtimeVoiceBridgeSessionParams = {
   provider: RealtimeVoiceProviderPlugin;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   /** Host-selected agent scope for provider auth and agent-owned bridge state. */
   agentId?: string;
   providerConfig: RealtimeVoiceProviderConfig;

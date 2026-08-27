@@ -53,7 +53,7 @@ export type MemorySyncProgressUpdate = {
 };
 
 export type MemorySessionSyncTarget = {
-  /** Owning OpenClaw agent. Omit only when the active manager scope already supplies it. */
+  /** Owning Afora agent. Omit only when the active manager scope already supplies it. */
   agentId?: string;
   /** Storage-neutral transcript/session identity. */
   sessionId: string;
@@ -159,7 +159,7 @@ export function resolveMemorySearchStaleness(
     warning: identityReason
       ? `Memory index is stale: ${identityReason}. Search results may be incomplete.`
       : "Memory index is dirty. Search results may be incomplete.",
-    action: `Run: openclaw memory status --index${agentId?.trim() ? ` --agent ${agentId.trim()}` : ""}`,
+    action: `Run: afora memory status --index${agentId?.trim() ? ` --agent ${agentId.trim()}` : ""}`,
   };
 }
 

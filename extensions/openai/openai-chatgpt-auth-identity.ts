@@ -1,5 +1,5 @@
 // Openai plugin module implements openai chatgpt auth identity behavior.
-import { parseStrictPositiveInteger } from "openclaw/plugin-sdk/number-runtime";
+import { parseStrictPositiveInteger } from "afora-agent/plugin-sdk/number-runtime";
 import { trimNonEmptyString } from "./openai-chatgpt-shared.js";
 
 type CodexJwtPayload = {

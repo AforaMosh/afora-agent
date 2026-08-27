@@ -5,8 +5,8 @@ import {
   expectStopPendingUntilAbort,
   startAccountAndTrackLifecycle,
   waitForStartedMocks,
-} from "openclaw/plugin-sdk/channel-test-helpers";
-import type { ChannelAccountSnapshot } from "openclaw/plugin-sdk/status-helpers";
+} from "afora-agent/plugin-sdk/channel-test-helpers";
+import type { ChannelAccountSnapshot } from "afora-agent/plugin-sdk/status-helpers";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { TwitchAccountConfig } from "./types.js";
 

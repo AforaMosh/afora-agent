@@ -1,16 +1,16 @@
 ---
-summary: "How OpenClaw installs plugin packages and resolves plugin dependencies"
+summary: "How Afora installs plugin packages and resolves plugin dependencies"
 read_when:
   - You are debugging plugin package installs
   - You are changing plugin startup, doctor, or package-manager install behavior
-  - You are maintaining packaged OpenClaw installs or bundled plugin manifests
+  - You are maintaining packaged Afora installs or bundled plugin manifests
 title: "Plugin dependency resolution"
 sidebarTitle: "Dependencies"
 ---
 
-OpenClaw handles plugin dependencies at install/update time only. Runtime
+Afora handles plugin dependencies at install/update time only. Runtime
 loading never runs a package manager, repairs a dependency tree, or mutates
-the OpenClaw package directory.
+the Afora package directory.
 
 ## Responsibility split
 
@@ -18,11 +18,11 @@ Plugin packages own their dependency graph:
 
 - Runtime dependencies live in the plugin package's `dependencies` or
   `optionalDependencies`.
-- SDK/core imports are peer or supplied OpenClaw imports.
+- SDK/core imports are peer or supplied Afora imports.
 - Local development plugins bring their own already-installed dependencies.
-- npm and git plugins install into OpenClaw-owned package roots.
+- npm and git plugins install into Afora-owned package roots.
 
-OpenClaw owns only the plugin lifecycle:
+Afora owns only the plugin lifecycle:
 
 - Discover the plugin source.
 - Install or update the package when explicitly requested.
@@ -32,23 +32,23 @@ OpenClaw owns only the plugin lifecycle:
 
 ## Install roots
 
-OpenClaw uses stable per-source roots:
+Afora uses stable per-source roots:
 
 - npm packages install into per-plugin projects under
-  `~/.openclaw/npm/projects/<encoded-package>`.
-- git packages clone under `~/.openclaw/git`.
+  `~/.afora/npm/projects/<encoded-package>`.
+- git packages clone under `~/.afora/git`.
 - Local/path/archive installs are copied or referenced without dependency
   repair.
 
 npm installs run in that per-plugin project root with:
 
 ```bash
-cd ~/.openclaw/npm/projects/<encoded-package>
+cd ~/.afora/npm/projects/<encoded-package>
 npm install --omit=dev --omit=peer --legacy-peer-deps --ignore-scripts --no-audit --no-fund
 ```
 
-`openclaw plugins install npm-pack:<path.tgz>` uses the same per-plugin npm
-project root for a local npm-pack tarball: OpenClaw reads the tarball's npm
+`afora plugins install npm-pack:<path.tgz>` uses the same per-plugin npm
+project root for a local npm-pack tarball: Afora reads the tarball's npm
 metadata, adds it to the managed project as a copied `file:` dependency, runs
 the normal npm install above, then verifies the installed lockfile metadata
 before trusting the plugin. This path exists for package-acceptance and
@@ -71,16 +71,16 @@ If a plugin fails at runtime with a missing import, fix the package manifest
 instead of repairing the managed project by hand. Runtime imports belong in
 the plugin package `dependencies` or `optionalDependencies`; `devDependencies`
 are not installed for managed runtime projects. A local `npm install` inside
-`~/.openclaw/npm/projects/<encoded-package>` can unblock a temporary
+`~/.afora/npm/projects/<encoded-package>` can unblock a temporary
 diagnostic, but it is not package-acceptance proof because the next install or
 update recreates the project from package metadata.
 
 npm may hoist transitive dependencies to the per-plugin project's
-`node_modules` beside the plugin package. OpenClaw scans the managed project
+`node_modules` beside the plugin package. Afora scans the managed project
 root before trusting the install, and removes that project on uninstall, so
 hoisted runtime dependencies stay inside that plugin's cleanup boundary.
 
-OpenClaw-owned npm plugin packages never ship npm lockfiles. The repository
+Afora-owned npm plugin packages never ship npm lockfiles. The repository
 uses `pnpm-lock.yaml` as its committed product dependency review boundary, then
 generates npm package locks only in temporary directories to validate the
 publishable dependency graph:
@@ -93,7 +93,7 @@ pnpm deps:npm-lock:check:changed
 The checker strips plugin `devDependencies`, applies the workspace override
 policy, and rejects generated versions absent from `pnpm-lock.yaml`. Nothing
 is written into the checkout. Third-party plugin packages may still contain
-lockfiles according to their own packaging policy; OpenClaw's installer leaves
+lockfiles according to their own packaging policy; Afora's installer leaves
 that npm behavior to the installed npm version.
 
 Before treating a local package as release-candidate proof, inspect the
@@ -118,26 +118,26 @@ tmpdir=$(mktemp -d)
 rm -rf "$tmpdir"
 ```
 
-OpenClaw-owned npm plugin packages can also publish with explicit
+Afora-owned npm plugin packages can also publish with explicit
 `bundledDependencies`. The npm publish path overlays the runtime dependency
 name list, strips dev-only workspace metadata from the published manifest,
 runs a script-free npm install for the package-local runtime dependencies,
 then packs or publishes the plugin tarball with those dependency files
 included. Native-heavy packages (Codex, ACPX, Copilot, llama.cpp,
 memory-lancedb, Microsoft Teams, Tlon) opt out with
-`openclaw.release.bundleRuntimeDependencies: false`; they still ship a
+`afora.release.bundleRuntimeDependencies: false`; they still ship a
 precisely pinned manifest, but npm resolves runtime dependencies during install
 instead of embedding every platform binary in the plugin tarball. The root
-`openclaw` package also resolves dependencies at install time and does not
+`afora` package also resolves dependencies at install time and does not
 bundle its full dependency tree. See
 [dependency locking](/gateway/security/dependency-locking).
 
-Plugins that import `openclaw/plugin-sdk/*` declare `openclaw` as a peer
-dependency. OpenClaw does not let npm install a separate registry copy of the
+Plugins that import `afora/plugin-sdk/*` declare `afora` as a peer
+dependency. Afora does not let npm install a separate registry copy of the
 host package into a managed project, because a stale host package can affect
 npm's peer resolution inside that plugin. Managed npm installs skip npm peer
-resolution/materialization, and OpenClaw reasserts plugin-local
-`node_modules/openclaw` links for installed packages that declare the host
+resolution/materialization, and Afora reasserts plugin-local
+`node_modules/afora` links for installed packages that declare the host
 peer, after install or update.
 
 git installs clone or refresh the repository, then run:
@@ -152,7 +152,7 @@ for a normal Node package.
 
 ## Local plugins
 
-Local plugins are developer-controlled directories. OpenClaw never runs
+Local plugins are developer-controlled directories. Afora never runs
 `npm install`, `pnpm install`, or dependency repair for them; if a local
 plugin has dependencies, install them in that plugin before loading it.
 
@@ -169,19 +169,19 @@ A missing dependency at runtime fails plugin load with an error that points
 the operator to an explicit fix:
 
 ```bash
-openclaw plugins update <id>
-openclaw plugins install <source>
-openclaw doctor --fix
+afora plugins update <id>
+afora plugins install <source>
+afora doctor --fix
 ```
 
-`doctor --fix` cleans legacy OpenClaw-generated dependency state and can
+`doctor --fix` cleans legacy Afora-generated dependency state and can
 recover downloadable plugins that are missing from local install records when
 config still references them. Doctor does not repair dependencies for an
 already-installed local plugin.
 
 ## Bundled plugins
 
-Lightweight and core-critical bundled plugins ship as part of OpenClaw. They
+Lightweight and core-critical bundled plugins ship as part of Afora. They
 should either carry no heavy runtime dependency tree, or move out to a
 downloadable package on ClawHub/npm.
 
@@ -193,7 +193,7 @@ Bundled plugin manifests must not request dependency staging. Large or
 optional plugin functionality should be packaged as a normal plugin and
 installed through the same npm/git/ClawHub path as third-party plugins.
 
-In source checkouts, OpenClaw treats the repository as a pnpm monorepo.
+In source checkouts, Afora treats the repository as a pnpm monorepo.
 After `pnpm install`, bundled plugins load from `extensions/<id>` so
 package-local workspace dependencies are available and edits are picked up
 directly. Source checkout development is pnpm-only; plain `npm install` at
@@ -201,29 +201,29 @@ the repository root does not prepare bundled plugin dependencies.
 
 | Install shape                    | Bundled plugin location               | Dependency owner                                                     |
 | -------------------------------- | ------------------------------------- | -------------------------------------------------------------------- |
-| Global npm install               | Built runtime tree inside the package | OpenClaw package and explicit plugin install/update/doctor flows     |
+| Global npm install               | Built runtime tree inside the package | Afora package and explicit plugin install/update/doctor flows     |
 | Git checkout plus `pnpm install` | `extensions/<id>` workspace packages  | The pnpm workspace, including each plugin package's own dependencies |
-| `openclaw plugins install ...`   | Managed npm project/git/ClawHub root  | The plugin install/update flow                                       |
+| `afora plugins install ...`   | Managed npm project/git/ClawHub root  | The plugin install/update flow                                       |
 
 For the global npm row, use
-`npm install -g openclaw --allow-scripts=openclaw` on npm 12 or npm 11.16+.
-On npm 11.12 and earlier, omit `--allow-scripts=openclaw`; upgrade npm
+`npm install -g afora --allow-scripts=afora` on npm 12 or npm 11.16+.
+On npm 11.12 and earlier, omit `--allow-scripts=afora`; upgrade npm
 11.13–11.15 first. Plugin dependency convergence remains intentionally
 script-disabled and continues to use the `--ignore-scripts` commands above.
 
 ## Legacy cleanup
 
-Older OpenClaw versions generated bundled-plugin dependency roots at startup
+Older Afora versions generated bundled-plugin dependency roots at startup
 or during doctor repair. Current doctor cleanup removes those stale
 directories and symlinks with `--fix`, including old `plugin-runtime-deps`
 roots, global Node-prefix package symlinks pointing at pruned
-`plugin-runtime-deps` targets, `.openclaw-runtime-deps*` manifests, generated
+`plugin-runtime-deps` targets, `.afora-runtime-deps*` manifests, generated
 plugin `node_modules`, install stage directories, and package-local pnpm
 stores. Packaged postinstall also removes those global symlinks before
 pruning the legacy target roots, so upgrades do not leave dangling ESM
 package imports.
 
-Older npm installs also used a shared `~/.openclaw/npm/node_modules` root.
+Older npm installs also used a shared `~/.afora/npm/node_modules` root.
 Current install, update, uninstall, and doctor flows still recognize that
 legacy flat root for recovery and cleanup only. New npm installs create
 per-plugin project roots instead.

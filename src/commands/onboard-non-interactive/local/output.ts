@@ -147,17 +147,17 @@ function recoveryHintForGatewayHealthFailure(
 ): string | undefined {
   switch (classification) {
     case "auth-mismatch":
-      return "Fix: run `openclaw doctor --fix`.";
+      return "Fix: run `afora doctor --fix`.";
     case "module-missing":
-      return "Fix: run `openclaw doctor --fix`.";
+      return "Fix: run `afora doctor --fix`.";
     case "service-missing":
-      return "Fix: run `openclaw gateway install --force`.";
+      return "Fix: run `afora gateway install --force`.";
     case "service-stopped":
-      return "Fix: run `openclaw gateway restart`.";
+      return "Fix: run `afora gateway restart`.";
     case "startup-blocked":
-      return "Fix: run `openclaw gateway status --deep`.";
+      return "Fix: run `afora gateway status --deep`.";
     case "not-listening":
-      return "Fix: start `openclaw gateway run`, or run `openclaw gateway restart` for a managed gateway.";
+      return "Fix: start `afora gateway run`, or run `afora gateway restart` for a managed gateway.";
     default:
       return undefined;
   }

@@ -12,7 +12,7 @@ scenario:
       - gateway.backward-compatible-evolution
   objective: Verify the published Gateway protocol package and generated Swift models stay aligned with the canonical protocol registry and additive compatibility contract.
   successCriteria:
-    - The real `@openclaw/gateway-protocol` package build is packed and unpacked before inspection.
+    - The real `@afora/gateway-protocol` package build is packed and unpacked before inspection.
     - The unpacked package imports its built validators and schema registry successfully.
     - The shipped `protocol.schema.json` exactly matches the canonical TypeBox registry and includes connect, request, response, and event definitions.
     - The canonical protocol drift checks, including generated Swift model drift, pass.
@@ -27,7 +27,7 @@ scenario:
     - scripts/protocol-gen.ts
     - scripts/protocol-gen-swift.ts
     - test/e2e/qa-lab/runtime/gateway-protocol-artifacts.ts
-    - apps/shared/OpenClawKit/Tests/OpenClawKitTests/GatewayProtocolGeneratedModelsTests.swift
+    - apps/shared/AforaKit/Tests/AforaKitTests/GatewayProtocolGeneratedModelsTests.swift
   execution:
     kind: script
     path: test/e2e/qa-lab/runtime/gateway-protocol-artifacts.ts

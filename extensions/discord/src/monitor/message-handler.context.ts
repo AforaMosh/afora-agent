@@ -6,20 +6,20 @@ import {
   resolveEnvelopeFormatOptions,
   toHistoryMediaEntries,
   toInboundMediaFactsWithMetadata,
-} from "openclaw/plugin-sdk/channel-inbound";
-import { resolveChannelContextVisibilityMode } from "openclaw/plugin-sdk/context-visibility-runtime";
-import { resolvePinnedMainDmOwnerFromAllowlist } from "openclaw/plugin-sdk/conversation-runtime";
-import { isDangerousNameMatchingEnabled } from "openclaw/plugin-sdk/dangerous-name-runtime";
+} from "afora-agent/plugin-sdk/channel-inbound";
+import { resolveChannelContextVisibilityMode } from "afora-agent/plugin-sdk/context-visibility-runtime";
+import { resolvePinnedMainDmOwnerFromAllowlist } from "afora-agent/plugin-sdk/conversation-runtime";
+import { isDangerousNameMatchingEnabled } from "afora-agent/plugin-sdk/dangerous-name-runtime";
 import {
   buildHistoryContextFromEntries,
   buildInboundHistoryFromEntries,
   createChannelHistoryWindow,
-} from "openclaw/plugin-sdk/reply-history";
-import { buildAgentSessionKey, resolveThreadSessionKeys } from "openclaw/plugin-sdk/routing";
-import { danger, logVerbose, shouldLogVerbose } from "openclaw/plugin-sdk/runtime-env";
-import { evaluateSupplementalContextVisibility } from "openclaw/plugin-sdk/security-runtime";
-import { readSessionUpdatedAt, resolveStorePath } from "openclaw/plugin-sdk/session-store-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/reply-history";
+import { buildAgentSessionKey, resolveThreadSessionKeys } from "afora-agent/plugin-sdk/routing";
+import { danger, logVerbose, shouldLogVerbose } from "afora-agent/plugin-sdk/runtime-env";
+import { evaluateSupplementalContextVisibility } from "afora-agent/plugin-sdk/security-runtime";
+import { readSessionUpdatedAt, resolveStorePath } from "afora-agent/plugin-sdk/session-store-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { resolveDiscordConversationIdentity } from "../conversation-identity.js";
 import { ChannelType } from "../internal/discord.js";
 import { normalizeDiscordAllowList, normalizeDiscordSlug } from "./allow-list.js";

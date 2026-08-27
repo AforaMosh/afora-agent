@@ -18,16 +18,16 @@ grounded-response providers, rather than returning a ranked result list.
   </Step>
   <Step title="Store the key">
     Set `KIMI_API_KEY` or `MOONSHOT_API_KEY` in the Gateway environment (for a
-    gateway install, add it to `~/.openclaw/.env`), or configure via:
+    gateway install, add it to `~/.afora/.env`), or configure via:
 
     ```bash
-    openclaw configure --section web
+    afora configure --section web
     ```
 
   </Step>
 </Steps>
 
-Choosing **Kimi** during `openclaw onboard` or `openclaw configure --section web`
+Choosing **Kimi** during `afora onboard` or `afora configure --section web`
 also prompts for:
 
 - the Moonshot API region: `https://api.moonshot.ai/v1` or `https://api.moonshot.cn/v1`
@@ -77,10 +77,10 @@ Kimi `baseUrl` to override this inheritance.
 
 ## Grounding requirement
 
-OpenClaw only returns a Kimi `web_search` result after Moonshot's response
+Afora only returns a Kimi `web_search` result after Moonshot's response
 includes native web-search grounding evidence, such as a `$web_search` tool-call
 replay, `search_results`, or citation URLs. If Kimi answers directly with no
-grounding (for example "I cannot browse the internet"), OpenClaw returns a
+grounding (for example "I cannot browse the internet"), Afora returns a
 `kimi_web_search_ungrounded` error instead of treating that text as a search
 result. Retry the query, switch to a structured provider such as Brave, or use
 `web_fetch` / the browser tool when you already have a target URL.

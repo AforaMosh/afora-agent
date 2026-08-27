@@ -1,6 +1,6 @@
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
-const PLUGIN_PACKAGE_UNINSTALL_PLAN = Symbol.for("openclaw.pluginPackageUninstallPlan");
+const PLUGIN_PACKAGE_UNINSTALL_PLAN = Symbol.for("afora.pluginPackageUninstallPlan");
 
 type PluginPackageUninstallPlanMetadata = {
   runtimePluginIds: readonly string[];
@@ -28,9 +28,9 @@ export function resolvePluginPackageUninstallPlan(
 }
 
 export function prepareConfigForPendingPluginDirectoryRemovalSet(
-  config: OpenClawConfig,
+  config: AforaConfig,
   pluginIds: readonly string[],
-): OpenClawConfig {
+): AforaConfig {
   const entries = { ...config.plugins?.entries };
   for (const entryId of new Set(pluginIds)) {
     entries[entryId] = {

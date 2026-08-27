@@ -3,7 +3,7 @@ import { prepareSystemAgentRunAdmission } from "../../agents/admitted-run-contex
 import { SessionManager } from "../../agents/sessions/index.js";
 import type { ChatType } from "../../channels/chat-type.js";
 import { getRuntimeConfig } from "../../config/config.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { runWithGatewayIndependentRootWorkAdmission } from "../../process/gateway-work-admission.js";
 import { CommandLane } from "../../process/lanes.js";
@@ -75,12 +75,12 @@ export type SkillExperienceReviewParams = {
   event: ExperienceReviewAgentEndEvent;
   ctx: ExperienceReviewAgentContext;
   usedSkills?: readonly RunSkillUsage[];
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 };
 
 export type ExperienceReviewCandidate = {
   ctx: ExperienceReviewAgentContext;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   transcript: string;
   modelIterations: number;
   usedSkills?: readonly RunSkillUsage[];
@@ -88,7 +88,7 @@ export type ExperienceReviewCandidate = {
 };
 
 type ExperienceReviewRunDeps = {
-  getCurrentConfig?: () => OpenClawConfig | Promise<OpenClawConfig>;
+  getCurrentConfig?: () => AforaConfig | Promise<AforaConfig>;
 };
 
 type ExperienceReviewTimer = ReturnType<typeof setTimeout>;
@@ -157,7 +157,7 @@ function isEligibleContext(ctx: ExperienceReviewAgentContext): boolean {
 
 export async function prepareSkillExperienceReviewCandidate(
   candidate: ExperienceReviewCandidate,
-  config: OpenClawConfig,
+  config: AforaConfig,
 ): Promise<ExperienceReviewCandidate | undefined> {
   if (resolveSkillWorkshopConfig(config).autonomous.mode === "off") {
     return undefined;
@@ -591,8 +591,8 @@ async function runSkillExperienceReviewInner(
       senderUsername: candidate.ctx.senderUsername,
       senderE164: candidate.ctx.senderE164,
       senderIsOwner: candidate.ctx.senderIsOwner,
-      agentHarnessId: "openclaw",
-      agentHarnessRuntimeOverride: "openclaw",
+      agentHarnessId: "afora",
+      agentHarnessRuntimeOverride: "afora",
       workspaceDir,
       config,
       prompt: buildSkillExperienceReviewPrompt({ ...candidate, existingSkills }),

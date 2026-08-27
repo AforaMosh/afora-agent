@@ -1,8 +1,8 @@
-import { inspectTlsCertificateError } from "@openclaw/ai/internal/shared";
+import { inspectTlsCertificateError } from "@afora/ai/internal/shared";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import {
   extractLeadingHttpStatus,
   isGenericProviderInternalError,

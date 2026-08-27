@@ -3,7 +3,7 @@
  *
  * Compatible providers can support strict schemas without inheriting OpenAI's required default.
  */
-import { readStringValue } from "@openclaw/normalization-core/string-coerce";
+import { readStringValue } from "@afora/normalization-core/string-coerce";
 import { resolveProviderRequestCapabilities } from "./provider-attribution.js";
 
 // Resolves OpenAI strict-tool schema defaults. Native OpenAI routes require

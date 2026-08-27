@@ -226,14 +226,14 @@ describe("renderWorkboard", () => {
       }),
     ];
     renderView();
-    expect(container.querySelector("openclaw-workboard-card-dashboard")).toBeNull();
+    expect(container.querySelector("afora-workboard-card-dashboard")).toBeNull();
 
     state.cards = [{ ...state.cards[0]!, sessionKey: "agent:main:dashboard-aware" }];
     renderView();
-    expect(container.querySelector("openclaw-workboard-card-dashboard")).not.toBeNull();
+    expect(container.querySelector("afora-workboard-card-dashboard")).not.toBeNull();
 
     renderView({ pluginEnabled: false });
-    expect(container.querySelector("openclaw-workboard-card-dashboard")).toBeNull();
+    expect(container.querySelector("afora-workboard-card-dashboard")).toBeNull();
   });
 
   it("releases the card dashboard provider when the details panel closes", async () => {
@@ -272,8 +272,8 @@ describe("renderWorkboard", () => {
       // import can outlive vi.waitFor's default timeout. Await the definition
       // and the upgraded element's first update, which acquires the provider
       // and issues board.get synchronously.
-      await customElements.whenDefined("openclaw-workboard-card-dashboard");
-      const dashboard = container.querySelector("openclaw-workboard-card-dashboard");
+      await customElements.whenDefined("afora-workboard-card-dashboard");
+      const dashboard = container.querySelector("afora-workboard-card-dashboard");
       expect(dashboard).not.toBeNull();
       await dashboard!.updateComplete;
       expect(request).toHaveBeenCalledWith("board.get", { sessionKey });
@@ -1121,7 +1121,7 @@ describe("renderWorkboard", () => {
       launcher?.click();
       await nextFrame();
 
-      const modal = container.querySelector("openclaw-modal-dialog");
+      const modal = container.querySelector("afora-modal-dialog");
       const { dialog } = await getRenderedModalDialog(container);
       const titleInput = container.querySelector<HTMLInputElement>(".workboard-draft__title");
       expect(modal?.getAttribute("label")).toBe("New card");
@@ -1196,7 +1196,7 @@ describe("renderWorkboard", () => {
       launcher?.click();
       await nextFrame();
 
-      const modal = container.querySelector("openclaw-modal-dialog");
+      const modal = container.querySelector("afora-modal-dialog");
       const { dialog } = await getRenderedModalDialog(container);
       expect(modal?.getAttribute("label")).toBe("Inspect drawer focus");
       expect(dialog.open).toBe(true);
@@ -1756,7 +1756,7 @@ describe("renderWorkboard", () => {
       ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     renderView();
 
-    expect(container.querySelector("openclaw-modal-dialog")?.textContent).toContain("New card");
+    expect(container.querySelector("afora-modal-dialog")?.textContent).toContain("New card");
     expect(container.querySelector('[aria-label="Card templates"]')?.textContent).toContain(
       "Bugfix",
     );
@@ -2531,7 +2531,7 @@ describe("renderWorkboard", () => {
     });
     expect(state.cards[0]?.execution?.sessionKey).toBe("agent:main:execution-linked-session");
     renderView();
-    expect(container.querySelector("openclaw-workboard-card-dashboard")).not.toBeNull();
+    expect(container.querySelector("afora-workboard-card-dashboard")).not.toBeNull();
   });
 
   it("opens an edit modal and submits card updates", async () => {
@@ -2592,8 +2592,8 @@ describe("renderWorkboard", () => {
       ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     render(renderWorkboard(props), container);
 
-    expect(container.querySelector("openclaw-modal-dialog")?.textContent).toContain("Edit card");
-    expect(container.querySelector("openclaw-modal-dialog")?.textContent).toContain(
+    expect(container.querySelector("afora-modal-dialog")?.textContent).toContain("Edit card");
+    expect(container.querySelector("afora-modal-dialog")?.textContent).toContain(
       "Needs owner check",
     );
     const commentInput = container.querySelector<HTMLTextAreaElement>(".workboard-comments__input");
@@ -2639,7 +2639,7 @@ describe("renderWorkboard", () => {
     expect(state.cards[0]).toMatchObject({ title: "Renamed", priority: "high", updatedAt: 2 });
 
     render(renderWorkboard(props), container);
-    expect(container.querySelector("openclaw-modal-dialog")).toBeNull();
+    expect(container.querySelector("afora-modal-dialog")).toBeNull();
     container
       .querySelector<HTMLButtonElement>('button[aria-label="Edit card"]')
       ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -2887,7 +2887,7 @@ describe("renderWorkboard", () => {
 
     const loadingState = container.querySelector('[role="status"]');
     expect(loadingState?.getAttribute("aria-label")).toBe("Loading…");
-    expect(loadingState?.querySelector("openclaw-mascot")?.getAttribute("mood")).toBe("thinking");
+    expect(loadingState?.querySelector("afora-mascot")?.getAttribute("mood")).toBe("thinking");
     expect(loadingState?.textContent?.trim()).toBe("");
     expect(container.textContent).not.toContain("Loading panel");
     expect(container.textContent).not.toContain("Workboard is disabled");

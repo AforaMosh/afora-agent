@@ -6,9 +6,9 @@
 import {
   findNormalizedProviderValue,
   normalizeProviderId,
-} from "@openclaw/model-catalog-core/provider-id";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+} from "@afora/model-catalog-core/provider-id";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { Model } from "../../llm/types.js";
 import type {
   prepareProviderDynamicModel,
@@ -44,7 +44,7 @@ async function runProviderDynamicModelDefault(
 async function normalizeDynamicModelDefault(
   model: Model,
   agentDir: string,
-  options: { config?: OpenClawConfig; workspaceDir?: string },
+  options: { config?: AforaConfig; workspaceDir?: string },
 ): Promise<Model> {
   const { normalizeDiscoveredAgentModel } = await import("../agent-model-discovery.js");
   return normalizeDiscoveredAgentModel(model, agentDir, options);
@@ -65,7 +65,7 @@ function liveModelKey(provider: string, id: string): string | null {
  */
 export async function appendPrioritizedDynamicLiveModels(params: {
   models: Model[];
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentDir: string;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;

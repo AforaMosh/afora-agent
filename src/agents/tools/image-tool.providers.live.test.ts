@@ -3,10 +3,10 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { coerceErrorMessage as formatLiveError, expectDefined } from "@openclaw/normalization-core";
+import { coerceErrorMessage as formatLiveError, expectDefined } from "@afora/normalization-core";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ModelApi } from "../../config/types.models.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resizeToJpeg } from "../../media/media-services.js";
 import { encodePngRgba, fillPixel } from "../../media/png-encode.js";
 import {
@@ -26,13 +26,13 @@ import { testing } from "./image-tool.test-support.js";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY?.trim() ?? "";
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY?.trim() ?? "";
-const LIVE_IMAGE_TOOL_ENABLED = isLiveTestEnabled(["OPENCLAW_LIVE_IMAGE_TOOL_TEST"]);
+const LIVE_IMAGE_TOOL_ENABLED = isLiveTestEnabled(["AFORA_LIVE_IMAGE_TOOL_TEST"]);
 const LIVE_OPENAI_MODEL =
-  process.env.OPENCLAW_LIVE_IMAGE_TOOL_OPENAI_MODEL?.trim() ||
-  process.env.OPENCLAW_LIVE_IMAGE_TOOL_MODEL?.trim() ||
+  process.env.AFORA_LIVE_IMAGE_TOOL_OPENAI_MODEL?.trim() ||
+  process.env.AFORA_LIVE_IMAGE_TOOL_MODEL?.trim() ||
   "gpt-4.1-mini";
 const LIVE_ANTHROPIC_MODEL =
-  process.env.OPENCLAW_LIVE_IMAGE_TOOL_ANTHROPIC_MODEL?.trim() || "claude-sonnet-4-6";
+  process.env.AFORA_LIVE_IMAGE_TOOL_ANTHROPIC_MODEL?.trim() || "claude-sonnet-4-6";
 const MODEL_SIDE_LIMIT = 512;
 
 type LiveProviderCase = {
@@ -121,7 +121,7 @@ function isSkippableLiveError(error: unknown): boolean {
   );
 }
 
-function createLiveConfig(testCase: LiveProviderCase): OpenClawConfig {
+function createLiveConfig(testCase: LiveProviderCase): AforaConfig {
   return {
     agents: {
       defaults: {
@@ -173,7 +173,7 @@ function createLiveConfig(testCase: LiveProviderCase): OpenClawConfig {
 async function withLiveWorkspace<T>(
   run: (ctx: { agentDir: string; workspaceDir: string; imagePath: string }) => Promise<T>,
 ) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-image-tool-live-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-image-tool-live-"));
   try {
     const agentDir = path.join(root, "agent");
     const workspaceDir = path.join(root, "workspace");

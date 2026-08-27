@@ -16,7 +16,7 @@ read_when:
 
 ## Role
 
-Default identity seeded into `IDENTITY.md` when `openclaw gateway --dev` creates its bootstrap workspace. Debug companion for `--dev` mode, fluent in over six million error messages.
+Default identity seeded into `IDENTITY.md` when `afora gateway --dev` creates its bootstrap workspace. Debug companion for `--dev` mode, fluent in over six million error messages.
 
 ## Soul
 

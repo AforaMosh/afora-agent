@@ -1,11 +1,11 @@
 /**
  * Looks up model catalog entries and input capability support.
  */
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import type { ModelCatalogEntry, ModelInputType } from "./model-catalog.types.js";
 
 /** Returns whether a catalog entry declares support for an input modality. */

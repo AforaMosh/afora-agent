@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GATEWAY_CLIENT_IDS } from "../../../packages/gateway-protocol/src/client-info.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import { ExecApprovalManager } from "../exec-approval-manager.js";
 import {
   bindApprovalReviewerDeviceIds,
@@ -1201,7 +1201,7 @@ describe("handlePendingApprovalRequest", () => {
   });
 
   it("releases run-aborted waiters without changing timeout terminal state", async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-approval-wait-terminal-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-approval-wait-terminal-"));
     const manager = new ExecApprovalManager({
       approvalKind: "exec",
       persistence: {
@@ -1314,7 +1314,7 @@ describe("handlePendingApprovalRequest", () => {
       }),
       undefined,
     );
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     fs.rmSync(tempDir, { force: true, recursive: true });
   });
 
@@ -1621,7 +1621,7 @@ describe("handlePendingApprovalRequest", () => {
   });
 
   it("sanitizes durable registration failures while retaining server diagnostics", () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-approval-register-failure-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-approval-register-failure-"));
     const databasePath = path.join(tempDir, "state.sqlite");
     fs.mkdirSync(databasePath);
     const manager = new ExecApprovalManager({
@@ -1653,14 +1653,14 @@ describe("handlePendingApprovalRequest", () => {
       expect(JSON.stringify(respond.mock.calls)).not.toContain(databasePath);
       expect(logError).toHaveBeenCalledTimes(1);
     } finally {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       fs.rmSync(tempDir, { force: true, recursive: true });
     }
   });
 
   it("sanitizes a no-route storage failure while failing the waiter closed", async () => {
     hasApprovalTurnSourceRouteMock.mockReturnValueOnce(false);
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-approval-route-failure-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-approval-route-failure-"));
     const databasePath = path.join(tempDir, "state.sqlite");
     const manager = new ExecApprovalManager({
       approvalKind: "exec",
@@ -1671,7 +1671,7 @@ describe("handlePendingApprovalRequest", () => {
     });
     const record = manager.create({ command: "echo safe" }, 60_000, "route-failure");
     const decisionPromise = manager.register(record, 60_000);
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     fs.rmSync(databasePath, { force: true });
     fs.mkdirSync(databasePath);
     const respond = vi.fn();
@@ -1708,13 +1708,13 @@ describe("handlePendingApprovalRequest", () => {
       expect(logError).toHaveBeenCalledTimes(1);
       await expect(decisionPromise).resolves.toBe("deny");
     } finally {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       fs.rmSync(tempDir, { force: true, recursive: true });
     }
   });
 
   it("sanitizes durable resolve failures while failing the waiter closed", async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-approval-resolve-failure-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-approval-resolve-failure-"));
     const databasePath = path.join(tempDir, "state.sqlite");
     const manager = new ExecApprovalManager({
       approvalKind: "exec",
@@ -1725,7 +1725,7 @@ describe("handlePendingApprovalRequest", () => {
     });
     const record = manager.create({ command: "echo safe" }, 60_000, "resolve-failure");
     const decisionPromise = manager.register(record, 60_000);
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     fs.rmSync(databasePath, { force: true });
     fs.mkdirSync(databasePath);
     const respond = vi.fn();
@@ -1755,7 +1755,7 @@ describe("handlePendingApprovalRequest", () => {
       expect(logError).toHaveBeenCalledTimes(1);
       await expect(decisionPromise).resolves.toBe("deny");
     } finally {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       fs.rmSync(tempDir, { force: true, recursive: true });
     }
   });

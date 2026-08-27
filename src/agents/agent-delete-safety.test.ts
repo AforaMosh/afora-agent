@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { isSharedAuthStoreOwner } from "./agent-delete-safety.js";
 
 describe("shared auth store deletion safety", () => {
-  const sharedAuthDbPath = path.join(os.tmpdir(), "shared-auth", "openclaw-agent.sqlite");
-  const otherAgentAuthDbPath = path.join(os.tmpdir(), "other-auth", "openclaw-agent.sqlite");
+  const sharedAuthDbPath = path.join(os.tmpdir(), "shared-auth", "afora-agent.sqlite");
+  const otherAgentAuthDbPath = path.join(os.tmpdir(), "other-auth", "afora-agent.sqlite");
 
   it.each([
     {

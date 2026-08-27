@@ -4,13 +4,13 @@ import {
   toAgentEntriesRecord,
 } from "../agents/agent-scope-config.js";
 import { normalizeAgentId } from "../routing/session-key.js";
-import type { OpenClawConfig } from "./types.openclaw.js";
+import type { AforaConfig } from "./types.afora.js";
 
 export function pinSurvivorWorkspaceForRosterCollapse(
-  sourceConfig: OpenClawConfig,
-  targetConfig: OpenClawConfig,
+  sourceConfig: AforaConfig,
+  targetConfig: AforaConfig,
   env: NodeJS.ProcessEnv = process.env,
-): { config: OpenClawConfig; insertedPaths: string[][] } {
+): { config: AforaConfig; insertedPaths: string[][] } {
   const sourceEntries = listAgentEntries(sourceConfig);
   const targetEntries = listAgentEntries(targetConfig);
   if (sourceEntries.length <= 1 || targetEntries.length !== 1) {

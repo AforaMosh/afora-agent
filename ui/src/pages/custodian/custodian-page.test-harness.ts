@@ -1,4 +1,4 @@
-import { GATEWAY_SERVER_CAPS } from "@openclaw/gateway-protocol";
+import { GATEWAY_SERVER_CAPS } from "@afora/gateway-protocol";
 import { vi } from "vitest";
 import type {
   GatewayBrowserClient,
@@ -36,7 +36,7 @@ type ContextHarness = {
 
 export function createContext(
   request: ReturnType<typeof vi.fn>,
-  methods: string[] = ["openclaw.chat"],
+  methods: string[] = ["afora.chat"],
   options: {
     agentsList?: ApplicationContext["agents"]["state"]["agentsList"];
     channelsSnapshot?: ChannelsStatusSnapshot | null;
@@ -196,7 +196,7 @@ export async function mountPage(
   provider: ApplicationContextProvider;
 }> {
   const provider = createApplicationContextProvider(context);
-  const page = document.createElement("openclaw-custodian-page") as TestCustodianPage;
+  const page = document.createElement("afora-custodian-page") as TestCustodianPage;
   page.store = new CustodianSessionStore();
   page.onboarding = options.onboarding ?? true;
   provider.append(page);

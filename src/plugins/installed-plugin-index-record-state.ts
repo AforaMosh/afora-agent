@@ -1,9 +1,9 @@
-import { safeParseJson } from "@openclaw/normalization-core";
+import { safeParseJson } from "@afora/normalization-core";
 import {
   inspectPluginInstallRecordMap,
   type PluginInstallRecordMapState,
 } from "../config/plugin-install-record-map.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "../state/openclaw-state-db-readonly.js";
+import { withExistingAforaStateDatabaseReadOnly } from "../state/afora-state-db-readonly.js";
 import {
   resolveInstalledPluginIndexStateDatabaseOptions,
   type InstalledPluginIndexStoreOptions,
@@ -21,7 +21,7 @@ export function inspectPersistedInstalledPluginIndexInstallRecordsSync(
   }
   try {
     return (
-      withExistingOpenClawStateDatabaseReadOnly(({ db }) => {
+      withExistingAforaStateDatabaseReadOnly(({ db }) => {
         const hasTable = db
           .prepare(
             `SELECT 1

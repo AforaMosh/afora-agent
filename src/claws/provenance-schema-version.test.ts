@@ -1,29 +1,29 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { persistClawInstallRecord, readClawInstallRecord } from "./provenance.js";
 import { makeProvenancePlan, stateEnv } from "./provenance.test-helpers.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 async function makePlan() {
-  const root = tempDirs.make("openclaw-claw-provenance-schema-");
+  const root = tempDirs.make("afora-claw-provenance-schema-");
   return await makeProvenancePlan(root, { schemaVersion: 1, agent: { id: "worker" } });
 }
 
 function downgradeInstallRecord(root: string): void {
   const env = stateEnv(root);
-  openOpenClawStateDatabase({ env })
+  openAforaStateDatabase({ env })
     .db /* sqlite-allow-raw: test-only downgrade simulates pre-v2 provenance. */
     .prepare("UPDATE claw_installs SET schema_version = ? WHERE agent_id = ?")
-    .run("openclaw.clawInstallRecord.v1", "worker");
+    .run("afora.clawInstallRecord.v1", "worker");
 }
 
 describe("Claw install provenance schema migration", () => {
@@ -45,7 +45,7 @@ describe("Claw install provenance schema migration", () => {
     });
 
     expect(resumed).toMatchObject({
-      schemaVersion: "openclaw.clawInstallRecord.v2",
+      schemaVersion: "afora.clawInstallRecord.v2",
       status: "pending",
       addedAtMs: 1,
       updatedAtMs: 1,
@@ -82,7 +82,7 @@ describe("Claw install provenance schema migration", () => {
     });
 
     expect(resumed).toMatchObject({
-      schemaVersion: "openclaw.clawInstallRecord.v2",
+      schemaVersion: "afora.clawInstallRecord.v2",
       planIntegrity: boundedPlan.planIntegrity,
       status: "pending",
       addedAtMs: 1,
@@ -128,7 +128,7 @@ describe("Claw install provenance schema migration", () => {
       "not an exact resumable attempt",
     );
     expect(readClawInstallRecord("worker", { env })).toMatchObject({
-      schemaVersion: "openclaw.clawInstallRecord.v1",
+      schemaVersion: "afora.clawInstallRecord.v1",
       status: "partial",
     });
   });

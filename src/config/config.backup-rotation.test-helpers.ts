@@ -5,10 +5,10 @@ import { expect } from "vitest";
 /** Platform flag shared by config backup permission tests. */
 export const IS_WINDOWS = process.platform === "win32";
 
-export function resolveConfigPathFromTempState(fileName = "openclaw.json"): string {
-  const stateDir = process.env.OPENCLAW_STATE_DIR?.trim();
+export function resolveConfigPathFromTempState(fileName = "afora.json"): string {
+  const stateDir = process.env.AFORA_STATE_DIR?.trim();
   if (!stateDir) {
-    throw new Error("Expected OPENCLAW_STATE_DIR to be set by withTempHome");
+    throw new Error("Expected AFORA_STATE_DIR to be set by withTempHome");
   }
   return path.join(stateDir, fileName);
 }

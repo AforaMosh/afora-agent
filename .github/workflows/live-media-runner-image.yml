@@ -46,8 +46,8 @@ jobs:
           file: .github/images/live-media-runner/Dockerfile
           platforms: linux/amd64
           tags: |
-            ghcr.io/openclaw/openclaw-live-media-runner:ubuntu-24.04
-            ghcr.io/openclaw/openclaw-live-media-runner:${{ github.sha }}
+            ghcr.io/AforaMosh/afora-agent-live-media-runner:ubuntu-24.04
+            ghcr.io/AforaMosh/afora-agent-live-media-runner:${{ github.sha }}
           sbom: true
           provenance: mode=max
           push: true

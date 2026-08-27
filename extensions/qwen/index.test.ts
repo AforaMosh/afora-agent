@@ -1,11 +1,11 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 // Qwen tests cover index plugin behavior.
 import {
   registerProviderPlugin,
   requireRegisteredProvider,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
-import type { ProviderCatalogResult } from "openclaw/plugin-sdk/provider-catalog-shared";
-import type { ModelProviderConfig } from "openclaw/plugin-sdk/provider-model-shared";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
+import type { ProviderCatalogResult } from "afora-agent/plugin-sdk/provider-catalog-shared";
+import type { ModelProviderConfig } from "afora-agent/plugin-sdk/provider-model-shared";
 import { describe, expect, it, vi } from "vitest";
 import {
   QWEN_36_FLASH_MODEL_ID,
@@ -20,7 +20,7 @@ import {
 } from "./api.js";
 import qwenPlugin from "./index.js";
 import { applyQwenTokenPlanConfig } from "./onboard.js";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import manifest from "./afora.plugin.json" with { type: "json" };
 import { wrapQwenProviderStream } from "./stream.js";
 
 function requireCatalogProvider(result: ProviderCatalogResult): ModelProviderConfig {
@@ -260,7 +260,7 @@ describe("qwen provider plugin", () => {
       contextWindow: 8192,
       maxTokens: 2048,
     });
-    const global: OpenClawConfig = {
+    const global: AforaConfig = {
       ...initialGlobal,
       models: {
         ...initialGlobal.models,
@@ -276,9 +276,9 @@ describe("qwen provider plugin", () => {
     const cnFromGlobal = applyQwenTokenPlanConfig(global, "cn");
     const globalAgain = applyQwenTokenPlanConfig(cnFromGlobal, "global");
 
-    const tokenPlanProvider = (config: OpenClawConfig) =>
+    const tokenPlanProvider = (config: AforaConfig) =>
       config.models?.providers?.[QWEN_TOKEN_PLAN_PROVIDER_ID];
-    const qwenContext = (config: OpenClawConfig) =>
+    const qwenContext = (config: AforaConfig) =>
       tokenPlanProvider(config)?.models?.find((model) => model.id === "qwen3.7-plus")
         ?.contextWindow;
     expect(qwenContext(global)).toBe(1_000_000);

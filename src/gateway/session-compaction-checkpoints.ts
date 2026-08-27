@@ -30,7 +30,7 @@ import {
 } from "../config/sessions/session-accessor.sqlite-checkpoint.js";
 import { streamSessionTranscriptLines } from "../config/sessions/transcript-stream.js";
 import { scanSessionTranscriptTree } from "../config/sessions/transcript-tree.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { resolveGatewaySessionStoreTarget } from "./session-utils.js";
 
@@ -91,7 +91,7 @@ type RestoreCheckpointSessionParams = {
 };
 
 type PersistSessionCompactionCheckpointParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string;
   sessionKey: string;
   sessionId: string;

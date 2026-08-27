@@ -25,7 +25,7 @@ describe("Tencent QQBot 2.0 config migrations", () => {
           qqbot: {
             enabled: true,
             dmPolicy: "open",
-            allowFrom: ["openclaw:approval-disabled"],
+            allowFrom: ["afora:approval-disabled"],
           },
         },
       });
@@ -162,7 +162,7 @@ describe("Tencent QQBot 2.0 config migrations", () => {
       channels: {
         qqbot: {
           dmPolicy: "allowlist",
-          allowFrom: ["openclaw:approval-disabled"],
+          allowFrom: ["afora:approval-disabled"],
         },
       },
     });
@@ -209,7 +209,7 @@ describe("Tencent QQBot 2.0 config migrations", () => {
       channels: {
         qqbot: {
           dmPolicy: "allowlist",
-          allowFrom: ["openclaw:approval-disabled"],
+          allowFrom: ["afora:approval-disabled"],
         },
       },
     });
@@ -242,7 +242,7 @@ describe("Tencent QQBot 2.0 config migrations", () => {
     expect(wildcard.config).toMatchObject({
       channels: {
         qqbot: {
-          allowFrom: ["openclaw:approval-disabled"],
+          allowFrom: ["afora:approval-disabled"],
           dmPolicy: "open",
         },
       },
@@ -250,7 +250,7 @@ describe("Tencent QQBot 2.0 config migrations", () => {
     expect(missing.config).toMatchObject({
       channels: {
         qqbot: {
-          allowFrom: ["openclaw:approval-disabled"],
+          allowFrom: ["afora:approval-disabled"],
           dmPolicy: "open",
         },
       },
@@ -279,7 +279,7 @@ describe("Tencent QQBot 2.0 config migrations", () => {
       channels: {
         qqbot: {
           dmPolicy: "open",
-          allowFrom: ["openclaw:approval-disabled"],
+          allowFrom: ["afora:approval-disabled"],
         },
       },
     });
@@ -307,7 +307,7 @@ describe("Tencent QQBot 2.0 config migrations", () => {
       channels: {
         qqbot: {
           dmPolicy: "allowlist",
-          allowFrom: ["openclaw:approval-disabled"],
+          allowFrom: ["afora:approval-disabled"],
         },
       },
     });
@@ -342,7 +342,7 @@ describe("Tencent QQBot 2.0 config migrations", () => {
         qqbot: {
           appId: "default-app",
           dmPolicy: "allowlist",
-          allowFrom: ["openclaw:approval-disabled"],
+          allowFrom: ["afora:approval-disabled"],
         },
       },
     });
@@ -351,7 +351,7 @@ describe("Tencent QQBot 2.0 config migrations", () => {
         qqbot: {
           appId: "default-app",
           dmPolicy: "allowlist",
-          allowFrom: ["openclaw:approval-disabled"],
+          allowFrom: ["afora:approval-disabled"],
         },
       },
     });
@@ -438,11 +438,11 @@ describe("Tencent QQBot 2.0 config migrations", () => {
     expect(result.config).toMatchObject({
       channels: {
         qqbot: {
-          allowFrom: ["openclaw:approval-disabled"],
+          allowFrom: ["afora:approval-disabled"],
           dmPolicy: "open",
           accounts: {
             filtered: {
-              allowFrom: ["openclaw:approval-disabled"],
+              allowFrom: ["afora:approval-disabled"],
               dmPolicy: "open",
             },
           },
@@ -531,7 +531,7 @@ describe("Tencent QQBot 2.0 config migrations", () => {
     });
   });
 
-  it("maps current OpenClaw group tool policies to Tencent scalar policies", () => {
+  it("maps current Afora group tool policies to Tencent scalar policies", () => {
     const result = migrate({
       channels: {
         qqbot: {

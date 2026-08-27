@@ -4,16 +4,16 @@ import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { withEnvAsync } from "../test-utils/env.js";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import { writePersistedInstalledPluginIndexInstallRecordsWithLease } from "./installed-plugin-index-records.js";
 import { readPersistedInstalledPluginIndex } from "./installed-plugin-index-store.js";
 import { resolveInstalledPluginIndexPolicyHash } from "./installed-plugin-index.js";
 import { withPluginLifecycleLease } from "./plugin-lifecycle-lease.js";
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 function runChild(scriptPath: string, args: string[]): Promise<void> {
@@ -67,7 +67,7 @@ async function expectFileToStayAbsent(filePath: string, durationMs = 500): Promi
 
 describe("plugin install record commit rollback", () => {
   it("serializes two failing direct config commits and restores the original index", async () => {
-    await withOpenClawTestState({ label: "plugin-record-failing-commits" }, async (state) => {
+    await withAforaTestState({ label: "plugin-record-failing-commits" }, async (state) => {
       const commitModuleUrl = pathToFileURL(
         path.resolve("src/plugins/install-record-commit.ts"),
       ).href;
@@ -78,7 +78,7 @@ describe("plugin install record commit rollback", () => {
           import { setTimeout as delay } from "node:timers/promises";
           import { commitConfigWriteWithPendingPluginInstalls } from ${JSON.stringify(commitModuleUrl)};
           const [stateDir, pluginId, startedPath, enteredPath, releasePath] = process.argv.slice(2);
-          process.env.OPENCLAW_STATE_DIR = stateDir;
+          process.env.AFORA_STATE_DIR = stateDir;
           await fs.promises.writeFile(startedPath, "started");
           try {
             await commitConfigWriteWithPendingPluginInstalls({

@@ -1,7 +1,7 @@
 // Manages APNs registration state and direct/relay push sending.
-import { resolveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { resolveTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import type { ChannelApprovalKind } from "./approval-types.js";
 import type { DeviceIdentity } from "./device-identity.js";
 import { toErrorObject } from "./errors.js";
@@ -68,8 +68,8 @@ type ApnsPushResult = {
 type ApnsPushAlertResult = ApnsPushResult;
 type ApnsPushWakeResult = ApnsPushResult;
 
-const EXEC_APPROVAL_NOTIFICATION_CATEGORY = "openclaw.exec-approval";
-const PLUGIN_APPROVAL_NOTIFICATION_CATEGORY = "openclaw.plugin-approval";
+const EXEC_APPROVAL_NOTIFICATION_CATEGORY = "afora.exec-approval";
+const PLUGIN_APPROVAL_NOTIFICATION_CATEGORY = "afora.plugin-approval";
 
 type ApnsPushType = "alert" | "background";
 

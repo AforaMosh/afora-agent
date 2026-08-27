@@ -1,4 +1,4 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import type { AgentToolResult } from "./runtime/index.js";
 
 type McpAgentContentBlock = AgentToolResult<unknown>["content"][number];

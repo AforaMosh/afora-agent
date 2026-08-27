@@ -13,7 +13,7 @@ export function renderChatSidebarEditorMenu(params: {
   const label = params.absolutePath ? "Open in editor" : "Workspace root unknown";
   return html`
     <div class="sidebar-file-view__editor">
-      <openclaw-tooltip .content=${label}>
+      <afora-tooltip .content=${label}>
         <wa-dropdown
           class="sidebar-file-view__editor-menu"
           placement="bottom-end"
@@ -46,7 +46,7 @@ export function renderChatSidebarEditorMenu(params: {
               )
             : nothing}
         </wa-dropdown>
-      </openclaw-tooltip>
+      </afora-tooltip>
     </div>
   `;
 }

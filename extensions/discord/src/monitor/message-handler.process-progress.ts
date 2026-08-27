@@ -1,8 +1,8 @@
-import { resolveAgentConfig } from "openclaw/plugin-sdk/agent-scope-runtime";
-import type { StatusReactionController } from "openclaw/plugin-sdk/channel-feedback";
+import { resolveAgentConfig } from "afora-agent/plugin-sdk/agent-scope-runtime";
+import type { StatusReactionController } from "afora-agent/plugin-sdk/channel-feedback";
 // Discord plugin module owns progress-window state and agent-event rendering.
-import type { GetReplyOptions } from "openclaw/plugin-sdk/reply-runtime";
-import { getSessionEntry, resolveStorePath } from "openclaw/plugin-sdk/session-store-runtime";
+import type { GetReplyOptions } from "afora-agent/plugin-sdk/reply-runtime";
+import { getSessionEntry, resolveStorePath } from "afora-agent/plugin-sdk/session-store-runtime";
 import type { createDiscordDraftPreviewController } from "./message-handler.draft-preview.js";
 import type { DiscordMessagePreflightContext } from "./message-handler.preflight.js";
 

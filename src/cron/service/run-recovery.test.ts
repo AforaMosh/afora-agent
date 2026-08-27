@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { runOpenClawStateWriteTransaction } from "../../state/openclaw-state-db.js";
+import { runAforaStateWriteTransaction } from "../../state/afora-state-db.js";
 import { setupCronServiceSuite, writeCronStoreSnapshot } from "../service.test-harness.js";
 import { loadCronStore } from "../store.js";
 import {
@@ -53,7 +53,7 @@ function claimReceipt(storePath: string, job: CronJob, startedAtMs: number) {
     agentId: job.agentId ?? "alpha",
     startedAtMs,
   });
-  return runOpenClawStateWriteTransaction(({ db }) =>
+  return runAforaStateWriteTransaction(({ db }) =>
     claimCronRunReceiptInDatabase({
       database: db,
       prepared,
@@ -100,7 +100,7 @@ describe("atomic cron run recovery", () => {
     expect(recoverCronRunProposal(state, { jobId: job.id, receipt })).toMatchObject({
       kind: "repaired",
     });
-    const receiptRow = runOpenClawStateWriteTransaction(({ db }) =>
+    const receiptRow = runAforaStateWriteTransaction(({ db }) =>
       db
         .prepare("SELECT status FROM cron_run_receipts WHERE receipt_id = ?")
         .get(receipt.receiptId),
@@ -116,7 +116,7 @@ describe("atomic cron run recovery", () => {
     const state = makeState(storePath, startedAtMs + 30_000);
     const receipt = claimReceipt(storePath, job, startedAtMs);
     const proposal = proposeCronRunRecovery(state, job.id, undefined, startedAtMs);
-    runOpenClawStateWriteTransaction(({ db }) =>
+    runAforaStateWriteTransaction(({ db }) =>
       finishCronRunReceiptInDatabase({
         database: db,
         handle: receipt,
@@ -160,7 +160,7 @@ describe("atomic cron run recovery", () => {
     expect(persisted?.runningAtMs).toBeUndefined();
     expect(persisted?.lastRunAtMs).toBeUndefined();
     expect(persisted?.triggerState).toEqual({ ready: false });
-    const receiptRow = runOpenClawStateWriteTransaction(({ db }) =>
+    const receiptRow = runAforaStateWriteTransaction(({ db }) =>
       db
         .prepare("SELECT status FROM cron_run_receipts WHERE receipt_id = ?")
         .get(receipt.receiptId),
@@ -189,7 +189,7 @@ describe("atomic cron run recovery", () => {
       lastRunAtMs: startedAtMs,
       lastRunStatus: "ok",
     });
-    const receiptRow = runOpenClawStateWriteTransaction(({ db }) =>
+    const receiptRow = runAforaStateWriteTransaction(({ db }) =>
       db
         .prepare("SELECT status FROM cron_run_receipts WHERE receipt_id = ?")
         .get(receipt.receiptId),
@@ -242,7 +242,7 @@ describe("atomic cron run recovery", () => {
       receipt: { receiptId: successor.receiptId, startedAtMs },
     });
     expect((await loadCronStore(storePath)).jobs[0]?.state.runningAtMs).toBe(startedAtMs);
-    const successorRow = runOpenClawStateWriteTransaction(({ db }) =>
+    const successorRow = runAforaStateWriteTransaction(({ db }) =>
       db
         .prepare("SELECT status FROM cron_run_receipts WHERE receipt_id = ?")
         .get(successor.receiptId),

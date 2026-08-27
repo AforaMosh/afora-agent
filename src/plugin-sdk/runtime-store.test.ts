@@ -1,7 +1,7 @@
 /**
  * Tests runtime store singleton behavior.
  */
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { describe, expect, test } from "vitest";
 import { clearNamedPluginRuntimeStoresForTest } from "./runtime-store-registry.js";
 import { createPluginRuntimeStore } from "./runtime-store.js";

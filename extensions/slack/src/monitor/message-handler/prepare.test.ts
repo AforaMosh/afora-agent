@@ -1,18 +1,18 @@
 // Slack tests cover prepare plugin behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import type { App } from "@slack/bolt";
-import { expectChannelInboundContextContract as expectInboundContextContract } from "openclaw/plugin-sdk/channel-contract-testing";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import { expectChannelInboundContextContract as expectInboundContextContract } from "afora-agent/plugin-sdk/channel-contract-testing";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   registerSessionBindingAdapter,
   unregisterSessionBindingAdapter,
   type SessionBindingAdapter,
   type SessionBindingRecord,
-} from "openclaw/plugin-sdk/conversation-runtime";
-import { resolveAgentRoute, resolveThreadSessionKeys } from "openclaw/plugin-sdk/routing";
-import { upsertSessionEntry, type SessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
+} from "afora-agent/plugin-sdk/conversation-runtime";
+import { resolveAgentRoute, resolveThreadSessionKeys } from "afora-agent/plugin-sdk/routing";
+import { upsertSessionEntry, type SessionEntry } from "afora-agent/plugin-sdk/session-store-runtime";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ResolvedSlackAccount } from "../../accounts.js";
 import { registerSlackInstallationState } from "../../installation-identity-state.js";
@@ -56,9 +56,9 @@ vi.mock("../conversation.runtime.js", async (importOriginal) => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/media-understanding-runtime", async (importOriginal) => {
+vi.mock("afora-agent/plugin-sdk/media-understanding-runtime", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("openclaw/plugin-sdk/media-understanding-runtime")>();
+    await importOriginal<typeof import("afora-agent/plugin-sdk/media-understanding-runtime")>();
   return {
     ...actual,
     createChannelPreflightAudio: (
@@ -72,8 +72,8 @@ vi.mock("openclaw/plugin-sdk/media-understanding-runtime", async (importOriginal
   };
 });
 
-vi.mock("openclaw/plugin-sdk/runtime-env", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/runtime-env")>();
+vi.mock("afora-agent/plugin-sdk/runtime-env", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/runtime-env")>();
   return {
     ...actual,
     logVerbose: (...args: unknown[]) => logVerboseMock(...args),
@@ -81,8 +81,8 @@ vi.mock("openclaw/plugin-sdk/runtime-env", async (importOriginal) => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/system-event-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/system-event-runtime")>();
+vi.mock("afora-agent/plugin-sdk/system-event-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/system-event-runtime")>();
   return {
     ...actual,
     enqueueRoutedSystemEvent: (
@@ -94,7 +94,7 @@ vi.mock("openclaw/plugin-sdk/system-event-runtime", async (importOriginal) => {
 });
 
 describe("slack prepareSlackMessage inbound contract", () => {
-  const storeFixture = createSlackSessionStoreFixture("openclaw-slack-thread-");
+  const storeFixture = createSlackSessionStoreFixture("afora-slack-thread-");
 
   beforeAll(() => {
     storeFixture.setup();
@@ -137,7 +137,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
     const slackCtx = createInboundSlackCtx({
       cfg: {
         channels: { slack: { enabled: true } },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
     slackCtx.resolveUserName = async () => ({ name: "Alice" });
     return slackCtx;
@@ -211,7 +211,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
             channels: { C_ALLOWED: { enabled: true } },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       appClient: {
         chat: { postEphemeral: params.postEphemeral },
       } as unknown as App["client"],
@@ -251,7 +251,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
         token: "token",
         channel: "C_DENIED",
         user: "U1",
-        text: "Personal Claw can’t reply here because this channel isn’t in its OpenClaw channel allowlist. Ask the OpenClaw owner to allow this channel. <https://docs.openclaw.ai/channels/slack#access-control-and-routing|Learn how to configure Slack channel access.>",
+        text: "Personal Claw can’t reply here because this channel isn’t in its Afora channel allowlist. Ask the Afora owner to allow this channel. <https://docs.afora.ai/channels/slack#access-control-and-routing|Learn how to configure Slack channel access.>",
       });
       expect(enqueueSystemEventMock).not.toHaveBeenCalled();
     },
@@ -298,7 +298,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
 
     expect(postEphemeral).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
-        text: expect.stringMatching(/^This OpenClaw bot can’t reply here/),
+        text: expect.stringMatching(/^This Afora bot can’t reply here/),
       }),
     );
   });
@@ -338,7 +338,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
         channels: {
           slack: { enabled: true },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       appClient: { conversations: { members } } as unknown as App["client"],
       defaultRequireMention: false,
     });
@@ -355,7 +355,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
     const ctx = createInboundSlackCtx({
       cfg: {
         channels: { slack: { enabled: true, allowBots: true, replyToMode: "all" } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       appClient: {
         conversations: { info: conversationsInfo, members },
       } as unknown as App["client"],
@@ -442,7 +442,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
     ctx.accountId = "soltea";
     ctx.allowFrom = ["*"];
@@ -634,7 +634,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
     const cfg = {
       messages: { groupChat: { mentionPatterns: ["\\bbill\\b"] } },
       channels: { slack: { enabled: true, groupPolicy: "open" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const ctx = createInboundSlackCtx({ cfg, defaultRequireMention: true, groupPolicy: "open" });
     ctx.botUserId = "";
     ctx.resolveChannelName = async () => ({ name: "general", type: "channel" });
@@ -689,7 +689,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
         },
       ],
       channels: { slack: { enabled: true, groupPolicy: "open" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const ctx = createInboundSlackCtx({
       cfg,
       defaultRequireMention: false,
@@ -1141,7 +1141,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
     const ctx = createInboundSlackCtx({
       cfg: {
         channels: { slack: { enabled: true } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       appClient: { conversations: { replies } } as unknown as App["client"],
     });
 
@@ -1206,7 +1206,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
     const ctx = createInboundSlackCtx({
       cfg: {
         channels: { slack: { enabled: true } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       appClient: { conversations: { replies } } as unknown as App["client"],
     });
 
@@ -1236,7 +1236,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
 
   function createThreadSlackCtx(params: {
     accountId?: string;
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     replies: unknown;
   }) {
     return createInboundSlackCtx({
@@ -1335,7 +1335,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
           ...(channelsConfig ? { channels: channelsConfig } : {}),
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const slackCtx = createInboundSlackCtx({
       cfg,
       appClient: { conversations: { replies } } as unknown as App["client"],
@@ -1347,7 +1347,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
       Object.assign(slackCtx, { botUserId: "" });
     }
     slackCtx.resolveChannelName = async () => ({
-      name: implicit ? "genai" : "proj-openclaw",
+      name: implicit ? "genai" : "proj-afora",
       type: "channel",
     });
     slackCtx.resolveUserName = async () => ({ name: implicit ? "Trajche" : "Bek" });
@@ -1429,7 +1429,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
           channel: channelId,
           channel_type: "channel",
           user: userId,
-          text: implicit ? "and the time?" : "https://github.com/openclaw/openclaw/issues/50621",
+          text: implicit ? "and the time?" : "https://github.com/AforaMosh/afora-agent/issues/50621",
           ts: "1777244714.000100",
           thread_ts: rootTs,
         } as SlackMessageEvent,
@@ -1520,7 +1520,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
             contextVisibility: "allowlist",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       appClient: { conversations: { replies } } as unknown as App["client"],
       defaultRequireMention: false,
       replyToMode: "all",
@@ -1584,7 +1584,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
       cfg: {
         channels: { slack: { enabled: true } },
         session: { dmScope: "main" },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
     slackCtx.resolveUserName = async () => ({ name: "Alice" });
     // Simulate API returning correct type for DM channel
@@ -1634,7 +1634,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
             ...(params?.groupPolicy ? { groupPolicy: params.groupPolicy } : {}),
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       replyToMode: "all",
       channelsConfig: params?.channelsConfig,
       ...(params?.defaultRequireMention === undefined
@@ -1673,7 +1673,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
           statusReactions: { enabled: true },
         },
         channels: { slack: { enabled: true } },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
     slackCtx.resolveUserName = async () => ({ name: "Alice" });
 
@@ -1719,7 +1719,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
             replyToMode: "all",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       replyToMode: "all",
     });
     slackCtx.resolveUserName = async () => ({ name: "Alice" });
@@ -1753,7 +1753,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
             groupPolicy: "open",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       appClient: {
         reactions: { add: addReaction },
       } as unknown as App["client"],
@@ -1797,7 +1797,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
             groupPolicy: "open",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       defaultRequireMention: false,
     });
     slackCtx.resolveUserName = async () => ({ name: "Alice" });
@@ -1837,7 +1837,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
             groupPolicy: "open",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       appClient: { reactions: { add: reactionAdd } } as unknown as App["client"],
       defaultRequireMention: false,
     });
@@ -1880,7 +1880,7 @@ describe("slack prepareSlackMessage inbound contract", () => {
             groupPolicy: "open",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       defaultRequireMention: false,
     });
     slackCtx.resolveUserName = async () => ({ name: "Alice" });
@@ -2131,7 +2131,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
         channels: {
           slack: { enabled: true },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       defaultRequireMention: false,
     });
     slackCtx.resolveUserName = async () => ({ name: "Bot" });
@@ -2213,7 +2213,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
         channels: {
           slack: { enabled: true },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       appClient: { conversations: { members } } as unknown as App["client"],
       defaultRequireMention: false,
       channelsConfig: {
@@ -2239,7 +2239,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
         channels: {
           slack: { enabled: true },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       appClient: { conversations: { members } } as unknown as App["client"],
       defaultRequireMention: false,
       channelsConfig: {
@@ -2269,7 +2269,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
 
     try {
       const slackCtx = createInboundSlackCtx({
-        cfg: { channels: { slack: { enabled: true } } } as OpenClawConfig,
+        cfg: { channels: { slack: { enabled: true } } } as AforaConfig,
         defaultRequireMention: true,
       });
       slackCtx.historyLimit = 5;
@@ -2322,7 +2322,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
 
     try {
       const slackCtx = createInboundSlackCtx({
-        cfg: { channels: { slack: { enabled: true } } } as OpenClawConfig,
+        cfg: { channels: { slack: { enabled: true } } } as AforaConfig,
         defaultRequireMention: true,
       });
       slackCtx.historyLimit = 5;
@@ -2385,7 +2385,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
         ],
       });
       const slackCtx = createInboundSlackCtx({
-        cfg: { channels: { slack: { enabled: true } } } as OpenClawConfig,
+        cfg: { channels: { slack: { enabled: true } } } as AforaConfig,
         appClient: { conversations: { replies } } as unknown as App["client"],
         defaultRequireMention: true,
       });
@@ -2436,7 +2436,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
         channels: {
           slack: { enabled: true },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       appClient: { conversations: { members } } as unknown as App["client"],
       defaultRequireMention: false,
       channelsConfig: {
@@ -2461,7 +2461,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
         channels: {
           slack: { enabled: true },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       defaultRequireMention: false,
     });
     slackCtx.resolveUserName = async () => ({ name: "Bot" });
@@ -2550,7 +2550,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
         ...(testCase.mentionPatterns && {
           messages: { groupChat: { mentionPatterns: testCase.mentionPatterns } },
         }),
-      } as OpenClawConfig,
+      } as AforaConfig,
       ...(testCase.resolveUserGroup && {
         appClient: {
           usergroups: { users: { list: usergroupsUsersList } },
@@ -2602,7 +2602,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
         channels: {
           slack: { enabled: true },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       appClient: { conversations: { members } } as unknown as App["client"],
       defaultRequireMention: false,
     });
@@ -2625,7 +2625,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
             enabled: true,
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       defaultRequireMention: false,
       channelsConfig: {
         C123: { systemPrompt: "Config prompt" },
@@ -2660,7 +2660,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
 
   it("records a human workspace and channel title for session display", async () => {
     const slackCtx = createInboundSlackCtx({
-      cfg: { channels: { slack: { enabled: true } } } as OpenClawConfig,
+      cfg: { channels: { slack: { enabled: true } } } as AforaConfig,
       defaultRequireMention: false,
     });
     slackCtx.teamId = "T0BDK6HMPS7";
@@ -2964,7 +2964,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
           },
         ],
         channels: { slack: { enabled: true, groupPolicy: "open" } },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const prepared = await prepareMessageWith(
         createInboundSlackCtx({ cfg, defaultRequireMention: false }),
         defaultAccount,
@@ -3047,7 +3047,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
       cfg: {
         session: { store: storePath },
         channels: { slack: { enabled: true, replyToMode: "all", groupPolicy: "open" } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       replies,
     });
     slackCtx.resolveUserName = async (id: string) => ({
@@ -3081,7 +3081,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
       cfg: {
         session: { store: storePath },
         channels: { slack: { enabled: true, dmHistoryLimit: 2 } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       appClient: { conversations: { history } } as unknown as App["client"],
       dmHistoryLimit: 2,
     });
@@ -3133,7 +3133,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
           dms: { U1: { historyLimit: 1 } },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const history = vi.fn().mockResolvedValue({
       messages: [
         { text: "current", user: "U1", ts: "400.000" },
@@ -3298,7 +3298,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
     const cfg = {
       session: { store: storePath },
       channels: { slack: { enabled: true, replyToMode: "all", groupPolicy: "open" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const route = resolveAgentRoute({
       cfg,
       channel: "slack",
@@ -3349,7 +3349,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
     const cfg = {
       session: { store: storePath },
       channels: { slack: { enabled: true, replyToMode: "all", groupPolicy: "open" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const route = resolveAgentRoute({
       cfg,
       channel: "slack",
@@ -3401,7 +3401,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
         resetByType: { thread: { mode: "idle", idleMinutes: 60 } },
       },
       channels: { slack: { enabled: true, replyToMode: "all", groupPolicy: "open" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const route = resolveAgentRoute({
       cfg,
       channel: "slack",
@@ -3479,7 +3479,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
     const cfg = {
       session: { store: storePath },
       channels: { slack: { enabled: true, replyToMode: "all", groupPolicy: "open" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const route = resolveAgentRoute({
       cfg,
       channel: "slack",
@@ -3540,7 +3540,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
         resetByType: { thread: { mode: "idle", idleMinutes: 60 } },
       },
       channels: { slack: { enabled: true, replyToMode: "all", groupPolicy: "open" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const route = resolveAgentRoute({
       cfg,
       channel: "slack",
@@ -3593,7 +3593,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
     const cfg = {
       session: { store: storePath },
       channels: { slack: { enabled: true, replyToMode: "all", groupPolicy: "open" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const replies = vi.fn();
     const slackCtx = createThreadSlackCtx({ cfg, replies });
     slackCtx.resolveUserName = async () => ({ name: "Alice" });
@@ -3662,7 +3662,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
       cfg: {
         session: { store: storePath, dmScope: "per-channel-peer" },
         channels: { slack: { enabled: true, replyToMode: "all" } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       replyToMode: "all",
     });
     slackCtx.resolveUserName = async () => ({ name: "Alice" });
@@ -3685,7 +3685,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
       cfg: {
         session: { store: storePath, dmScope: "per-channel-peer" },
         channels: { slack: { enabled: true, replyToMode: "all" } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       replyToMode: "all",
     });
     slackCtx.resolveUserName = async () => ({ name: "Alice" });
@@ -3725,7 +3725,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
     const slackCtx = createInboundSlackCtx({
       cfg: {
         channels: { slack: { enabled: true, replyToMode: "all" } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       replyToMode: "all",
     });
     slackCtx.resolveUserName = async () => ({ name: "Alice" });
@@ -3787,7 +3787,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
       cfg: {
         session: { store: storePath },
         channels: { slack: { enabled: true, replyToMode: "all" } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       appClient: { conversations: { replies } } as unknown as App["client"],
       replyToMode: "all",
     });
@@ -3818,7 +3818,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
     const slackCtx = createInboundSlackCtx({
       cfg: {
         channels: { slack: { enabled: true, replyToMode: "all" } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       replyToMode: "all",
     });
     slackCtx.resolveUserName = async () => ({ name: "Alice" });
@@ -3882,7 +3882,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
       const slackCtx = createThreadSlackCtx({
         cfg: {
           channels: { slack: { enabled: true, replyToMode: "all", groupPolicy: "open" } },
-        } as OpenClawConfig,
+        } as AforaConfig,
         replies,
       });
       slackCtx.resolveUserName = async () => ({ name: "Alice" });
@@ -3926,7 +3926,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
       ],
       session: { store: storeTemplate },
       channels: { slack: { enabled: true, replyToMode: "all", groupPolicy: "open" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const replies = vi.fn().mockResolvedValue({
       messages: [{ text: "starter", user: "U2", ts: "100.000" }],
       response_metadata: { next_cursor: "" },
@@ -4038,11 +4038,11 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
       cfg: {
         session: { store: storePath },
         channels: { slack: { enabled: true, replyToMode: "all", groupPolicy: "open" } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       defaultRequireMention: true,
       replyToMode: "all",
     });
-    slackCtx.resolveChannelName = async () => ({ name: "proj-openclaw", type: "channel" });
+    slackCtx.resolveChannelName = async () => ({ name: "proj-afora", type: "channel" });
     slackCtx.resolveUserName = async () => ({ name: "Bek" });
 
     const prepared = await prepareSlackMessage({
@@ -4081,7 +4081,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
             channels: { C0AGENTS: { requireMention: true } },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       defaultRequireMention: true,
     });
     slackCtx.resolveChannelName = async () => ({ name: "agents", type: "channel" });
@@ -4117,7 +4117,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
             channels: { C0AGENTS: { requireMention: false } },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       defaultRequireMention: false,
     });
     (slackCtx as { botUserId: string }).botUserId = "";
@@ -4153,7 +4153,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
         ...(params.mentionPatterns
           ? { messages: { groupChat: { mentionPatterns: params.mentionPatterns } } }
           : {}),
-      } as OpenClawConfig,
+      } as AforaConfig,
       defaultRequireMention: true,
       channelsConfig: params.channelUsers
         ? { C0AGENTS: { requireMention: true, users: params.channelUsers } }
@@ -4326,12 +4326,12 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
             groupPolicy: "open",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       defaultRequireMention: true,
       replyToMode: "all",
     });
     slackCtx.allowFrom = ["U_BEK"];
-    slackCtx.resolveChannelName = async () => ({ name: "proj-openclaw", type: "channel" });
+    slackCtx.resolveChannelName = async () => ({ name: "proj-afora", type: "channel" });
     slackCtx.resolveUserName = async () => ({ name: "Bek" });
 
     const prepared = await prepareSlackMessage({
@@ -4383,7 +4383,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
             channels: { C0AGENTS: { requireMention: true } },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       appClient: {
         usergroups: { users: { list: usergroupsUsersList } },
       } as unknown as App["client"],
@@ -4471,7 +4471,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
           groupPolicy: "open",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const slackCtx = createInboundSlackCtx({
       cfg,
       ...(params.appClient ? { appClient: params.appClient } : {}),
@@ -4484,7 +4484,7 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
       defaultRequireMention: true,
       replyToMode: "all",
     });
-    slackCtx.resolveChannelName = async () => ({ name: "proj-openclaw", type: "channel" });
+    slackCtx.resolveChannelName = async () => ({ name: "proj-afora", type: "channel" });
     slackCtx.resolveUserName = async () => ({ name: "Bek" });
     return slackCtx;
   }
@@ -4680,14 +4680,14 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
       cfg: {
         messages: { groupChat: { mentionPatterns: ["\\bbill\\b"] } },
         channels: { slack: { enabled: true, replyToMode: "all", groupPolicy: "open" } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       channelsConfig: {
         C0AHZFCAS1K: { requireMention: true, replyToMode: "off" },
       },
       defaultRequireMention: true,
       replyToMode: "all",
     });
-    slackCtx.resolveChannelName = async () => ({ name: "proj-openclaw", type: "channel" });
+    slackCtx.resolveChannelName = async () => ({ name: "proj-afora", type: "channel" });
     slackCtx.resolveUserName = async () => ({ name: "Bek" });
 
     const prepared = await prepareSlackMessage({
@@ -4735,12 +4735,12 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
       cfg: {
         session: { store: storePath },
         channels: { slack: { enabled: true, replyToMode: "all", groupPolicy: "open" } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       appClient: { conversations: { replies } } as unknown as App["client"],
       defaultRequireMention: true,
       replyToMode: "all",
     });
-    slackCtx.resolveChannelName = async () => ({ name: "proj-openclaw", type: "channel" });
+    slackCtx.resolveChannelName = async () => ({ name: "proj-afora", type: "channel" });
     slackCtx.resolveUserName = async () => ({ name: "Bek" });
 
     const prepared = await prepareSlackMessage({
@@ -4777,11 +4777,11 @@ Second paragraph should still reach the agent after Slack's preview cutoff.`;
         cfg: {
           session: { store: storePath },
           channels: { slack: { enabled: true, replyToMode, groupPolicy: "open" } },
-        } as OpenClawConfig,
+        } as AforaConfig,
         defaultRequireMention: true,
         replyToMode,
       });
-      slackCtx.resolveChannelName = async () => ({ name: "proj-openclaw", type: "channel" });
+      slackCtx.resolveChannelName = async () => ({ name: "proj-afora", type: "channel" });
       slackCtx.resolveUserName = async () => ({ name: "Bek" });
 
       const prepared = await prepareSlackMessage({
@@ -4817,7 +4817,7 @@ describe("prepareSlackMessage sender prefix", () => {
   }): SlackMonitorContext {
     return {
       cfg: {
-        agents: { defaults: { model: "anthropic/claude-opus-4-5", workspace: "/tmp/openclaw" } },
+        agents: { defaults: { model: "anthropic/claude-opus-4-5", workspace: "/tmp/afora" } },
         channels: { slack: params.channels },
       },
       accountId: "default",
@@ -4888,7 +4888,7 @@ describe("prepareSlackMessage sender prefix", () => {
   it("prefixes channel bodies with sender label and annotates Slack mention tokens", async () => {
     const ctx = createSenderPrefixCtx({
       channels: {},
-      slashCommand: { command: "/openclaw", enabled: true },
+      slashCommand: { command: "/afora", enabled: true },
     });
     ctx.resolveUserName = async (id: string) => ({ name: id === "U1" ? "Alice" : "Bek" });
 
@@ -4905,7 +4905,7 @@ describe("prepareSlackMessage sender prefix", () => {
   it("keeps raw Slack mention tokens when user lookup cannot resolve them", async () => {
     const ctx = createSenderPrefixCtx({
       channels: {},
-      slashCommand: { command: "/openclaw", enabled: true },
+      slashCommand: { command: "/afora", enabled: true },
     });
     ctx.resolveUserName = async (id: string) => ({
       name: id === "U1" ? "Alice" : undefined,
@@ -5013,7 +5013,7 @@ describe("prepareSlackMessage sender prefix", () => {
       useAccessGroups: true,
       slashCommand: {
         enabled: false,
-        name: "openclaw",
+        name: "afora",
         sessionPrefix: "slack:slash",
         ephemeral: true,
       },
@@ -5029,7 +5029,7 @@ describe("prepareSlackMessage sender prefix", () => {
 });
 
 describe("slack implicit mention policy", () => {
-  const storeFixture = createSlackSessionStoreFixture("openclaw-slack-explicit-mention-");
+  const storeFixture = createSlackSessionStoreFixture("afora-slack-explicit-mention-");
 
   beforeAll(() => {
     storeFixture.setup();
@@ -5064,7 +5064,7 @@ describe("slack implicit mention policy", () => {
           },
         },
         session: {},
-      } as OpenClawConfig,
+      } as AforaConfig,
       ...options,
     });
     ctx.resolveUserName = async () => ({ name: "Alice" });
@@ -5078,7 +5078,7 @@ describe("slack implicit mention policy", () => {
   }) {
     const { storePath } = storeFixture.makeTmpStorePath();
     vi.spyOn(
-      await import("openclaw/plugin-sdk/session-store-runtime"),
+      await import("afora-agent/plugin-sdk/session-store-runtime"),
       "resolveStorePath",
     ).mockReturnValue(storePath);
     return await prepareSlackMessage({

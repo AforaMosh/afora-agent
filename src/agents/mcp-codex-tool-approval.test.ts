@@ -13,7 +13,7 @@ describe("Codex MCP tool approval projection", () => {
     expect(resolveMcpCodexToolApprovalMode("example", server)).toBe("auto");
   });
 
-  it("preserves explicit modes and the loopback OpenClaw approval exception", () => {
+  it("preserves explicit modes and the loopback Afora approval exception", () => {
     expect(
       resolveMcpCodexToolApprovalMode("example", {
         command: "example-mcp",
@@ -21,7 +21,7 @@ describe("Codex MCP tool approval projection", () => {
       }),
     ).toBe("prompt");
     expect(
-      resolveProjectedMcpCodexToolApprovalMode("openclaw", {
+      resolveProjectedMcpCodexToolApprovalMode("afora", {
         url: "http://127.0.0.1:18789/mcp",
       }),
     ).toBe("approve");

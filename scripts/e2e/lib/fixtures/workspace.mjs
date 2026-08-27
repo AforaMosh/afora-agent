@@ -6,29 +6,29 @@ import { readTextFileTail } from "../text-file-utils.mjs";
 import { assert, readJson, requireArg, write, writeJson } from "./common.mjs";
 
 const AGENTS_DELETE_OUTPUT_MAX_BYTES = readPositiveIntEnv(
-  "OPENCLAW_FIXTURE_AGENTS_DELETE_OUTPUT_MAX_BYTES",
+  "AFORA_FIXTURE_AGENTS_DELETE_OUTPUT_MAX_BYTES",
   1024 * 1024,
 );
 const ERROR_DETAIL_TAIL_BYTES = 16 * 1024;
 
 function writeOpenWebUiWorkspace() {
   const workspace =
-    process.env.OPENCLAW_WORKSPACE_DIR || path.join(process.env.HOME, ".openclaw", "workspace");
+    process.env.AFORA_WORKSPACE_DIR || path.join(process.env.HOME, ".afora", "workspace");
   write(
     path.join(workspace, "IDENTITY.md"),
-    "# Identity\n\n- Name: OpenClaw\n- Purpose: Open WebUI Docker compatibility smoke test assistant.\n",
+    "# Identity\n\n- Name: Afora\n- Purpose: Open WebUI Docker compatibility smoke test assistant.\n",
   );
-  fs.rmSync(path.join(workspace, ".openclaw", "workspace-state.json"), { force: true });
-  fs.rmSync(path.join(workspace, "openclaw-workspace-state.json"), { force: true });
+  fs.rmSync(path.join(workspace, ".afora", "workspace-state.json"), { force: true });
+  fs.rmSync(path.join(workspace, "afora-workspace-state.json"), { force: true });
   fs.rmSync(path.join(workspace, "BOOTSTRAP.md"), { force: true });
 }
 
 function writeAgentsDeleteConfig() {
-  const stateDir = requireArg(process.env.OPENCLAW_STATE_DIR, "OPENCLAW_STATE_DIR");
+  const stateDir = requireArg(process.env.AFORA_STATE_DIR, "AFORA_STATE_DIR");
   const sharedWorkspace = requireArg(process.env.SHARED_WORKSPACE, "SHARED_WORKSPACE");
-  const gatewayToken = process.env.OPENCLAW_GATEWAY_TOKEN?.trim();
+  const gatewayToken = process.env.AFORA_GATEWAY_TOKEN?.trim();
   fs.mkdirSync(sharedWorkspace, { recursive: true });
-  writeJson(path.join(stateDir, "openclaw.json"), {
+  writeJson(path.join(stateDir, "afora.json"), {
     agents: {
       ownership: "explicit",
       defaults: { heartbeat: { agentId: "main" } },
@@ -78,7 +78,7 @@ function assertAgentsDeleteResult([outputPath]) {
   );
   assert(fs.existsSync(process.env.SHARED_WORKSPACE), "shared workspace was removed");
   const remaining =
-    readJson(path.join(process.env.OPENCLAW_STATE_DIR, "openclaw.json"))?.agents?.entries ?? {};
+    readJson(path.join(process.env.AFORA_STATE_DIR, "afora.json"))?.agents?.entries ?? {};
   assert(
     remaining && typeof remaining === "object" && !Array.isArray(remaining),
     "agents entries missing after delete",

@@ -1,4 +1,4 @@
-import type { SessionCatalogContinueProviderResult } from "openclaw/plugin-sdk/session-catalog";
+import type { SessionCatalogContinueProviderResult } from "afora-agent/plugin-sdk/session-catalog";
 import type { CodexThread, CodexTurn } from "./app-server/protocol.js";
 
 export type CodexUpstreamBaseline = {

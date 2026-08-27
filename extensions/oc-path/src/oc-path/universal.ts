@@ -12,10 +12,10 @@
  *   oc://FILE/section/+0           → indexed insertion
  *   oc://FILE/+                    → file-root insertion
  *
- * @module @openclaw/oc-path/universal
+ * @module @afora/oc-path/universal
  */
 
-import { expectDefined } from "openclaw/plugin-sdk/expect-runtime";
+import { expectDefined } from "afora-agent/plugin-sdk/expect-runtime";
 import { isMap, isScalar, isSeq, type Pair } from "yaml";
 import type { MdAst } from "./ast.js";
 import { setMdOcPath } from "./edit.js";

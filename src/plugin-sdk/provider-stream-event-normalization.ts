@@ -1,5 +1,5 @@
-import { createEmptyTransportUsage } from "@openclaw/ai/transports";
-import { asOptionalObjectRecord } from "@openclaw/normalization-core/record-coerce";
+import { createEmptyTransportUsage } from "@afora/ai/transports";
+import { asOptionalObjectRecord } from "@afora/normalization-core/record-coerce";
 import type { AssistantMessageEvent, Model, StopReason } from "../llm/types.js";
 
 const STREAM_EVENT_TYPE_RE =

@@ -1,7 +1,7 @@
 // Path policy for file-transfer node.invoke calls.
 //
 // Default behavior is DENY. The operator must explicitly opt in by adding
-// a config block to ~/.openclaw/openclaw.json under
+// a config block to ~/.AforaMosh/afora-agent.json under
 // `plugins.entries.file-transfer.config.nodes`. Without a matching block,
 // every file operation is rejected before reaching the node.
 //
@@ -48,9 +48,9 @@
 import os from "node:os";
 import path from "node:path";
 import { minimatch } from "minimatch";
-import { mutateConfigFile } from "openclaw/plugin-sdk/config-mutation";
-import { getRuntimeConfig } from "openclaw/plugin-sdk/runtime-config-snapshot";
-import { asNullableRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { mutateConfigFile } from "afora-agent/plugin-sdk/config-mutation";
+import { getRuntimeConfig } from "afora-agent/plugin-sdk/runtime-config-snapshot";
+import { asNullableRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 export type FilePolicyKind = "read" | "write";
 type FilePolicyAskMode = "off" | "on-miss" | "always";
@@ -354,7 +354,7 @@ export async function persistAllowAlways(input: {
   await mutateConfigFile({
     afterWrite: { mode: "none", reason: "file-transfer allow-always policy update" },
     mutate: (draft) => {
-      // Plugin config is intentionally plugin-owned; the root OpenClawConfig
+      // Plugin config is intentionally plugin-owned; the root AforaConfig
       // type only guarantees `Record<string, unknown>` here.
       const plugins = (draft.plugins ??= {}) as Record<string, unknown>;
       const entries = (plugins.entries ??= {}) as Record<string, unknown>;

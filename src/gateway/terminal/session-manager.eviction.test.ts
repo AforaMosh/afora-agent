@@ -1,6 +1,6 @@
 // Idle-eviction under pool pressure: one busy agent must not brick terminal
 // opens gateway-wide until restart.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it, vi } from "vitest";
 import { TerminalSessionManager } from "./session-manager.js";
 import {

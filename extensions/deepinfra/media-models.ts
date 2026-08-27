@@ -1,5 +1,5 @@
 // Deepinfra plugin module implements media models behavior.
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { DEEPINFRA_BASE_URL } from "./provider-models.js";
 
 export { DEEPINFRA_BASE_URL };

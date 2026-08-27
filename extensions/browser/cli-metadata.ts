@@ -1,8 +1,8 @@
 /**
- * Browser CLI metadata entry. It registers the `openclaw browser` command lazily
+ * Browser CLI metadata entry. It registers the `afora browser` command lazily
  * so command discovery does not load the full browser runtime.
  */
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
 import { isBrowserMachineOutput } from "./cli-output-mode.js";
 
 /** Plugin entry that contributes Browser CLI commands. */
@@ -21,7 +21,7 @@ export default definePluginEntry({
         descriptors: [
           {
             name: "browser",
-            description: "Manage OpenClaw's dedicated browser (Chrome/Chromium)",
+            description: "Manage Afora's dedicated browser (Chrome/Chromium)",
             hasSubcommands: true,
             machineOutput: isBrowserMachineOutput,
           },

@@ -152,7 +152,7 @@ function expectedTrustedCmdExe(): string {
 }
 
 describe("createChildAdapter", () => {
-  const originalServiceMarker = process.env.OPENCLAW_SERVICE_MARKER;
+  const originalServiceMarker = process.env.AFORA_SERVICE_MARKER;
   const originalPlatformDescriptor = Object.getOwnPropertyDescriptor(process, "platform");
 
   const setPlatform = (platform: NodeJS.Platform) => {
@@ -189,15 +189,15 @@ describe("createChildAdapter", () => {
       kill: vi.fn(),
       dispose: vi.fn(),
     });
-    delete process.env.OPENCLAW_SERVICE_MARKER;
+    delete process.env.AFORA_SERVICE_MARKER;
     vi.useRealTimers();
   });
 
   afterAll(() => {
     if (originalServiceMarker === undefined) {
-      delete process.env.OPENCLAW_SERVICE_MARKER;
+      delete process.env.AFORA_SERVICE_MARKER;
     } else {
-      process.env.OPENCLAW_SERVICE_MARKER = originalServiceMarker;
+      process.env.AFORA_SERVICE_MARKER = originalServiceMarker;
     }
   });
 
@@ -210,7 +210,7 @@ describe("createChildAdapter", () => {
   });
 
   const createWindowsNpmShim = async (params: { command: string; packagePath: string[] }) => {
-    const binDir = tempDirs.make("openclaw-child-shim-");
+    const binDir = tempDirs.make("afora-child-shim-");
     const entrypoint = path.join(binDir, "node_modules", ...params.packagePath);
     await mkdir(path.dirname(entrypoint), { recursive: true });
     await writeFile(entrypoint, "", "utf8");
@@ -247,7 +247,7 @@ describe("createChildAdapter", () => {
 
     // Detachment flag is now passed to signalProcessTree so it knows whether
     // it can safely group-kill via -pid. (#71662)
-    const expectedDetached = process.platform !== "win32" && !process.env.OPENCLAW_SERVICE_MARKER;
+    const expectedDetached = process.platform !== "win32" && !process.env.AFORA_SERVICE_MARKER;
     expect(signalProcessTreeMock).toHaveBeenCalledWith(
       4321,
       "SIGKILL",
@@ -257,7 +257,7 @@ describe("createChildAdapter", () => {
   });
 
   it("creates owned worker trees in a dedicated POSIX process group without fallback", async () => {
-    process.env.OPENCLAW_SERVICE_MARKER = "service-managed";
+    process.env.AFORA_SERVICE_MARKER = "service-managed";
     const { child, disconnectMock, sendMock } = createStubChild();
     spawnWithFallbackMock.mockResolvedValue({ child, usedFallback: false });
 
@@ -273,7 +273,7 @@ describe("createChildAdapter", () => {
 
     await adapter.openStartGate?.();
     expect(sendMock).toHaveBeenCalledWith(
-      { type: "openclaw-worker-start-v1" },
+      { type: "afora-worker-start-v1" },
       expect.any(Function),
     );
     adapter.closeStartGate?.();
@@ -395,7 +395,7 @@ describe("createChildAdapter", () => {
   });
 
   it("selects the exact service relay instead of direct shared-group signaling", async () => {
-    process.env.OPENCLAW_SERVICE_MARKER = "1";
+    process.env.AFORA_SERVICE_MARKER = "1";
     try {
       await createChildAdapter({
         argv: ["node", "-e", "setTimeout(() => {}, 1000)"],
@@ -412,7 +412,7 @@ describe("createChildAdapter", () => {
       expect(spawnWithFallbackMock).not.toHaveBeenCalled();
       expect(signalProcessTreeMock).not.toHaveBeenCalled();
     } finally {
-      delete process.env.OPENCLAW_SERVICE_MARKER;
+      delete process.env.AFORA_SERVICE_MARKER;
     }
   });
 
@@ -421,7 +421,7 @@ describe("createChildAdapter", () => {
 
     adapter.kill("SIGTERM");
 
-    const expectedDetached = process.platform !== "win32" && !process.env.OPENCLAW_SERVICE_MARKER;
+    const expectedDetached = process.platform !== "win32" && !process.env.AFORA_SERVICE_MARKER;
     expect(signalProcessTreeMock).toHaveBeenCalledWith(7654, "SIGTERM", {
       detached: expectedDetached,
     });
@@ -656,7 +656,7 @@ describe("createChildAdapter", () => {
         usedFallback: false,
       });
       const adapterLocal = await createChildAdapter({
-        argv: ["openclaw", "version"],
+        argv: ["afora", "version"],
         stdinMode: "pipe-closed",
       });
       return { ...stub, adapter: adapterLocal };
@@ -713,7 +713,7 @@ describe("createChildAdapter", () => {
 
   it("keeps the service relay out of Windows child mode", async () => {
     setPlatform("win32");
-    process.env.OPENCLAW_SERVICE_MARKER = "openclaw";
+    process.env.AFORA_SERVICE_MARKER = "afora";
 
     await createAdapterHarness({ pid: 7777 });
 

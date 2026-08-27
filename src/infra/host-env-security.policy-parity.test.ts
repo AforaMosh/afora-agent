@@ -2,8 +2,8 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
-import { sortUniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { expectDefined } from "@afora/normalization-core";
+import { sortUniqueStrings } from "@afora/normalization-core/string-normalization";
 import { describe, expect, it } from "vitest";
 import { loadHostEnvSecurityPolicy } from "./host-env-security-policy.js";
 
@@ -45,11 +45,11 @@ describe("host env security policy parity", () => {
     const policy = loadHostEnvSecurityPolicy(rawPolicy);
     const generatedSource = readRepoFile(
       repoRoot,
-      "apps/macos/Sources/OpenClaw/HostEnvSecurityPolicy.generated.swift",
+      "apps/macos/Sources/Afora/HostEnvSecurityPolicy.generated.swift",
     );
     const sanitizerSource = readRepoFile(
       repoRoot,
-      "apps/macos/Sources/OpenClaw/HostEnvSanitizer.swift",
+      "apps/macos/Sources/Afora/HostEnvSanitizer.swift",
     );
 
     const swiftBlockedKeys = parseSwiftStringArray(generatedSource, "static let blockedKeys");

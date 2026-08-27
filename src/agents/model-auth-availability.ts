@@ -3,11 +3,11 @@ import {
   findNormalizedProviderValue,
   normalizeProviderId,
   normalizeProviderIdForAuth,
-} from "@openclaw/model-catalog-core/provider-id";
-import { hasNonEmptyString as hasSecret } from "@openclaw/normalization-core/string-coerce";
+} from "@afora/model-catalog-core/provider-id";
+import { hasNonEmptyString as hasSecret } from "@afora/normalization-core/string-coerce";
 import { resolveAgentModelPrimaryValue } from "../config/model-input.js";
 import { resolveMergedModelProviderConfig } from "../config/model-provider-config.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { coerceSecretRef } from "../config/types.secrets.js";
 import type {
   ProviderModelRouteAuthRequirement,
@@ -111,7 +111,7 @@ export type ModelAuthAvailabilityResolver = {
   hasSyntheticAuth(provider: string): boolean;
 };
 type CreateModelAuthAvailabilityResolverParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   authStore: AuthProfileStore;
   agentDir?: string;
   workspaceDir?: string;

@@ -3,12 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 const qaChannelLoads = vi.hoisted(() => vi.fn());
 const qaChannelProtocolLoads = vi.hoisted(() => vi.fn());
 
-vi.mock("openclaw/plugin-sdk/qa-channel", () => {
+vi.mock("afora-agent/plugin-sdk/qa-channel", () => {
   qaChannelLoads();
   throw new Error("QA Lab entrypoint loaded the private QA channel");
 });
 
-vi.mock("openclaw/plugin-sdk/qa-channel-protocol", () => {
+vi.mock("afora-agent/plugin-sdk/qa-channel-protocol", () => {
   qaChannelProtocolLoads();
   throw new Error("QA Lab entrypoint loaded the private QA channel protocol");
 });

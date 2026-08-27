@@ -11,8 +11,8 @@ Registers the GitHub Copilot agent runtime.
 
 ## Distribution
 
-- Package: `@openclaw/copilot`
-- Install route: npm; ClawHub: `clawhub:@openclaw/copilot`
+- Package: `@afora/copilot`
+- Install route: npm; ClawHub: `clawhub:@afora/copilot`
 
 ## Surface
 

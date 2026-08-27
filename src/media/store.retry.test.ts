@@ -2,7 +2,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { FsSafeError } from "../infra/fs-safe.js";
@@ -41,8 +41,8 @@ describe("media store filesystem faults", () => {
       shouldRetry: true,
     },
   ])("surfaces or retries $name according to its exact cause", async ({ error, shouldRetry }) => {
-    const stateDir = tempDirs.make("openclaw-media-retry-");
-    vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
+    const stateDir = tempDirs.make("afora-media-retry-");
+    vi.stubEnv("AFORA_STATE_DIR", stateDir);
     const segment = `retry-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const injectedError = error();
     let writeAttempts = 0;
@@ -81,8 +81,8 @@ describe("media store filesystem faults", () => {
   });
 
   it("fully persists a stream chunk after a positive short write", async () => {
-    const stateDir = tempDirs.make("openclaw-media-short-write-");
-    vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
+    const stateDir = tempDirs.make("afora-media-short-write-");
+    vi.stubEnv("AFORA_STATE_DIR", stateDir);
     const input = Buffer.from("positive short write");
     const originalOpen = fs.open.bind(fs);
     let shortWriteObserved = false;

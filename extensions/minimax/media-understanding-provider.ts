@@ -3,7 +3,7 @@ import {
   describeImageWithModel,
   describeImagesWithModel,
   type MediaUnderstandingProvider,
-} from "openclaw/plugin-sdk/media-understanding";
+} from "afora-agent/plugin-sdk/media-understanding";
 
 export const minimaxMediaUnderstandingProvider: MediaUnderstandingProvider = {
   id: "minimax",

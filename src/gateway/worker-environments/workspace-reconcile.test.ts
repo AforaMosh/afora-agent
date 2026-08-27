@@ -41,7 +41,7 @@ afterEach(async () => {
 });
 
 async function temporaryDirectory(name: string): Promise<string> {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), `openclaw-${name}-`));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), `afora-${name}-`));
   roots.push(root);
   return root;
 }
@@ -185,7 +185,7 @@ describe("worker workspace reconciliation", () => {
 
   it("rejects unsafe claim ids before constructing a staged result ref", () => {
     expect(workerWorkspaceResultRef("6f77e833-83d2-4db4-bdd4-2ad1d37edc28")).toBe(
-      "refs/openclaw/worker-results/6f77e833-83d2-4db4-bdd4-2ad1d37edc28",
+      "refs/afora/worker-results/6f77e833-83d2-4db4-bdd4-2ad1d37edc28",
     );
     for (const claimId of ["", "claim.with-dot", "claim_with_underscore", "claim/with-slash"]) {
       expect(() => workerWorkspaceResultRef(claimId)).toThrow(
@@ -606,7 +606,7 @@ describe("worker workspace reconciliation", () => {
 
   it("does not treat a Git probe failure as an absent staged result", async () => {
     const local = await temporaryDirectory("workspace-staged-probe-failure");
-    await fs.writeFile(path.join(local, ".git"), "gitdir: /missing/openclaw-repository\n");
+    await fs.writeFile(path.join(local, ".git"), "gitdir: /missing/afora-repository\n");
 
     await expect(
       hasWorkerWorkspaceResultRef({

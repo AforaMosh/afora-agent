@@ -101,10 +101,10 @@ function launchApp(
       app === "browser"
         ? {
             id: "browser",
-            executablePath: "/usr/local/bin/openclaw-worker-browser",
+            executablePath: "/usr/local/bin/afora-worker-browser",
             cdpPort: 9222,
           }
-        : { id: "terminal", executablePath: "/usr/local/bin/openclaw-worker-terminal" },
+        : { id: "terminal", executablePath: "/usr/local/bin/afora-worker-terminal" },
     resolveIdentity,
   });
 }
@@ -141,9 +141,9 @@ describe("worker desktop tunnels", () => {
     expect(start.argv).toContain("ServerAliveInterval=15");
     expect(start.argv).toContain("ServerAliveCountMax=3");
     expect(start.argv[start.argv.indexOf("-L") + 1]).toMatch(
-      /openclaw-worker-desktop-.+\/desktop\.sock:127\.0\.0\.1:5900$/u,
+      /afora-worker-desktop-.+\/desktop\.sock:127\.0\.0\.1:5900$/u,
     );
-    expect(start.options.input).toContain("OPENCLAW_WORKER_TUNNEL_READY");
+    expect(start.options.input).toContain("AFORA_WORKER_TUNNEL_READY");
     start.process.becomeReady();
     const result = await starting;
     expect(result).toMatchObject({ vncPassword: "vnc-secret" });
@@ -305,9 +305,9 @@ describe("worker desktop tunnels", () => {
     const second = launchApp(manager);
     await vi.waitFor(() => expect(fake.runs).toHaveLength(1), { interval: 1 });
     const run = fake.runs[0]!;
-    expect(run.argv.at(-1)).toBe("'/usr/local/bin/openclaw-worker-browser'");
+    expect(run.argv.at(-1)).toBe("'/usr/local/bin/afora-worker-browser'");
     expect(run.argv.at(-1)).not.toContain("9222");
-    expect(run.argv.at(-1)).not.toContain(".cache/openclaw");
+    expect(run.argv.at(-1)).not.toContain(".cache/afora");
     expect(run.options.timeoutMs).toBeGreaterThan(0);
     expect(run.options.timeoutMs).toBeLessThanOrEqual(30_000);
     expect(run.options.signal).toBeInstanceOf(AbortSignal);

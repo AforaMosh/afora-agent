@@ -1,4 +1,4 @@
-import { defineChannelSetupContract } from "openclaw/plugin-sdk/channel-setup";
+import { defineChannelSetupContract } from "afora-agent/plugin-sdk/channel-setup";
 // Synology Chat plugin module implements setup surface behavior.
 import {
   createAllowFromSection,
@@ -14,12 +14,12 @@ import {
   type ChannelSetupAdapter,
   type ChannelSetupInput,
   type ChannelSetupWizard,
-  type OpenClawConfig,
-} from "openclaw/plugin-sdk/setup";
+  type AforaConfig,
+} from "afora-agent/plugin-sdk/setup";
 import {
   normalizeOptionalString,
   normalizeStringEntries,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { listAccountIds, resolveAccount } from "./accounts.js";
 import { resolveSynologyHostedMediaRoute } from "./hosted-media-route.js";
 import type { SynologyChatAccountRaw, SynologyChatChannelConfig } from "./types.js";
@@ -52,11 +52,11 @@ const SYNOLOGY_ALLOW_FROM_HELP_LINES = [
   `Docs: ${formatDocsLink("/channels/synology-chat", "channels/synology-chat")}`,
 ];
 
-function getChannelConfig(cfg: OpenClawConfig): SynologyChatChannelConfig {
+function getChannelConfig(cfg: AforaConfig): SynologyChatChannelConfig {
   return (cfg.channels?.[channel] as SynologyChatChannelConfig | undefined) ?? {};
 }
 
-function getRawAccountConfig(cfg: OpenClawConfig, accountId: string): SynologyChatAccountRaw {
+function getRawAccountConfig(cfg: AforaConfig, accountId: string): SynologyChatAccountRaw {
   const channelConfig = getChannelConfig(cfg);
   if (accountId === DEFAULT_ACCOUNT_ID) {
     return channelConfig;
@@ -65,12 +65,12 @@ function getRawAccountConfig(cfg: OpenClawConfig, accountId: string): SynologyCh
 }
 
 function patchSynologyChatAccountConfig(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   patch: Record<string, unknown>;
   clearFields?: string[];
   enabled?: boolean;
-}): OpenClawConfig {
+}): AforaConfig {
   const channelConfig = getChannelConfig(params.cfg);
   if (params.accountId === DEFAULT_ACCOUNT_ID) {
     const nextChannelConfig = { ...channelConfig } as Record<string, unknown>;
@@ -114,7 +114,7 @@ function patchSynologyChatAccountConfig(params: {
   };
 }
 
-function isSynologyChatConfigured(cfg: OpenClawConfig, accountId: string): boolean {
+function isSynologyChatConfigured(cfg: AforaConfig, accountId: string): boolean {
   const account = resolveAccount(cfg, accountId);
   return Boolean(account.token.trim() && account.incomingUrl.trim());
 }
@@ -169,7 +169,7 @@ function normalizeSynologyAllowedUserId(value: unknown): string {
   return "";
 }
 
-function resolveExistingAllowedUserIds(cfg: OpenClawConfig, accountId: string): string[] {
+function resolveExistingAllowedUserIds(cfg: AforaConfig, accountId: string): string[] {
   const raw = getRawAccountConfig(cfg, accountId).allowedUserIds;
   if (Array.isArray(raw)) {
     return raw.map(normalizeSynologyAllowedUserId).filter(Boolean);

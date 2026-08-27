@@ -1,7 +1,7 @@
 // Tlon plugin module implements context behavior.
 import { normalizeUrbitHostname, validateUrbitBaseUrl } from "./base-url.js";
 import { UrbitUrlError } from "./errors.js";
-export { ssrfPolicyFromDangerouslyAllowPrivateNetwork } from "openclaw/plugin-sdk/ssrf-runtime";
+export { ssrfPolicyFromDangerouslyAllowPrivateNetwork } from "afora-agent/plugin-sdk/ssrf-runtime";
 
 type UrbitContext = {
   baseUrl: string;

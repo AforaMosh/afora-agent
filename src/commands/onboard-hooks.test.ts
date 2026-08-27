@@ -1,6 +1,6 @@
 // Onboard hooks tests cover the default internal-hook config mutation behavior.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { enableDefaultOnboardingInternalHooks } from "./onboard-hooks.js";
 
 describe("onboard-hooks", () => {
@@ -15,7 +15,7 @@ describe("onboard-hooks", () => {
     });
 
     it("preserves explicit internal hook disablement", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         hooks: {
           internal: {
             enabled: false,
@@ -27,7 +27,7 @@ describe("onboard-hooks", () => {
     });
 
     it("preserves an explicit session-memory disablement", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         hooks: {
           internal: {
             entries: {

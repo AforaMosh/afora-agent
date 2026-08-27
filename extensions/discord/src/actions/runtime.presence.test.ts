@@ -1,5 +1,5 @@
 // Discord tests cover runtime.presence plugin behavior.
-import type { DiscordActionConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { DiscordActionConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { GatewayPlugin } from "../internal/gateway.js";
 import { clearGateways, registerGateway } from "../monitor/gateway-registry.js";

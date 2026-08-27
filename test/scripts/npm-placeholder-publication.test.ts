@@ -23,7 +23,7 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 function packageJson(name: string) {
   return {
     name,
-    openclaw: {
+    afora: {
       install: {
         npmSpec: name,
       },
@@ -53,7 +53,7 @@ function createRepo(packages: Array<{ dir: string; manifest: Record<string, unkn
       entries: packages.map((entry) => ({
         name: entry.manifest.name,
         source: "official",
-        openclaw: { install: { npmSpec: entry.manifest.name } },
+        afora: { install: { npmSpec: entry.manifest.name } },
       })),
     })}\n`,
   );
@@ -83,7 +83,7 @@ function identity(packageName: string) {
 
 describe("npm placeholder publication", () => {
   it("preserves selected multi-package order and binds unique release-enabled manifests", async () => {
-    const names = ["@openclaw/zoom-meetings", "@openclaw/comfy-provider"] as const;
+    const names = ["@afora/zoom-meetings", "@afora/comfy-provider"] as const;
     const root = createRepo([
       { dir: "comfy", manifest: packageJson(names[1]) },
       { dir: "zoom-meetings", manifest: packageJson(names[0]) },
@@ -111,15 +111,15 @@ describe("npm placeholder publication", () => {
   });
 
   it("creates deterministic canonical two-file placeholder tarballs", () => {
-    const first = createPlaceholderTarball("@openclaw/comfy-provider");
-    const second = createPlaceholderTarball("@openclaw/comfy-provider");
+    const first = createPlaceholderTarball("@afora/comfy-provider");
+    const second = createPlaceholderTarball("@afora/comfy-provider");
 
     expect(first).toEqual(second);
     expect(first.subarray(0, 2)).toEqual(Buffer.from([0x1f, 0x8b]));
   });
 
   it("requires three stable registry observations during planning", async () => {
-    const packageName = "@openclaw/comfy-provider";
+    const packageName = "@afora/comfy-provider";
     const root = createRepo([{ dir: "comfy", manifest: packageJson(packageName) }]);
     const responses = [
       registryResponse(),
@@ -140,7 +140,7 @@ describe("npm placeholder publication", () => {
   });
 
   it("classifies E404, existing-version backfill, and exact idempotent reruns", () => {
-    const packageName = "@openclaw/meta-provider";
+    const packageName = "@afora/meta-provider";
     const expected = identity(packageName);
     expect(
       classifyRegistryState({
@@ -209,7 +209,7 @@ describe("npm placeholder publication", () => {
   });
 
   it("rejects mismatched 0.0.0 bytes and conflicting placeholder tags", () => {
-    const packageName = "@openclaw/duckduckgo-plugin";
+    const packageName = "@afora/duckduckgo-plugin";
     const expected = identity(packageName);
     expect(() =>
       classifyRegistryState({
@@ -244,7 +244,7 @@ describe("npm placeholder publication", () => {
   });
 
   it("publishes serially and preserves every non-placeholder dist-tag", async () => {
-    const names = ["@openclaw/byteplus-provider", "@openclaw/meta-provider"] as const;
+    const names = ["@afora/byteplus-provider", "@afora/meta-provider"] as const;
     const root = createRepo([
       { dir: "byteplus", manifest: packageJson(names[0]) },
       { dir: "meta", manifest: packageJson(names[1]) },
@@ -328,22 +328,22 @@ describe("npm placeholder publication", () => {
   });
 
   it("rejects malicious package input, duplicate identity, and unsafe manifest paths", () => {
-    expect(() => parseSelectedPackages("@openclaw/good,../../evil")).toThrow(
-      "Invalid OpenClaw package name",
+    expect(() => parseSelectedPackages("@afora/good,../../evil")).toThrow(
+      "Invalid Afora package name",
     );
-    expect(() => parseSelectedPackages("@openclaw/good,@openclaw/good")).toThrow("duplicates");
+    expect(() => parseSelectedPackages("@afora/good,@afora/good")).toThrow("duplicates");
 
     const duplicateRoot = createRepo([
-      { dir: "one", manifest: packageJson("@openclaw/good") },
-      { dir: "two", manifest: packageJson("@openclaw/good") },
+      { dir: "one", manifest: packageJson("@afora/good") },
+      { dir: "two", manifest: packageJson("@afora/good") },
     ]);
-    expect(() => resolveSelectedPackageSources(duplicateRoot, ["@openclaw/good"])).toThrow(
+    expect(() => resolveSelectedPackageSources(duplicateRoot, ["@afora/good"])).toThrow(
       "must map uniquely",
     );
 
-    const unsafeRoot = createRepo([{ dir: "good", manifest: packageJson("@openclaw/good") }]);
+    const unsafeRoot = createRepo([{ dir: "good", manifest: packageJson("@afora/good") }]);
     writeFileSync(join(unsafeRoot, "extensions", "good", "package.json"), "{}\n");
-    expect(() => resolveSelectedPackageSources(unsafeRoot, ["@openclaw/good"])).toThrow(
+    expect(() => resolveSelectedPackageSources(unsafeRoot, ["@afora/good"])).toThrow(
       "must map uniquely",
     );
 
@@ -351,18 +351,18 @@ describe("npm placeholder publication", () => {
       {
         dir: "private",
         manifest: {
-          ...packageJson("@openclaw/private"),
+          ...packageJson("@afora/private"),
           publishConfig: { access: "private" },
         },
       },
     ]);
-    expect(() => resolveSelectedPackageSources(privateRoot, ["@openclaw/private"])).toThrow(
+    expect(() => resolveSelectedPackageSources(privateRoot, ["@afora/private"])).toThrow(
       "not a public release-enabled npm plugin",
     );
   });
 
   it("fails final verification when any pre-existing dist-tag changes", () => {
-    const packageName = "@openclaw/meta-provider";
+    const packageName = "@afora/meta-provider";
     const expected = identity(packageName);
     const entry = {
       packageDir: "extensions/meta",
@@ -372,7 +372,7 @@ describe("npm placeholder publication", () => {
       newPackage: false,
       preExistingDistTags: { latest: "2026.7.2" },
       tarball: {
-        name: "openclaw-meta-provider-0.0.0.tgz",
+        name: "afora-meta-provider-0.0.0.tgz",
         sha256: "d".repeat(64),
         sizeBytes: 1,
         ...expected,
@@ -390,7 +390,7 @@ describe("npm placeholder publication", () => {
   });
 
   it("rejects manifest state combinations that could lie about registry creation", async () => {
-    const packageName = "@openclaw/comfy-provider";
+    const packageName = "@afora/comfy-provider";
     const root = createRepo([{ dir: "comfy", manifest: packageJson(packageName) }]);
     const artifactDir = join(tempDirs.make("npm-placeholder-invalid-parent-"), "artifact");
     await createPlaceholderPublication({
@@ -420,7 +420,7 @@ describe("npm placeholder publication", () => {
   });
 
   it("removes token-bearing npm config after mutation and readback failure", async () => {
-    const packageName = "@openclaw/comfy-provider";
+    const packageName = "@afora/comfy-provider";
     const root = createRepo([{ dir: "comfy", manifest: packageJson(packageName) }]);
     const artifactDir = join(tempDirs.make("npm-placeholder-failure-parent-"), "artifact");
     await createPlaceholderPublication({
@@ -452,7 +452,7 @@ describe("npm placeholder publication", () => {
   });
 
   it("repairs a missing placeholder tag and accepts exact readback after an ambiguous error", async () => {
-    const packageName = "@openclaw/meta-provider";
+    const packageName = "@afora/meta-provider";
     const root = createRepo([{ dir: "meta", manifest: packageJson(packageName) }]);
     const expected = identity(packageName);
     const before = {
@@ -499,7 +499,7 @@ describe("npm placeholder publication", () => {
   });
 
   it("preserves prototype-looking npm dist-tags as ordinary tag entries", () => {
-    const packageName = "@openclaw/meta-provider";
+    const packageName = "@afora/meta-provider";
     const expected = identity(packageName);
     const distTags = JSON.parse(
       '{"__proto__":"2026.7.1","latest":"2026.7.2","placeholder":"0.0.0"}',
@@ -591,7 +591,7 @@ describe("npm placeholder publication", () => {
         consumerRunAttempt: 1,
         outputDir: "/tmp/unused",
         producerRunAttempt: 1,
-        repository: "openclaw/openclaw",
+        repository: "AforaMosh/afora-agent",
         runId: 123,
         targetRoot: "/tmp/unused",
         targetSha: SHA,

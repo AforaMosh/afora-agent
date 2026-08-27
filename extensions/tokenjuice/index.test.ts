@@ -1,20 +1,20 @@
 // Tokenjuice tests cover index plugin behavior.
 import fs from "node:fs";
-import { createAgentToolResultMiddlewareRunner } from "openclaw/plugin-sdk/agent-harness";
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
+import { createAgentToolResultMiddlewareRunner } from "afora-agent/plugin-sdk/agent-harness";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { tokenjuiceFactory, createTokenjuiceOpenClawEmbeddedExtension } = vi.hoisted(() => {
+const { tokenjuiceFactory, createTokenjuiceAforaEmbeddedExtension } = vi.hoisted(() => {
   const tokenjuiceFactoryLocal = vi.fn();
-  const createTokenjuiceOpenClawEmbeddedExtensionLocal = vi.fn(() => tokenjuiceFactoryLocal);
+  const createTokenjuiceAforaEmbeddedExtensionLocal = vi.fn(() => tokenjuiceFactoryLocal);
   return {
     tokenjuiceFactory: tokenjuiceFactoryLocal,
-    createTokenjuiceOpenClawEmbeddedExtension: createTokenjuiceOpenClawEmbeddedExtensionLocal,
+    createTokenjuiceAforaEmbeddedExtension: createTokenjuiceAforaEmbeddedExtensionLocal,
   };
 });
 
 vi.mock("./runtime-api.js", () => ({
-  createTokenjuiceOpenClawEmbeddedExtension,
+  createTokenjuiceAforaEmbeddedExtension,
 }));
 
 import plugin from "./index.js";
@@ -22,19 +22,19 @@ import { createTokenjuiceAgentToolResultMiddleware } from "./tool-result-middlew
 
 describe("tokenjuice plugin", () => {
   beforeEach(() => {
-    createTokenjuiceOpenClawEmbeddedExtension.mockClear();
+    createTokenjuiceAforaEmbeddedExtension.mockClear();
     tokenjuiceFactory.mockClear();
   });
 
   it("is opt-in by default", () => {
     const manifest = JSON.parse(
-      fs.readFileSync(new URL("./openclaw.plugin.json", import.meta.url), "utf8"),
+      fs.readFileSync(new URL("./afora.plugin.json", import.meta.url), "utf8"),
     ) as { enabledByDefault?: unknown };
 
     expect(manifest.enabledByDefault).toBeUndefined();
   });
 
-  it("registers tokenjuice tool result middleware for OpenClaw and Codex runtimes", () => {
+  it("registers tokenjuice tool result middleware for Afora and Codex runtimes", () => {
     const registerAgentToolResultMiddleware = vi.fn();
 
     plugin.register(
@@ -49,11 +49,11 @@ describe("tokenjuice plugin", () => {
       }),
     );
 
-    expect(createTokenjuiceOpenClawEmbeddedExtension).toHaveBeenCalledTimes(1);
+    expect(createTokenjuiceAforaEmbeddedExtension).toHaveBeenCalledTimes(1);
     expect(tokenjuiceFactory).toHaveBeenCalledTimes(1);
     const registration = registerAgentToolResultMiddleware.mock.calls[0];
     expect(typeof registration?.[0]).toBe("function");
-    expect(registration?.[1]).toEqual({ runtimes: ["openclaw", "codex"] });
+    expect(registration?.[1]).toEqual({ runtimes: ["afora", "codex"] });
   });
 
   it("synthesises exec status when bash provides metadata-only details", async () => {
@@ -75,7 +75,7 @@ describe("tokenjuice plugin", () => {
       {
         toolCallId: "tool-call-tokenjuice-bash-meta",
         toolName: "bash",
-        args: { command: "cat /tmp/out.txt", workdir: "/tmp/openclaw-tokenjuice-test" },
+        args: { command: "cat /tmp/out.txt", workdir: "/tmp/afora-tokenjuice-test" },
         result: {
           content: [{ type: "text", text: "file contents\n" }],
           details: {
@@ -85,7 +85,7 @@ describe("tokenjuice plugin", () => {
         },
         isError: false,
       },
-      { runtime: "openclaw" },
+      { runtime: "afora" },
     );
 
     expect(received?.details).toMatchObject({
@@ -130,7 +130,7 @@ describe("tokenjuice plugin", () => {
         },
         isError: false,
       },
-      { runtime: "openclaw" },
+      { runtime: "afora" },
     );
 
     expect(received?.details).toEqual({
@@ -151,7 +151,7 @@ describe("tokenjuice plugin", () => {
       },
     );
 
-    const runner = createAgentToolResultMiddlewareRunner({ runtime: "openclaw" }, [
+    const runner = createAgentToolResultMiddlewareRunner({ runtime: "afora" }, [
       createTokenjuiceAgentToolResultMiddleware(),
     ]);
     const result = await runner.applyToolResultMiddleware({
@@ -208,7 +208,7 @@ describe("tokenjuice plugin", () => {
           },
           isError: false,
         },
-        { runtime: "openclaw" },
+        { runtime: "afora" },
       );
 
       expect(received?.details).toMatchObject({
@@ -243,11 +243,11 @@ describe("tokenjuice plugin", () => {
       {
         toolCallId: "tool-call-tokenjuice-bash",
         toolName: "bash",
-        args: { command: "printf 'hello\\n'", workdir: "/tmp/openclaw-tokenjuice-test" },
+        args: { command: "printf 'hello\\n'", workdir: "/tmp/afora-tokenjuice-test" },
         result: { content: [{ type: "text", text: "hello\n" }], details: undefined },
         isError: false,
       },
-      { runtime: "openclaw" },
+      { runtime: "afora" },
     );
 
     expect(received?.toolName).toBe("bash");

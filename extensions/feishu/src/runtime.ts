@@ -1,6 +1,6 @@
 // Feishu plugin module implements runtime behavior.
-import type { PluginRuntime } from "openclaw/plugin-sdk/core";
-import { createPluginRuntimeStore } from "openclaw/plugin-sdk/runtime-store";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/core";
+import { createPluginRuntimeStore } from "afora-agent/plugin-sdk/runtime-store";
 
 const { setRuntime: setFeishuRuntime, getRuntime: getFeishuRuntime } =
   createPluginRuntimeStore<PluginRuntime>({

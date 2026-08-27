@@ -5,11 +5,11 @@ import {
   hasMeaningfulChannelConfigShallow,
   resolveChannelConfigRecord,
 } from "./channel-configured-shared.js";
-import type { OpenClawConfig } from "./types.openclaw.js";
+import type { AforaConfig } from "./types.afora.js";
 
 /** Resolves whether a channel has enough config, env, or plugin state to be considered setup. */
 export function isChannelConfigured(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   channelId: string,
   env: NodeJS.ProcessEnv = process.env,
 ): boolean {

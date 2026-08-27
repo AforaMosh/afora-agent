@@ -2,9 +2,9 @@
 import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { runCommandWithTimeout } from "openclaw/plugin-sdk/process-runtime";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { runCommandWithTimeout } from "afora-agent/plugin-sdk/process-runtime";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime";
 
 const REQUIRED_MATRIX_PACKAGES = [
   "matrix-js-sdk",
@@ -39,7 +39,7 @@ export function isMatrixSdkAvailable(): boolean {
 function buildMatrixDepsMissingMessage(missing: string[]): string {
   return [
     `Matrix plugin dependencies are missing: ${missing.join(", ")}.`,
-    "Repair this plugin with `openclaw plugins update matrix` or run `openclaw doctor --fix`.",
+    "Repair this plugin with `afora plugins update matrix` or run `afora doctor --fix`.",
   ].join(" ");
 }
 

@@ -16,11 +16,11 @@ function pullRequest(
 ): ControlUiSessionPullRequest {
   return {
     number,
-    owner: "openclaw",
-    repo: "openclaw",
+    owner: "afora",
+    repo: "afora",
     branch: "feature/demo",
     title: `Pull request ${number}`,
-    url: `https://github.com/openclaw/openclaw/pull/${number}`,
+    url: `https://github.com/AforaMosh/afora-agent/pull/${number}`,
     state,
   };
 }

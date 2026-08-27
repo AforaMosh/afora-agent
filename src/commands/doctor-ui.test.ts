@@ -16,17 +16,17 @@ type UiProtocolFreshnessIssue = Awaited<ReturnType<typeof detectUiProtocolFreshn
 function issue(overrides: Partial<UiProtocolFreshnessIssue> = {}): UiProtocolFreshnessIssue {
   return {
     kind: "missing-assets",
-    root: "/repo/openclaw",
-    uiIndexPath: "/repo/openclaw/dist/control-ui/index.html",
+    root: "/repo/afora",
+    uiIndexPath: "/repo/afora/dist/control-ui/index.html",
     canBuild: true,
     ...overrides,
   } as UiProtocolFreshnessIssue;
 }
 
-async function createOpenClawRoot(): Promise<string> {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-doctor-ui-"));
+async function createAforaRoot(): Promise<string> {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-doctor-ui-"));
   tempRoots.push(root);
-  await fs.writeFile(path.join(root, "package.json"), JSON.stringify({ name: "openclaw" }));
+  await fs.writeFile(path.join(root, "package.json"), JSON.stringify({ name: "afora" }));
   await fs.mkdir(path.join(root, "packages/gateway-protocol/src"), { recursive: true });
   await fs.writeFile(path.join(root, "packages/gateway-protocol/src/schema.ts"), "export {};\n");
   return root;
@@ -52,15 +52,15 @@ describe("UI protocol freshness health mapping", () => {
       expect.objectContaining({
         checkId: "core/doctor/ui-protocol-freshness",
         severity: "warning",
-        path: "/repo/openclaw/dist/control-ui/index.html",
-        fixHint: expect.stringContaining("openclaw doctor --fix"),
+        path: "/repo/afora/dist/control-ui/index.html",
+        fixHint: expect.stringContaining("afora doctor --fix"),
       }),
     );
     expect(uiProtocolFreshnessIssueToRepairEffects(current)).toEqual([
       {
         kind: "process",
         action: "would-build-control-ui",
-        target: "/repo/openclaw",
+        target: "/repo/afora",
         dryRunSafe: false,
       },
     ]);
@@ -74,12 +74,12 @@ describe("UI protocol freshness health mapping", () => {
     const finding = uiProtocolFreshnessIssueToHealthFinding(current);
 
     expect(finding.message).toContain("abc123 schema change");
-    expect(finding.fixHint).toContain("openclaw doctor --fix --force");
+    expect(finding.fixHint).toContain("afora doctor --fix --force");
     expect(uiProtocolFreshnessIssueToRepairEffects(current)).toEqual([
       {
         kind: "process",
         action: "would-rebuild-control-ui",
-        target: "/repo/openclaw",
+        target: "/repo/afora",
         dryRunSafe: false,
       },
     ]);
@@ -90,7 +90,7 @@ describe("UI protocol freshness health mapping", () => {
   });
 
   it("reports missing packaged UI assets without requiring unpublished protocol sources", async () => {
-    const root = await createOpenClawRoot();
+    const root = await createAforaRoot();
     await fs.rm(path.join(root, "packages"), { recursive: true });
 
     await expect(detectUiProtocolFreshnessIssues({ root })).resolves.toEqual([
@@ -107,11 +107,11 @@ describe("UI protocol freshness health mapping", () => {
     const finding = uiProtocolFreshnessIssueToHealthFinding(issue({ canBuild: false }));
 
     expect(finding.message).not.toContain("pnpm ui:build");
-    expect(finding.fixHint).toContain("Reinstall OpenClaw");
+    expect(finding.fixHint).toContain("Reinstall Afora");
   });
 
   it("keeps healthy packaged UI assets quiet without probing unpublished protocol history", async () => {
-    const root = await createOpenClawRoot();
+    const root = await createAforaRoot();
     await fs.rm(path.join(root, "packages"), { recursive: true });
     await touch(path.join(root, "dist/control-ui/index.html"), new Date("2026-01-02"));
     let checkedHistory = false;
@@ -132,7 +132,7 @@ describe("UI protocol freshness health mapping", () => {
     ["a nested schema module", "schema/sessions.ts"],
     ["the protocol package entrypoint", "index.ts"],
   ])("reports stale assets after changes to %s", async (_description, changedProtocolFile) => {
-    const root = await createOpenClawRoot();
+    const root = await createAforaRoot();
     const uiIndexPath = path.join(root, "dist/control-ui/index.html");
     const schemaBarrelPath = path.join(root, "packages/gateway-protocol/src/schema.ts");
     await touch(schemaBarrelPath, new Date("2026-01-01T00:00:00.000Z"));
@@ -162,7 +162,7 @@ describe("UI protocol freshness health mapping", () => {
   });
 
   it("reads committed nested protocol changes from the real complete-package git pathspec", async () => {
-    const root = await createOpenClawRoot();
+    const root = await createAforaRoot();
     const uiIndexPath = path.join(root, "dist/control-ui/index.html");
     await touch(path.join(root, "packages/gateway-protocol/src/schema.ts"), new Date("2026-01-01"));
     await touch(uiIndexPath, new Date("2026-01-02"));
@@ -209,7 +209,7 @@ describe("UI protocol freshness health mapping", () => {
   });
 
   it("does not report stale assets when git finds no schema changes", async () => {
-    const root = await createOpenClawRoot();
+    const root = await createAforaRoot();
     const schemaPath = path.join(root, "packages/gateway-protocol/src/schema.ts");
     const uiIndexPath = path.join(root, "dist/control-ui/index.html");
     await touch(uiIndexPath, new Date("2026-01-01T00:00:00.000Z"));
@@ -227,7 +227,7 @@ describe("UI protocol freshness health mapping", () => {
   });
 
   it("does not report stale assets when git history is unavailable", async () => {
-    const root = await createOpenClawRoot();
+    const root = await createAforaRoot();
     const schemaPath = path.join(root, "packages/gateway-protocol/src/schema.ts");
     const uiIndexPath = path.join(root, "dist/control-ui/index.html");
     await touch(uiIndexPath, new Date("2026-01-01T00:00:00.000Z"));

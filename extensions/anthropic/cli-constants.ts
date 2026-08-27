@@ -5,7 +5,7 @@
 /** Synthetic provider/backend id for Claude Code CLI-backed Anthropic models. */
 export const CLAUDE_CLI_BACKEND_ID = "claude-cli";
 /** Non-secret marker for Claude Code settings.json apiKeyHelper auth. */
-export const CLAUDE_CLI_API_KEY_HELPER_AUTH_MARKER = ["openclaw", "claude-cli-api-key-helper"].join(
+export const CLAUDE_CLI_API_KEY_HELPER_AUTH_MARKER = ["afora", "claude-cli-api-key-helper"].join(
   ":",
 );
 /** Default Claude CLI model ref for agent defaults and live tests. */

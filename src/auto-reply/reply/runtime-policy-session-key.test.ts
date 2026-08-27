@@ -2,12 +2,12 @@
 import { describe, expect, it } from "vitest";
 import { AgentSelectionRequiredError } from "../../agents/agent-scope-config.js";
 import { resolveSandboxRuntimeStatus } from "../../agents/sandbox/runtime-status.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { MsgContext } from "../templating.js";
 import { resolveRuntimePolicySessionKey } from "./runtime-policy-session-key.js";
 
 describe("resolveRuntimePolicySessionKey", () => {
-  const cfg: OpenClawConfig = {
+  const cfg: AforaConfig = {
     agents: {
       defaults: {
         sandbox: { mode: "non-main", scope: "agent" },
@@ -120,7 +120,7 @@ describe("resolveRuntimePolicySessionKey", () => {
   });
 
   it("uses the persisted fixed-store owner for a bare global policy key", () => {
-    const explicitConfig: OpenClawConfig = {
+    const explicitConfig: AforaConfig = {
       session: { scope: "global", store: "/tmp/shared-sessions.sqlite" },
       agents: {
         ownership: "explicit",

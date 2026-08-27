@@ -1,4 +1,4 @@
-import { err, ok, type Result } from "@openclaw/normalization-core/result";
+import { err, ok, type Result } from "@afora/normalization-core/result";
 import {
   ErrorCodes,
   errorShape,
@@ -9,7 +9,7 @@ import {
 import type { ModelCatalogEntry } from "../../agents/model-catalog.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { SESSION_LIFECYCLE_CHANGED_ERROR_REASON } from "../../config/sessions/lifecycle.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { resolveMissingAgentHarnessSessionError } from "../../sessions/agent-harness-session-key.js";
 import { resolvePluginSessionOwnershipError } from "../session-plugin-ownership.js";
@@ -64,7 +64,7 @@ function archiveUnavailableError(key: string, message: "active" | "stopping"): E
   );
 }
 
-function protectedArchiveError(cfg: OpenClawConfig, canonicalKey: string): ErrorShape | undefined {
+function protectedArchiveError(cfg: AforaConfig, canonicalKey: string): ErrorShape | undefined {
   if (canonicalKey === "unknown") {
     return errorShape(ErrorCodes.INVALID_REQUEST, "Cannot archive the unknown session sentinel.");
   }
@@ -100,7 +100,7 @@ function archiveTargetChanged(params: {
 
 export async function prepareSessionPatchArchive(params: {
   commitGuard: () => ErrorShape | undefined;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   context: GatewayRequestContext;
   loadGatewayModelCatalog: () => Promise<ModelCatalogEntry[]>;
   pluginOwnerId?: string;
@@ -236,7 +236,7 @@ export async function prepareSessionPatchArchive(params: {
 }
 
 export function validateSessionPatchArchiveProjection(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   existingEntry: SessionEntry | undefined;
   fullPatch: SessionsPatchParams;
   key: string;

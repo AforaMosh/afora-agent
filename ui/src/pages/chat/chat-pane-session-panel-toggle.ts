@@ -11,7 +11,7 @@ import type { ChatPageHost } from "./chat-state-host.ts";
 import { resolveChatAgentId } from "./chat-state-route.ts";
 import { closeSlot, openSlot } from "./sidebar-layout.ts";
 
-type PanelTagName = "openclaw-browser-panel" | "openclaw-desktop-panel" | "openclaw-terminal-panel";
+type PanelTagName = "afora-browser-panel" | "afora-desktop-panel" | "afora-terminal-panel";
 
 interface ActivePanelOwner {
   renderRoot: ParentNode;
@@ -43,8 +43,8 @@ export class ChatPaneSessionPanelToggleController {
     }
     if (slot === "terminal") {
       const intent = terminalToggleIntent(event, resolveChatAgentId(owner.state));
-      const embeddedTerminal = owner.renderRoot.querySelector("openclaw-terminal-panel[embedded]");
-      const terminalConstructor = customElements.get("openclaw-terminal-panel");
+      const embeddedTerminal = owner.renderRoot.querySelector("afora-terminal-panel[embedded]");
+      const terminalConstructor = customElements.get("afora-terminal-panel");
       const embeddedTerminalMounted =
         embeddedTerminal !== null &&
         terminalConstructor !== undefined &&
@@ -60,7 +60,7 @@ export class ChatPaneSessionPanelToggleController {
     this.options.pending.set(slot, event);
     owner.state.updateSidebarLayout(openSlot(owner.state.sidebarLayout, slot));
     void Promise.all([
-      customElements.whenDefined("openclaw-chat-sidebar-region"),
+      customElements.whenDefined("afora-chat-sidebar-region"),
       customElements.whenDefined(tagName),
     ])
       .then(() => owner.updateComplete)
@@ -69,8 +69,8 @@ export class ChatPaneSessionPanelToggleController {
           return;
         }
         const region = owner.renderRoot.querySelector<
-          HTMLElementTagNameMap["openclaw-chat-sidebar-region"]
-        >("openclaw-chat-sidebar-region");
+          HTMLElementTagNameMap["afora-chat-sidebar-region"]
+        >("afora-chat-sidebar-region");
         await region?.updateComplete;
         region?.deliverPanelEvent(slot, event);
         this.options.pending.delete(slot);
@@ -84,9 +84,9 @@ export class ChatPaneSessionPanelToggleController {
       return;
     }
     for (const [slot, tagName] of [
-      ["terminal", "openclaw-terminal-panel"],
-      ["browser", "openclaw-browser-panel"],
-      ["desktop", "openclaw-desktop-panel"],
+      ["terminal", "afora-terminal-panel"],
+      ["browser", "afora-browser-panel"],
+      ["desktop", "afora-desktop-panel"],
     ] as const) {
       const event = takeSessionPanelToggle(slot);
       if (event) {

@@ -28,7 +28,7 @@ describe("session ingestion", () => {
   });
 
   it("verifies backfill content despite an unchanged size and mtime", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-session-ingestion-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-session-ingestion-"));
     tempDirs.push(dir);
     const archiveFile = path.join(dir, "archive.jsonl");
     const record = (content: string) =>

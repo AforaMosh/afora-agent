@@ -1,9 +1,9 @@
 // Whatsapp API module exposes the plugin public contract.
-import type { OpenClawConfig as RuntimeOpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig as RuntimeAforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { loadWhatsAppChannelRuntime } from "./channel-runtime-loader.js";
-export { getChatChannelMeta, type ChannelPlugin } from "openclaw/plugin-sdk/core";
+export { getChatChannelMeta, type ChannelPlugin } from "afora-agent/plugin-sdk/core";
 export { buildChannelConfigSchema, WhatsAppConfigSchema } from "../config-api.js";
-export { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk/account-id";
+export { DEFAULT_ACCOUNT_ID } from "afora-agent/plugin-sdk/account-id";
 export {
   formatWhatsAppConfigAllowFromEntries,
   resolveWhatsAppConfigAllowFrom,
@@ -15,11 +15,11 @@ export {
   readReactionParams,
   readStringParam,
   ToolAuthorizationError,
-} from "openclaw/plugin-sdk/channel-actions";
-export { normalizeE164 } from "openclaw/plugin-sdk/account-resolution";
-export type { DmPolicy, GroupPolicy } from "openclaw/plugin-sdk/config-contracts";
+} from "afora-agent/plugin-sdk/channel-actions";
+export { normalizeE164 } from "afora-agent/plugin-sdk/account-resolution";
+export type { DmPolicy, GroupPolicy } from "afora-agent/plugin-sdk/config-contracts";
 
-export { type ChannelMessageActionName } from "openclaw/plugin-sdk/channel-contract";
+export { type ChannelMessageActionName } from "afora-agent/plugin-sdk/channel-contract";
 export {
   resolveWhatsAppGroupRequireMention,
   resolveWhatsAppGroupToolPolicy,
@@ -37,7 +37,7 @@ export {
 export { resolveWhatsAppOutboundTarget } from "./resolve-outbound-target.js";
 export { resolveWhatsAppReactionLevel } from "./reaction-level.js";
 
-export type OpenClawConfig = RuntimeOpenClawConfig;
+export type AforaConfig = RuntimeAforaConfig;
 export type { WhatsAppAccountConfig } from "./account-types.js";
 
 type MonitorWebChannel = typeof import("./channel.runtime.js").monitorWebChannel;

@@ -13,7 +13,7 @@ import {
 async function writeGlobalPackageJson(packageRoot: string, version: string): Promise<void> {
   await fs.writeFile(
     path.join(packageRoot, "package.json"),
-    JSON.stringify({ name: "openclaw", version }),
+    JSON.stringify({ name: "afora", version }),
     "utf8",
   );
 }
@@ -25,7 +25,7 @@ async function writePnpmIsolatedPackage(params: {
   dependencies?: Record<string, string>;
 }): Promise<string> {
   const installDir = path.join(params.globalRoot, params.installName);
-  const packageRoot = path.join(installDir, "node_modules", "openclaw");
+  const packageRoot = path.join(installDir, "node_modules", "afora");
   await fs.mkdir(packageRoot, { recursive: true });
   await Promise.all([
     writeGlobalPackageJson(packageRoot, params.version),
@@ -33,7 +33,7 @@ async function writePnpmIsolatedPackage(params: {
       path.join(installDir, "package.json"),
       JSON.stringify({
         private: true,
-        dependencies: { openclaw: params.version, ...params.dependencies },
+        dependencies: { afora: params.version, ...params.dependencies },
       }),
       "utf8",
     ),
@@ -44,7 +44,7 @@ async function writePnpmIsolatedPackage(params: {
 
 describe("pnpm 11 global install discovery", () => {
   it("detects isolated global installs from the active project link", async () => {
-    await withTestDir({ prefix: "openclaw-update-pnpm-isolated-root-" }, async (base) => {
+    await withTestDir({ prefix: "afora-update-pnpm-isolated-root-" }, async (base) => {
       const npmRoot = path.join(base, "npm", "lib", "node_modules");
       const pnpmGlobalDir = path.join(base, "pnpm-home", "global");
       const pnpmGlobalRoot = path.join(pnpmGlobalDir, "v11");
@@ -53,7 +53,7 @@ describe("pnpm 11 global install discovery", () => {
         installName: "a1b2",
         version: "2026.7.1",
       });
-      const hashLinkedPkgRoot = path.join(pnpmGlobalRoot, "hash-a1b2", "node_modules", "openclaw");
+      const hashLinkedPkgRoot = path.join(pnpmGlobalRoot, "hash-a1b2", "node_modules", "afora");
       const pnpmHomeAlias = path.join(base, "pnpm-home-alias");
       await fs.symlink(path.join(base, "pnpm-home"), pnpmHomeAlias, "dir");
       const aliasedPkgRoot = path.join(
@@ -62,9 +62,9 @@ describe("pnpm 11 global install discovery", () => {
         "v11",
         "a1b2",
         "node_modules",
-        "openclaw",
+        "afora",
       );
-      await fs.mkdir(path.join(npmRoot, "openclaw"), { recursive: true });
+      await fs.mkdir(path.join(npmRoot, "afora"), { recursive: true });
 
       const runCommand: CommandRunner = async (argv) => {
         const command = argv.join(" ");
@@ -110,7 +110,7 @@ describe("pnpm 11 global install discovery", () => {
   });
 
   it("prefers the invoking project when multiple installs are active", async () => {
-    await withTestDir({ prefix: "openclaw-update-pnpm-isolated-owner-" }, async (base) => {
+    await withTestDir({ prefix: "afora-update-pnpm-isolated-owner-" }, async (base) => {
       const pnpmGlobalRoot = path.join(base, "pnpm-home", "global", "v11");
       const otherPackageRoot = await writePnpmIsolatedPackage({
         globalRoot: pnpmGlobalRoot,
@@ -133,11 +133,11 @@ describe("pnpm 11 global install discovery", () => {
       await expect(
         listActivePnpmIsolatedGlobalPackages({
           globalRoot: pnpmGlobalRoot,
-          packageName: "openclaw",
+          packageName: "afora",
         }),
       ).resolves.toEqual([
-        { packageRoot: otherPackageRoot, packageNames: ["openclaw"] },
-        { packageRoot: invokingPackageRoot, packageNames: ["cowsay", "openclaw"] },
+        { packageRoot: otherPackageRoot, packageNames: ["afora"] },
+        { packageRoot: invokingPackageRoot, packageNames: ["cowsay", "afora"] },
       ]);
       await expect(
         resolveGlobalInstallTarget({
@@ -145,7 +145,7 @@ describe("pnpm 11 global install discovery", () => {
           runCommand,
           timeoutMs: 1000,
           pkgRoot: invokingPackageRoot,
-          packageName: "openclaw",
+          packageName: "afora",
         }),
       ).resolves.toEqual({
         manager: "pnpm",
@@ -158,13 +158,13 @@ describe("pnpm 11 global install discovery", () => {
   });
 
   it("does not adopt another pnpm project through a shared-store package symlink", async () => {
-    await withTestDir({ prefix: "openclaw-update-pnpm-shared-store-owner-" }, async (base) => {
+    await withTestDir({ prefix: "afora-update-pnpm-shared-store-owner-" }, async (base) => {
       const globalRoot = path.join(base, "pnpm-home", "global", "v11");
       const activeInstallRoot = path.join(globalRoot, "active");
       const orphanInstallRoot = path.join(globalRoot, "orphan");
-      const activePackageRoot = path.join(activeInstallRoot, "node_modules", "openclaw");
-      const orphanPackageRoot = path.join(orphanInstallRoot, "node_modules", "openclaw");
-      const sharedPackageRoot = path.join(base, "store", "openclaw");
+      const activePackageRoot = path.join(activeInstallRoot, "node_modules", "afora");
+      const orphanPackageRoot = path.join(orphanInstallRoot, "node_modules", "afora");
+      const sharedPackageRoot = path.join(base, "store", "afora");
       await Promise.all([
         fs.mkdir(path.dirname(activePackageRoot), { recursive: true }),
         fs.mkdir(path.dirname(orphanPackageRoot), { recursive: true }),
@@ -174,12 +174,12 @@ describe("pnpm 11 global install discovery", () => {
         writeGlobalPackageJson(sharedPackageRoot, "2026.7.1"),
         fs.writeFile(
           path.join(activeInstallRoot, "package.json"),
-          JSON.stringify({ private: true, dependencies: { openclaw: "2026.7.1" } }),
+          JSON.stringify({ private: true, dependencies: { afora: "2026.7.1" } }),
           "utf8",
         ),
         fs.writeFile(
           path.join(orphanInstallRoot, "package.json"),
-          JSON.stringify({ private: true, dependencies: { openclaw: "2026.7.1" } }),
+          JSON.stringify({ private: true, dependencies: { afora: "2026.7.1" } }),
           "utf8",
         ),
         fs.writeFile(path.join(orphanInstallRoot, "pnpm-lock.yaml"), "lockfileVersion: '9.0'\n"),
@@ -202,7 +202,7 @@ describe("pnpm 11 global install discovery", () => {
           runCommand,
           timeoutMs: 1000,
           pkgRoot: orphanPackageRoot,
-          packageName: "openclaw",
+          packageName: "afora",
         }),
       ).resolves.toEqual({
         manager: "pnpm",
@@ -215,16 +215,16 @@ describe("pnpm 11 global install discovery", () => {
   });
 
   it("preserves pnpm 11 ownership when the invoking project is orphaned", async () => {
-    await withTestDir({ prefix: "openclaw-update-pnpm-isolated-orphan-" }, async (base) => {
+    await withTestDir({ prefix: "afora-update-pnpm-isolated-orphan-" }, async (base) => {
       const pnpmGlobalRoot = path.join(base, "pnpm-home", "global", "v11");
-      const orphanPackageRoot = path.join(pnpmGlobalRoot, "orphan", "node_modules", "openclaw");
+      const orphanPackageRoot = path.join(pnpmGlobalRoot, "orphan", "node_modules", "afora");
       await fs.mkdir(orphanPackageRoot, { recursive: true });
       const orphanInstallRoot = path.join(pnpmGlobalRoot, "orphan");
       await Promise.all([
         writeGlobalPackageJson(orphanPackageRoot, "2026.7.1"),
         fs.writeFile(
           path.join(orphanInstallRoot, "package.json"),
-          JSON.stringify({ private: true, dependencies: { openclaw: "2026.7.1" } }),
+          JSON.stringify({ private: true, dependencies: { afora: "2026.7.1" } }),
           "utf8",
         ),
         fs.writeFile(path.join(orphanInstallRoot, "pnpm-lock.yaml"), "lockfileVersion: '9.0'\n"),
@@ -256,7 +256,7 @@ describe("pnpm 11 global install discovery", () => {
           runCommand,
           timeoutMs: 1000,
           pkgRoot: orphanPackageRoot,
-          packageName: "openclaw",
+          packageName: "afora",
         }),
       ).resolves.toEqual({
         manager: "pnpm",
@@ -269,10 +269,10 @@ describe("pnpm 11 global install discovery", () => {
   });
 
   it("keeps npm ownership when its prefix is named like a pnpm layout", async () => {
-    await withTestDir({ prefix: "openclaw-update-npm-v11-prefix-" }, async (base) => {
+    await withTestDir({ prefix: "afora-update-npm-v11-prefix-" }, async (base) => {
       const npmPrefix = path.join(base, "v11");
       const npmGlobalRoot = path.join(npmPrefix, "lib", "node_modules");
-      const packageRoot = path.join(npmGlobalRoot, "openclaw");
+      const packageRoot = path.join(npmGlobalRoot, "afora");
       await fs.mkdir(packageRoot, { recursive: true });
       await writeGlobalPackageJson(packageRoot, "2026.7.1");
       const runCommand: CommandRunner = async (argv) => {
@@ -302,7 +302,7 @@ describe("pnpm 11 global install discovery", () => {
           runCommand,
           timeoutMs: 1000,
           pkgRoot: packageRoot,
-          packageName: "openclaw",
+          packageName: "afora",
           honorPackageRoot: true,
         }),
       ).resolves.toEqual({
@@ -319,10 +319,10 @@ describe("pnpm 11 global install discovery", () => {
   });
 
   it("does not infer pnpm ownership without pnpm node_modules metadata", async () => {
-    await withTestDir({ prefix: "openclaw-update-pnpm-shape-only-" }, async (base) => {
+    await withTestDir({ prefix: "afora-update-pnpm-shape-only-" }, async (base) => {
       const customGlobalDir = path.join(base, "custom-pnpm");
       const customGlobalRoot = path.join(customGlobalDir, "5", "node_modules");
-      const pkgRoot = path.join(customGlobalRoot, "openclaw");
+      const pkgRoot = path.join(customGlobalRoot, "afora");
       const defaultPnpmRoot = path.join(base, "default-pnpm", "5", "node_modules");
       await fs.mkdir(pkgRoot, { recursive: true });
       await fs.writeFile(
@@ -355,7 +355,7 @@ describe("pnpm 11 global install discovery", () => {
         manager: "pnpm",
         command: "pnpm",
         globalRoot: defaultPnpmRoot,
-        packageRoot: path.join(defaultPnpmRoot, "openclaw"),
+        packageRoot: path.join(defaultPnpmRoot, "afora"),
       });
     });
   });

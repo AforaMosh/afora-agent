@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import type { DatabaseSync } from "node:sqlite";
 import { TextDecoder } from "node:util";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import {
   migrateSessionFileEntryToCurrentVersion,
   normalizeLoadedFileEntry,
@@ -17,7 +17,7 @@ import { resolveSqliteTargetFromSessionStorePath } from "../config/sessions/sess
 import type { SessionStoreTarget as ResolvedSessionStoreTarget } from "../config/sessions/targets.js";
 import type { SessionEntry } from "../config/sessions/types.js";
 import { openNodeSqliteDatabase } from "../infra/node-sqlite.js";
-import { resolveOpenClawAgentSqlitePath } from "../state/openclaw-agent-db.js";
+import { resolveAforaAgentSqlitePath } from "../state/afora-agent-db.js";
 
 type SessionStoreTarget = ResolvedSessionStoreTarget & { sqlitePath?: string };
 
@@ -218,7 +218,7 @@ function assertTranscriptFileUnchanged(
     current.size !== expected.size
   ) {
     throw new Error(
-      "Legacy transcript changed during import; stop active session writers and rerun `openclaw doctor --fix`.",
+      "Legacy transcript changed during import; stop active session writers and rerun `afora doctor --fix`.",
     );
   }
 }
@@ -471,12 +471,12 @@ export function readOnlySqliteDbStats(target: SessionStoreTarget): ReadOnlySqlit
 
 export function resolveTargetSqlitePath(target: SessionStoreTarget): string {
   if (target.sqlitePath) {
-    return resolveOpenClawAgentSqlitePath({ agentId: target.agentId, path: target.sqlitePath });
+    return resolveAforaAgentSqlitePath({ agentId: target.agentId, path: target.sqlitePath });
   }
   const sqliteTarget = resolveSqliteTargetFromSessionStorePath(target.storePath, {
     agentId: target.agentId,
   });
-  return resolveOpenClawAgentSqlitePath({
+  return resolveAforaAgentSqlitePath({
     agentId: sqliteTarget.agentId ?? target.agentId,
     ...(sqliteTarget.path ? { path: sqliteTarget.path } : {}),
   });

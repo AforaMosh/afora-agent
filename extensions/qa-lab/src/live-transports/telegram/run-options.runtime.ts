@@ -1,6 +1,6 @@
 // Qa Lab plugin module normalizes Telegram live-run options.
 import path from "node:path";
-import type { LiveTransportQaCommandOptions } from "openclaw/plugin-sdk/qa-runtime";
+import type { LiveTransportQaCommandOptions } from "afora-agent/plugin-sdk/qa-runtime";
 import { resolveRepoRelativeOutputDir } from "../../cli-paths.js";
 import { DEFAULT_QA_LIVE_PROVIDER_MODE } from "../../providers/index.js";
 import type { QaProviderMode } from "../../run-config.js";

@@ -187,7 +187,7 @@ function resolvePackagedChannelStateMetadata(
 }
 
 function resolvePackagedChannelMetadata(plan: PluginNpmRuntimeBuildPlan) {
-  const channel = plan.packageJson.openclaw?.channel;
+  const channel = plan.packageJson.afora?.channel;
   if (!isRecord(channel)) {
     return channel;
   }
@@ -329,7 +329,7 @@ export function generatePluginNpmPackageLockWithRetry(
   const pluginDir = params.pluginDir ?? "plugin";
   const env = {
     ...(options.env ?? process.env),
-    OPENCLAW_NPM_LOCK_COMMAND_TIMEOUT_MS: String(timeoutMs),
+    AFORA_NPM_LOCK_COMMAND_TIMEOUT_MS: String(timeoutMs),
   };
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
@@ -505,7 +505,7 @@ function installMissingOptionalBundledDependencies(params: PluginPackageContext)
 }
 
 function packageOptsOutOfBundledRuntimeDependencies(packageJson: PluginPackageJson | undefined) {
-  return packageJson?.openclaw?.release?.bundleRuntimeDependencies === false;
+  return packageJson?.afora?.release?.bundleRuntimeDependencies === false;
 }
 
 function shouldBundleDependencies(value: unknown, packageJson: PluginPackageJson | undefined) {
@@ -642,8 +642,8 @@ export function resolveAugmentedPluginNpmPackageJson(params: PluginPackageParams
     files: plan.packageFiles,
     peerDependencies: plan.packagePeerMetadata.peerDependencies,
     peerDependenciesMeta: plan.packagePeerMetadata.peerDependenciesMeta,
-    openclaw: {
-      ...plan.packageJson.openclaw,
+    afora: {
+      ...plan.packageJson.afora,
       ...(packagedChannel ? { channel: packagedChannel } : {}),
       runtimeExtensions: plan.runtimeExtensions,
       ...(plan.runtimeSetupEntry
@@ -778,7 +778,7 @@ export function mergeGeneratedChannelConfigs(
 export function resolveAugmentedPluginNpmManifest(params: PluginPackageParams) {
   const repoRoot = path.resolve(params.repoRoot ?? ".");
   const packageDir = resolvePackageDir(repoRoot, params.packageDir);
-  const manifestPath = path.join(packageDir, "openclaw.plugin.json");
+  const manifestPath = path.join(packageDir, "afora.plugin.json");
   if (!fs.existsSync(manifestPath)) {
     return {
       manifestPath,
@@ -951,7 +951,7 @@ function main(argv: string[] = process.argv.slice(2)) {
   return withAugmentedPluginNpmManifestForPackage(
     {
       packageDir,
-      bundleDependencies: process.env.OPENCLAW_PLUGIN_NPM_BUNDLE_DEPENDENCIES,
+      bundleDependencies: process.env.AFORA_PLUGIN_NPM_BUNDLE_DEPENDENCIES,
     },
     ({ packageDir: cwd }) => {
       const result = spawnCommandSync(command, args, {

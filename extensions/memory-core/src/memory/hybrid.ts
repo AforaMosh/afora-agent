@@ -1,6 +1,6 @@
-import type { MemoryEntryProvenance } from "openclaw/plugin-sdk/memory-core-host-engine-storage";
+import type { MemoryEntryProvenance } from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
 // Memory Core plugin module implements hybrid behavior.
-import { normalizeStringEntries } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeStringEntries } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { applyImportanceMultiplier } from "./importance.js";
 import { applyMMRToHybridResults, type MMRConfig, DEFAULT_MMR_CONFIG } from "./mmr.js";
 import { applyProjectRanking, projectScoreMultiplier } from "./project-ranking.js";

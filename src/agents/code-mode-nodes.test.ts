@@ -1,6 +1,6 @@
 /** Tests the first-class Code Mode nodes API through the real generic nodes tool. */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ToolSearchCatalogToolExecutor } from "./tool-search.js";
 import type { AnyAgentTool } from "./tools/common.js";

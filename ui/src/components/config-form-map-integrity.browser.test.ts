@@ -45,7 +45,7 @@ describe("config form map integrity", () => {
     renderValue(undefined);
     const map = expectElement(container.querySelector<HTMLElement>(".cfg-map"), "unset map");
     const draftHost = expectElement(
-      map.querySelector<ConfigFormCollectionDraft>("openclaw-config-form-collection-draft"),
+      map.querySelector<ConfigFormCollectionDraft>("afora-config-form-collection-draft"),
       "unset map draft host",
     );
     expectElement(

@@ -1,9 +1,9 @@
 // Line plugin module implements download behavior.
 import { setTimeout as delay } from "node:timers/promises";
-import { MediaFetchError } from "openclaw/plugin-sdk/media-runtime";
-import { saveMediaStream } from "openclaw/plugin-sdk/media-store";
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
-import { fetchWithRuntimeDispatcherOrMockedGlobal } from "openclaw/plugin-sdk/runtime-fetch";
+import { MediaFetchError } from "afora-agent/plugin-sdk/media-runtime";
+import { saveMediaStream } from "afora-agent/plugin-sdk/media-store";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
+import { fetchWithRuntimeDispatcherOrMockedGlobal } from "afora-agent/plugin-sdk/runtime-fetch";
 
 interface DownloadResult {
   path: string;

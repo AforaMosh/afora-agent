@@ -1,8 +1,8 @@
 // Connection-level chat attachment ceilings shared by the parser and the
 // `hello-ok` handshake. Kept out of chat-attachments.ts so the handshake path
 // does not pull the media probe/store graph in just to read two numbers.
-import { MAX_IMAGE_BYTES } from "@openclaw/media-core/constants";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { MAX_IMAGE_BYTES } from "@afora/media-core/constants";
+import type { AforaConfig } from "../config/types.afora.js";
 import { MAX_PAYLOAD_BYTES } from "./server-constants.js";
 
 const DEFAULT_CHAT_ATTACHMENT_MAX_MB = 20;
@@ -20,7 +20,7 @@ const MAX_ADVERTISED_ATTACHMENT_BYTES = Math.floor(
 export const DEFAULT_CHAT_ATTACHMENT_MAX_BYTES = DEFAULT_CHAT_ATTACHMENT_MAX_MB * 1024 * 1024;
 
 /** Resolve the maximum decoded attachment size accepted for chat inputs. */
-export function resolveChatAttachmentMaxBytes(cfg: OpenClawConfig): number {
+export function resolveChatAttachmentMaxBytes(cfg: AforaConfig): number {
   const configured = cfg.agents?.defaults?.mediaMaxMb;
   const mb =
     typeof configured === "number" && Number.isFinite(configured) && configured > 0
@@ -46,7 +46,7 @@ type ChatAttachmentPolicy = {
  * depend on the entrypoint, the resolved model, and payload sniffing, so they
  * cannot be stated once per connection.
  */
-export function resolveChatAttachmentPolicy(cfg: OpenClawConfig): ChatAttachmentPolicy {
+export function resolveChatAttachmentPolicy(cfg: AforaConfig): ChatAttachmentPolicy {
   const maxBytes = Math.min(resolveChatAttachmentMaxBytes(cfg), MAX_ADVERTISED_ATTACHMENT_BYTES);
   return { maxBytes, maxImageBytes: Math.min(maxBytes, MAX_IMAGE_BYTES) };
 }

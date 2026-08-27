@@ -1,7 +1,7 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import {
   readAcpSessionMeta,
   readAcpSessionMetaForEntry,
@@ -27,7 +27,7 @@ import {
   type SessionScope,
 } from "../config/sessions.js";
 import { canonicalSessionKeyMigrationRequiredError } from "../config/sessions/session-canonical-key.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
 import { isAcpSessionKey } from "../sessions/session-key-utils.js";
 import { listAgentProvenance } from "../state/agent-provenance.js";
@@ -49,7 +49,7 @@ import { projectWorkerPlacementAgentRuntime } from "./worker-environments/placem
  * exists (#65524).
  */
 export function resolveDeletedAgentIdFromSessionKey(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   sessionKey: string,
   entry?: SessionEntry | null,
   options?: { acpMetadataSessionKey?: string | null },
@@ -80,7 +80,7 @@ export function resolveDeletedAgentIdFromSessionKey(
 }
 
 function readAcpMetaForDeletedAgentCheck(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
   entry?: Pick<SessionEntry, "acp" | "lifecycleRevision"> | null;
   acpMetadataSessionKey?: string | null;
@@ -219,7 +219,7 @@ export function resolveCanonicalSessionEntryFromStoreKeys(
 }
 
 export function resolveCanonicalGatewaySessionStoreKey(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   key: string;
   store: Record<string, SessionEntry>;
   agentId?: string;
@@ -282,7 +282,7 @@ function normalizeFallbackList(values: readonly string[]): string[] {
 }
 
 function resolveGatewayAgentModel(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
   resolvedModel: ReturnType<typeof resolveDefaultModelForAgent>,
 ): NonNullable<GatewayAgentRow["model"]> {
@@ -301,7 +301,7 @@ function resolveGatewayAgentModel(
 }
 
 export function listAgentsForGateway(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   modelCatalog?: ModelCatalogEntry[],
   options?: {
     modelCatalogByAgentId?: ReadonlyMap<string, ModelCatalogEntry[]>;

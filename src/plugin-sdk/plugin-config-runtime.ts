@@ -1,13 +1,13 @@
 // Plugin config runtime helpers load and normalize plugin-owned configuration at execution time.
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
-import type { OpenClawConfig } from "../config/types.js";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
+import type { AforaConfig } from "../config/types.js";
 import { normalizePluginsConfig, resolveEffectiveEnableState } from "../plugins/config-state.js";
 
 export { normalizePluginsConfig, resolveEffectiveEnableState };
 export { mergeDeep } from "../infra/deep-merge.js";
 
 /** Requires an already-resolved runtime config at plugin runtime boundaries. */
-export function requireRuntimeConfig(config: OpenClawConfig, context: string): OpenClawConfig {
+export function requireRuntimeConfig(config: AforaConfig, context: string): AforaConfig {
   if (config) {
     return config;
   }
@@ -18,7 +18,7 @@ export function requireRuntimeConfig(config: OpenClawConfig, context: string): O
 
 /** Reads a plugin's object-shaped `plugins.entries[id].config` block from resolved config. */
 export function resolvePluginConfigObject(
-  config: OpenClawConfig | undefined,
+  config: AforaConfig | undefined,
   pluginId: string,
 ): Record<string, unknown> | undefined {
   const pluginConfig = normalizePluginsConfig(config?.plugins).entries[pluginId]?.config;
@@ -27,7 +27,7 @@ export function resolvePluginConfigObject(
 
 /** Resolves live plugin config through a loader, falling back to startup config when unavailable. */
 export function resolveLivePluginConfigObject(
-  runtimeConfigLoader: (() => OpenClawConfig | undefined) | undefined,
+  runtimeConfigLoader: (() => AforaConfig | undefined) | undefined,
   pluginId: string,
   startupPluginConfig?: Record<string, unknown>,
 ): Record<string, unknown> | undefined {

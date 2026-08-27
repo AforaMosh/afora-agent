@@ -48,7 +48,7 @@ vi.mock("../resolve-system-bin.js", () => ({ resolveSystemBin: resolveSystemBinM
 import { loadGatewayTlsRuntime } from "./gateway.js";
 
 const tempDirs = createTrackedTempDirs();
-const createTempDir = () => tempDirs.make("openclaw-gateway-tls-test-");
+const createTempDir = () => tempDirs.make("afora-gateway-tls-test-");
 
 function resolveOpenSslOutput(args: string[], flag: "-keyout" | "-out"): string {
   const outputPath = args.at(args.indexOf(flag) + 1);

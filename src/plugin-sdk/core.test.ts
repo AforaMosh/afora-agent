@@ -3,7 +3,7 @@
  */
 import { describe, expect, it, vi } from "vitest";
 import type { PluginRuntime } from "../plugins/runtime/types.js";
-import type { OpenClawPluginApi, PluginRegistrationMode } from "../plugins/types.js";
+import type { AforaPluginApi, PluginRegistrationMode } from "../plugins/types.js";
 import {
   createChannelPluginBase,
   createChatChannelPlugin,
@@ -30,13 +30,13 @@ function createChannelPlugin(id: string): ChannelPlugin {
   };
 }
 
-function createApi(registrationMode: PluginRegistrationMode): OpenClawPluginApi {
+function createApi(registrationMode: PluginRegistrationMode): AforaPluginApi {
   return {
     registrationMode,
     runtime: { registrationMode } as unknown as PluginRuntime,
     registerChannel: vi.fn(),
     registerTool: vi.fn(),
-  } as unknown as OpenClawPluginApi;
+  } as unknown as AforaPluginApi;
 }
 
 describe("defineChannelPluginEntry", () => {
@@ -61,9 +61,9 @@ describe("defineChannelPluginEntry", () => {
 
   it("runs tool registrations without channel runtime wiring during tool discovery", () => {
     const setRuntime = vi.fn<(runtime: PluginRuntime) => void>();
-    const registerCliMetadata = vi.fn<(api: OpenClawPluginApi) => void>();
-    const registerCapabilities = vi.fn<(api: OpenClawPluginApi) => void>();
-    const registerFull = vi.fn<(api: OpenClawPluginApi) => void>((api) => {
+    const registerCliMetadata = vi.fn<(api: AforaPluginApi) => void>();
+    const registerCapabilities = vi.fn<(api: AforaPluginApi) => void>();
+    const registerFull = vi.fn<(api: AforaPluginApi) => void>((api) => {
       api.registerTool(
         {
           name: "channel_tool",
@@ -99,9 +99,9 @@ describe("defineChannelPluginEntry", () => {
 
   it("wires runtime helpers during discovery registration", () => {
     const setRuntime = vi.fn<(runtime: PluginRuntime) => void>();
-    const registerCliMetadata = vi.fn<(api: OpenClawPluginApi) => void>();
-    const registerFull = vi.fn<(api: OpenClawPluginApi) => void>();
-    const registerCapabilities = vi.fn<(api: OpenClawPluginApi) => void>();
+    const registerCliMetadata = vi.fn<(api: AforaPluginApi) => void>();
+    const registerFull = vi.fn<(api: AforaPluginApi) => void>();
+    const registerCapabilities = vi.fn<(api: AforaPluginApi) => void>();
     const entry = defineChannelPluginEntry({
       id: "runtime-discovery",
       name: "Runtime Discovery",
@@ -125,9 +125,9 @@ describe("defineChannelPluginEntry", () => {
 
   it("keeps setup-runtime and full registration wired to runtime helpers", () => {
     const setRuntime = vi.fn<(runtime: PluginRuntime) => void>();
-    const registerCliMetadata = vi.fn<(api: OpenClawPluginApi) => void>();
-    const registerFull = vi.fn<(api: OpenClawPluginApi) => void>();
-    const registerCapabilities = vi.fn<(api: OpenClawPluginApi) => void>();
+    const registerCliMetadata = vi.fn<(api: AforaPluginApi) => void>();
+    const registerFull = vi.fn<(api: AforaPluginApi) => void>();
+    const registerCapabilities = vi.fn<(api: AforaPluginApi) => void>();
     const entry = defineChannelPluginEntry({
       id: "runtime-activation",
       name: "Runtime Activation",

@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { err, ok, type Result } from "@openclaw/normalization-core/result";
+import { err, ok, type Result } from "@afora/normalization-core/result";
 import {
   ErrorCodes,
   errorShape,
@@ -7,7 +7,7 @@ import {
 } from "../../../packages/gateway-protocol/src/index.js";
 import { resolveAgentWorkspaceDir } from "../../agents/agent-scope.js";
 import { resolveSandboxRuntimeStatus } from "../../agents/sandbox/runtime-status.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { isPathInside } from "../../infra/path-guards.js";
 import { resolveUserPath } from "../../utils.js";
@@ -18,7 +18,7 @@ type PreparedSessionCreateRoot = {
 };
 
 export function prepareSessionCreateFilesystemRoot(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   requestedExecNode?: string;
   requestedProjectId?: string;
   enforceSandboxContainment: boolean;

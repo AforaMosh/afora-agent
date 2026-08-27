@@ -1,6 +1,6 @@
 import { isIP } from "node:net";
 import { generateSecretKey, nip19 } from "nostr-tools";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   DEFAULT_ACCOUNT_ID,
   hasConfiguredSecretInput,
@@ -8,7 +8,7 @@ import {
   runSingleChannelSecretStep,
   type ChannelSetupWizardAdapter,
   type SecretInput,
-} from "openclaw/plugin-sdk/setup";
+} from "afora-agent/plugin-sdk/setup";
 import { waitForBuzzRoomAccess } from "./room-access-wait.js";
 import { discoverBuzzRooms, type BuzzDiscoveredRoom } from "./room-discovery.js";
 import { isSameBuzzIdentity } from "./setup-core.js";
@@ -27,7 +27,7 @@ type BuzzSetupDependencies = {
   verifyAfterWrite?: typeof verifyBuzzAfterSetup;
 };
 
-function patchBuzzConfig(cfg: OpenClawConfig, patch: Record<string, unknown>): OpenClawConfig {
+function patchBuzzConfig(cfg: AforaConfig, patch: Record<string, unknown>): AforaConfig {
   return patchTopLevelChannelConfigSection({ cfg, channel, patch });
 }
 
@@ -54,7 +54,7 @@ function isRemoteInsecureRelayUrl(value: string): boolean {
   return url.protocol === "ws:" && !isLoopback;
 }
 
-function isBuzzSetupConfigured(cfg: OpenClawConfig): boolean {
+function isBuzzSetupConfigured(cfg: AforaConfig): boolean {
   const buzzConfig = cfg.channels?.buzz;
   return Boolean(
     (buzzConfig?.relayUrl?.trim() || process.env.BUZZ_RELAY_URL?.trim()) &&
@@ -112,25 +112,25 @@ async function resolveRelayUrl(params: {
   });
 }
 
-function resolvedConfiguredKey(cfg: OpenClawConfig): string | undefined {
+function resolvedConfiguredKey(cfg: AforaConfig): string | undefined {
   const value = cfg.channels?.buzz?.privateKey;
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
-function resolvedCurrentKey(cfg: OpenClawConfig): string | undefined {
+function resolvedCurrentKey(cfg: AforaConfig): string | undefined {
   return cfg.channels?.buzz?.privateKey === undefined
     ? process.env.BUZZ_PRIVATE_KEY?.trim() || undefined
     : resolvedConfiguredKey(cfg);
 }
 
 async function resolvePrivateKey(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   prompter: BuzzSetupPrompter;
   secretInputMode?: "plaintext" | "ref";
   generate: typeof generateSecretKey;
   generatedPrivateKeys: WeakMap<BuzzSetupPrompter, string>;
   runSecretStep: typeof runSingleChannelSecretStep;
-}): Promise<{ cfg: OpenClawConfig; resolvedPrivateKey?: string }> {
+}): Promise<{ cfg: AforaConfig; resolvedPrivateKey?: string }> {
   const hasExistingIdentity =
     hasConfiguredSecretInput(params.cfg.channels?.buzz?.privateKey, params.cfg.secrets?.defaults) ||
     Boolean(process.env.BUZZ_PRIVATE_KEY?.trim());
@@ -184,7 +184,7 @@ async function resolvePrivateKey(params: {
             ...(keepAuthTag && authTag !== undefined ? { authTag } : {}),
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
     },
     applySet: (cfg, value: SecretInput, resolvedValue) =>
       patchBuzzConfig(cfg, {
@@ -228,7 +228,7 @@ async function promptRooms(params: {
   });
 }
 
-function pauseBuzzSetup(cfg: OpenClawConfig): BuzzSetupResult {
+function pauseBuzzSetup(cfg: AforaConfig): BuzzSetupResult {
   return {
     cfg: patchBuzzConfig(cfg, { enabled: false }),
     completion: "paused",
@@ -253,10 +253,10 @@ async function noteBuzzAccessInstructions(params: {
       "Run as the existing human room owner/admin:",
       `buzz channels add-member --channel <ROOM_UUID> --pubkey ${hex} --role bot`,
       "",
-      "OpenClaw is waiting for Buzz to confirm the Bot role automatically.",
+      "Afora is waiting for Buzz to confirm the Bot role automatically.",
       "Local `just dev` needs no separate community-member step.",
       `Closed relay only: first run buzz-admin add-member --pubkey ${hex} --role member.`,
-      "Never paste that human private key into OpenClaw.",
+      "Never paste that human private key into Afora.",
     ].join("\n"),
     "Buzz room access required",
   );
@@ -318,7 +318,7 @@ export function createBuzzSetupWizard(
       }
       if (!privateKey) {
         await prompter.note(
-          "OpenClaw cannot resolve the configured private-key reference during setup, so room access cannot be verified. The relay URL and identity reference will be saved with Buzz disabled. Make the secret available and rerun setup.",
+          "Afora cannot resolve the configured private-key reference during setup, so room access cannot be verified. The relay URL and identity reference will be saved with Buzz disabled. Make the secret available and rerun setup.",
           "Buzz setup paused",
         );
         return pauseBuzzSetup(next);

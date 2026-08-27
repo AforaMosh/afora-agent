@@ -1,12 +1,12 @@
 // Covers Slack question delivery capture and Block Kit final edit.
-import { sendDurableMessageBatch } from "openclaw/plugin-sdk/channel-outbound";
-import type { OutboundDeliveryResult } from "openclaw/plugin-sdk/channel-send-result";
+import { sendDurableMessageBatch } from "afora-agent/plugin-sdk/channel-outbound";
+import type { OutboundDeliveryResult } from "afora-agent/plugin-sdk/channel-send-result";
 import {
   createTestRegistry,
   resetGlobalHookRunner,
   resetPluginRuntimeStateForTest,
   setActivePluginRegistry,
-} from "openclaw/plugin-sdk/channel-test-helpers";
+} from "afora-agent/plugin-sdk/channel-test-helpers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createSlackSendTestClient } from "./blocks.test-helpers.js";
 
@@ -16,9 +16,9 @@ const hoisted = vi.hoisted(() => ({
     | { finalize: (statusLine: string) => void | Promise<void>; deliveryId: string }
     | undefined,
 }));
-vi.mock("openclaw/plugin-sdk/question-gateway-runtime", async (importOriginal) => {
+vi.mock("afora-agent/plugin-sdk/question-gateway-runtime", async (importOriginal) => {
   const original =
-    await importOriginal<typeof import("openclaw/plugin-sdk/question-gateway-runtime")>();
+    await importOriginal<typeof import("afora-agent/plugin-sdk/question-gateway-runtime")>();
   return {
     ...original,
     questionGatewayRuntime: {
@@ -114,7 +114,7 @@ describe("Slack question finalization", () => {
           messageId: "55",
           target: { kind: "channel", id: "C123" },
           meta: {
-            slackQuestionActionIds: ["openclaw:question_button:1:1"],
+            slackQuestionActionIds: ["afora:question_button:1:1"],
             [SLACK_QUESTION_FINALIZATION_BLOCKS]: [],
           },
         },
@@ -142,7 +142,7 @@ describe("Slack question finalization", () => {
 
   it("finalizes the delivered question card after uploads, text chunks, and other cards", async () => {
     const questionId = "ask_0123456789abcdef0123456789abcdef";
-    const questionActionId = "openclaw:question_button:1:1";
+    const questionActionId = "afora:question_button:1:1";
     const payload = {
       text: "Pick one",
       mediaUrl: "https://example.invalid/question-context.png",
@@ -192,7 +192,7 @@ describe("Slack question finalization", () => {
           channel: "slack",
           messageId: "another-question",
           target: { kind: "channel", id: "C123" },
-          meta: { slackQuestionActionIds: ["openclaw:question_button:9:1"] },
+          meta: { slackQuestionActionIds: ["afora:question_button:9:1"] },
         },
         {
           channel: "slack",
@@ -370,7 +370,7 @@ describe("Slack question finalization", () => {
           block.type === "actions" &&
           block.elements?.some((element) =>
             String((element as { action_id?: string }).action_id).startsWith(
-              "openclaw:question_button",
+              "afora:question_button",
             ),
           ),
       );
@@ -412,7 +412,7 @@ describe("Slack question finalization", () => {
     expect(batch.results[0]).toMatchObject({
       messageId: trailingMessageId,
       meta: {
-        slackQuestionActionIds: ["openclaw:question_button:1:1"],
+        slackQuestionActionIds: ["afora:question_button:1:1"],
         slackQuestionMessageId: questionMessageId,
       },
     });
@@ -432,7 +432,7 @@ describe("Slack question finalization", () => {
       client.chat.postMessage.mock.calls.filter(([request]) =>
         (request as { blocks?: Array<{ elements?: Array<{ action_id?: string }> }> }).blocks?.some(
           (block) =>
-            block.elements?.some((element) => element.action_id?.startsWith("openclaw:question_")),
+            block.elements?.some((element) => element.action_id?.startsWith("afora:question_")),
         ),
       ),
     ).toHaveLength(2);

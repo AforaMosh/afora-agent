@@ -1,5 +1,5 @@
 /** Lightweight reply-stage profiler for slow-turn diagnostics. */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { isDiagnosticFlagEnabled } from "../../infra/diagnostic-flags.js";
 
 type ReplyTimingSummary = {
@@ -33,7 +33,7 @@ const disabledTimingTracker: ReplyTimingTracker<object> = {
 
 /** Checks config/env diagnostic flags for reply profiling. */
 export function isReplyProfilerEnabled(params?: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   env?: NodeJS.ProcessEnv;
 }): boolean {
   const cfg = params?.config;
@@ -47,7 +47,7 @@ export function isReplyProfilerEnabled(params?: {
 /** Creates a no-timer pass-through unless reply profiling is enabled. */
 export function createReplyTimingTracker<TLogParams extends object = ReplyTimingLogParams>(params: {
   log: { warn: (message: string, details?: Record<string, unknown>) => void };
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   enabled?: boolean;
   totalWarnMs?: number;

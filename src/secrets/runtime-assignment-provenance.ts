@@ -1,4 +1,4 @@
-/** Internal provenance for assignments collected outside openclaw.json. */
+/** Internal provenance for assignments collected outside afora.json. */
 import type { SecretAssignment } from "./runtime-shared.js";
 
 type SecretAssignmentSource = "auth-store" | "config";

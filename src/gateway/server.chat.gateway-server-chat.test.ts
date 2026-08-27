@@ -59,7 +59,7 @@ function createGatewayHistoryMessageToolResult(id: string, content: unknown, tim
 function createGatewayHistoryDeliveryMirror(text: unknown, timestamp: number) {
   return {
     role: "assistant",
-    provider: "openclaw",
+    provider: "afora",
     model: "delivery-mirror",
     content: [{ type: "text", text }],
     timestamp,
@@ -70,7 +70,7 @@ function hasGatewayHistoryMessageToolMirror(message: unknown) {
   return Boolean(
     message &&
     typeof message === "object" &&
-    (message as { openclawMessageToolMirror?: unknown }).openclawMessageToolMirror,
+    (message as { aforaMessageToolMirror?: unknown }).aforaMessageToolMirror,
   );
 }
 
@@ -161,7 +161,7 @@ describe("gateway server chat", () => {
     run: (dir: string) => Promise<T>,
     options?: { archivedAt?: number; sessionId?: string },
   ): Promise<T> => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gw-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-gw-"));
     try {
       const sessionId = options?.sessionId ?? "sess-main";
       testState.sessionStorePath = path.join(dir, "sessions.json");
@@ -366,7 +366,7 @@ describe("gateway server chat", () => {
   };
 
   test("sessions.send accepts dashboard messages for existing sessions", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-sessions-send-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-sessions-send-"));
     testState.sessionStorePath = path.join(dir, "sessions.json");
     try {
       await writeSessionStore({
@@ -393,7 +393,7 @@ describe("gateway server chat", () => {
   });
 
   test("sessions.send creates a configured agent main session before sending", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-sessions-send-agent-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-sessions-send-agent-"));
     testState.sessionStorePath = path.join(dir, "sessions.json");
     testState.agentsConfig = {
       list: [{ id: "main", default: true }, { id: "orion" }],
@@ -423,7 +423,7 @@ describe("gateway server chat", () => {
   });
 
   test("sessions.steer accepts dashboard follow-up messages for existing sessions", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-sessions-steer-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-sessions-steer-"));
     testState.sessionStorePath = path.join(dir, "sessions.json");
     try {
       await writeSessionStore({
@@ -450,7 +450,7 @@ describe("gateway server chat", () => {
   });
 
   test("sessions.abort stops active dashboard runs", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-sessions-abort-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-sessions-abort-"));
     testState.sessionStorePath = path.join(dir, "sessions.json");
     try {
       await writeSessionStore({
@@ -525,7 +525,7 @@ describe("gateway server chat", () => {
   });
 
   test("sessions.abort resolves active runs by runId without a caller session key", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-sessions-abort-runid-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-sessions-abort-runid-"));
     testState.sessionStorePath = path.join(dir, "sessions.json");
     try {
       await writeSessionStore({
@@ -627,7 +627,7 @@ describe("gateway server chat", () => {
       expect(sessionRes.ok).toBe(true);
       expect(sessionRes.payload?.runId).toBe("idem-session-key-1");
 
-      const sendPolicyDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gw-"));
+      const sendPolicyDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-gw-"));
       tempDirs.push(sendPolicyDir);
       testState.sessionStorePath = path.join(sendPolicyDir, "sessions.json");
       testState.sessionConfig = {
@@ -666,7 +666,7 @@ describe("gateway server chat", () => {
       testState.sessionStorePath = undefined;
       testState.sessionConfig = undefined;
 
-      const agentBlockedDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gw-"));
+      const agentBlockedDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-gw-"));
       tempDirs.push(agentBlockedDir);
       testState.sessionStorePath = path.join(agentBlockedDir, "sessions.json");
       testState.sessionConfig = {
@@ -735,7 +735,7 @@ describe("gateway server chat", () => {
       expect(imgOnlyRes.ok).toBe(true);
       expectStringRunId(imgOnlyRes.payload);
 
-      const historyDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gw-"));
+      const historyDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-gw-"));
       tempDirs.push(historyDir);
       testState.sessionStorePath = path.join(historyDir, "sessions.json");
       await writeSessionStore({
@@ -1173,7 +1173,7 @@ describe("gateway server chat", () => {
       expect.objectContaining({
         role: "assistant",
         content: [{ type: "text", text: replyText }],
-        openclawMessageToolMirror: {
+        aforaMessageToolMirror: {
           toolName: "message",
           toolCallId: "call-message-internal-source",
           sourceReplySink: "internal-ui",
@@ -1204,7 +1204,7 @@ describe("gateway server chat", () => {
     expect(collectHistoryTextValues(historyMessages)).toEqual(["send once", replyText]);
     expect(historyMessages.some(hasGatewayHistoryMessageToolMirror)).toBe(true);
     expect(historyMessages).not.toContainEqual(
-      expect.objectContaining({ provider: "openclaw", model: "delivery-mirror" }),
+      expect.objectContaining({ provider: "afora", model: "delivery-mirror" }),
     );
   });
 
@@ -1227,7 +1227,7 @@ describe("gateway server chat", () => {
     expect(collectHistoryTextValues(historyMessages)).toEqual([replyText]);
     expect(historyMessages.some(hasGatewayHistoryMessageToolMirror)).toBe(true);
     expect(historyMessages).not.toContainEqual(
-      expect.objectContaining({ provider: "openclaw", model: "delivery-mirror" }),
+      expect.objectContaining({ provider: "afora", model: "delivery-mirror" }),
     );
   });
 
@@ -1250,7 +1250,7 @@ describe("gateway server chat", () => {
     expect(collectHistoryTextValues(historyMessages)).toEqual([replyText]);
     expect(historyMessages.some(hasGatewayHistoryMessageToolMirror)).toBe(true);
     expect(historyMessages).not.toContainEqual(
-      expect.objectContaining({ provider: "openclaw", model: "delivery-mirror" }),
+      expect.objectContaining({ provider: "afora", model: "delivery-mirror" }),
     );
   });
 
@@ -1299,7 +1299,7 @@ describe("gateway server chat", () => {
     expect(collectHistoryTextValues(historyMessages)).toEqual([firstText, secondText]);
     expect(historyMessages.filter(hasGatewayHistoryMessageToolMirror)).toHaveLength(2);
     expect(historyMessages).not.toContainEqual(
-      expect.objectContaining({ provider: "openclaw", model: "delivery-mirror" }),
+      expect.objectContaining({ provider: "afora", model: "delivery-mirror" }),
     );
   });
 
@@ -1395,7 +1395,7 @@ describe("gateway server chat", () => {
       expect.objectContaining({
         role: "assistant",
         content: [{ type: "text", text: sourceReply }],
-        openclawMessageToolMirror: expect.objectContaining({
+        aforaMessageToolMirror: expect.objectContaining({
           toolCallId: "call-message-current-source",
         }),
       }),
@@ -1793,8 +1793,8 @@ describe("gateway server chat", () => {
   test("chat.history persists assistant image data URLs as managed image blocks", async () => {
     await withMainSessionStore(
       async (dir) => {
-        const envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
-        setTestEnvValue("OPENCLAW_STATE_DIR", dir);
+        const envSnapshot = captureEnv(["AFORA_STATE_DIR"]);
+        setTestEnvValue("AFORA_STATE_DIR", dir);
         const pngB64 =
           "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
         dispatchInboundMessageMock.mockImplementationOnce(async (...args: unknown[]) => {
@@ -1913,7 +1913,7 @@ describe("gateway server chat", () => {
   });
 
   test("chat.history uses the owning agent thinkingDefault for non-default agent sessions", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gw-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-gw-"));
     try {
       testState.sessionStorePath = path.join(dir, "sessions.json");
       testState.agentConfig = {
@@ -2081,7 +2081,7 @@ describe("gateway server chat", () => {
   });
 
   test("agent.wait ignores stale chat dedupe when an agent run with the same runId is in flight", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gw-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-gw-"));
     let resolveAgentRun: (() => void) | undefined;
     const blockedAgentRun = new Promise<void>((resolve) => {
       resolveAgentRun = resolve;
@@ -2200,7 +2200,7 @@ describe("gateway server chat", () => {
   });
 
   test("agent events include sessionKey and agent.wait covers lifecycle flows", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gw-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-gw-"));
     testState.sessionStorePath = path.join(dir, "sessions.json");
     await writeSessionStore({
       entries: {

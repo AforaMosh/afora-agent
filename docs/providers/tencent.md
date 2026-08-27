@@ -2,7 +2,7 @@
 summary: "Tencent Cloud TokenHub and TokenPlan setup for hy3"
 title: "Tencent Cloud (TokenHub / TokenPlan)"
 read_when:
-  - You want to use Tencent hy3 with OpenClaw
+  - You want to use Tencent hy3 with Afora
   - You need the TokenHub or TokenPlan API key setup
 ---
 
@@ -11,7 +11,7 @@ Install the official Tencent Cloud provider plugin to access Tencent Hy3 through
 | Property                  | Value                                                 |
 | ------------------------- | ----------------------------------------------------- |
 | Provider ids              | `tencent-tokenhub`, `tencent-tokenplan`               |
-| Package                   | `@openclaw/tencent-provider`                          |
+| Package                   | `@afora/tencent-provider`                          |
 | TokenHub auth env var     | `TOKENHUB_API_KEY`                                    |
 | TokenPlan auth env var    | `TOKENPLAN_API_KEY`                                   |
 | TokenHub onboarding flag  | `--auth-choice tokenhub-api-key`                      |
@@ -34,21 +34,21 @@ Install the official Tencent Cloud provider plugin to access Tencent Hy3 through
     <CodeGroup>
 
 ```bash TokenHub onboarding
-openclaw onboard --auth-choice tokenhub-api-key
+afora onboard --auth-choice tokenhub-api-key
 ```
 
 ```bash TokenHub direct flag
-openclaw onboard --non-interactive --accept-risk --skip-health \
+afora onboard --non-interactive --accept-risk --skip-health \
   --auth-choice tokenhub-api-key \
   --tokenhub-api-key "$TOKENHUB_API_KEY"
 ```
 
 ```bash TokenPlan onboarding
-openclaw onboard --auth-choice tokenplan-api-key
+afora onboard --auth-choice tokenplan-api-key
 ```
 
 ```bash TokenPlan direct flag
-openclaw onboard --non-interactive --accept-risk --skip-health \
+afora onboard --non-interactive --accept-risk --skip-health \
   --auth-choice tokenplan-api-key \
   --tokenplan-api-key "$TOKENPLAN_API_KEY"
 ```
@@ -63,8 +63,8 @@ export TOKENPLAN_API_KEY=...
   </Step>
   <Step title="Verify the model">
     ```bash
-    openclaw models list --provider tencent-tokenhub
-    openclaw models list --provider tencent-tokenplan
+    afora models list --provider tencent-tokenhub
+    afora models list --provider tencent-tokenplan
     ```
   </Step>
 </Steps>
@@ -73,7 +73,7 @@ export TOKENPLAN_API_KEY=...
 
 ```bash
 # TokenHub
-openclaw onboard --non-interactive \
+afora onboard --non-interactive \
   --mode local \
   --auth-choice tokenhub-api-key \
   --tokenhub-api-key "$TOKENHUB_API_KEY" \
@@ -81,7 +81,7 @@ openclaw onboard --non-interactive \
   --accept-risk
 
 # TokenPlan
-openclaw onboard --non-interactive \
+afora onboard --non-interactive \
   --mode local \
   --auth-choice tokenplan-api-key \
   --tokenplan-api-key "$TOKENPLAN_API_KEY" \
@@ -104,23 +104,23 @@ openclaw onboard --non-interactive \
 hy3 is Tencent Hunyuan's large MoE language model for reasoning, long-context instruction following, code, and agent workflows. Tencent's OpenAI-compatible examples use `hy3` as the model id and support standard chat-completions tool calling plus `reasoning_effort`.
 
 <Tip>
-  The model id is `hy3`. Do not confuse it with Tencent's `HY-3D-*` models, which are 3D generation APIs and are not the OpenClaw chat model configured by this provider.
+  The model id is `hy3`. Do not confuse it with Tencent's `HY-3D-*` models, which are 3D generation APIs and are not the Afora chat model configured by this provider.
 </Tip>
 
 ## Advanced configuration
 
 <AccordionGroup>
   <Accordion title="Endpoint override">
-    OpenClaw's built-in catalog uses Tencent Cloud's `https://tokenhub.tencentmaas.com/v1` endpoint. Override it only if your TokenHub account or region requires a different one:
+    Afora's built-in catalog uses Tencent Cloud's `https://tokenhub.tencentmaas.com/v1` endpoint. Override it only if your TokenHub account or region requires a different one:
 
     ```bash
-    openclaw config set models.providers.tencent-tokenhub.baseUrl "https://your-endpoint/v1"
+    afora config set models.providers.tencent-tokenhub.baseUrl "https://your-endpoint/v1"
     ```
 
   </Accordion>
 
   <Accordion title="Environment availability for the daemon">
-    If the Gateway runs as a managed service (launchd, systemd, Docker), `TOKENHUB_API_KEY` and `TOKENPLAN_API_KEY` must be visible to that process. Set them in `~/.openclaw/.env` or via `env.shellEnv` so launchd, systemd, or Docker exec environments can read them.
+    If the Gateway runs as a managed service (launchd, systemd, Docker), `TOKENHUB_API_KEY` and `TOKENPLAN_API_KEY` must be visible to that process. Set them in `~/.afora/.env` or via `env.shellEnv` so launchd, systemd, or Docker exec environments can read them.
 
     <Warning>
       Keys exported only in an interactive shell are not visible to managed gateway processes. Use the env file or config seam for persistent availability.

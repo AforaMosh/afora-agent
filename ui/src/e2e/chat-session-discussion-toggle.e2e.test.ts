@@ -14,9 +14,9 @@ import { activateChatHeaderPanelAction } from "./chat-side-panel.test-support.ts
 
 const chromiumExecutablePath = resolvePlaywrightChromiumExecutablePath(chromium.executablePath());
 const chromiumAvailable = canRunPlaywrightChromium(chromiumExecutablePath);
-const allowMissingChromium = process.env.OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
+const allowMissingChromium = process.env.AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
 const describeControlUiE2e = chromiumAvailable || !allowMissingChromium ? describe : describe.skip;
-const captureUiProof = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
+const captureUiProof = process.env.AFORA_CAPTURE_UI_PROOF === "1";
 const proofDir = path.join(
   process.cwd(),
   ".artifacts",
@@ -107,7 +107,7 @@ describeControlUiE2e("session discussion toggle", () => {
     // silently blank tab.
     await expect
       .poll(() =>
-        page.locator("openclaw-session-discussion").evaluate((node) => node.childElementCount),
+        page.locator("afora-session-discussion").evaluate((node) => node.childElementCount),
       )
       .toBeGreaterThan(0);
     expect(await gateway.getRequests("session.discussion.open")).toHaveLength(0);
@@ -148,13 +148,13 @@ describeControlUiE2e("session discussion toggle", () => {
             article { padding: 16px; border: 1px solid var(--host-border, #e4e4e7);
               border-radius: 8px; background: var(--host-card, #fff); }
           </style></head><body><article><h2>Cross-origin discussion</h2>
-          <p>The sidebar follows its OpenClaw host.</p></article>
+          <p>The sidebar follows its Afora host.</p></article>
           <script>
             const params = new URLSearchParams(location.search);
             document.documentElement.dataset.hostMode = params.get("theme") || "dark";
             window.addEventListener("message", (event) => {
               if (event.source !== parent || event.origin !== params.get("hostOrigin")) return;
-              if (event.data?.type !== "openclaw:widget-theme") return;
+              if (event.data?.type !== "afora:widget-theme") return;
               document.documentElement.dataset.hostMode = event.data.mode;
               for (const [token, value] of Object.entries(event.data.tokens || {})) {
                 if (typeof value === "string") {
@@ -178,7 +178,7 @@ describeControlUiE2e("session discussion toggle", () => {
       methodResponses: {
         "session.discussion.info": { state: "available" },
         "session.discussion.open": {
-          embedUrl: "https://discussion.example/embed/channel/T1/C1?openclawHostTheme=1",
+          embedUrl: "https://discussion.example/embed/channel/T1/C1?aforaHostTheme=1",
           openUrl: "https://discussion.example/app/T1/C1",
           state: "open",
         },

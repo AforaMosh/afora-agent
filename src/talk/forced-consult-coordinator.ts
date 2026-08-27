@@ -1,11 +1,11 @@
 /**
  * Forced-consult dedupe coordinator for realtime voice sessions.
  *
- * The relay may synthesize an OpenClaw consult when the model hesitates, but a
+ * The relay may synthesize an Afora consult when the model hesitates, but a
  * native provider tool call can still arrive later. This coordinator prevents
  * duplicate consults and keeps late native calls correlated to forced handles.
  */
-import { resolveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
+import { resolveTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
 import {
   matchRealtimeVoiceConsultQuestions,
   readRealtimeVoiceConsultQuestion,

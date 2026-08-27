@@ -1,11 +1,11 @@
-import type { NativeCommandSpec } from "openclaw/plugin-sdk/native-command-registry";
+import type { NativeCommandSpec } from "afora-agent/plugin-sdk/native-command-registry";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   listNativeCommandSpecsForConfig: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/native-command-registry", () => ({
+vi.mock("afora-agent/plugin-sdk/native-command-registry", () => ({
   listNativeCommandSpecsForConfig: mocks.listNativeCommandSpecsForConfig,
 }));
 

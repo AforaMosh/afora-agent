@@ -3,7 +3,7 @@ import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import type { SessionEntry } from "../../config/sessions.js";
 import { buildAgentMainSessionKey } from "../../routing/session-key.js";
 import { parseAgentSessionKey } from "../../sessions/session-key-utils.js";
@@ -106,7 +106,7 @@ export function resolveLastChannelRaw(params: {
   // created via an external channel (e.g. Telegram, iMessage), webchat/dashboard
   // access must not overwrite the persisted route — doing so causes subagent
   // completion events to be delivered to the dashboard instead of the original
-  // channel. See: https://github.com/openclaw/openclaw/issues/47745
+  // channel. See: https://github.com/AforaMosh/afora-agent/issues/47745
   const persistedChannel = normalizeMessageChannel(params.persistedLastChannel);
   const sessionKeyChannelHint = resolveSessionKeyChannelHint(params.sessionKey);
   const hasEstablishedExternalRoute =
@@ -115,7 +115,7 @@ export function resolveLastChannelRaw(params: {
   // but must never overwrite an already-established external delivery route.
   // Without this guard, a sessions_send call resets lastChannel to webchat,
   // causing subsequent Discord (or other external) deliveries to be lost.
-  // See: https://github.com/openclaw/openclaw/issues/54441
+  // See: https://github.com/AforaMosh/afora-agent/issues/54441
   if (params.isInterSession && hasEstablishedExternalRoute) {
     return persistedChannel || sessionKeyChannelHint;
   }
@@ -156,7 +156,7 @@ export function resolveLastToRaw(params: {
   // Inter-session messages must not replace a persisted external `to` with
   // webchat-scoped identifiers (e.g. session keys). Preserve the established
   // external destination so deliveries continue routing to the correct channel.
-  // See: https://github.com/openclaw/openclaw/issues/54441
+  // See: https://github.com/AforaMosh/afora-agent/issues/54441
   if (params.isInterSession && hasEstablishedExternalRouteForTo && params.persistedLastTo) {
     return params.persistedLastTo;
   }

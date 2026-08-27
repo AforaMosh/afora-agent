@@ -6,7 +6,7 @@ import {
   hasGatewayClientCap,
   type GatewayClientId,
 } from "../../packages/gateway-protocol/src/client-info.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { upsertPresence } from "../infra/system-presence.js";
 import { resolveUserProfileId } from "../state/user-profiles.js";
 import { buildAuthenticatedPresenceUser } from "./authenticated-presence-user.js";
@@ -74,7 +74,7 @@ type GatewayRequestContextParams = {
     opts?: { role?: string; reason?: string },
   ) => void;
   disconnectDeviceTransports?: (deviceId: string, opts?: { role?: string }) => void;
-  enforceSharedGatewayAuthGenerationForConfigWrite: (nextConfig: OpenClawConfig) => void;
+  enforceSharedGatewayAuthGenerationForConfigWrite: (nextConfig: AforaConfig) => void;
   nodeRegistry: GatewayRequestContext["nodeRegistry"];
   nodeDesktopService?: import("./desktop/node-source.js").NodeDesktopService;
   workerEnvironmentService?: GatewayRequestContext["workerEnvironmentService"];

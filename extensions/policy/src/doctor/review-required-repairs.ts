@@ -4,8 +4,8 @@ import type {
   HealthRepairContext,
   HealthRepairEffect,
   HealthRepairResult,
-} from "openclaw/plugin-sdk/health";
-import { uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/health";
+import { uniqueStrings } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { CHECK_IDS, type POLICY_CHECK_IDS } from "./check-ids.js";
 import { POLICY_FIX_METADATA_BY_CHECK_ID } from "./fix-metadata.js";
 
@@ -80,8 +80,8 @@ function previewGatewayLoopbackBind(
   finding: HealthFinding,
 ): readonly { readonly change: string; readonly effect: HealthRepairEffect }[] {
   if (
-    finding.ocPath !== "oc://openclaw.config/gateway/bind" &&
-    finding.ocPath !== "oc://openclaw.config/gateway/customBindHost"
+    finding.ocPath !== "oc://afora.config/gateway/bind" &&
+    finding.ocPath !== "oc://afora.config/gateway/customBindHost"
   ) {
     return [];
   }
@@ -105,7 +105,7 @@ function previewGatewayNodeDenyCommand(
   if (
     command === undefined ||
     command === "" ||
-    finding.ocPath !== "oc://openclaw.config/gateway/nodes/commands/deny"
+    finding.ocPath !== "oc://afora.config/gateway/nodes/commands/deny"
   ) {
     return [];
   }

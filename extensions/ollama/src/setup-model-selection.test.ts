@@ -1,4 +1,4 @@
-import { requestUrl } from "openclaw/plugin-sdk/test-env";
+import { requestUrl } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildOllamaModelsConfig,

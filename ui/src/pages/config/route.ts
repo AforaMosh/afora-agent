@@ -31,7 +31,7 @@ function configPage(id: ConfigPageId) {
       import("./config-page.ts").then(() => ({
         header: true,
         render: (data: ConfigRouteData | undefined) => html`
-          <openclaw-config-page .pageId=${id} .routeData=${data ?? null}></openclaw-config-page>
+          <afora-config-page .pageId=${id} .routeData=${data ?? null}></afora-config-page>
         `,
       })),
   });

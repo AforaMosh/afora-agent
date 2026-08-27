@@ -19,9 +19,9 @@ describe("debug proxy coverage report", () => {
 
     maybeWarnAboutDebugProxyCoverage(
       {
-        blobDir: "/tmp/openclaw-debug-proxy-blobs",
-        certDir: "/tmp/openclaw-debug-proxy-certs",
-        dbPath: "/tmp/openclaw-debug-proxy.sqlite",
+        blobDir: "/tmp/afora-debug-proxy-blobs",
+        certDir: "/tmp/afora-debug-proxy-certs",
+        dbPath: "/tmp/afora-debug-proxy.sqlite",
         enabled: true,
         proxyUrl: "http://127.0.0.1:8080",
         required: true,

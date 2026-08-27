@@ -1,12 +1,12 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { getPluginRuntimeGatewayRequestScope } from "openclaw/plugin-sdk/plugin-runtime";
-import { buildControlUiCatalogSessionUrl } from "openclaw/plugin-sdk/session-catalog-runtime";
+import { getPluginRuntimeGatewayRequestScope } from "afora-agent/plugin-sdk/plugin-runtime";
+import { buildControlUiCatalogSessionUrl } from "afora-agent/plugin-sdk/session-catalog-runtime";
 import {
   beginWebhookRequestPipelineOrReject,
   createFixedWindowRateLimiter,
   createWebhookInFlightLimiter,
   readJsonWebhookBodyOrReject,
-} from "openclaw/plugin-sdk/webhook-ingress";
+} from "afora-agent/plugin-sdk/webhook-ingress";
 import type { BeamStore } from "./store.js";
 import { BEAM_HOST_ID, BEAM_MAX_BODY_BYTES, parseBeamUpload } from "./types.js";
 

@@ -1,4 +1,4 @@
-import { asOptionalObjectRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
+import { asOptionalObjectRecord as asRecord } from "@afora/normalization-core/record-coerce";
 import type { PlainTextToolCallProtectedRangeResolver } from "./contracts.js";
 // Tool Call Repair module implements promote behavior.
 import { parseStandalonePlainTextToolCallBlocks, type PlainTextToolCallBlock } from "./payload.js";

@@ -402,7 +402,7 @@ describe("plugin interactive handlers", () => {
 
   it("hydrates legacy interactive state shapes before clearing handlers", async () => {
     const globalStore = globalThis as Record<PropertyKey, unknown>;
-    const stateKey = Symbol.for("openclaw.pluginInteractiveState");
+    const stateKey = Symbol.for("afora.pluginInteractiveState");
     const originalState = globalStore[stateKey];
 
     globalStore[stateKey] = {
@@ -564,31 +564,31 @@ describe("plugin interactive handlers", () => {
     const handler = vi.fn(async () => ({ handled: true }));
     const registry = createEmptyPluginRegistry();
     registry.plugins.push({
-      id: "openclaw-code-agent",
-      name: "OpenClaw Code Agent",
+      id: "afora-code-agent",
+      name: "Afora Code Agent",
       status: "loaded",
     } as never);
     registry.interactiveHandlers = [
       {
         channel: "telegram",
         namespace: "code-agent",
-        pluginId: "openclaw-code-agent",
-        pluginName: "OpenClaw Code Agent",
-        pluginRoot: "/plugins/openclaw-code-agent",
+        pluginId: "afora-code-agent",
+        pluginName: "Afora Code Agent",
+        pluginRoot: "/plugins/afora-code-agent",
         handler: handler as never,
       },
     ];
     expect(
       registerRegistryPluginInteractiveHandler(
-        "openclaw-code-agent",
+        "afora-code-agent",
         {
           channel: "telegram",
           namespace: "code-agent",
           handler: handler as never,
         },
         {
-          pluginName: "OpenClaw Code Agent",
-          pluginRoot: "/plugins/openclaw-code-agent",
+          pluginName: "Afora Code Agent",
+          pluginRoot: "/plugins/afora-code-agent",
         },
       ),
     ).toEqual({ ok: true });

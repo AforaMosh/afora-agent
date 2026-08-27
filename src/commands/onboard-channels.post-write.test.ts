@@ -1,6 +1,6 @@
 // Onboard channel post-write tests cover plugin post-write hooks after channel setup.
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import {
   createChannelOnboardingPostWriteHook,
   createChannelSetupTransaction,
@@ -10,12 +10,12 @@ import { createExitThrowingRuntime } from "./test-wizard-helpers.js";
 describe("setupChannels post-write hooks", () => {
   it("collects onboarding post-write hooks and runs them against the final config", async () => {
     const afterConfigWritten = vi.fn(async () => {});
-    const previousCfg = {} as OpenClawConfig;
+    const previousCfg = {} as AforaConfig;
     const cfg = {
       channels: {
         telegram: { botToken: "new-token" },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const adapter = {
       afterConfigWritten,
     };
@@ -57,7 +57,7 @@ describe("setupChannels post-write hooks", () => {
       },
     });
 
-    await transaction.commit({} as OpenClawConfig, async (config) => config);
+    await transaction.commit({} as AforaConfig, async (config) => config);
 
     expect(runtime.error).toHaveBeenCalledWith(
       'Channel telegram post-setup warning for "acct-1": hook failed',
@@ -72,7 +72,7 @@ describe("setupChannels post-write hooks", () => {
     transaction.onPostWriteHook({ channel: "matrix", accountId: "ops", run: hook });
 
     await expect(
-      transaction.commit({} as OpenClawConfig, async () => {
+      transaction.commit({} as AforaConfig, async () => {
         throw new Error("write failed");
       }),
     ).rejects.toThrow("write failed");

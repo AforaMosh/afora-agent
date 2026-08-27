@@ -7,20 +7,20 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { upsertSessionEntryCore } from "../../config/sessions/session-accessor.js";
 import { listSkillProposals } from "../../skills/workshop/service.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../../test-utils/afora-test-state.js";
 import { createTrackedTempDirs } from "../../test-utils/tracked-temp-dirs.js";
 import { awaitAgentEndSideEffects } from "./agent-end-side-effects.js";
 
 const tempDirs = createTrackedTempDirs();
-let testState: OpenClawTestState;
+let testState: AforaTestState;
 let sessionKeyIndex = 0;
 
 beforeAll(async () => {
-  testState = await createOpenClawTestState({
+  testState = await createAforaTestState({
     layout: "state-only",
-    prefix: "openclaw-no-verbatim-capture-",
+    prefix: "afora-no-verbatim-capture-",
   });
 });
 
@@ -74,7 +74,7 @@ describe("agent-end proposal provenance", () => {
       { agentId: "main", sessionKey },
       { sessionId: `session-${sessionKey}`, updatedAt: 1 },
     );
-    const workspaceDir = await tempDirs.make("openclaw-no-verbatim-capture-");
+    const workspaceDir = await tempDirs.make("afora-no-verbatim-capture-");
 
     await runAgentEndTurn(workspaceDir, sessionKey, userText);
 

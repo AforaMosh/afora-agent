@@ -1,7 +1,7 @@
 // Collects operating system summary facts for diagnostics.
 import { spawnSync } from "node:child_process";
 import os from "node:os";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 
 type OsSummary = {
   platform: NodeJS.Platform;

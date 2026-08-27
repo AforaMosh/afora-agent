@@ -4,10 +4,10 @@ import {
   createPluginSetupWizardStatus,
   createTestWizardPrompter,
   runSetupWizardConfigure,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
-import type { WizardPrompter } from "openclaw/plugin-sdk/plugin-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
+import type { WizardPrompter } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../api.js";
+import type { AforaConfig } from "../api.js";
 import { tlonChannelConfigSchema } from "./config-schema.js";
 import { tlonSetupWizard } from "./setup-surface.js";
 import { normalizeShip, resolveTlonOutboundTarget } from "./targets.js";
@@ -20,12 +20,12 @@ const tlonTestPlugin = {
   config: {
     listAccountIds: listTlonAccountIds,
     defaultAccountId: () => "default",
-    resolveAllowFrom: ({ cfg, accountId }: { cfg: OpenClawConfig; accountId?: string | null }) =>
+    resolveAllowFrom: ({ cfg, accountId }: { cfg: AforaConfig; accountId?: string | null }) =>
       resolveTlonAccount(cfg, accountId).dmAllowlist,
     formatAllowFrom: ({
       allowFrom,
     }: {
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       allowFrom: Array<string | number> | undefined | null;
     }) => {
       const entries: string[] = [];
@@ -39,7 +39,7 @@ const tlonTestPlugin = {
     },
   },
   setup: {
-    resolveAccountId: ({ accountId }: { cfg: OpenClawConfig; accountId?: string | null }) =>
+    resolveAccountId: ({ accountId }: { cfg: AforaConfig; accountId?: string | null }) =>
       accountId ?? "default",
   },
 };
@@ -59,7 +59,7 @@ describe("tlon core", () => {
   it("formats dm allowlist entries through the shared hybrid adapter", () => {
     expect(
       tlonTestPlugin.config.formatAllowFrom?.({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         allowFrom: ["zod", " ~nec "],
       }),
     ).toEqual(["~zod", "~nec"]);
@@ -68,7 +68,7 @@ describe("tlon core", () => {
   it("returns an empty dm allowlist when the default account is unconfigured", () => {
     expect(
       tlonTestPlugin.config.resolveAllowFrom?.({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         accountId: "default",
       }),
     ).toStrictEqual([]);
@@ -86,7 +86,7 @@ describe("tlon core", () => {
               dmAllowlist: ["~zod"],
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         accountId: "default",
       }),
     ).toEqual(["~zod"]);
@@ -186,7 +186,7 @@ describe("tlon core", () => {
 
     const result = await runSetupWizardConfigure({
       configure: tlonConfigure,
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       prompter,
       options: {},
     });
@@ -240,7 +240,7 @@ describe("tlon core", () => {
             code: existingCode,
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       prompter,
       options: {},
     });
@@ -278,8 +278,8 @@ describe("tlon core", () => {
   });
 
   it("does not invent an account when the Tlon channel is unconfigured", () => {
-    expect(listTlonAccountIds({} as OpenClawConfig)).toEqual([]);
-    expect(listTlonAccountIds({ channels: { tlon: {} } } as OpenClawConfig)).toEqual([]);
+    expect(listTlonAccountIds({} as AforaConfig)).toEqual([]);
+    expect(listTlonAccountIds({ channels: { tlon: {} } } as AforaConfig)).toEqual([]);
   });
 
   it("lists named accounts and the implicit default account", () => {
@@ -293,7 +293,7 @@ describe("tlon core", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(listTlonAccountIds(cfg)).toEqual(["alerts", "default", "work"]);
   });
@@ -319,7 +319,7 @@ describe("tlon core", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       "work",
     );
 
@@ -350,7 +350,7 @@ describe("tlon core", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       "default",
     );
 
@@ -371,7 +371,7 @@ describe("tlon core", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       accountOverrides: { tlon: "work" },
     });
 

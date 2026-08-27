@@ -5,15 +5,15 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "$ROOT_DIR/scripts/lib/docker-build.sh"
 source "$ROOT_DIR/scripts/lib/docker-e2e-container.sh"
 
-IMAGE_NAME="${OPENCLAW_DOCKER_SELECTED_PLUGINS_E2E_IMAGE:-openclaw-docker-selected-plugins-e2e:local}"
+IMAGE_NAME="${AFORA_DOCKER_SELECTED_PLUGINS_E2E_IMAGE:-afora-docker-selected-plugins-e2e:local}"
 DEPENDENCY_ONLY_IMAGE="${IMAGE_NAME}-dependency-only"
-CONTAINER_NAME="openclaw-docker-selected-plugins-e2e-$$"
-SELECTED_PLUGINS="${OPENCLAW_DOCKER_SELECTED_PLUGINS:-slack,msteams clickclack,slack}"
-BUILD_GIT_COMMIT="${OPENCLAW_DOCKER_SELECTED_PLUGINS_E2E_GIT_COMMIT:-0123456789abcdef0123456789abcdef01234567}"
-BUILD_TIMESTAMP="${OPENCLAW_DOCKER_SELECTED_PLUGINS_E2E_BUILD_TIMESTAMP:-2026-07-10T12:34:56.000Z}"
-UNKNOWN_LOG="$(mktemp -t openclaw-docker-selected-plugins-unknown.XXXXXX)"
-RUN_LOG="$(mktemp -t openclaw-docker-selected-plugins-run.XXXXXX)"
-DOCKER_COMMAND_TIMEOUT="${OPENCLAW_DOCKER_SELECTED_PLUGINS_RUN_TIMEOUT:-900s}"
+CONTAINER_NAME="afora-docker-selected-plugins-e2e-$$"
+SELECTED_PLUGINS="${AFORA_DOCKER_SELECTED_PLUGINS:-slack,msteams clickclack,slack}"
+BUILD_GIT_COMMIT="${AFORA_DOCKER_SELECTED_PLUGINS_E2E_GIT_COMMIT:-0123456789abcdef0123456789abcdef01234567}"
+BUILD_TIMESTAMP="${AFORA_DOCKER_SELECTED_PLUGINS_E2E_BUILD_TIMESTAMP:-2026-07-10T12:34:56.000Z}"
+UNKNOWN_LOG="$(mktemp -t afora-docker-selected-plugins-unknown.XXXXXX)"
+RUN_LOG="$(mktemp -t afora-docker-selected-plugins-run.XXXXXX)"
+DOCKER_COMMAND_TIMEOUT="${AFORA_DOCKER_SELECTED_PLUGINS_RUN_TIMEOUT:-900s}"
 DEPENDENCY_ONLY_IMAGE_BUILT=0
 
 cleanup() {
@@ -25,22 +25,22 @@ cleanup() {
 }
 trap cleanup EXIT
 
-if [ "${OPENCLAW_SKIP_DOCKER_BUILD:-0}" = "1" ]; then
+if [ "${AFORA_SKIP_DOCKER_BUILD:-0}" = "1" ]; then
   echo "Reusing selected-plugin image: $IMAGE_NAME"
   docker_e2e_docker_cmd image inspect "$IMAGE_NAME" >/dev/null
 else
   echo "Proving unknown selected plugins fail closed..."
   set +e
-  docker_e2e_timeout_cmd "${OPENCLAW_DOCKER_SELECTED_PLUGINS_BUILD_TIMEOUT:-3600s}" \
+  docker_e2e_timeout_cmd "${AFORA_DOCKER_SELECTED_PLUGINS_BUILD_TIMEOUT:-3600s}" \
     env DOCKER_BUILDKIT=1 docker build \
     --target workspace-deps \
-    --build-arg OPENCLAW_EXTENSIONS=missing-plugin \
+    --build-arg AFORA_EXTENSIONS=missing-plugin \
     -f "$ROOT_DIR/Dockerfile" \
     "$ROOT_DIR" >"$UNKNOWN_LOG" 2>&1
   unknown_status=$?
   set -e
   if [ "$unknown_status" -eq 0 ] || ! grep -Fq \
-    "unknown OPENCLAW_EXTENSIONS plugin id: missing-plugin" "$UNKNOWN_LOG"; then
+    "unknown AFORA_EXTENSIONS plugin id: missing-plugin" "$UNKNOWN_LOG"; then
     echo "Unknown selected-plugin build did not fail closed as expected" >&2
     docker_e2e_print_log "$UNKNOWN_LOG"
     exit 1
@@ -49,7 +49,7 @@ else
   echo "Proving manifest ids and known dependency-only plugins remain stageable..."
   docker_build_run docker-selected-plugins-dependency-only \
     --target workspace-deps \
-    --build-arg OPENCLAW_EXTENSIONS=whatsapp,kimi \
+    --build-arg AFORA_EXTENSIONS=whatsapp,kimi \
     -t "$DEPENDENCY_ONLY_IMAGE" \
     -f "$ROOT_DIR/Dockerfile" \
     "$ROOT_DIR"
@@ -57,13 +57,13 @@ else
   docker_e2e_docker_run_cmd run --rm \
     --entrypoint sh \
     "$DEPENDENCY_ONLY_IMAGE" \
-    -c 'test -f /out/extensions/whatsapp/package.json && test -f /out/extensions/kimi-coding/package.json && grep -qx kimi-coding /out/openclaw-selected-plugin-dirs'
+    -c 'test -f /out/extensions/whatsapp/package.json && test -f /out/extensions/kimi-coding/package.json && grep -qx kimi-coding /out/afora-selected-plugin-dirs'
 
   echo "Building selected-plugin runtime image: $IMAGE_NAME"
   docker_build_run docker-selected-plugins-build \
     --build-arg "GIT_COMMIT=$BUILD_GIT_COMMIT" \
-    --build-arg "OPENCLAW_BUILD_TIMESTAMP=$BUILD_TIMESTAMP" \
-    --build-arg "OPENCLAW_EXTENSIONS=$SELECTED_PLUGINS" \
+    --build-arg "AFORA_BUILD_TIMESTAMP=$BUILD_TIMESTAMP" \
+    --build-arg "AFORA_EXTENSIONS=$SELECTED_PLUGINS" \
     -t "$IMAGE_NAME" \
     -f "$ROOT_DIR/Dockerfile" \
     "$ROOT_DIR"
@@ -73,11 +73,11 @@ echo "Inspecting selected plugins from the final runtime image..."
 if ! docker_e2e_docker_run_cmd run --rm \
   --name "$CONTAINER_NAME" \
   --entrypoint bash \
-  -e "OPENCLAW_E2E_EXPECTED_GIT_COMMIT=$BUILD_GIT_COMMIT" \
-  -e "OPENCLAW_E2E_EXPECTED_BUILD_TIMESTAMP=$BUILD_TIMESTAMP" \
-  -v "$ROOT_DIR/scripts/e2e/lib/docker-selected-plugins:/openclaw-e2e:ro" \
+  -e "AFORA_E2E_EXPECTED_GIT_COMMIT=$BUILD_GIT_COMMIT" \
+  -e "AFORA_E2E_EXPECTED_BUILD_TIMESTAMP=$BUILD_TIMESTAMP" \
+  -v "$ROOT_DIR/scripts/e2e/lib/docker-selected-plugins:/afora-e2e:ro" \
   "$IMAGE_NAME" \
-  /openclaw-e2e/scenario.sh >"$RUN_LOG" 2>&1; then
+  /afora-e2e/scenario.sh >"$RUN_LOG" 2>&1; then
   echo "Selected-plugin Docker E2E failed" >&2
   docker_e2e_print_log "$RUN_LOG"
   exit 1

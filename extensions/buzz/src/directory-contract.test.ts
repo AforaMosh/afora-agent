@@ -1,5 +1,5 @@
 // Buzz tests cover the lightweight config-backed directory contract.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import {
   listBuzzDirectoryGroupsFromConfig,
@@ -20,7 +20,7 @@ describe("Buzz directory contract", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     await expect(
       listBuzzDirectoryGroupsFromConfig({

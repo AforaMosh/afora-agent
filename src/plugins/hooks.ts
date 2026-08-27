@@ -6,8 +6,8 @@
  */
 
 import { AsyncLocalStorage } from "node:async_hooks";
-import { clampPositiveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
-import { isPromiseLike } from "@openclaw/normalization-core/promise-like";
+import { clampPositiveTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
+import { isPromiseLike } from "@afora/normalization-core/promise-like";
 import { isToolAllowedByPolicyName } from "../agents/tool-policy-match.js";
 import {
   attachToolAllowlistIntersection,

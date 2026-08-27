@@ -12,7 +12,7 @@ import type {
   ChannelMessageCapability,
   ChannelPlugin,
 } from "../../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 
 function sortStrings(values: readonly string[]) {
   return [...values].toSorted((left, right) => left.localeCompare(right));
@@ -20,7 +20,7 @@ function sortStrings(values: readonly string[]) {
 
 function resolveContractMessageDiscovery(params: {
   plugin: Pick<ChannelPlugin, "actions">;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 }) {
   const actions = params.plugin.actions;
   if (!actions) {
@@ -64,7 +64,7 @@ export function expectChannelPluginContract(
 
 type ChannelActionsContractCase = {
   name: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   expectedActions: readonly ChannelMessageActionName[];
   expectedCapabilities?: readonly ChannelMessageCapability[];
   beforeTest?: () => void;
@@ -115,14 +115,14 @@ export function installChannelActionsContractSuite(params: {
 
 type ChannelSetupContractCase<ResolvedAccount, SetupInput extends ChannelSetupInput> = {
   name: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string;
   input: SetupInput;
   expectedAccountId?: string;
   expectedValidation?: string | null;
   beforeTest?: () => void;
-  assertPatchedConfig?: (cfg: OpenClawConfig) => void;
-  assertResolvedAccount?: (account: ResolvedAccount, cfg: OpenClawConfig) => void;
+  assertPatchedConfig?: (cfg: AforaConfig) => void;
+  assertResolvedAccount?: (account: ResolvedAccount, cfg: AforaConfig) => void;
 };
 
 export function installChannelSetupContractSuite<
@@ -197,7 +197,7 @@ type ChannelDmPolicyContractCase = {
 function createDmPolicyContractConfig(params: {
   testCase: ChannelDmPolicyContractCase;
   mode: "read" | "write" | "default";
-}): OpenClawConfig {
+}): AforaConfig {
   const { testCase } = params;
   const defaultAccount = params.mode === "default" ? testCase.defaultAccount : undefined;
   const account = {
@@ -218,7 +218,7 @@ function createDmPolicyContractConfig(params: {
         accounts: { [testCase.accountId]: account },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 function addExpectedWildcard(values: ReadonlyArray<string | number> | undefined) {
@@ -226,7 +226,7 @@ function addExpectedWildcard(values: ReadonlyArray<string | number> | undefined)
 }
 
 function resolveDmPolicyConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   channel: string,
   accountId: string,
 ): { channel: ChannelDmPolicyConfig; account: ChannelDmPolicyConfig } {
@@ -240,7 +240,7 @@ function resolveDmPolicyConfig(
 
 function expectOpenDmPolicyPatch(params: {
   dmPolicy: ChannelSetupDmPolicy;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: string;
   accountId?: string;
   resolvedAccountId: string;
@@ -314,7 +314,7 @@ export function installChannelDmPolicyContractSuite(params: {
 
 type ChannelStatusContractCase<Probe> = {
   name: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string;
   runtime?: ChannelAccountSnapshot;
   probe?: Probe;

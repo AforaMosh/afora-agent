@@ -119,7 +119,7 @@ describe("getLoadedRuntimePluginRegistry", () => {
     const deferredRegistry = createEmptyPluginRegistry();
     deferredRegistry.plugins.push({
       id: "deferred",
-      format: "openclaw",
+      format: "afora",
       imported: false,
       status: "loaded",
     } as never);
@@ -195,8 +195,8 @@ describe("getLoadedRuntimePluginRegistry", () => {
           {
             id: "demo",
             origin: "workspace",
-            rootDir: "/tmp/session-workspace/.openclaw/extensions/demo",
-            source: "/tmp/session-workspace/.openclaw/extensions/demo/index.js",
+            rootDir: "/tmp/session-workspace/.afora/extensions/demo",
+            source: "/tmp/session-workspace/.afora/extensions/demo/index.js",
           } as never,
         ],
         ["demo"],

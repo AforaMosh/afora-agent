@@ -1,14 +1,14 @@
 // MCP loopback HTTP request helpers.
 // Authenticates local MCP POST requests and extracts scoped Gateway context.
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type {
   SourceReplyDeliveryMode,
   TaskSuggestionDeliveryMode,
 } from "../auto-reply/get-reply-options.types.js";
 import type { InboundEventKind } from "../channels/inbound-event/kind.js";
 import { resolveMainSessionKey } from "../config/sessions.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { isTruthyEnvValue } from "../infra/env.js";
 import { safeEqualSecret } from "../security/secret-equal.js";
 import { normalizeMessageChannel } from "../utils/message-channel.js";
@@ -45,8 +45,8 @@ function readPositiveIntEnv(name: string, fallback: number): number {
 
 function shouldLogMcpLoopbackHttp(): boolean {
   return (
-    isTruthyEnvValue(process.env.OPENCLAW_CLI_BACKEND_LOG_OUTPUT) ||
-    isTruthyEnvValue(process.env.OPENCLAW_LIVE_CLI_BACKEND_DEBUG)
+    isTruthyEnvValue(process.env.AFORA_CLI_BACKEND_LOG_OUTPUT) ||
+    isTruthyEnvValue(process.env.AFORA_LIVE_CLI_BACKEND_DEBUG)
   );
 }
 
@@ -68,7 +68,7 @@ type McpLoopbackRequestAuth = {
   boundGrantToken?: string;
 };
 
-function resolveScopedSessionKey(cfg: OpenClawConfig, rawSessionKey: string | undefined): string {
+function resolveScopedSessionKey(cfg: AforaConfig, rawSessionKey: string | undefined): string {
   const trimmed = normalizeOptionalString(rawSessionKey);
   return !trimmed || trimmed === "main" ? resolveMainSessionKey(cfg) : trimmed;
 }
@@ -131,7 +131,7 @@ function resolveMcpSender(params: {
     return { senderIsOwner: ownerTokenMatched };
   }
   const grantToken = authHeader.startsWith("Bearer ") ? authHeader.slice("Bearer ".length) : "";
-  const captureKey = normalizeOptionalString(getHeader(params.req, "x-openclaw-cli-capture-key"));
+  const captureKey = normalizeOptionalString(getHeader(params.req, "x-afora-cli-capture-key"));
   const clientGrant =
     grantToken && captureKey
       ? resolveMcpLoopbackClientGrant({
@@ -391,7 +391,7 @@ export function isMcpHttpBodyTimeoutError(error: unknown): error is Error & { co
 }
 
 export function resolveMcpHttpBodyTimeoutMs(): number {
-  return readPositiveIntEnv("OPENCLAW_MCP_LOOPBACK_BODY_TIMEOUT_MS", DEFAULT_MCP_BODY_TIMEOUT_MS);
+  return readPositiveIntEnv("AFORA_MCP_LOOPBACK_BODY_TIMEOUT_MS", DEFAULT_MCP_BODY_TIMEOUT_MS);
 }
 
 export function resolveMcpCliCaptureKey(
@@ -401,7 +401,7 @@ export function resolveMcpCliCaptureKey(
   if (auth.boundContext || auth.boundSessionKey) {
     return auth.boundCaptureKey;
   }
-  return normalizeOptionalString(getHeader(req, "x-openclaw-cli-capture-key"));
+  return normalizeOptionalString(getHeader(req, "x-afora-cli-capture-key"));
 }
 
 function normalizeMcpClientCapsHeader(value: string | undefined): string[] | undefined {
@@ -413,7 +413,7 @@ function normalizeMcpClientCapsHeader(value: string | undefined): string[] | und
 
 export function resolveMcpRequestContext(
   req: IncomingMessage,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   auth: McpLoopbackRequestAuth,
 ): McpRequestContext {
   if (auth.boundContext) {
@@ -445,28 +445,28 @@ export function resolveMcpRequestContext(
   }
   return {
     sessionKey: resolveScopedSessionKey(cfg, getHeader(req, "x-session-key")),
-    sessionId: normalizeOptionalString(getHeader(req, "x-openclaw-session-id")),
+    sessionId: normalizeOptionalString(getHeader(req, "x-afora-session-id")),
     messageProvider:
-      normalizeMessageChannel(getHeader(req, "x-openclaw-message-channel")) ?? undefined,
+      normalizeMessageChannel(getHeader(req, "x-afora-message-channel")) ?? undefined,
     // The token-authenticated loopback client is gateway-spawned on 127.0.0.1. Caps only
     // widen tool availability; sender ownership remains derived from the bearer token.
-    clientCaps: normalizeMcpClientCapsHeader(getHeader(req, "x-openclaw-client-caps")),
-    currentChannelId: normalizeOptionalString(getHeader(req, "x-openclaw-current-channel-id")),
-    currentThreadTs: normalizeOptionalString(getHeader(req, "x-openclaw-current-thread-ts")),
-    currentMessageId: normalizeOptionalString(getHeader(req, "x-openclaw-current-message-id")),
+    clientCaps: normalizeMcpClientCapsHeader(getHeader(req, "x-afora-client-caps")),
+    currentChannelId: normalizeOptionalString(getHeader(req, "x-afora-current-channel-id")),
+    currentThreadTs: normalizeOptionalString(getHeader(req, "x-afora-current-thread-ts")),
+    currentMessageId: normalizeOptionalString(getHeader(req, "x-afora-current-message-id")),
     currentInboundAudio: normalizeMcpBooleanHeader(
-      getHeader(req, "x-openclaw-current-inbound-audio"),
+      getHeader(req, "x-afora-current-inbound-audio"),
     ),
-    accountId: normalizeOptionalString(getHeader(req, "x-openclaw-account-id")),
-    inboundEventKind: normalizeMcpInboundEventKind(getHeader(req, "x-openclaw-inbound-event-kind")),
+    accountId: normalizeOptionalString(getHeader(req, "x-afora-account-id")),
+    inboundEventKind: normalizeMcpInboundEventKind(getHeader(req, "x-afora-inbound-event-kind")),
     sourceReplyDeliveryMode: normalizeMcpSourceReplyDeliveryMode(
-      getHeader(req, "x-openclaw-source-reply-delivery-mode"),
+      getHeader(req, "x-afora-source-reply-delivery-mode"),
     ),
     taskSuggestionDeliveryMode: normalizeMcpTaskSuggestionDeliveryMode(
-      getHeader(req, "x-openclaw-task-suggestion-delivery-mode"),
+      getHeader(req, "x-afora-task-suggestion-delivery-mode"),
     ),
     requireExplicitMessageTarget: normalizeMcpBooleanHeader(
-      getHeader(req, "x-openclaw-require-explicit-message-target"),
+      getHeader(req, "x-afora-require-explicit-message-target"),
     ),
     senderIsOwner: auth.senderIsOwner,
   };

@@ -1,6 +1,6 @@
 // Discord plugin module implements message handler.preflight behavior.
-import { formatAllowlistMatchMeta } from "openclaw/plugin-sdk/allow-from";
-import { recordChannelActivity } from "openclaw/plugin-sdk/channel-activity-runtime";
+import { formatAllowlistMatchMeta } from "afora-agent/plugin-sdk/allow-from";
+import { recordChannelActivity } from "afora-agent/plugin-sdk/channel-activity-runtime";
 import {
   buildMentionRegexes,
   classifyChannelInboundEvent,
@@ -10,17 +10,17 @@ import {
   resolveUnmentionedGroupInboundPolicy,
   toHistoryMediaEntries,
   toInboundMediaFactsWithMetadata,
-} from "openclaw/plugin-sdk/channel-inbound";
-import { isRecentOutboundMessageIdentity } from "openclaw/plugin-sdk/channel-outbound";
-import { hasControlCommand } from "openclaw/plugin-sdk/command-detection";
-import { isAbortRequestText } from "openclaw/plugin-sdk/command-primitives-runtime";
-import { shouldHandleTextCommands } from "openclaw/plugin-sdk/command-surface";
-import { isDangerousNameMatchingEnabled } from "openclaw/plugin-sdk/dangerous-name-runtime";
-import { logDebug } from "openclaw/plugin-sdk/logging-core";
-import { mimeTypeFromFilePath } from "openclaw/plugin-sdk/media-mime";
-import { createChannelHistoryWindow } from "openclaw/plugin-sdk/reply-history";
-import { getChildLogger, logVerbose } from "openclaw/plugin-sdk/runtime-env";
-import { enqueueRoutedSystemEvent } from "openclaw/plugin-sdk/system-event-runtime";
+} from "afora-agent/plugin-sdk/channel-inbound";
+import { isRecentOutboundMessageIdentity } from "afora-agent/plugin-sdk/channel-outbound";
+import { hasControlCommand } from "afora-agent/plugin-sdk/command-detection";
+import { isAbortRequestText } from "afora-agent/plugin-sdk/command-primitives-runtime";
+import { shouldHandleTextCommands } from "afora-agent/plugin-sdk/command-surface";
+import { isDangerousNameMatchingEnabled } from "afora-agent/plugin-sdk/dangerous-name-runtime";
+import { logDebug } from "afora-agent/plugin-sdk/logging-core";
+import { mimeTypeFromFilePath } from "afora-agent/plugin-sdk/media-mime";
+import { createChannelHistoryWindow } from "afora-agent/plugin-sdk/reply-history";
+import { getChildLogger, logVerbose } from "afora-agent/plugin-sdk/runtime-env";
+import { enqueueRoutedSystemEvent } from "afora-agent/plugin-sdk/system-event-runtime";
 import { resolveDefaultDiscordAccountId } from "../accounts.js";
 import { ChannelType, MessageType, type User } from "../internal/discord.js";
 import {

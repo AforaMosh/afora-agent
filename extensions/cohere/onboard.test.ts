@@ -1,9 +1,9 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { resolveAgentModelPrimaryValue } from "openclaw/plugin-sdk/provider-onboard";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { resolveAgentModelPrimaryValue } from "afora-agent/plugin-sdk/provider-onboard";
 import { describe, expect, it } from "vitest";
 import { buildCohereCatalogModels, COHERE_BASE_URL } from "./models.js";
 import { applyCohereConfig } from "./onboard.js";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import manifest from "./afora.plugin.json" with { type: "json" };
 
 const COHERE_DEFAULT_MODEL_REF = `cohere/${manifest.modelCatalog.providers.cohere.defaultModel}`;
 const COHERE_DEFAULT_MODEL_ID = "command-a-plus-05-2026";
@@ -33,7 +33,7 @@ describe("Cohere onboarding", () => {
   });
 
   it("sets Cohere only when there is no primary model", () => {
-    const existing: OpenClawConfig = {
+    const existing: AforaConfig = {
       agents: {
         defaults: {
           model: { primary: "openai/gpt-5.5" },

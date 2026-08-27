@@ -19,7 +19,7 @@ import {
   resolveStorePath,
   type SessionEntry,
   type SessionTranscriptInstance,
-} from "./openclaw-runtime-session.js";
+} from "./afora-runtime-session.js";
 import type { MemorySessionKind } from "./types.js";
 
 type SessionTranscriptCorpusArtifactKind =

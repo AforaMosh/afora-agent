@@ -22,7 +22,7 @@ function mockProcessWrite(
 }
 
 describe("QA Lab Matrix CLI registration", () => {
-  const originalDisableForceExit = process.env.OPENCLAW_QA_MATRIX_DISABLE_FORCE_EXIT;
+  const originalDisableForceExit = process.env.AFORA_QA_MATRIX_DISABLE_FORCE_EXIT;
   const originalExitCode = process.exitCode;
   let exitSpy: ReturnType<typeof vi.spyOn>;
   let stderrSpy: ReturnType<typeof vi.spyOn>;
@@ -41,9 +41,9 @@ describe("QA Lab Matrix CLI registration", () => {
   afterEach(() => {
     process.exitCode = originalExitCode;
     if (originalDisableForceExit === undefined) {
-      delete process.env.OPENCLAW_QA_MATRIX_DISABLE_FORCE_EXIT;
+      delete process.env.AFORA_QA_MATRIX_DISABLE_FORCE_EXIT;
     } else {
-      process.env.OPENCLAW_QA_MATRIX_DISABLE_FORCE_EXIT = originalDisableForceExit;
+      process.env.AFORA_QA_MATRIX_DISABLE_FORCE_EXIT = originalDisableForceExit;
     }
     exitSpy.mockRestore();
     stderrSpy.mockRestore();
@@ -75,13 +75,13 @@ describe("QA Lab Matrix CLI registration", () => {
   });
 
   it("delegates command options to the Matrix runtime", async () => {
-    process.env.OPENCLAW_QA_MATRIX_DISABLE_FORCE_EXIT = "1";
+    process.env.AFORA_QA_MATRIX_DISABLE_FORCE_EXIT = "1";
     const qa = new Command();
     matrixQaCliRegistration.register(qa);
 
     await qa.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "matrix",
       "--scenario",
       "matrix-allowlist-hot-reload",
@@ -104,7 +104,7 @@ describe("QA Lab Matrix CLI registration", () => {
     matrixQaCliRegistration.register(qa);
     runLiveTransportQaSuiteCommand.mockResolvedValue(undefined);
 
-    await expect(qa.parseAsync(["node", "openclaw", "matrix"])).rejects.toThrow("process.exit(0)");
+    await expect(qa.parseAsync(["node", "afora", "matrix"])).rejects.toThrow("process.exit(0)");
 
     expect(exitSpy).toHaveBeenCalledWith(0);
   });
@@ -116,7 +116,7 @@ describe("QA Lab Matrix CLI registration", () => {
       new Error("Matrix QA failed.\nreport: /tmp/report.md"),
     );
 
-    await expect(qa.parseAsync(["node", "openclaw", "matrix"])).rejects.toThrow("process.exit(1)");
+    await expect(qa.parseAsync(["node", "afora", "matrix"])).rejects.toThrow("process.exit(1)");
 
     expect(stderrSpy).toHaveBeenCalledWith("Matrix QA failed.\nreport: /tmp/report.md\n");
     expect(exitSpy).toHaveBeenCalledWith(1);
@@ -129,18 +129,18 @@ describe("QA Lab Matrix CLI registration", () => {
       process.exitCode = 1;
     });
 
-    await expect(qa.parseAsync(["node", "openclaw", "matrix"])).rejects.toThrow("process.exit(1)");
+    await expect(qa.parseAsync(["node", "afora", "matrix"])).rejects.toThrow("process.exit(1)");
 
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
 
   it("allows direct test harnesses to disable the forced exit", async () => {
-    process.env.OPENCLAW_QA_MATRIX_DISABLE_FORCE_EXIT = "1";
+    process.env.AFORA_QA_MATRIX_DISABLE_FORCE_EXIT = "1";
     const qa = new Command();
     matrixQaCliRegistration.register(qa);
     runLiveTransportQaSuiteCommand.mockRejectedValue(new Error("scenario failed"));
 
-    await expect(qa.parseAsync(["node", "openclaw", "matrix"])).rejects.toThrow("scenario failed");
+    await expect(qa.parseAsync(["node", "afora", "matrix"])).rejects.toThrow("scenario failed");
 
     expect(exitSpy).not.toHaveBeenCalled();
   });

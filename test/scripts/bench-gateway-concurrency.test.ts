@@ -352,7 +352,7 @@ describe("gateway concurrency benchmark script", () => {
     });
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("OpenClaw Gateway concurrency benchmark");
+    expect(result.stdout).toContain("Afora Gateway concurrency benchmark");
   });
 
   it("ends CLI failures with the required wrapper marker", () => {

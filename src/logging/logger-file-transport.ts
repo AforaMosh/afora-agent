@@ -83,14 +83,14 @@ function getCurrentLogFileBytesSync(file: string): number {
 
 function buildDroppedMarker(target: FileLogQueueEntry, count: number): FileLogQueueEntry {
   const date = new Date();
-  const message = `[openclaw] file log queue overflow; dropped ${count} oldest record${count === 1 ? "" : "s"}`;
+  const message = `[afora] file log queue overflow; dropped ${count} oldest record${count === 1 ? "" : "s"}`;
   const record = {
     0: message,
     _meta: {
       date,
       hostname: target.hostname,
       logLevelName: "WARN",
-      name: "openclaw",
+      name: "afora",
     },
     time: formatTimestamp(date, { style: "long" }),
     hostname: target.hostname,
@@ -108,7 +108,7 @@ function warnAboutRotationFailure(entry: FileLogQueueEntry): void {
     return;
   }
   warnedRotationFiles.set(entry.file, entry.maxFileBytes);
-  const message = `[openclaw] log file rotation failed; continuing writes file=${entry.file} maxFileBytes=${entry.maxFileBytes}`;
+  const message = `[afora] log file rotation failed; continuing writes file=${entry.file} maxFileBytes=${entry.maxFileBytes}`;
   try {
     process.stderr.write(`${formatConsoleDiagnosticLine({ level: "warn", message })}\n`);
   } catch {

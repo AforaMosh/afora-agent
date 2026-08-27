@@ -8,11 +8,11 @@ import {
 } from "../../sessions/session-lifecycle-admission.js";
 import { runQueuedStoreWrite, type StoreWriterQueue } from "../../shared/store-writer-queue.js";
 import {
-  isIncognitoOpenClawAgentSqlitePath,
-  openOpenClawAgentDatabase,
-  runOpenClawAgentWriteTransaction,
-  type OpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
+  isIncognitoAforaAgentSqlitePath,
+  openAforaAgentDatabase,
+  runAforaAgentWriteTransaction,
+  type AforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
 import {
   hasRetainedSessionTranscriptArchives,
   measureSessionPhysicalDiskUsage,
@@ -98,7 +98,7 @@ export async function inspectSqliteSessionHistoryDiskBudget(
     sessionKey: "",
     storePath: params.storePath,
   });
-  const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+  const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
   if (
     hasCanonicalSessionTranscriptArchives(database) ||
     (await hasRetainedSessionTranscriptArchives(params.storePath))
@@ -117,7 +117,7 @@ export async function inspectSqliteSessionHistoryDiskBudget(
 }
 
 function collectProtectedHistoricalSessionIds(params: {
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   storePath: string;
 }): Set<string> {
   const protectedSessionIds = readReferencedSessionIds(params.database);
@@ -128,7 +128,7 @@ function collectProtectedHistoricalSessionIds(params: {
 }
 
 function collectInitialProtectedHistoricalSessionIds(params: {
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   preserveRecentMs?: number | null;
   storePath: string;
 }): Set<string> {
@@ -140,7 +140,7 @@ function collectInitialProtectedHistoricalSessionIds(params: {
 }
 
 function collectRecentSessionHistoryIds(params: {
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   preserveRecentMs?: number | null;
 }): Set<string> {
   if (params.preserveRecentMs == null) {
@@ -176,7 +176,7 @@ function collectRecentSessionHistoryIds(params: {
 }
 
 function isRecentHistoricalSessionId(params: {
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   preserveRecentMs?: number | null;
   sessionId: string;
 }): boolean {
@@ -212,7 +212,7 @@ function isRecentHistoricalSessionId(params: {
 }
 
 function collectCandidateProtectedHistoricalSessionIds(params: {
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   preserveRecentMs?: number | null;
   sessionId: string;
   storePath: string;
@@ -226,7 +226,7 @@ function collectCandidateProtectedHistoricalSessionIds(params: {
 
 /** Session ids owned by in-flight work admissions, without live-reference protection. */
 export function collectAdmissionProtectedSessionIds(params: {
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   storePath: string;
 }): Set<string> {
   const protectedSessionIds = new Set<string>();
@@ -276,7 +276,7 @@ export function collectAdmissionProtectedSessionIds(params: {
 }
 
 function readHistoricalSessionIds(params: {
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   protectedSessionIds: ReadonlySet<string>;
 }): string[] {
   const db = getSessionKysely(params.database.db);
@@ -290,7 +290,7 @@ function readHistoricalSessionIds(params: {
   ).rows.flatMap((row) => (params.protectedSessionIds.has(row.session_id) ? [] : [row.session_id]));
 }
 
-function reclaimSqliteFreePages(database: OpenClawAgentDatabase): void {
+function reclaimSqliteFreePages(database: AforaAgentDatabase): void {
   // Committed row deletion first lands in the WAL. TRUNCATE makes that shrink immediately;
   // incremental vacuum can then return free tail pages from the main file without a rewrite.
   database.walMaintenance.checkpoint();
@@ -304,7 +304,7 @@ function reclaimSqliteFreePages(database: OpenClawAgentDatabase): void {
   database.walMaintenance.checkpoint();
 }
 
-function hasCanonicalSessionTranscriptArchives(database: OpenClawAgentDatabase): boolean {
+function hasCanonicalSessionTranscriptArchives(database: AforaAgentDatabase): boolean {
   const db = getSessionKysely(database.db);
   const table = executeSqliteQuerySync(
     database.db,
@@ -330,7 +330,7 @@ function hasCanonicalSessionTranscriptArchives(database: OpenClawAgentDatabase):
 }
 
 function readUnpublishedSessionTranscriptArchiveNames(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
 ): Set<string> {
   const db = getSessionKysely(database.db);
   const table = executeSqliteQuerySync(
@@ -357,7 +357,7 @@ function readUnpublishedSessionTranscriptArchiveNames(
 
 async function pruneCanonicalSessionTranscriptArchivesToHighWater(params: {
   archiveDirectory: string;
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   highWaterBytes: number;
   storePath: string;
 }): Promise<{ removedFiles: number; usage: SessionPhysicalDiskUsage }> {
@@ -396,7 +396,7 @@ async function pruneCanonicalSessionTranscriptArchivesToHighWater(params: {
         break;
       }
     }
-    runOpenClawAgentWriteTransaction(
+    runAforaAgentWriteTransaction(
       (transactionDb) => {
         const transactionKysely = getSessionKysely(transactionDb.db);
         executeSqliteQuerySync(
@@ -417,7 +417,7 @@ async function pruneCanonicalSessionTranscriptArchivesToHighWater(params: {
 
 async function pruneAllSessionTranscriptArchivesToHighWater(params: {
   archiveDirectory: string;
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   highWaterBytes: number;
   storePath: string;
 }): Promise<{ removedFiles: number; usage: SessionPhysicalDiskUsage }> {
@@ -465,7 +465,7 @@ export function kickSessionHistoryDiskBudgetMaintenance(params: {
 }): void {
   if (
     params.agentId &&
-    isIncognitoOpenClawAgentSqlitePath(params.storePath, { agentId: params.agentId })
+    isIncognitoAforaAgentSqlitePath(params.storePath, { agentId: params.agentId })
   ) {
     return;
   }
@@ -566,7 +566,7 @@ async function enforceSessionHistoryMaintenanceSerialized(
     sessionKey: "",
     storePath: params.storePath,
   });
-  const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+  const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
   const archiveDirectory = resolveSqliteTranscriptArchiveDirectory(resolved);
   let usage: SessionPhysicalDiskUsage = await runExclusiveSqliteSessionWrite(resolved, async () => {
     reclaimSqliteFreePages(database);
@@ -634,7 +634,7 @@ async function enforceSessionHistoryMaintenanceSerialized(
         const committedArchives = await runExclusiveSqliteSessionWrite(resolved, async () => {
           let deleted = false;
           let archivedTranscripts: ReturnType<typeof deleteMaterializedSessionStatePlans> = [];
-          runOpenClawAgentWriteTransaction((transactionDb) => {
+          runAforaAgentWriteTransaction((transactionDb) => {
             const protectedAtDelete = collectCandidateProtectedHistoricalSessionIds({
               database: transactionDb,
               preserveRecentMs: params.maintenance.preserveRecentMs,

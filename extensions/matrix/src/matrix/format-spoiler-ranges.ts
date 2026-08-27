@@ -1,6 +1,6 @@
 // Matrix helper module resolves spoiler delimiters in ordinary Markdown inline blocks.
 import MarkdownIt from "markdown-it";
-import { findCodeRegions, isInsideCode, tokenizeHtmlTags } from "openclaw/plugin-sdk/text-chunking";
+import { findCodeRegions, isInsideCode, tokenizeHtmlTags } from "afora-agent/plugin-sdk/text-chunking";
 import { isMarkdownEscaped, projectMatrixMarkdown } from "./format-profile.js";
 import { findMatrixTableSourceRanges } from "./format-table-ranges.js";
 

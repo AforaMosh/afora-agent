@@ -1,13 +1,13 @@
-# Tencent Cloud OpenClaw provider
+# Tencent Cloud Afora provider
 
-Official OpenClaw provider plugin for Tencent Cloud.
+Official Afora provider plugin for Tencent Cloud.
 
 ## Install
 
 ```sh
-openclaw plugins install @openclaw/tencent-provider
+afora plugins install @afora/tencent-provider
 ```
 
 ## Docs
 
-See `docs/providers/tencent.md` in the OpenClaw repository, or the published docs at `https://docs.openclaw.ai/providers/tencent`.
+See `docs/providers/tencent.md` in the Afora repository, or the published docs at `https://docs.afora.ai/providers/tencent`.

@@ -2,10 +2,10 @@
 import { resolveWhatsAppAccount } from "./accounts.js";
 import { readWebAuthExistsForDecision, WHATSAPP_AUTH_UNSTABLE_CODE } from "./auth-store.js";
 import { loadWhatsAppChannelRuntime } from "./channel-runtime-loader.js";
-import type { OpenClawConfig } from "./runtime-api.js";
+import type { AforaConfig } from "./runtime-api.js";
 
 export async function checkWhatsAppHeartbeatReady(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string;
   deps?: {
     readWebAuthExistsForDecision?: typeof readWebAuthExistsForDecision;

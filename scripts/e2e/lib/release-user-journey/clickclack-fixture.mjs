@@ -7,7 +7,7 @@ import { readPositiveIntEnv, readTcpPortEnv } from "../env-limits.mjs";
 const port = readTcpPortEnv("CLICKCLACK_FIXTURE_PORT", 44181);
 const requestMaxBytes = readPositiveIntEnv("CLICKCLACK_FIXTURE_REQUEST_MAX_BYTES", 4 * 1024 * 1024);
 const token = process.env.CLICKCLACK_FIXTURE_TOKEN ?? "clickclack-release-token";
-const statePath = process.env.CLICKCLACK_FIXTURE_STATE ?? "/tmp/openclaw-clickclack-fixture.json";
+const statePath = process.env.CLICKCLACK_FIXTURE_STATE ?? "/tmp/afora-clickclack-fixture.json";
 const workspace = {
   id: "ws_release",
   name: "Release Workspace",
@@ -24,8 +24,8 @@ const channel = {
 const botUser = {
   id: "usr_bot",
   kind: "bot",
-  display_name: "OpenClaw Bot",
-  handle: "openclaw",
+  display_name: "Afora Bot",
+  handle: "afora",
   avatar_url: "",
   created_at: new Date(0).toISOString(),
 };

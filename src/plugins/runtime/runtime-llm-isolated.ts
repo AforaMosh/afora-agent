@@ -1,10 +1,10 @@
 // Isolated plugin LLM completion policy validates and dispatches the zero-tool runtime mode.
-import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
+import { asFiniteNumber } from "@afora/normalization-core/number-coercion";
 import type { IsolatedCompletionResult } from "../../agents/isolated-completion.js";
 import { buildConfiguredModelCatalog } from "../../agents/model-selection-shared.js";
 import { resolveEffectiveAgentRuntime } from "../../agents/thinking-runtime.js";
 import { resolveThinkingProfile } from "../../auto-reply/thinking.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type {
   LlmCompleteErrorCode,
   LlmCompleteParams,
@@ -86,7 +86,7 @@ function resolveIsolatedTimeoutMs(value: number | undefined): number {
 }
 
 function assertIsolatedReasoningSupported(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   provider: string;
   model: string;
@@ -118,7 +118,7 @@ function assertIsolatedReasoningSupported(params: {
 
 export async function runIsolatedAgentRuntimeCompletion(params: {
   request: LlmIsolatedAgentRuntimeCompleteParams;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   provider: string;
   model: string;

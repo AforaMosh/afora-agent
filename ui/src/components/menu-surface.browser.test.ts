@@ -7,7 +7,7 @@ import "./resizable-divider.ts";
 // a stacking context (.shell-nav z-index 10) painted below the sidebar
 // resizer (.sidebar-resizer z-index 20), so a fixed-position menu rendered
 // inside the nav is overdrawn by the divider unless it is promoted to the
-// popover top layer via openclaw-menu-surface.
+// popover top layer via afora-menu-surface.
 //
 // The repo-level test shard also collects *.browser.test.ts under jsdom,
 // which has neither the Popover API nor real layout; the paint-order
@@ -77,10 +77,10 @@ describe.skipIf(!hasPopoverApi)("sidebar menu stacking", () => {
     expect(hitTestOnDivider(menu, divider)).toBe(divider);
   });
 
-  it("paints a menu hosted in openclaw-menu-surface above the resizer divider", async () => {
+  it("paints a menu hosted in afora-menu-surface above the resizer divider", async () => {
     await useDesktopViewport();
     const { nav, divider } = mountShell();
-    const surface = document.createElement("openclaw-menu-surface");
+    const surface = document.createElement("afora-menu-surface");
     const menu = createSortMenu();
     surface.append(menu);
     nav.append(surface);

@@ -12,7 +12,7 @@ import {
   type CliProviderClassifier,
 } from "../agents/model-selection.js";
 import { resolveAgentModelPrimaryValue } from "../config/model-input.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 type SessionDisplayModelRow = {
   key: string;
@@ -44,7 +44,7 @@ function parseModelRef(raw: string, defaultProvider: string): SessionDisplayMode
 }
 
 function resolveAgentPrimaryModel(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string | undefined,
 ): string | undefined {
   if (!agentId) {
@@ -74,7 +74,7 @@ function normalizeStoredOverrideModel(params: {
   };
 }
 
-function resolveDefaultModelRef(cfg: OpenClawConfig, agentId?: string): SessionDisplayModelRef {
+function resolveDefaultModelRef(cfg: AforaConfig, agentId?: string): SessionDisplayModelRef {
   const primary =
     resolveAgentPrimaryModel(cfg, agentId) ??
     resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model) ??
@@ -84,7 +84,7 @@ function resolveDefaultModelRef(cfg: OpenClawConfig, agentId?: string): SessionD
 
 /** Resolves default display values for a session table scoped to an agent. */
 export function resolveSessionDisplayDefaults(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId?: string,
 ): SessionDisplayDefaults {
   return {
@@ -93,7 +93,7 @@ export function resolveSessionDisplayDefaults(
 }
 
 function normalizeCliRuntimeDisplayRef(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   ref: SessionDisplayModelRef,
   defaultRef: SessionDisplayModelRef,
   classifyCliProvider: CliProviderClassifier,
@@ -130,7 +130,7 @@ function normalizeCliRuntimeDisplayRef(
 
 /** Resolves only the model id to show for a session row. */
 export function resolveSessionDisplayModel(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   row: SessionDisplayModelRow,
   classifyCliProvider?: CliProviderClassifier,
 ): string {
@@ -139,7 +139,7 @@ export function resolveSessionDisplayModel(
 
 /** Resolves provider/model display metadata for a session row. */
 export function resolveSessionDisplayModelRef(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   row: SessionDisplayModelRow,
   classifyCliProvider: CliProviderClassifier = (provider) => isCliProvider(provider, cfg),
 ): SessionDisplayModelRef {

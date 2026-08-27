@@ -63,7 +63,7 @@ function contextWithClient(client: GatewayBrowserClient): ApplicationContext {
 }
 
 async function createPage(client: GatewayBrowserClient): Promise<TestUsagePage> {
-  const page = document.createElement("openclaw-usage-page") as TestUsagePage;
+  const page = document.createElement("afora-usage-page") as TestUsagePage;
   page.context = contextWithClient(client);
   page.render = () => nothing;
   document.body.append(page);

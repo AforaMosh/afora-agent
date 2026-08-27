@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { AgentSelectionRequiredError } from "../agent-scope.js";
 import { resolveExplicitAgentCommandSessionKey } from "./explicit-session-key.js";
 
@@ -10,7 +10,7 @@ const fixedStoreConfig = {
     defaults: { sessionStore: { agentId: "ops" } },
     entries: { ops: {}, research: {} },
   },
-} satisfies OpenClawConfig;
+} satisfies AforaConfig;
 
 describe("explicit agent command session keys", () => {
   it("scopes a bare key through its persisted fixed-store owner", () => {

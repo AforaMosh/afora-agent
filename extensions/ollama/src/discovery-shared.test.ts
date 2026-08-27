@@ -1,6 +1,6 @@
 // Ollama tests cover discovery shared plugin behavior.
-import { expectDefined } from "@openclaw/normalization-core";
-import type { ModelProviderConfig } from "openclaw/plugin-sdk/provider-model-shared";
+import { expectDefined } from "@afora/normalization-core";
+import type { ModelProviderConfig } from "afora-agent/plugin-sdk/provider-model-shared";
 import { describe, expect, it, vi } from "vitest";
 import {
   isLocalOllamaBaseUrl,

@@ -1,9 +1,9 @@
 // Runtime model migration tests cover doctor legacy config migrations for model runtime shape.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, it, expect } from "vitest";
 import { createModelVisibilityPolicy } from "../../../agents/model-visibility-policy.js";
-import type { OpenClawConfig } from "../../../config/types.js";
+import type { AforaConfig } from "../../../config/types.js";
 import { legacyCodexProviderIdentityKey } from "./codex-route-model-ref.js";
 import {
   collectBlockedLegacyOpenAICodexProviderPlan,
@@ -184,7 +184,7 @@ describe("explicit model allow policy migration", () => {
       },
     };
     const changes: string[] = [];
-    const createPolicy = (cfg: OpenClawConfig) =>
+    const createPolicy = (cfg: AforaConfig) =>
       createModelVisibilityPolicy({
         cfg,
         catalog: [

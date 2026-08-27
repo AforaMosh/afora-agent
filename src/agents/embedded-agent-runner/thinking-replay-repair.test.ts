@@ -1,7 +1,7 @@
 // Provider thinking replay repair tests cover durable transcript cleanup after
 // Anthropic/Bedrock proves a signed thinking block invalid.
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
-import { SessionManager } from "openclaw/plugin-sdk/agent-sessions";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-core";
+import { SessionManager } from "afora-agent/plugin-sdk/agent-sessions";
 import { describe, expect, it } from "vitest";
 import {
   repairRejectedCompactionReplayInSessionManager,

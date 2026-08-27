@@ -3,7 +3,7 @@
  * Guards cross-agent credential copy/adoption so refreshed credentials cannot
  * overwrite a different account's local auth state.
  */
-import { asDateTimestampMs } from "@openclaw/normalization-core/number-coercion";
+import { asDateTimestampMs } from "@afora/normalization-core/number-coercion";
 import type { AuthProfileCredential, OAuthCredential } from "./types.js";
 
 /** Normalize account-id style identity tokens for exact comparison. */

@@ -1,5 +1,5 @@
-import { stableStringify } from "@openclaw/normalization-core";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { stableStringify } from "@afora/normalization-core";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import type {
   SkillProposalEvaluation,
   SkillProposalManifestEntry,

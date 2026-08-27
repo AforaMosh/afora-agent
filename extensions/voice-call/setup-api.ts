@@ -1,14 +1,14 @@
 // Voice Call API module exposes the plugin public contract.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/plugin-entry";
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/plugin-entry";
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { migrateVoiceCallLegacyConfigInput } from "./src/config-migration.js";
 
 // Setup-time entrypoint for voice-call config migrations.
 
-/** Migrate voice-call plugin config inside the full OpenClaw config object. */
-function migrateVoiceCallPluginConfig(config: OpenClawConfig): {
-  config: OpenClawConfig;
+/** Migrate voice-call plugin config inside the full Afora config object. */
+function migrateVoiceCallPluginConfig(config: AforaConfig): {
+  config: AforaConfig;
   changes: string[];
 } | null {
   const rawVoiceCallConfig = config.plugins?.entries?.["voice-call"]?.config;

@@ -33,7 +33,7 @@ function setupHardlinkHookWorkspace(hookName: string): {
   hookDir: string;
   outsideDir: string;
 } {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-hooks-workspace-hardlink-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-hooks-workspace-hardlink-"));
   const hooksRoot = path.join(root, "hooks");
   fs.mkdirSync(hooksRoot, { recursive: true });
 
@@ -101,7 +101,7 @@ describe("hooks workspace", () => {
   });
 
   it("ignores package.json hook paths that traverse outside package directory", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-hooks-workspace-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-hooks-workspace-"));
     const hooksRoot = path.join(root, "hooks");
     fs.mkdirSync(hooksRoot, { recursive: true });
 
@@ -120,7 +120,7 @@ describe("hooks workspace", () => {
   });
 
   it("accepts package.json hook paths within package directory", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-hooks-workspace-ok-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-hooks-workspace-ok-"));
     const hooksRoot = path.join(root, "hooks");
     fs.mkdirSync(hooksRoot, { recursive: true });
 
@@ -138,7 +138,7 @@ describe("hooks workspace", () => {
   });
 
   it("warns, skips oversized metadata, and continues discovering other hooks", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-hooks-oversized-mixed-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-hooks-oversized-mixed-"));
     const hooksRoot = path.join(root, "hooks");
     fs.mkdirSync(hooksRoot, { recursive: true });
 
@@ -158,7 +158,7 @@ describe("hooks workspace", () => {
   });
 
   it("loads hooks whose metadata sits exactly at the byte limit", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-hooks-exact-limit-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-hooks-exact-limit-"));
     const hooksRoot = path.join(root, "hooks");
     fs.mkdirSync(hooksRoot, { recursive: true });
 
@@ -181,7 +181,7 @@ describe("hooks workspace", () => {
   });
 
   it("still loads a plain hook when its package.json is oversized", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-hooks-oversized-compat-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-hooks-oversized-compat-"));
     const hooksRoot = path.join(root, "hooks");
     fs.mkdirSync(hooksRoot, { recursive: true });
 
@@ -195,7 +195,7 @@ describe("hooks workspace", () => {
   });
 
   it("ignores package.json hook paths that escape via symlink", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-hooks-workspace-link-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-hooks-workspace-link-"));
     const hooksRoot = path.join(root, "hooks");
     fs.mkdirSync(hooksRoot, { recursive: true });
 
@@ -259,7 +259,7 @@ describe("hooks workspace", () => {
   });
 
   it("does not let workspace hooks override managed hooks with the same name", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-hooks-collision-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-hooks-collision-"));
     const workspaceDir = path.join(root, "workspace");
     const managedHooksDir = path.join(root, "managed-hooks");
     const workspaceHookDir = path.join(workspaceDir, "hooks", "session-memory");
@@ -273,7 +273,7 @@ describe("hooks workspace", () => {
         [
           "---",
           "name: session-memory",
-          'metadata: {"openclaw":{"events":["command:new"]}}',
+          'metadata: {"afora":{"events":["command:new"]}}',
           "---",
         ].join("\n"),
       );
@@ -285,17 +285,17 @@ describe("hooks workspace", () => {
       bundledHooksDir: path.join(root, "bundled-none"),
     });
     expect(entries).toHaveLength(1);
-    expect(entries[0]?.hook.source).toBe("openclaw-managed");
+    expect(entries[0]?.hook.source).toBe("afora-managed");
   });
 
   it("treats configured extraDirs as managed hook sources", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-hooks-extra-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-hooks-extra-"));
     const workspaceDir = path.join(root, "workspace");
     const extraHookDir = path.join(root, "shared-hooks", "shared-hook");
     fs.mkdirSync(extraHookDir, { recursive: true });
     fs.writeFileSync(
       path.join(extraHookDir, "HOOK.md"),
-      ["---", "name: shared-hook", 'metadata: {"openclaw":{"events":["command:new"]}}', "---"].join(
+      ["---", "name: shared-hook", 'metadata: {"afora":{"events":["command:new"]}}', "---"].join(
         "\n",
       ),
     );
@@ -317,6 +317,6 @@ describe("hooks workspace", () => {
 
     expect(entries).toHaveLength(1);
     expect(entries[0]?.hook.name).toBe("shared-hook");
-    expect(entries[0]?.hook.source).toBe("openclaw-managed");
+    expect(entries[0]?.hook.source).toBe("afora-managed");
   });
 });

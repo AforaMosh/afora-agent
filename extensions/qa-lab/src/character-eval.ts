@@ -1,8 +1,8 @@
 // Qa Lab plugin module implements character eval behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { normalizeStringEntries, uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { normalizeStringEntries, uniqueStrings } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import pMap from "p-map";
 import prettyMilliseconds from "pretty-ms";
 import { createQaArtifactRunId } from "./artifact-run-id.js";
@@ -298,7 +298,7 @@ ${run.transcript}
     })
     .join("\n\n");
 
-  const prompt = `You are grading OpenClaw natural character conversation transcripts for naturalness, vibes, and funniness.
+  const prompt = `You are grading Afora natural character conversation transcripts for naturalness, vibes, and funniness.
 
 Scenario id: ${params.scenarioId}
 
@@ -422,7 +422,7 @@ function renderCharacterEvalReport(params: {
   judgments: readonly QaCharacterEvalJudgeResult[];
 }) {
   const lines = [
-    "# OpenClaw Character Eval Report",
+    "# Afora Character Eval Report",
     "",
     `- Started: ${params.startedAt.toISOString()}`,
     `- Finished: ${params.finishedAt.toISOString()}`,

@@ -84,7 +84,7 @@ const manifest: ClawManifest = {
 };
 
 const addPlan: ClawAddPlan = {
-  schemaVersion: "openclaw.clawAddPlan.v1",
+  schemaVersion: "afora.clawAddPlan.v1",
   stability: CLAW_OUTPUT_STABILITY,
   dryRun: true,
   mutationAllowed: false,
@@ -95,7 +95,7 @@ const addPlan: ClawAddPlan = {
     name: "@acme/worker",
     version: "2.0.0",
     packageRoot: "/tmp/claw",
-    manifestPath: "/tmp/claw/openclaw.claw.json",
+    manifestPath: "/tmp/claw/afora.claw.json",
     integrityKind: "artifact",
     integrity: "sha256:new",
     byteLength: 1,
@@ -155,7 +155,7 @@ describe("applyClawPackageUpdate", () => {
       detectedFormat: "claude" as const,
       mapped: ["skills"],
       unavailable: ["agents"],
-      adapterIdentity: "openclaw/test",
+      adapterIdentity: "afora-agent/test",
     };
     const targetPlan: ClawAddPlan = {
       ...addPlan,

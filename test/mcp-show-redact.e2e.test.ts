@@ -7,9 +7,9 @@ import { connectGatewayClient } from "../src/gateway/test-helpers.e2e.js";
 import { extractFirstTextBlock } from "../src/shared/chat-message-content.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../src/utils/message-channel.js";
 import {
-  createOpenClawTestInstance,
-  type OpenClawTestInstance,
-} from "./helpers/openclaw-test-instance.js";
+  createAforaTestInstance,
+  type AforaTestInstance,
+} from "./helpers/afora-test-instance.js";
 
 const E2E_TIMEOUT_MS = 180_000;
 const CHAT_FINAL_TIMEOUT_MS = 45_000;
@@ -72,7 +72,7 @@ async function waitForChatFinal(
 }
 
 describe("mcp show redaction e2e", () => {
-  const instances: OpenClawTestInstance[] = [];
+  const instances: AforaTestInstance[] = [];
 
   afterAll(async () => {
     for (const instance of instances) {
@@ -84,10 +84,10 @@ describe("mcp show redaction e2e", () => {
     "starts an ephemeral gateway and redacts MCP secrets from /mcp show chat replies",
     { timeout: E2E_TIMEOUT_MS },
     async () => {
-      const instance = await createOpenClawTestInstance({
+      const instance = await createAforaTestInstance({
         name: "mcp-show-redact",
         env: {
-          OPENCLAW_TEST_FAST: "1",
+          AFORA_TEST_FAST: "1",
         },
         config: {
           commands: {

@@ -4,17 +4,17 @@ import type {
   SessionCatalogSession,
   SessionCatalogTranscriptItem,
   SessionsCatalogReadResult,
-} from "openclaw/plugin-sdk/session-catalog";
-import { sessionCatalogPaging } from "openclaw/plugin-sdk/session-catalog";
+} from "afora-agent/plugin-sdk/session-catalog";
+import { sessionCatalogPaging } from "afora-agent/plugin-sdk/session-catalog";
 import {
   isRecord,
   normalizeBoundedOptionalString as optionalOpenCodeString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import {
   materializeWindowsSpawnProgram,
   resolveWindowsSpawnProgram,
-} from "openclaw/plugin-sdk/windows-spawn";
+} from "afora-agent/plugin-sdk/windows-spawn";
 import {
   OPENCODE_SESSION_CATALOG_MAX_PAGE_LIMIT,
   OPENCODE_SESSION_ID_PATTERN,
@@ -62,7 +62,7 @@ type OpenCodeQueryCacheOptions = {
 };
 
 const openCodeConfigIdentities = new WeakMap<object, number>();
-// Query results are valid for one immutable OpenClaw config identity, CLI environment, and SQL text.
+// Query results are valid for one immutable Afora config identity, CLI environment, and SQL text.
 // Config/env changes or 32s expiry invalidate them; failures are removed so recovery retries at once.
 // The bounded map prevents pagination variants from growing while avoiding a subprocess every poll.
 const openCodeQueryCache = new Map<string, OpenCodeQueryCacheEntry>();

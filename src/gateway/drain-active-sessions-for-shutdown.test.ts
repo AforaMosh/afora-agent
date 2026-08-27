@@ -1,7 +1,7 @@
 // Shutdown drain tests protect bounded session_end hook emission for tracked
 // active sessions during gateway shutdown and restart.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { clearInternalHooks, registerInternalHook } from "../hooks/internal-hooks.js";
 
 // Regression coverage for #57790: the bounded shutdown drain must fire a
@@ -54,7 +54,7 @@ const { drainActiveSessionsForShutdown } = await import("./active-sessions-shutd
 const { forgetActiveSessionForShutdown, listActiveSessionsForShutdown } =
   await import("./active-sessions-shutdown-tracker.js");
 
-const cfg: OpenClawConfig = {};
+const cfg: AforaConfig = {};
 
 const requireSessionEndHookEvent = (index: number): SessionEndHookEvent => {
   const call = runSessionEndMock.mock.calls[index];

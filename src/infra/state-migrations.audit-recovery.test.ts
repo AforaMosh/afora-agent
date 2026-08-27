@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import { afterEach, describe, expect, it } from "vitest";
 import { resetPluginStateStoreForTests } from "../plugin-state/plugin-state-store.js";
-import { runOpenClawStateWriteTransaction } from "../state/openclaw-state-db.js";
+import { runAforaStateWriteTransaction } from "../state/afora-state-db.js";
 import { openLegacyAuditRawCheckpointStore } from "./state-migrations.audit-checkpoints.js";
 import {
   buildAuditScrubbedContent,
@@ -31,7 +31,7 @@ describe("legacy audit recovery byte handling", () => {
       const recovery = await fs.readFile(raw, "utf8");
       expect(Buffer.byteLength(recovery)).toBe(Buffer.byteLength(original));
       expect(JSON.parse(sanitizedContent.trim())).toMatchObject({
-        argv: ["openclaw", "config", "set", "token", "***"],
+        argv: ["afora", "config", "set", "token", "***"],
       });
       expect(recovery.trim()).toBe("");
       await expect(fs.access(restore)).rejects.toMatchObject({ code: "ENOENT" });
@@ -270,7 +270,7 @@ describe("legacy audit recovery byte handling", () => {
       const sanitizedRows = (await fs.readFile(sanitized, "utf8")).trim().split("\n");
       expect(sanitizedRows).toHaveLength(3);
 
-      runOpenClawStateWriteTransaction(
+      runAforaStateWriteTransaction(
         (database) => {
           database.db
             .prepare("DELETE FROM diagnostic_events WHERE scope = ?")

@@ -1,4 +1,4 @@
-import OpenClawKit
+import AforaKit
 import SwiftUI
 
 /// Session-scoped dashboard rendered by the gateway Control UI.
@@ -12,7 +12,7 @@ struct SessionDashboardScreen: View {
         let config = self.appModel.activeGatewayConnectConfig
         let storedOperatorToken = AuthenticatedControlUI.storedOperatorToken(config: config)
         ZStack {
-            OpenClawProBackground()
+            AforaProBackground()
             if let url = Self.dashboardURL(config: config, sessionKey: self.sessionKey) {
                 AuthenticatedControlUIWebView(
                     url: url,
@@ -38,7 +38,7 @@ struct SessionDashboardScreen: View {
                         self.showsDesktop = true
                     } label: {
                         Image(systemName: "display")
-                            .font(OpenClawType.subheadSemiBold)
+                            .font(AforaType.subheadSemiBold)
                     }
                     .accessibilityLabel("Open Desktop")
                     .accessibilityIdentifier("SessionDashboard.Desktop")
@@ -49,7 +49,7 @@ struct SessionDashboardScreen: View {
                     self.dismiss()
                 } label: {
                     Text("Done")
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                 }
             }
         }
@@ -60,11 +60,11 @@ struct SessionDashboardScreen: View {
 
     private var unavailableCard: some View {
         VStack(spacing: 12) {
-            ProIconBadge(systemName: "rectangle.grid.2x2", color: OpenClawBrand.accent)
+            ProIconBadge(systemName: "rectangle.grid.2x2", color: AforaBrand.accent)
             Text("Dashboard needs a connected gateway")
-                .font(OpenClawType.subheadSemiBold)
+                .font(AforaType.subheadSemiBold)
             Text("Connect to your gateway to open this session dashboard.")
-                .font(OpenClawType.caption)
+                .font(AforaType.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }

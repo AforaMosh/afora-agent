@@ -1,6 +1,6 @@
 // Workboard tests cover gateway plugin behavior.
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawPluginApi } from "../api.js";
+import type { AforaPluginApi } from "../api.js";
 import { registerWorkboardGatewayMethods } from "./gateway.js";
 import type { PersistedWorkboardCard, WorkboardKeyedStore } from "./persistence-types.js";
 import { WorkboardStore } from "./store.js";
@@ -26,8 +26,8 @@ function createMemoryStore<T = PersistedWorkboardCard>(): WorkboardKeyedStore<T>
 describe("workboard gateway methods", () => {
   it("registers CRUD methods with read/write scopes", async () => {
     type RegisteredMethod = {
-      handler: Parameters<OpenClawPluginApi["registerGatewayMethod"]>[1];
-      opts: Parameters<OpenClawPluginApi["registerGatewayMethod"]>[2];
+      handler: Parameters<AforaPluginApi["registerGatewayMethod"]>[1];
+      opts: Parameters<AforaPluginApi["registerGatewayMethod"]>[2];
     };
     const methods = new Map<string, RegisteredMethod>();
     const api = {
@@ -41,7 +41,7 @@ describe("workboard gateway methods", () => {
           methods.set(method, { handler, opts });
         },
       ),
-    } as unknown as OpenClawPluginApi;
+    } as unknown as AforaPluginApi;
 
     const store = new WorkboardStore(createMemoryStore());
     registerWorkboardGatewayMethods({ api, store });
@@ -166,8 +166,8 @@ describe("workboard gateway methods", () => {
 
   it("applies connected client workspace access when accepting card paths", async () => {
     type RegisteredMethod = {
-      handler: Parameters<OpenClawPluginApi["registerGatewayMethod"]>[1];
-      opts: Parameters<OpenClawPluginApi["registerGatewayMethod"]>[2];
+      handler: Parameters<AforaPluginApi["registerGatewayMethod"]>[1];
+      opts: Parameters<AforaPluginApi["registerGatewayMethod"]>[2];
     };
     const methods = new Map<string, RegisteredMethod>();
     const store = new WorkboardStore(createMemoryStore());
@@ -183,7 +183,7 @@ describe("workboard gateway methods", () => {
           methods.set(method, { handler, opts });
         },
       ),
-    } as unknown as OpenClawPluginApi;
+    } as unknown as AforaPluginApi;
     registerWorkboardGatewayMethods({ api, store });
     const create = methods.get("workboard.cards.create")?.handler;
     const context = {
@@ -285,8 +285,8 @@ describe("workboard gateway methods", () => {
 
   it("stores metadata updates through dedicated card methods", async () => {
     type RegisteredMethod = {
-      handler: Parameters<OpenClawPluginApi["registerGatewayMethod"]>[1];
-      opts: Parameters<OpenClawPluginApi["registerGatewayMethod"]>[2];
+      handler: Parameters<AforaPluginApi["registerGatewayMethod"]>[1];
+      opts: Parameters<AforaPluginApi["registerGatewayMethod"]>[2];
     };
     const methods = new Map<string, RegisteredMethod>();
     const api = {
@@ -300,7 +300,7 @@ describe("workboard gateway methods", () => {
           methods.set(method, { handler, opts });
         },
       ),
-    } as unknown as OpenClawPluginApi;
+    } as unknown as AforaPluginApi;
 
     registerWorkboardGatewayMethods({ api, store: new WorkboardStore(createMemoryStore()) });
 
@@ -341,8 +341,8 @@ describe("workboard gateway methods", () => {
 
   it("validates labels from comma-separated gateway input", async () => {
     type RegisteredMethod = {
-      handler: Parameters<OpenClawPluginApi["registerGatewayMethod"]>[1];
-      opts: Parameters<OpenClawPluginApi["registerGatewayMethod"]>[2];
+      handler: Parameters<AforaPluginApi["registerGatewayMethod"]>[1];
+      opts: Parameters<AforaPluginApi["registerGatewayMethod"]>[2];
     };
     const methods = new Map<string, RegisteredMethod>();
     const api = {
@@ -356,7 +356,7 @@ describe("workboard gateway methods", () => {
           methods.set(method, { handler, opts });
         },
       ),
-    } as unknown as OpenClawPluginApi;
+    } as unknown as AforaPluginApi;
 
     registerWorkboardGatewayMethods({ api, store: new WorkboardStore(createMemoryStore()) });
 
@@ -375,8 +375,8 @@ describe("workboard gateway methods", () => {
 
   it("dispatches workboard cards when gateway params are omitted", async () => {
     type RegisteredMethod = {
-      handler: Parameters<OpenClawPluginApi["registerGatewayMethod"]>[1];
-      opts: Parameters<OpenClawPluginApi["registerGatewayMethod"]>[2];
+      handler: Parameters<AforaPluginApi["registerGatewayMethod"]>[1];
+      opts: Parameters<AforaPluginApi["registerGatewayMethod"]>[2];
     };
     const methods = new Map<string, RegisteredMethod>();
     const run = vi.fn().mockResolvedValue({ runId: "run-card" });
@@ -392,7 +392,7 @@ describe("workboard gateway methods", () => {
           methods.set(method, { handler, opts });
         },
       ),
-    } as unknown as OpenClawPluginApi;
+    } as unknown as AforaPluginApi;
     const store = new WorkboardStore(createMemoryStore());
     const card = await store.create({
       title: "Ready worker",
@@ -419,8 +419,8 @@ describe("workboard gateway methods", () => {
 
   it("threads maxStarts while the legacy method keeps its default cap", async () => {
     type RegisteredMethod = {
-      handler: Parameters<OpenClawPluginApi["registerGatewayMethod"]>[1];
-      opts: Parameters<OpenClawPluginApi["registerGatewayMethod"]>[2];
+      handler: Parameters<AforaPluginApi["registerGatewayMethod"]>[1];
+      opts: Parameters<AforaPluginApi["registerGatewayMethod"]>[2];
     };
     const methods = new Map<string, RegisteredMethod>();
     const run = vi.fn().mockResolvedValue({ runId: "run-card" });
@@ -434,7 +434,7 @@ describe("workboard gateway methods", () => {
           methods.set(method, { handler, opts });
         },
       ),
-    } as unknown as OpenClawPluginApi;
+    } as unknown as AforaPluginApi;
     const store = new WorkboardStore(createMemoryStore());
     await Promise.all(
       Array.from({ length: 5 }, (_, index) =>
@@ -498,15 +498,15 @@ describe("workboard gateway methods", () => {
 
   it("keeps write-scope worktree dispatch within configured agent workspaces", async () => {
     type RegisteredMethod = {
-      handler: Parameters<OpenClawPluginApi["registerGatewayMethod"]>[1];
-      opts: Parameters<OpenClawPluginApi["registerGatewayMethod"]>[2];
+      handler: Parameters<AforaPluginApi["registerGatewayMethod"]>[1];
+      opts: Parameters<AforaPluginApi["registerGatewayMethod"]>[2];
     };
     const methods = new Map<string, RegisteredMethod>();
     const run = vi.fn().mockResolvedValue({ runId: "run-card" });
     const createWorktree = vi.fn().mockResolvedValue({
       id: "managed-id",
       path: "/state/worktrees/fingerprint/wb-card",
-      branch: "openclaw/wb-card",
+      branch: "afora-agent/wb-card",
     });
     const api = {
       runtime: {
@@ -538,7 +538,7 @@ describe("workboard gateway methods", () => {
           methods.set(method, { handler, opts });
         },
       ),
-    } as unknown as OpenClawPluginApi;
+    } as unknown as AforaPluginApi;
     const store = new WorkboardStore(createMemoryStore());
     const denied = await store.create({
       title: "Denied checkout",
@@ -616,8 +616,8 @@ describe("workboard gateway methods", () => {
 
   it("claims, heartbeats, and bulk-updates cards through gateway methods", async () => {
     type RegisteredMethod = {
-      handler: Parameters<OpenClawPluginApi["registerGatewayMethod"]>[1];
-      opts: Parameters<OpenClawPluginApi["registerGatewayMethod"]>[2];
+      handler: Parameters<AforaPluginApi["registerGatewayMethod"]>[1];
+      opts: Parameters<AforaPluginApi["registerGatewayMethod"]>[2];
     };
     const methods = new Map<string, RegisteredMethod>();
     const api = {
@@ -631,7 +631,7 @@ describe("workboard gateway methods", () => {
           methods.set(method, { handler, opts });
         },
       ),
-    } as unknown as OpenClawPluginApi;
+    } as unknown as AforaPluginApi;
 
     registerWorkboardGatewayMethods({ api, store: new WorkboardStore(createMemoryStore()) });
 

@@ -1,6 +1,6 @@
 // Doctor scanner and repair for subagent allowlists that reference missing agents.
 import { listAgentEntries, listAgentIds } from "../../../agents/agent-scope-config.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { normalizeAgentId, normalizeOptionalAgentId } from "../../../routing/session-key.js";
 import { listMutableCodexRouteAgentEntries } from "./codex-route-agent-entries.js";
 
@@ -13,7 +13,7 @@ type StaleSubagentAllowlistHit = {
   normalizedAgentId: string;
 };
 
-function collectConfiguredSubagentTargetIds(cfg: OpenClawConfig): Set<string> {
+function collectConfiguredSubagentTargetIds(cfg: AforaConfig): Set<string> {
   const ids = new Set<string>(listAgentIds(cfg));
   for (const agent of listAgentEntries(cfg)) {
     if (agent.runtime?.type !== "acp") {
@@ -78,7 +78,7 @@ function collectStaleAllowlistEntries(params: {
 
 /** Find subagent allowlist entries not backed by configured agent or ACP targets. */
 export function scanStaleSubagentAllowlistReferences(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): StaleSubagentAllowlistHit[] {
   const configuredTargetIds = collectConfiguredSubagentTargetIds(cfg);
   const hits: StaleSubagentAllowlistHit[] = [];
@@ -132,8 +132,8 @@ function filterAllowAgents(params: {
 }
 
 /** Remove stale subagent allowlist entries while preserving valid targets and wildcards. */
-export function maybeRepairStaleSubagentAllowlists(cfg: OpenClawConfig): {
-  config: OpenClawConfig;
+export function maybeRepairStaleSubagentAllowlists(cfg: AforaConfig): {
+  config: AforaConfig;
   changes: string[];
 } {
   const hits = scanStaleSubagentAllowlistReferences(cfg);

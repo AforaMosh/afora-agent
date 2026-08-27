@@ -10,7 +10,7 @@ describe("private SQLite directory creation on Windows", () => {
   it.runIf(process.platform === "win32")(
     "surfaces native stderr without exposing the encoded command",
     async () => {
-      const root = tempDirs.make("openclaw-sqlite-private-directory-");
+      const root = tempDirs.make("afora-sqlite-private-directory-");
       const regularFile = path.join(root, "parent-file");
       await fs.writeFile(regularFile, "not a directory");
 

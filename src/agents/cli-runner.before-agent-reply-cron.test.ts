@@ -1,6 +1,6 @@
 /** Tests cron before_agent_reply gating at the CLI runner entrypoint. */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
 import {
@@ -106,7 +106,7 @@ const baseRunParams = {
   agentId: "main",
   sessionFile: "/tmp/test-session.jsonl",
   workspaceDir: "/tmp/test-workspace",
-  prompt: "__openclaw_memory_core_short_term_promotion_dream__",
+  prompt: "__afora_memory_core_short_term_promotion_dream__",
   provider: "codex-cli",
   model: "gpt-5.5",
   timeoutMs: 30_000,
@@ -286,7 +286,7 @@ describe("runCliAgent before_agent_reply seam", () => {
         executionMode: "side-question",
         isolatedCompletion: true,
         disableTools: true,
-        cliToolAvailability: { native: [], openClaw: [] },
+        cliToolAvailability: { native: [], afora: [] },
       }),
     ).rejects.toBe(error);
 
@@ -311,7 +311,7 @@ describe("runCliAgent before_agent_reply seam", () => {
       effectiveAuthProfileId: profileId,
       authProfileStore: store,
       agentDir: "/tmp/agent",
-      openClawHistoryPrompt: "history",
+      aforaHistoryPrompt: "history",
       reusableCliSession: { mode: "reuse", sessionId: "stale-session" },
       params: {
         ...(params as typeof baseRunParams),

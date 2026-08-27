@@ -29,6 +29,6 @@ export const page = definePage({
     import("./model-providers-page.ts").then(() => ({
       header: true,
       render: (data: ModelProvidersRouteData | undefined) =>
-        html`<openclaw-model-providers-page .routeData=${data}></openclaw-model-providers-page>`,
+        html`<afora-model-providers-page .routeData=${data}></afora-model-providers-page>`,
     })),
 });

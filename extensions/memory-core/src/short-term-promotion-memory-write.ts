@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { replaceFileAtomic } from "openclaw/plugin-sdk/security-runtime";
+import { replaceFileAtomic } from "afora-agent/plugin-sdk/security-runtime";
 
 export class MemoryWriteConflictError extends Error {
   constructor() {
@@ -104,7 +104,7 @@ export async function writeMemoryContent(params: {
     ) {
       throw new MemoryWriteConflictError();
     }
-    // External editors can still write between this check and rename. OpenClaw writers
+    // External editors can still write between this check and rename. Afora writers
     // are serialized; policy accepts this millisecond-wide race because the preimage is recoverable.
     await fs.rename(source, destination);
     renameCommitted = true;

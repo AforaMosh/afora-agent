@@ -1,6 +1,6 @@
 // Owns atomic delivery-queue ownership changes across namespace versions.
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
-import { openOpenClawStateDatabase } from "../state/openclaw-state-db.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
+import { openAforaStateDatabase } from "../state/afora-state-db.js";
 import {
   completeDeliveryQueueEntry,
   deleteDeliveryQueueEntry,
@@ -15,12 +15,12 @@ import {
 } from "./kysely-sync.js";
 import { runSqliteImmediateTransactionSync } from "./sqlite-transaction.js";
 
-type DeliveryQueueDatabase = Pick<OpenClawStateKyselyDatabase, "delivery_queue_entries">;
+type DeliveryQueueDatabase = Pick<AforaStateKyselyDatabase, "delivery_queue_entries">;
 type QueueStatus = "pending" | "failed" | "completed";
 
 function openStateDatabase(stateDir?: string) {
-  return openOpenClawStateDatabase({
-    env: stateDir ? { ...process.env, OPENCLAW_STATE_DIR: stateDir } : process.env,
+  return openAforaStateDatabase({
+    env: stateDir ? { ...process.env, AFORA_STATE_DIR: stateDir } : process.env,
   });
 }
 
@@ -83,7 +83,7 @@ export function commitStagedDeliveryQueueEntryOnceAcrossNamespaces(params: {
       return "created";
     },
     {
-      databaseLabel: "openclaw-state",
+      databaseLabel: "afora-state",
       operationLabel: "commit staged stable delivery queue owner",
     },
   );
@@ -116,7 +116,7 @@ export function upsertDeliveryQueueEntryOnceAcrossNamespaces(params: {
       });
     },
     {
-      databaseLabel: "openclaw-state",
+      databaseLabel: "afora-state",
       operationLabel: "insert stable delivery queue owner",
     },
   );
@@ -174,7 +174,7 @@ export function replacePendingDeliveryQueueEntry(params: {
       });
     },
     {
-      databaseLabel: "openclaw-state",
+      databaseLabel: "afora-state",
       operationLabel: "replace pending delivery queue entry",
     },
   );
@@ -210,7 +210,7 @@ export function completePendingDeliveryQueueEntry(params: {
       return true;
     },
     {
-      databaseLabel: "openclaw-state",
+      databaseLabel: "afora-state",
       operationLabel: "complete pending delivery queue entry",
     },
   );
@@ -295,7 +295,7 @@ export function movePendingDeliveryQueueEntryNamespace(
       return "moved";
     },
     {
-      databaseLabel: "openclaw-state",
+      databaseLabel: "afora-state",
       operationLabel: "migrate delivery queue namespace",
     },
   );
