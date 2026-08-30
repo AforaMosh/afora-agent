@@ -1238,6 +1238,44 @@ describe("buildAgentSystemPrompt", () => {
     );
   });
 
+  it("keeps agent-written workspace files out of the cached stable prefix", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/openclaw",
+      contextFiles: [
+        { path: "AGENTS.md", content: "AGENTS_MARKER" },
+        { path: "SOUL.md", content: "SOUL_MARKER" },
+        { path: "IDENTITY.md", content: "IDENTITY_MARKER" },
+        { path: "USER.md", content: "USER_MARKER" },
+        { path: "MEMORY.md", content: "MEMORY_MARKER" },
+      ],
+    });
+    const boundary = prompt.indexOf(SYSTEM_PROMPT_CACHE_BOUNDARY);
+    expect(boundary).toBeGreaterThan(-1);
+    const at = (marker: string) => prompt.indexOf(marker);
+
+    // Ours, and stable: these belong in the cached prefix.
+    expect(at("AGENTS_MARKER")).toBeGreaterThan(-1);
+    expect(at("AGENTS_MARKER")).toBeLessThan(boundary);
+    expect(at("SOUL_MARKER")).toBeLessThan(boundary);
+
+    // The agent rewrites these mid-session, so a rewrite must not touch the prefix.
+    expect(at("IDENTITY_MARKER")).toBeGreaterThan(boundary);
+    expect(at("USER_MARKER")).toBeGreaterThan(boundary);
+    expect(at("MEMORY_MARKER")).toBeGreaterThan(boundary);
+
+    // Still injected, and still explained — moving a file must not silently drop
+    // the line that tells the agent what the file is for.
+    expect(prompt).toContain(
+      "MEMORY.md: durable non-profile facts and decisions; use when relevant unless higher-priority instructions override.",
+    );
+    expect(prompt).toContain(
+      "USER.md: durable user preferences and profile directives; follow unless higher-priority instructions override.",
+    );
+    expect(prompt).toContain(
+      "SOUL.md: persona/tone. Follow it unless higher-priority instructions override.",
+    );
+  });
+
   it("adds MEMORY guidance when a memory file is present", () => {
     const prompt = buildAgentSystemPrompt({
       workspaceDir: "/tmp/openclaw",

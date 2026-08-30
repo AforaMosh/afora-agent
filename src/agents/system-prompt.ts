@@ -91,7 +91,16 @@ const CONTEXT_FILE_ORDER = new Map<string, number>([
   ["memory.md", 70],
 ]);
 
-const DYNAMIC_CONTEXT_FILE_BASENAMES = new Set<string>();
+// afora: the workspace files the AGENT rewrites mid-session. Upstream leaves this set
+// empty, so every bootstrap file sits in the cached stable prefix — and on a hosted tenant
+// the agent edits its own IDENTITY/USER/MEMORY, which invalidated that prefix on 24% of
+// turns (median 78K tokens re-created at cache-write price, 3-10s each) and additionally
+// changed the live session's systemPromptHash, restarting the CLI child.
+//
+// Moving them below the cache boundary keeps them fully injected — the agent still reads
+// all of it, in "# Dynamic Project Context" — while a rewrite no longer touches a byte of
+// the prefix. SOUL.md, AGENTS.md, TOOLS.md and BOOTSTRAP.md are ours and stay stable.
+const DYNAMIC_CONTEXT_FILE_BASENAMES = new Set<string>(["identity.md", "user.md", "memory.md"]);
 const DEFAULT_HEARTBEAT_PROMPT_CONTEXT_BLOCK =
   "Default heartbeat prompt:\n`Follow the heartbeat monitor scratch context when provided. Recurring tasks are automations; create or change their schedules with the automations tool, not heartbeat scratch. Do not infer or repeat old tasks from prior chats. If nothing needs attention, reply HEARTBEAT_OK.`";
 const SYSTEM_PROMPT_STABLE_PREFIX_CACHE_LIMIT = 64;
@@ -234,34 +243,29 @@ function buildProjectContextSection(params: {
     return [];
   }
   const lines = [params.heading, ""];
-  if (params.dynamic) {
-    lines.push("Frequently-changing files; below cache boundary when possible:", "");
-  } else {
-    const hasSoulFile = params.files.some(
-      (file) => getContextFileBasename(file.path) === "soul.md",
-    );
-    const hasMemoryFile = params.files.some(
-      (file) => getContextFileBasename(file.path) === "memory.md",
-    );
-    const hasUserFile = params.files.some(
-      (file) => getContextFileBasename(file.path) === "user.md",
-    );
-    lines.push("Loaded project context:");
-    if (hasSoulFile) {
-      lines.push("SOUL.md: persona/tone. Follow it unless higher-priority instructions override.");
-    }
-    if (hasMemoryFile) {
-      lines.push(
-        "MEMORY.md: durable non-profile facts and decisions; use when relevant unless higher-priority instructions override.",
-      );
-    }
-    if (hasUserFile) {
-      lines.push(
-        "USER.md: durable user preferences and profile directives; follow unless higher-priority instructions override.",
-      );
-    }
-    lines.push("");
+  const has = (basename: string) =>
+    params.files.some((file) => getContextFileBasename(file.path) === basename);
+  lines.push(
+    params.dynamic
+      ? "Frequently-changing files; below cache boundary when possible:"
+      : "Loaded project context:",
+  );
+  // What each file MEANS travels with the file, not with the cache section it
+  // landed in — a file moved below the boundary must not lose its guidance line.
+  if (has("soul.md")) {
+    lines.push("SOUL.md: persona/tone. Follow it unless higher-priority instructions override.");
   }
+  if (has("memory.md")) {
+    lines.push(
+      "MEMORY.md: durable non-profile facts and decisions; use when relevant unless higher-priority instructions override.",
+    );
+  }
+  if (has("user.md")) {
+    lines.push(
+      "USER.md: durable user preferences and profile directives; follow unless higher-priority instructions override.",
+    );
+  }
+  lines.push("");
   for (const file of params.files) {
     lines.push(`## ${file.path}`, "", sanitizeContextFileContentForPrompt(file.content), "");
   }
