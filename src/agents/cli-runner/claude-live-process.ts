@@ -67,6 +67,8 @@ export type ClaudeLiveProcess = ClaudeLiveTurnHost & {
   cleanupPromise: Promise<void> | null;
   pendingControlRequest: ClaudeLivePendingControlRequest | null;
   mcpCaptureKey?: string;
+  /** Loopback bearer baked into this child at launch; later turns transfer onto it. */
+  mcpCaptureToken?: string;
   nativeToolApprovalGrants: Set<string>;
   isIdle(): boolean;
   waitForExit(): Promise<void>;
@@ -443,6 +445,8 @@ export async function spawnClaudeProcess(params: {
   systemPromptHash: string;
   key: string;
   mcpCaptureKey?: string;
+  mcpCaptureToken?: string;
+  revokeMcpCapture?: () => void;
   noOutputTimeoutMs: number;
   supervisor: ProcessSupervisor;
   cleanup: () => Promise<void>;
@@ -516,6 +520,9 @@ export async function spawnClaudeProcess(params: {
     currentTurn: null,
     idleTimer: null,
     cleanup: async () => {
+      // This child held the bearer for its whole life, so the bearer retires
+      // with the child rather than with the turn that happened to launch it.
+      params.revokeMcpCapture?.();
       await mcpCaptureAttempt.cleanup?.();
       await params.cleanup();
     },
@@ -523,6 +530,7 @@ export async function spawnClaudeProcess(params: {
     closing: false,
     pendingControlRequest: null,
     mcpCaptureKey: params.mcpCaptureKey,
+    mcpCaptureToken: params.mcpCaptureToken,
     nativeToolApprovalGrants: new Set(),
     outstandingBackgroundTaskIds: new Set(),
     isIdle() {

@@ -18,6 +18,7 @@ import {
   revokeAttachGrantsForSession,
   revokeMcpLoopbackClientGrant,
   revokeMcpLoopbackClientGrantsForRuntime,
+  transferMcpLoopbackClientGrant,
 } from "./mcp-grant-store.js";
 
 const T0 = 1_000_000_000_000;
@@ -366,5 +367,112 @@ describe("mcp-grant-store", () => {
         runtimeOwnerToken: "  ",
       }),
     ).toThrow(/runtimeOwnerToken is required/);
+  });
+  it("moves a later turn's authority onto the bearer a warm child already holds", async () => {
+    const processToken = mintMcpLoopbackClientGrant({
+      context: { sessionKey: "agent:main:warm", senderIsOwner: false },
+      runtimeOwnerToken: "runtime-one",
+      admittedRunContext: await admitted("run-warm-first"),
+    }).token;
+    // The first turn ends: its bearer is revoked, but the child keeps sending it.
+    expect(revokeMcpLoopbackClientGrant(processToken)).toBe(true);
+
+    const next = mintMcpLoopbackClientGrant({
+      context: { sessionKey: "agent:main:warm", senderIsOwner: false },
+      runtimeOwnerToken: "runtime-one",
+      admittedRunContext: await admitted("run-warm-second"),
+    });
+    expect(
+      transferMcpLoopbackClientGrant({
+        sourceToken: next.token,
+        targetToken: processToken,
+        runtimeOwnerToken: "runtime-one",
+      }),
+    ).toBe(true);
+    expect(
+      activateMcpLoopbackClientGrantCapture({
+        token: processToken,
+        runtimeOwnerToken: "runtime-one",
+        captureKey: "capture-warm",
+      }),
+    ).toBe(true);
+
+    // The child's original bearer now carries the second turn's admission, and
+    // the freshly minted token it replaced is gone.
+    expect(
+      resolveMcpLoopbackClientGrant({
+        token: processToken,
+        runtimeOwnerToken: "runtime-one",
+        captureKey: "capture-warm",
+      })?.context.sessionKey,
+    ).toBe("agent:main:warm");
+    expect(
+      resolveMcpLoopbackClientGrant({
+        token: next.token,
+        runtimeOwnerToken: "runtime-one",
+        captureKey: "capture-warm",
+      }),
+    ).toBeUndefined();
+  });
+
+  it("does not carry an active capture across a transfer", async () => {
+    const processToken = mintMcpLoopbackClientGrant({
+      context: { sessionKey: "agent:main:fence", senderIsOwner: false },
+      runtimeOwnerToken: "runtime-one",
+      admittedRunContext: await admitted("run-fence-first"),
+    }).token;
+    const next = mintMcpLoopbackClientGrant({
+      context: { sessionKey: "agent:main:fence", senderIsOwner: false },
+      runtimeOwnerToken: "runtime-one",
+      admittedRunContext: await admitted("run-fence-second"),
+    });
+    expect(
+      activateMcpLoopbackClientGrantCapture({
+        token: next.token,
+        runtimeOwnerToken: "runtime-one",
+        captureKey: "capture-stale",
+      }),
+    ).toBe(true);
+    expect(
+      transferMcpLoopbackClientGrant({
+        sourceToken: next.token,
+        targetToken: processToken,
+        runtimeOwnerToken: "runtime-one",
+      }),
+    ).toBe(true);
+    // The turn must re-activate; a transferred grant is never already capturing.
+    expect(
+      resolveMcpLoopbackClientGrant({
+        token: processToken,
+        runtimeOwnerToken: "runtime-one",
+        captureKey: "capture-stale",
+      }),
+    ).toBeUndefined();
+  });
+
+  it("refuses a transfer across Gateway runtimes", async () => {
+    const source = mintMcpLoopbackClientGrant({
+      context: { sessionKey: "agent:main:one", senderIsOwner: false },
+      runtimeOwnerToken: "runtime-one",
+      admittedRunContext: await admitted("run-transfer-owner"),
+    });
+    const foreign = mintMcpLoopbackClientGrant({
+      context: { sessionKey: "agent:main:two", senderIsOwner: false },
+      runtimeOwnerToken: "runtime-two",
+    });
+    expect(
+      transferMcpLoopbackClientGrant({
+        sourceToken: source.token,
+        targetToken: foreign.token,
+        runtimeOwnerToken: "runtime-one",
+      }),
+    ).toBe(false);
+    expect(
+      transferMcpLoopbackClientGrant({
+        sourceToken: source.token,
+        targetToken: "unminted-token",
+        runtimeOwnerToken: "runtime-two",
+      }),
+    ).toBe(false);
   });
 });
