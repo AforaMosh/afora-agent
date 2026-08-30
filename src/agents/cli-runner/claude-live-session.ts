@@ -182,6 +182,11 @@ function buildClaudeLiveFingerprint(params: {
     (params.context.preparedBackend.backend.systemPromptWhen === "always"
       ? splitSystemPromptCacheBoundary(params.context.systemPrompt)?.stablePrefix
       : undefined) ?? params.context.systemPrompt;
+  const managedGrant = params.context.preparedBackend.mcpClientGrantCapture;
+  // The managed loopback bearer is minted per run, so hashing it makes every
+  // turn a different process identity and no child is ever reusable. An
+  // operator-supplied token is not managed and still fingerprints normally.
+  const normalizeGrantToken = params.env.OPENCLAW_MCP_TOKEN === managedGrant?.transportToken;
   const normalizeMcpConfigPath = Boolean(params.context.preparedBackend.mcpConfigHash);
   const skillSnapshot = params.context.params.skillsSnapshot;
   const skillsFingerprint = skillSnapshot
@@ -255,7 +260,16 @@ function buildClaudeLiveFingerprint(params: {
     argv: stableArgv,
     env: Object.keys(params.env)
       .toSorted()
-      .map((key) => [key, params.env[key] ? sha256Hex(params.env[key]) : ""]),
+      // The capture key rotates with the attempt, never with the process.
+      .filter((key) => key !== "OPENCLAW_MCP_CLI_CAPTURE_KEY")
+      .map((key) => [
+        key,
+        key === "OPENCLAW_MCP_TOKEN" && normalizeGrantToken
+          ? "<managed-mcp-grant>"
+          : params.env[key]
+            ? sha256Hex(params.env[key])
+            : "",
+      ]),
   });
 }
 

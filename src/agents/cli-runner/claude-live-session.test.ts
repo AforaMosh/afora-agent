@@ -449,6 +449,65 @@ describe("runClaudeTurn", () => {
     expect(supervisorSpawnMock).toHaveBeenCalledTimes(2);
   });
 
+  it("keeps a capture child warm across turns and moves the grant onto its bearer", async () => {
+    vi.stubEnv("OPENCLAW_CLAUDE_LIVE_KEEPALIVE", "1");
+    let turn = 0;
+    mockClaudeLiveRun(supervisorSpawnMock, {
+      onWrite: ({ emit }) => {
+        turn += 1;
+        emit([
+          { type: "system", subtype: "init", session_id: "live-capture" },
+          { type: "result", session_id: "live-capture", result: turn === 1 ? "one" : "two" },
+        ]);
+      },
+    });
+
+    const backend = {
+      resumeArgs: ["-p", "--output-format", "stream-json", "--resume={sessionId}"],
+      liveSession: "claude-stdio" as const,
+    };
+    const adopted: string[] = [];
+    // Each turn mints its own loopback bearer, exactly as prepare() does — and
+    // like prepare(), adopting the token this turn already speaks for is a no-op.
+    const buildContext = (prompt: string, transportToken: string) => {
+      let activeToken = transportToken;
+      return buildPreparedCliRunContext({
+        prompt,
+        backend,
+        mcpDeliveryCapture: true,
+        mcpConfigHash: "mcp-config-stable",
+        preparedEnv: { OPENCLAW_MCP_TOKEN: transportToken },
+        mcpClientGrantCapture: {
+          transportToken,
+          adoptProcessToken: (processToken: string) => {
+            if (activeToken === processToken) {
+              return;
+            }
+            adopted.push(processToken);
+            activeToken = processToken;
+          },
+          revokeProcessToken: () => {},
+          activate: () => {},
+          deactivate: () => {},
+        },
+      });
+    };
+
+    const first = await executePreparedCliRun(buildContext("first", "bearer-one"));
+    const second = await executePreparedCliRun(
+      buildContext("second", "bearer-two"),
+      "live-capture",
+    );
+
+    expect(first.text).toBe("one");
+    expect(second.text).toBe("two");
+    // One child: the rotating bearer no longer changes the process fingerprint,
+    // and the capture turn no longer tears the child down on the way out.
+    expect(supervisorSpawnMock).toHaveBeenCalledOnce();
+    // The second turn spoke for the bearer the warm child was launched with.
+    expect(adopted).toEqual(["bearer-one"]);
+  });
+
   it("restarts the Claude live process after request abort", async () => {
     const abortController = new AbortController();
     let stdoutListener: ((chunk: string) => void) | undefined;
