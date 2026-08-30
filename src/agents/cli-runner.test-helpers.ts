@@ -134,6 +134,7 @@ export type PreparedCliRunContextOverrides = {
   toolAvailabilityEnforcement?: PreparedCliRunContext["backendResolved"]["toolAvailabilityEnforcement"];
   config?: PreparedCliRunContext["params"]["config"];
   mcpConfigHash?: string;
+  mcpClientGrantCapture?: PreparedCliRunContext["preparedBackend"]["mcpClientGrantCapture"];
   mcpDeliveryCapture?: boolean;
   skillsSnapshot?: PreparedCliRunContext["params"]["skillsSnapshot"];
   thinkLevel?: PreparedCliRunContext["params"]["thinkLevel"];
@@ -247,6 +248,9 @@ export function buildPreparedCliRunContext(
       backend,
       env: overrides.preparedEnv ?? {},
       ...(overrides.mcpConfigHash ? { mcpConfigHash: overrides.mcpConfigHash } : {}),
+      ...(overrides.mcpClientGrantCapture
+        ? { mcpClientGrantCapture: overrides.mcpClientGrantCapture }
+        : {}),
     },
     reusableCliSession: { mode: "none" },
     hadSessionFile: false,
