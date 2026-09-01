@@ -75,7 +75,7 @@ describe("AppSidebar footer identity menu", () => {
       "https://docs.afora.ai",
       "https://docs.afora.ai/help",
       "https://discord.gg/clawd",
-      "https://docs.afora.ai/releases",
+      "https://github.com/AforaMosh/afora-agent/releases",
     ]);
 
     menu?.querySelector<HTMLElement>('wa-dropdown-item[value="command:profile"]')?.focus();

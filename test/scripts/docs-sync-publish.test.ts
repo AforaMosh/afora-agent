@@ -140,9 +140,6 @@ describe("docs-sync-publish", () => {
     ]);
 
     const releaseRoutes = [
-      "releases/index",
-      "releases/2026.7.1",
-      "releases/2026.6.11",
       "maturity/scorecard",
       "maturity/taxonomy",
       "reference/RELEASING",
@@ -154,15 +151,9 @@ describe("docs-sync-publish", () => {
     ];
     const releaseTab = english!.tabs.find((tab) => tab.tab === "Release & CI");
     expect(releaseTab?.groups?.map((group) => group.group)).toEqual([
-      "Release notes",
       "Maturity",
       "Release process",
       "Testing and CI",
-    ]);
-    expect(releaseTab?.groups?.[0]?.pages).toEqual([
-      "releases/index",
-      "releases/2026.7.1",
-      "releases/2026.6.11",
     ]);
     expect(collectPages(releaseTab)).toEqual(releaseRoutes);
     expect(new Set(collectPages(releaseTab))).toHaveLength(releaseRoutes.length);
@@ -181,15 +172,9 @@ describe("docs-sync-publish", () => {
       (tab) => tab.tab === "发布与 CI",
     );
     expect(simplifiedChineseReleaseTab?.groups?.map((group) => group.group)).toEqual([
-      "发布说明",
       "成熟度",
       "发布流程",
       "测试与 CI",
-    ]);
-    expect(simplifiedChineseReleaseTab?.groups?.[0]?.pages).toEqual([
-      "zh-CN/releases/index",
-      "zh-CN/releases/2026.7.1",
-      "zh-CN/releases/2026.6.11",
     ]);
     expect(collectPages(simplifiedChineseReleaseTab)).toEqual(
       releaseRoutes.map((page) => `zh-CN/${page}`),
@@ -206,7 +191,7 @@ describe("docs-sync-publish", () => {
       const localeDir = collectPages(locale)[0]?.split("/")[0];
       const localizedRoutes = releaseRoutes.map((page) => `${localeDir}/${page}`);
       const localizedReleaseTab = locale.tabs.find((tab) =>
-        collectPages(tab).includes(`${localeDir}/releases/index`),
+        collectPages(tab).includes(`${localeDir}/reference/RELEASING`),
       );
       expect(collectPages(localizedReleaseTab)).toEqual(localizedRoutes);
       expect(new Set(collectPages(localizedReleaseTab))).toHaveLength(localizedRoutes.length);

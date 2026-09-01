@@ -56,7 +56,7 @@ const ABOUT_LINKS: ReadonlyArray<{ href: string; icon: TemplateResult; label: ()
     label: () => t("aboutPage.linkX"),
   },
   {
-    href: "https://docs.afora.ai/releases",
+    href: "https://github.com/AforaMosh/afora-agent/releases",
     icon: icons.scrollText,
     label: () => t("aboutPage.linkChangelog"),
   },

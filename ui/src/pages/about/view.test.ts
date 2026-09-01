@@ -60,7 +60,7 @@ describe("renderAbout", () => {
       "https://github.com/AforaMosh/afora-agent",
       "https://discord.gg/clawd",
       "https://x.com/afora",
-      "https://docs.afora.ai/releases",
+      "https://github.com/AforaMosh/afora-agent/releases",
     ]);
     for (const link of links) {
       expect(link.getAttribute("target")).toBe("_blank");

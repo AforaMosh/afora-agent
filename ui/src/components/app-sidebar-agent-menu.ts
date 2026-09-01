@@ -36,7 +36,7 @@ const IDENTITY_MENU_LINKS: ReadonlyArray<{
   },
   { href: "https://discord.gg/clawd", icon: "users", label: () => t("agentChip.discord") },
   {
-    href: "https://docs.afora.ai/releases",
+    href: "https://github.com/AforaMosh/afora-agent/releases",
     icon: "scrollText",
     label: () => t("agentChip.viewChangelog"),
   },

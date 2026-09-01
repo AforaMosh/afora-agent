@@ -10,11 +10,8 @@
 # --- whole-path survivors ---
 path:LICENSE # upstream MIT attribution must keep original OpenClaw authorship
 path:THIRD_PARTY_NOTICES.md # attribution of upstream and third-party code
-path:CHANGELOG.md # historical entries describe what upstream OpenClaw shipped
-path:docs/releases/** # historical upstream release notes, same rationale as CHANGELOG.md
 path:pnpm-lock.yaml # lockfile: registry package names and integrity hashes, never hand-edit
 path:patches/** # pnpm patch files are content-hashed in the lockfile
-path:appcast.xml # historical Sparkle release feed entries for upstream versions
 path:docs/afora/** # the rebrand working docs quote openclaw deliberately
 path:scripts/afora/** # the codemod, census and allowlist must name openclaw
 path:src/infra/afora-env-alias.ts # env var compat shim, maps OPENCLAW_* to AFORA_*
