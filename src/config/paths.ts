@@ -140,7 +140,7 @@ function migrateLegacyStateDir(legacyDir: string, newDir: string): boolean {
       }
       const mapped = MIGRATED_BASENAMES.find(([from]) => from === entry.name);
       if (mapped) {
-        const dir = entry.parentPath ?? entry.path;
+        const dir = entry.parentPath;
         fs.renameSync(path.join(dir, entry.name), path.join(dir, mapped[1]));
       }
     }
@@ -148,10 +148,14 @@ function migrateLegacyStateDir(legacyDir: string, newDir: string): boolean {
       path.join(legacyDir, MIGRATED_MARKER),
       `migrated to ${newDir} at ${new Date().toISOString()}\n`,
     );
-    console.error(`afora: migrated legacy state dir ${legacyDir} to ${newDir} (original left in place)`);
+    console.error(
+      `afora: migrated legacy state dir ${legacyDir} to ${newDir} (original left in place)`,
+    );
     return true;
   } catch (error) {
-    console.error(`afora: legacy state dir migration failed, using ${legacyDir} as-is: ${String(error)}`);
+    console.error(
+      `afora: legacy state dir migration failed, using ${legacyDir} as-is: ${String(error)}`,
+    );
     return false;
   }
 }
