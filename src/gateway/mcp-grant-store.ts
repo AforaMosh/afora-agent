@@ -286,6 +286,47 @@ export function deactivateMcpLoopbackClientGrantCapture(params: {
   return true;
 }
 
+/** Move one prepared turn onto the bearer already held by a warm CLI child. */
+export function transferMcpLoopbackClientGrant(params: {
+  sourceToken: string;
+  targetToken: string;
+  runtimeOwnerToken: string;
+}): boolean {
+  const source = clientGrantsByToken.get(params.sourceToken);
+  const target = clientGrantsByToken.get(params.targetToken);
+  if (
+    !source ||
+    source.runtimeOwnerToken !== params.runtimeOwnerToken ||
+    (target && target.runtimeOwnerToken !== params.runtimeOwnerToken)
+  ) {
+    return false;
+  }
+  if (params.sourceToken === params.targetToken) {
+    return true;
+  }
+  // The child cannot replace its bearer after launch. Turn cleanup may already
+  // have revoked that bearer, so recreate it only from this fresh admitted grant.
+  // An existing bearer owned by another runtime is never replaceable.
+  const { activeCaptureKey: _activeCaptureKey, ...inactiveSource } = source;
+  clientGrantsByToken.set(params.targetToken, {
+    ...inactiveSource,
+    token: params.targetToken,
+  });
+  clientGrantsByToken.delete(params.sourceToken);
+  // Both tokens may own cached server projections. Evict them only after the
+  // map swap so a request can observe either the old grant or the new grant,
+  // never a partially updated authority.
+  notifyMcpLoopbackClientGrantRevoked({
+    token: params.targetToken,
+    runtimeOwnerToken: params.runtimeOwnerToken,
+  });
+  notifyMcpLoopbackClientGrantRevoked({
+    token: params.sourceToken,
+    runtimeOwnerToken: params.runtimeOwnerToken,
+  });
+  return true;
+}
+
 export function resolveMcpLoopbackClientGrant(params: {
   token: string;
   runtimeOwnerToken: string;
@@ -327,16 +368,20 @@ export function registerMcpLoopbackClientGrantRevocationListener(
   return () => clientGrantRevocationListeners.delete(listener);
 }
 
+function notifyMcpLoopbackClientGrantRevoked(event: McpLoopbackClientGrantRevocation): void {
+  // Revocation must also release server-owned projections whose closures retain
+  // this grant's prepared credentials.
+  for (const listener of clientGrantRevocationListeners) {
+    listener(event);
+  }
+}
+
 export function revokeMcpLoopbackClientGrant(token: string): boolean {
   const grant = clientGrantsByToken.get(token);
   if (!grant || !clientGrantsByToken.delete(token)) {
     return false;
   }
-  // Revocation must also release server-owned projections whose closures retain
-  // this grant's prepared credentials.
-  for (const listener of clientGrantRevocationListeners) {
-    listener({ token, runtimeOwnerToken: grant.runtimeOwnerToken });
-  }
+  notifyMcpLoopbackClientGrantRevoked({ token, runtimeOwnerToken: grant.runtimeOwnerToken });
   return true;
 }
 

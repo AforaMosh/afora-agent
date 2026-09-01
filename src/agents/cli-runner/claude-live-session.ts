@@ -7,6 +7,7 @@ import {
 import type { ReplyBackendHandle } from "../../auto-reply/reply/reply-run-registry.js";
 import { createAbortError as createNamedAbortError } from "../../infra/abort-signal.js";
 import { sha256Hex } from "../../infra/crypto-digest.js";
+import { isTruthyEnvValue } from "../../infra/env.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import type { CliBackendConfig } from "../../plugins/cli-backend.types.js";
 import type {
@@ -45,6 +46,17 @@ import type { PreparedCliRunContext } from "./types.js";
 type ProcessSupervisor = ReturnType<
   typeof import("../../process/supervisor/index.js").getProcessSupervisor
 >;
+
+const CLAUDE_LIVE_KEEPALIVE_ENV = "OPENCLAW_CLAUDE_LIVE_KEEPALIVE";
+
+/**
+ * Retiring the child after every capture turn costs a spawn plus a SIGTERM on
+ * each turn. Keeping it warm is the default upstream shape, but it changes
+ * process lifetime for a hosted tenant, so it stays opt-in per gateway.
+ */
+function claudeLiveKeepAliveEnabled(): boolean {
+  return isTruthyEnvValue(process.env[CLAUDE_LIVE_KEEPALIVE_ENV]);
+}
 
 type ClaudeLiveRunResult = {
   output: import("../cli-output-contracts.js").CliOutput;
@@ -170,6 +182,11 @@ function buildClaudeLiveFingerprint(params: {
     (params.context.preparedBackend.backend.systemPromptWhen === "always"
       ? splitSystemPromptCacheBoundary(params.context.systemPrompt)?.stablePrefix
       : undefined) ?? params.context.systemPrompt;
+  const managedGrant = params.context.preparedBackend.mcpClientGrantCapture;
+  // The managed loopback bearer is minted per run, so hashing it makes every
+  // turn a different process identity and no child is ever reusable. An
+  // operator-supplied token is not managed and still fingerprints normally.
+  const normalizeGrantToken = params.env.OPENCLAW_MCP_TOKEN === managedGrant?.transportToken;
   const normalizeMcpConfigPath = Boolean(params.context.preparedBackend.mcpConfigHash);
   const skillSnapshot = params.context.params.skillsSnapshot;
   const skillsFingerprint = skillSnapshot
@@ -243,7 +260,16 @@ function buildClaudeLiveFingerprint(params: {
     argv: stableArgv,
     env: Object.keys(params.env)
       .toSorted()
-      .map((key) => [key, params.env[key] ? sha256Hex(params.env[key]) : ""]),
+      // The capture key rotates with the attempt, never with the process.
+      .filter((key) => key !== "OPENCLAW_MCP_CLI_CAPTURE_KEY")
+      .map((key) => [
+        key,
+        key === "OPENCLAW_MCP_TOKEN" && normalizeGrantToken
+          ? "<managed-mcp-grant>"
+          : params.env[key]
+            ? sha256Hex(params.env[key])
+            : "",
+      ]),
   });
 }
 
@@ -375,6 +401,7 @@ async function runSerializedClaudeTurn(
     env: params.env,
   });
   const systemPromptHash = sha256Hex(stripSystemPromptCacheBoundary(params.context.systemPrompt));
+  const grantCapture = params.context.preparedBackend.mcpClientGrantCapture;
   let session = getClaudeSession(key) as ClaudeLiveProcess | undefined;
   if (
     session &&
@@ -396,6 +423,19 @@ async function runSerializedClaudeTurn(
     session = undefined;
   }
   if (session && session.fingerprint !== fingerprint) {
+    if (params.requiredSessionGeneration) {
+      await cleanup();
+      throw createRequiredLiveSessionError({
+        context: params.context,
+        code: "cli_live_session_changed",
+      });
+    }
+    session.close("restart");
+    session = undefined;
+  }
+  if (session && Boolean(session.mcpCaptureToken) !== Boolean(grantCapture)) {
+    // The child's bearer can only be transferred while both sides still agree
+    // that this turn owns a loopback grant.
     if (params.requiredSessionGeneration) {
       await cleanup();
       throw createRequiredLiveSessionError({
@@ -471,6 +511,8 @@ async function runSerializedClaudeTurn(
       systemPromptHash,
       key,
       mcpCaptureKey,
+      mcpCaptureToken: grantCapture?.transportToken,
+      revokeMcpCapture: grantCapture?.revokeProcessToken,
       noOutputTimeoutMs: params.noOutputTimeoutMs,
       supervisor: params.getProcessSupervisor(),
       cleanup,
@@ -509,6 +551,11 @@ async function runSerializedClaudeTurn(
   }
   if (session.sessionId) {
     params.onSessionId?.(session.sessionId);
+  }
+  if (session.mcpCaptureToken && grantCapture) {
+    // Transfer the exact current admission before activating the original child
+    // capture header; a copied bearer never carries authority on its own.
+    grantCapture.adoptProcessToken(session.mcpCaptureToken);
   }
   notifyMcpCaptureReady(session.mcpCaptureKey);
   session.noOutputTimeoutMs = params.noOutputTimeoutMs;
@@ -567,7 +614,10 @@ async function runSerializedClaudeTurn(
         params.context.params.replyOperation?.detachBackend(replyBackendHandle);
       }
     } finally {
-      if (session.mcpCaptureKey) {
+      // Without keep-alive a capture turn always retires its child, which makes
+      // the reuse path above unreachable. `finishDeliveryTracking` still closes
+      // the session as "mcp-capture-rotation" when a capture will not drain.
+      if (session.mcpCaptureKey && !claudeLiveKeepAliveEnabled()) {
         session.close("restart");
         await session.waitForExit();
         await session.cleanupResources();
