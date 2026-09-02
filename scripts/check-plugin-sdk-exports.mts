@@ -32,6 +32,14 @@ import { publicPluginSdkEntrypoints, publicPluginSdkSubpaths } from "./lib/plugi
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDir, "..");
+// The fixture consumer imports the host by its published package name and links the repo
+// under that same name. Read it from the root manifest so the two can never drift apart.
+const hostPackageName = (
+  JSON.parse(readFileSync(resolve(repoRoot, "package.json"), "utf8")) as { name?: string }
+).name;
+if (!hostPackageName) {
+  throw new Error("root package.json has no name; cannot stage the plugin-sdk consumer fixture");
+}
 const nativePreviewPackageJsonPath = resolve(
   repoRoot,
   "node_modules/@typescript/native-preview/package.json",
@@ -67,9 +75,9 @@ let missing = 0;
     mkdirSync(consumerRoot, { recursive: true });
     writeFileSync(
       join(consumerRoot, "index.ts"),
-      `import { buildChannelConfigSchema, DmPolicySchema } from "afora-agent/plugin-sdk/channel-config-schema";
-import { defineChannelPluginEntry } from "afora-agent/plugin-sdk/core";
-import { createPluginRuntimeStore, type PluginRuntime } from "afora-agent/plugin-sdk/runtime-store";
+      `import { buildChannelConfigSchema, DmPolicySchema } from "${hostPackageName}/plugin-sdk/channel-config-schema";
+import { defineChannelPluginEntry } from "${hostPackageName}/plugin-sdk/core";
+import { createPluginRuntimeStore, type PluginRuntime } from "${hostPackageName}/plugin-sdk/runtime-store";
 import { z } from "zod";
 
 const runtimeStore = createPluginRuntimeStore<PluginRuntime>({
@@ -107,7 +115,7 @@ export default defineChannelPluginEntry({
 }
 `,
     );
-    const aforaPackagePath = join(consumerRoot, "node_modules", "afora");
+    const aforaPackagePath = join(consumerRoot, "node_modules", hostPackageName);
     mkdirSync(dirname(aforaPackagePath), { recursive: true });
     symlinkSync(repoRoot, aforaPackagePath, process.platform === "win32" ? "junction" : "dir");
     symlinkSync(
