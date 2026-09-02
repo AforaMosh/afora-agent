@@ -1,0 +1,30 @@
+{
+  "name": "@afora/crabline",
+  "version": "0.1.11",
+  "private": true,
+  "description": "Standalone CLI for deterministic messaging provider E2E tests",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "crabline": "dist/src/bin/crabline.js"
+  },
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    }
+  },
+  "dependencies": {
+    "commander": "15.0.0",
+    "curve25519-js": "0.0.4",
+    "libsignal": "6.0.0",
+    "picocolors": "1.1.1",
+    "proper-lockfile": "4.1.2",
+    "re2js": "2.8.6",
+    "ws": "8.21.1",
+    "yaml": "2.9.0",
+    "zod": "4.4.3"
+  }
+}

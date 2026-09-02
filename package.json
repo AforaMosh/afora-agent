@@ -2014,8 +2014,8 @@
     "@modelcontextprotocol/sdk": "1.30.0",
     "@mozilla/readability": "0.6.0",
     "@afora/ai": "workspace:*",
-    "@openclaw/fs-safe": "0.5.5",
-    "@openclaw/proxyline": "0.3.4",
+    "@afora/fs-safe": "workspace:*",
+    "@afora/proxyline": "workspace:*",
     "@silvia-odwyer/photon-node": "0.3.4",
     "@trycua/cua-driver": "0.19.3",
     "acorn": "8.17.0",
@@ -2067,6 +2067,7 @@
   },
   "devDependencies": {
     "@a2ui/lit": "0.10.2",
+    "@afora/crabline": "workspace:*",
     "@copilotkit/aimock": "1.37.4",
     "@lit-labs/signals": "0.3.0",
     "@lit/context": "1.1.6",

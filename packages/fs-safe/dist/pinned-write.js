@@ -1,0 +1,248 @@
+import { randomUUID } from "node:crypto";
+import fsSync from "node:fs";
+import fs from "node:fs/promises";
+import path from "node:path";
+import { createAsyncDirectoryGuard, createNearestExistingDirectoryGuard } from "./directory-guard.js";
+import { FsSafeError } from "./errors.js";
+import { syncDirectoryBestEffort } from "./fsync.js";
+import { sameFileIdentity, sha256Hex } from "./file-identity.js";
+import { withAsyncDirectoryGuards } from "./guarded-mutation.js";
+import { mkdirPathComponentsWithGuards } from "./guarded-mkdir.js";
+import { runPinnedWriteNative } from "./native-pinned-write.js";
+import { getNativeBinding } from "./native.js";
+import { validatePinnedOperationPayload } from "./pinned-operation.js";
+import { withSidecarLock } from "./sidecar-lock.js";
+import { getFsSafeTestHooks } from "./test-hooks.js";
+function byteLength(input, encoding) {
+    return typeof input === "string"
+        ? Buffer.byteLength(input, encoding ?? "utf8")
+        : input.byteLength;
+}
+function assertSafeBasename(basename) {
+    if (!basename ||
+        basename === "." ||
+        basename === ".." ||
+        basename.includes("/") ||
+        basename.includes("\0")) {
+        throw new FsSafeError("invalid-path", "invalid target path");
+    }
+}
+function assertWithinMaxBytes(bytes, maxBytes) {
+    if (maxBytes !== undefined && bytes > maxBytes) {
+        throw new FsSafeError("too-large", `file exceeds limit of ${maxBytes} bytes (got at least ${bytes})`);
+    }
+}
+async function syncFileBestEffort(handle) {
+    try {
+        await handle.sync();
+    }
+    catch (error) {
+        if (error?.code !== "EPERM") {
+            throw error;
+        }
+    }
+}
+async function writeStreamToHandle(stream, handle, maxBytes) {
+    let bytes = 0;
+    for await (const chunk of stream) {
+        const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+        bytes += buffer.byteLength;
+        assertWithinMaxBytes(bytes, maxBytes);
+        let offset = 0;
+        while (offset < buffer.byteLength) {
+            const { bytesWritten } = await handle.write(buffer, offset, buffer.byteLength - offset);
+            if (bytesWritten <= 0) {
+                throw new FsSafeError("helper-failed", "fallback stream write made no progress");
+            }
+            offset += bytesWritten;
+        }
+    }
+}
+export async function runPinnedWriteHelper(params) {
+    assertSafeBasename(params.basename);
+    validatePinnedOperationPayload({
+        relativeParentPath: params.relativeParentPath,
+    });
+    // The explicit compatibility policy uses the guarded Node fallback, where
+    // content verification can replace the strict post-rename inode check.
+    if (params.onRenameIdentityMismatch === "verify-content") {
+        return await runPinnedWriteFallback(params);
+    }
+    const native = getNativeBinding();
+    if (native) {
+        return await runPinnedWriteNative(native, params);
+    }
+    return await runPinnedWriteFallback(params);
+}
+export async function runPinnedWriteWithRenamePolicy(params) {
+    const { targetPath, renameIdentity, ...writeParams } = params;
+    if (renameIdentity !== "verify-content-with-lock") {
+        return await runPinnedWriteHelper(writeParams);
+    }
+    const relativeTargetPath = writeParams.relativeParentPath
+        ? `${writeParams.relativeParentPath}/${writeParams.basename}`
+        : writeParams.basename;
+    const lockPath = path.join(writeParams.rootPath, `.fs-safe-write-${sha256Hex(relativeTargetPath)}.lock`);
+    return await withSidecarLock(writeParams.rootPath, {
+        managerKey: `fs-safe.write:${targetPath}`,
+        lockPath,
+        staleMs: 30_000,
+        timeoutMs: 5_000,
+        payload: () => ({ pid: process.pid, createdAt: new Date().toISOString() }),
+        retry: { retries: 5, minTimeout: 100, maxTimeout: 2_000, factor: 2 },
+    }, async () => await runPinnedWriteHelper({
+        ...writeParams,
+        onRenameIdentityMismatch: "verify-content",
+    }));
+}
+async function runPinnedWriteFallback(params) {
+    let parentPath = params.relativeParentPath
+        ? path.join(params.rootPath, ...params.relativeParentPath.split("/"))
+        : params.rootPath;
+    if (params.mkdir) {
+        // mkdirPathComponentsWithGuards may resolve the final component through
+        // an in-root symlink (e.g. a skill-bank layout). Use its returned real
+        // path for the subsequent guard and target path so we don't re-check the
+        // original, possibly-symlinked, lexical path and reject it outright.
+        parentPath = await mkdirPathComponentsWithGuards({
+            rootReal: params.rootPath,
+            targetPath: parentPath,
+            beforeComponent: async (componentPath) => await getFsSafeTestHooks()?.beforeRootFallbackMutation?.("mkdir", componentPath),
+        });
+    }
+    const parentGuard = params.mkdir
+        ? await createAsyncDirectoryGuard(parentPath)
+        : await createNearestExistingDirectoryGuard(params.rootPath, parentPath);
+    const targetPath = path.join(parentPath, params.basename);
+    if (params.overwrite === false) {
+        let handle = await withAsyncDirectoryGuards([parentGuard], async () => await fs.open(targetPath, fsSync.constants.O_WRONLY | fsSync.constants.O_CREAT | fsSync.constants.O_EXCL, params.mode), {
+            onPostGuardFailure: async (openedHandle) => {
+                // The parent failed verification, so targetPath may now resolve
+                // somewhere else. Close the fd, but do not clean up by path.
+                await openedHandle.close().catch(() => undefined);
+            },
+        });
+        let created = true;
+        try {
+            await handle.chmod(params.mode);
+            if (params.input.kind === "buffer") {
+                assertWithinMaxBytes(byteLength(params.input.data, params.input.encoding), params.maxBytes);
+                if (typeof params.input.data === "string") {
+                    await handle.writeFile(params.input.data, params.input.encoding ?? "utf8");
+                }
+                else {
+                    await handle.writeFile(params.input.data);
+                }
+            }
+            else {
+                await writeStreamToHandle(params.input.stream, handle, params.maxBytes);
+            }
+            await syncFileBestEffort(handle);
+            const stat = await handle.stat();
+            await handle.close().catch(() => undefined);
+            await syncDirectoryBestEffort(parentPath);
+            created = false;
+            return { dev: stat.dev, ino: stat.ino };
+        }
+        finally {
+            await handle.close().catch(() => undefined);
+            if (created) {
+                await fs.rm(targetPath, { force: true }).catch(() => undefined);
+            }
+        }
+    }
+    const tempPath = path.join(parentPath, `.${params.basename}.${randomUUID()}.fallback.tmp`);
+    const tempFlags = fsSync.constants.O_WRONLY |
+        fsSync.constants.O_CREAT |
+        fsSync.constants.O_EXCL |
+        (process.platform !== "win32" && "O_NOFOLLOW" in fsSync.constants
+            ? fsSync.constants.O_NOFOLLOW
+            : 0);
+    let handle;
+    let tempStat;
+    let targetStat;
+    let renamed = false;
+    try {
+        handle = await fs.open(tempPath, tempFlags, params.mode);
+        await handle.chmod(params.mode);
+        if (params.input.kind === "buffer") {
+            assertWithinMaxBytes(byteLength(params.input.data, params.input.encoding), params.maxBytes);
+            if (typeof params.input.data === "string") {
+                await handle.writeFile(params.input.data, params.input.encoding ?? "utf8");
+            }
+            else {
+                await handle.writeFile(params.input.data);
+            }
+        }
+        else {
+            await writeStreamToHandle(params.input.stream, handle, params.maxBytes);
+        }
+        tempStat = await handle.stat();
+        const tempPathStat = await fs.lstat(tempPath);
+        if (tempPathStat.isSymbolicLink() || !sameFileIdentity(tempPathStat, tempStat)) {
+            throw new FsSafeError("path-mismatch", "fallback temp path changed during write");
+        }
+        const expectedTempStat = tempStat;
+        await syncFileBestEffort(handle);
+        await handle.close().catch(() => undefined);
+        handle = undefined;
+        await withAsyncDirectoryGuards([parentGuard], async () => {
+            await fs.rename(tempPath, targetPath);
+            renamed = true;
+            await getFsSafeTestHooks()?.afterPinnedWriteFallbackRename?.(targetPath);
+            await syncDirectoryBestEffort(parentPath);
+            targetStat = await fs.lstat(targetPath);
+            if (targetStat.isSymbolicLink()) {
+                throw new FsSafeError("path-mismatch", "fallback target changed during write");
+            }
+            if (!sameFileIdentity(targetStat, expectedTempStat)) {
+                // On filesystems like rclone FUSE, rename(2) can give the destination a
+                // different inode from the source temp fd even with zero concurrency. The
+                // caller must ensure mutual exclusion before passing "verify-content";
+                // fall back to a content hash for this rename-boundary check only.
+                if (params.onRenameIdentityMismatch !== "verify-content") {
+                    throw new FsSafeError("path-mismatch", "fallback target changed during write");
+                }
+                if (params.input.kind !== "buffer") {
+                    throw new FsSafeError("path-mismatch", "fallback target changed during write");
+                }
+                const expectedHash = sha256Hex(params.input.data, params.input.encoding);
+                const readFlags = fsSync.constants.O_RDONLY |
+                    (process.platform !== "win32" && "O_NOFOLLOW" in fsSync.constants
+                        ? fsSync.constants.O_NOFOLLOW
+                        : 0);
+                const readHandle = await fs.open(targetPath, readFlags);
+                let actualHash;
+                let readHandleStat;
+                try {
+                    // Capture fd-based identity before reading — this is stable across all
+                    // subsequent lookups (on FUSE and locally), unlike the lstat-based
+                    // targetStat that triggered this fallback.
+                    readHandleStat = await readHandle.stat();
+                    actualHash = sha256Hex(await readHandle.readFile());
+                }
+                finally {
+                    await readHandle.close().catch(() => undefined);
+                }
+                if (actualHash !== expectedHash) {
+                    throw new FsSafeError("path-mismatch", "fallback target changed during write");
+                }
+                // Replace the unreliable lstat-based targetStat with the fd-based stat so
+                // the returned identity is consistent with what subsequent verifications
+                // (e.g. verifyAtomicWriteResult) will obtain by opening the same file.
+                targetStat = readHandleStat;
+            }
+        });
+    }
+    catch (error) {
+        await handle?.close().catch(() => undefined);
+        if (!renamed) {
+            await fs.rm(tempPath, { force: true }).catch(() => undefined);
+        }
+        throw error;
+    }
+    if (!targetStat) {
+        throw new FsSafeError("path-mismatch", "fallback target was not verified");
+    }
+    return { dev: targetStat.dev, ino: targetStat.ino };
+}

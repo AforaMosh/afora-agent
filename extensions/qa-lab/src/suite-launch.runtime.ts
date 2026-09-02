@@ -296,7 +296,7 @@ async function resolveQaFlowChannelGroups(
     isCrablineServerChannel,
     AFORA_CRABLINE_DEFAULT_CHANNEL,
     resolveAforaCrablineChannelDriverSelection,
-  } = await import("@openclaw/crabline");
+  } = await import("@afora/crabline");
   if (runParams.expandScenarioChannels) {
     const groups = groupQaScenariosByExecutionCell(
       scenarios,
@@ -344,8 +344,7 @@ async function resolveQaFlowChannelGroups(
     channelDriverSelection: resolveAforaCrablineChannelDriverSelection({ channel }),
     scenarios: scenarios.filter(
       (scenario) =>
-        (normalizeQaSuiteScenarioChannel(scenario) ?? AFORA_CRABLINE_DEFAULT_CHANNEL) ===
-        channel,
+        (normalizeQaSuiteScenarioChannel(scenario) ?? AFORA_CRABLINE_DEFAULT_CHANNEL) === channel,
     ),
   }));
 }

@@ -1,10 +1,7 @@
 // Doctor-only import for the retired primary device identity JSON.
-import { root, type Root } from "@openclaw/fs-safe";
+import { root, type Root } from "@afora/fs-safe";
 import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
-import {
-  openAforaStateDatabase,
-  runAforaStateWriteTransaction,
-} from "../state/afora-state-db.js";
+import { openAforaStateDatabase, runAforaStateWriteTransaction } from "../state/afora-state-db.js";
 import { acquireDeviceIdentityCoordinator } from "./device-identity-coordinator.js";
 import {
   normalizeLegacyDeviceIdentity,

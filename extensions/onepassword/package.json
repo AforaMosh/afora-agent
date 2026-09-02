@@ -5,7 +5,6 @@
   "description": "1Password SecretRef resolver and audited agent secrets broker for Afora",
   "type": "module",
   "dependencies": {
-    "@openclaw/fs-safe": "0.5.5",
     "execa": "10.0.0"
   },
   "devDependencies": {

@@ -1,4 +1,4 @@
-import type { RouteLocation } from "@openclaw/uirouter";
+import type { RouteLocation } from "@afora/uirouter";
 import { INTERNAL_MEMORY_PATH_PARAM } from "../../app-route-paths.ts";
 
 export type ConfigRouteData = {

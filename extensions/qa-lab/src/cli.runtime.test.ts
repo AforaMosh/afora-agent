@@ -2,7 +2,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { isCrablineServerChannel, AFORA_CRABLINE_DEFAULT_CHANNEL } from "@openclaw/crabline";
+import { isCrablineServerChannel, AFORA_CRABLINE_DEFAULT_CHANNEL } from "@afora/crabline";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { readQaScenarioById, type QaScenarioPack } from "./scenario-catalog.js";
 
@@ -3465,9 +3465,7 @@ describe("qa cli runtime", () => {
           kind: "telegram",
           payloadFile: payloadPath,
         }),
-      ).rejects.toThrow(
-        "Payload file exceeds AFORA_QA_CREDENTIAL_PAYLOAD_MAX_BYTES (32 bytes).",
-      );
+      ).rejects.toThrow("Payload file exceeds AFORA_QA_CREDENTIAL_PAYLOAD_MAX_BYTES (32 bytes).");
     } finally {
       if (previousMaxBytes === undefined) {
         delete process.env.AFORA_QA_CREDENTIAL_PAYLOAD_MAX_BYTES;

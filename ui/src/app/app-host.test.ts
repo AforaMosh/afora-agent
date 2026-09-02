@@ -1,6 +1,6 @@
 /* @vitest-environment jsdom */
 
-import type { RouteLocation, RouterState } from "@openclaw/uirouter";
+import type { RouteLocation, RouterState } from "@afora/uirouter";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { GatewayBrowserClient } from "../api/gateway.ts";
 import type { AgentsListResult, GatewayAgentRow } from "../api/types.ts";
@@ -380,9 +380,7 @@ describe("Afora shell source initialization", () => {
   });
 
   it("initializes replacement capabilities even when the Gateway client is unchanged", () => {
-    const shell = document.createElement(
-      "afora-app-shell",
-    ) as unknown as ShellInitializationState;
+    const shell = document.createElement("afora-app-shell") as unknown as ShellInitializationState;
     shell.routeState = { routeId: "usage" };
     const client = {} as GatewayBrowserClient;
     const snapshot = { client, phase: "connected" } as ApplicationGatewaySnapshot;
@@ -533,9 +531,7 @@ describe("Afora shell route session commits", () => {
   });
 
   it("retains the custodian leave transition through an unresolved route state", () => {
-    const shell = document.createElement(
-      "afora-app-shell",
-    ) as unknown as ShellCustodianRouteState;
+    const shell = document.createElement("afora-app-shell") as unknown as ShellCustodianRouteState;
 
     shell.updateRouteState({ routeId: "custodian" });
     shell.updateRouteState({});

@@ -1,0 +1,125 @@
+configVersion: 1
+userName: crabline
+
+x-afora-bridge: &afora-bridge
+  adapter: script
+  env:
+    - AFORA_URL
+    - AFORA_TOKEN
+  script:
+    commands:
+      probe: node ./scripts/afora-bridge-probe.mjs
+      send: node ./scripts/afora-bridge-send.mjs
+      waitForInbound: node ./scripts/afora-bridge-wait.mjs
+      watch: node ./scripts/afora-bridge-watch.mjs
+
+providers:
+  bluebubbles-afora:
+    <<: *afora-bridge
+    platform: bluebubbles
+  discord-afora:
+    <<: *afora-bridge
+    platform: discord
+  feishu-afora:
+    <<: *afora-bridge
+    platform: feishu
+  googlechat-afora:
+    <<: *afora-bridge
+    platform: googlechat
+  imessage-afora:
+    <<: *afora-bridge
+    platform: imessage
+  irc-afora:
+    <<: *afora-bridge
+    platform: irc
+  line-afora:
+    <<: *afora-bridge
+    platform: line
+  matrix-afora:
+    <<: *afora-bridge
+    platform: matrix
+  mattermost-afora:
+    <<: *afora-bridge
+    platform: mattermost
+  msteams-afora:
+    <<: *afora-bridge
+    platform: msteams
+  nextcloudtalk-afora:
+    <<: *afora-bridge
+    platform: nextcloudtalk
+  nostr-afora:
+    <<: *afora-bridge
+    platform: nostr
+  signal-afora:
+    <<: *afora-bridge
+    platform: signal
+  slack-afora:
+    <<: *afora-bridge
+    platform: slack
+  synologychat-afora:
+    <<: *afora-bridge
+    platform: synologychat
+  telegram-afora:
+    <<: *afora-bridge
+    platform: telegram
+  tlon-afora:
+    <<: *afora-bridge
+    platform: tlon
+  twitch-afora:
+    <<: *afora-bridge
+    platform: twitch
+  webchat-afora:
+    <<: *afora-bridge
+    platform: webchat
+  whatsapp-afora:
+    <<: *afora-bridge
+    platform: whatsapp
+  zalo-afora:
+    <<: *afora-bridge
+    platform: zalo
+  zalouser-afora:
+    <<: *afora-bridge
+    platform: zalouser
+
+fixtures:
+  - id: slack-afora-agent
+    provider: slack-afora
+    mode: agent
+    target:
+      id: REPLACE_ME
+      channelId: REPLACE_ME
+    inboundMatch:
+      author: assistant
+      strategy: contains
+      nonce: contains
+
+  - id: discord-afora-roundtrip
+    provider: discord-afora
+    mode: roundtrip
+    target:
+      id: REPLACE_ME
+      channelId: REPLACE_ME
+    inboundMatch:
+      author: assistant
+      strategy: contains
+      nonce: contains
+
+  - id: telegram-afora-roundtrip
+    provider: telegram-afora
+    mode: roundtrip
+    target:
+      id: REPLACE_ME # Telegram user id; use a dedicated human/MTProto test account, not another bot
+    inboundMatch:
+      author: assistant
+      strategy: contains
+      nonce: contains
+
+  - id: whatsapp-afora-roundtrip
+    provider: whatsapp-afora
+    mode: roundtrip
+    target:
+      id: REPLACE_ME
+    inboundMatch:
+      author: assistant
+      strategy: contains
+      nonce: contains

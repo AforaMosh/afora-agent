@@ -1,7 +1,7 @@
 // QA Lab owns bounded profile partitioning and canonical shard evidence aggregation.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { isCrablineServerChannel, AFORA_CRABLINE_DEFAULT_CHANNEL } from "@openclaw/crabline";
+import { isCrablineServerChannel, AFORA_CRABLINE_DEFAULT_CHANNEL } from "@afora/crabline";
 import {
   canonicalPathFromExistingAncestor,
   extractErrorCode,
@@ -67,9 +67,7 @@ function resolveQaProfileEvidenceSelection(profile: string) {
     primaryModel,
     channelDriver: membership.profile.channelDriver,
     defaultChannel:
-      membership.profile.channelDriver === "crabline"
-        ? AFORA_CRABLINE_DEFAULT_CHANNEL
-        : undefined,
+      membership.profile.channelDriver === "crabline" ? AFORA_CRABLINE_DEFAULT_CHANNEL : undefined,
     supportsChannel:
       membership.profile.channelDriver === "crabline" ? isCrablineServerChannel : undefined,
     resolveModuleFlowSupport:

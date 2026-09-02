@@ -1,4 +1,4 @@
-import type { RouteLocation } from "@openclaw/uirouter";
+import type { RouteLocation } from "@afora/uirouter";
 import { pathForRoute } from "../app-route-paths.ts";
 import { routeIdFromPath } from "../app-routes.ts";
 import { pathForSession } from "../app-session-path-builder.ts";

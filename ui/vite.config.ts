@@ -327,12 +327,12 @@ export function resolveExternalPackageAliasesForVite(
     path.dirname(resolvePackage(`${specifier}/package.json`));
   return [
     {
-      find: "@openclaw/libterminal/browser",
-      replacement: path.join(packageRoot("@openclaw/libterminal"), "dist/browser.js"),
+      find: "@afora/libterminal/browser",
+      replacement: path.join(packageRoot("@afora/libterminal"), "dist/browser.js"),
     },
     {
-      find: "@openclaw/uirouter",
-      replacement: path.join(packageRoot("@openclaw/uirouter"), "dist/index.js"),
+      find: "@afora/uirouter",
+      replacement: path.join(packageRoot("@afora/uirouter"), "dist/index.js"),
     },
   ];
 }

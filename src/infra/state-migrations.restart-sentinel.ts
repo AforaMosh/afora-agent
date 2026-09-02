@@ -1,7 +1,7 @@
 // Startup/Doctor migration for the retired restart-sentinel JSON file.
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
-import { root, type Root } from "@openclaw/fs-safe";
+import { root, type Root } from "@afora/fs-safe";
 import { runAforaStateWriteTransaction } from "../state/afora-state-db.js";
 import {
   parseRestartSentinelEnvelope,

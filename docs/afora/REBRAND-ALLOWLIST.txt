@@ -9,6 +9,7 @@
 #
 # --- whole-path survivors ---
 path:LICENSE # upstream MIT attribution must keep original OpenClaw authorship
+path:packages/*/LICENSE # vendored third-party packages keep their upstream MIT attribution verbatim
 path:THIRD_PARTY_NOTICES.md # attribution of upstream and third-party code
 path:pnpm-lock.yaml # lockfile: registry package names and integrity hashes, never hand-edit
 path:patches/** # pnpm patch files are content-hashed in the lockfile
@@ -17,11 +18,6 @@ path:scripts/afora/** # the codemod, census and allowlist must name openclaw
 path:src/infra/afora-env-alias.ts # env var compat shim, maps OPENCLAW_* to AFORA_*
 #
 # --- span survivors (compat shims and external published packages) ---
-pattern:@openclaw/crabline # external published npm package, not ours to rename
-pattern:@openclaw/fs-safe # external published npm package, not ours to rename
-pattern:@openclaw/libterminal # external published npm package, not ours to rename
-pattern:@openclaw/proxyline # external published npm package, not ours to rename
-pattern:@openclaw/uirouter # external published npm package, not ours to rename
 pattern:"openclaw": "afora\.mjs" # undocumented legacy bin alias, tenants have openclaw on PATH
 pattern:- "openclaw" # the published openclaw registry package name in pnpm-workspace.yaml release-age excludes
 pattern:openclaw@20[0-9][0-9]\. # published legacy release specs used as upgrade-test baselines

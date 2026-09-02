@@ -6,7 +6,7 @@ import {
   type PublishFileExclusiveFailureDetails,
   type PublishFileExclusiveFailurePhase,
   type PublishFileExclusiveResult,
-} from "@openclaw/fs-safe/durability";
+} from "@afora/fs-safe/durability";
 import { sameFileIdentity } from "./fs-safe-advanced.js";
 import { FsSafeError } from "./fs-safe.js";
 
@@ -22,7 +22,7 @@ export {
   type DirectoryReceipt,
   type DurableDirectoryReceipt,
   type PinnedDirectory,
-} from "@openclaw/fs-safe/durability";
+} from "@afora/fs-safe/durability";
 
 type DirectoryDurabilityOutcome = DirectorySyncOutcome | { status: "not-needed" };
 

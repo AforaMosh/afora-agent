@@ -72,11 +72,6 @@
       "class": "core-runtime",
       "risk": ["provider-routing", "model-io"]
     },
-    "@openclaw/fs-safe": {
-      "owner": "core:filesystem-safety",
-      "class": "core-runtime",
-      "risk": ["filesystem", "path-safety"]
-    },
     "@silvia-odwyer/photon-node": {
       "owner": "core:media",
       "class": "core-runtime",
@@ -168,11 +163,6 @@
       "owner": "core:gitignore-matching",
       "class": "core-runtime",
       "risk": ["pattern-matching"]
-    },
-    "@openclaw/proxyline": {
-      "owner": "core:proxy",
-      "class": "core-runtime",
-      "risk": ["network", "proxy"]
     },
     "jiti": {
       "owner": "core:plugin-loader",

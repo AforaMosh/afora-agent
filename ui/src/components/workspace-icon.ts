@@ -1,4 +1,4 @@
-import { normalizeRouteBasePath } from "@openclaw/uirouter";
+import { normalizeRouteBasePath } from "@afora/uirouter";
 import { html } from "lit";
 import { property, state } from "lit/decorators.js";
 import { CONTROL_UI_WORKSPACE_ICON_PATH_PREFIX } from "../../../src/gateway/control-ui-contract.js";

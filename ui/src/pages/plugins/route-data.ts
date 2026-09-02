@@ -1,4 +1,4 @@
-import type { RouteLocation } from "@openclaw/uirouter";
+import type { RouteLocation } from "@afora/uirouter";
 import {
   INTERNAL_PLUGINS_PATH_PARAM,
   pathForPluginsHubTab,

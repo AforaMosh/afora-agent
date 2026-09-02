@@ -1,4 +1,4 @@
-import { createRouter } from "@openclaw/uirouter";
+import { createRouter } from "@afora/uirouter";
 import type {
   PageDefinition,
   RouteLocation,
@@ -6,7 +6,7 @@ import type {
   RouteNotFound,
   Router,
   RouterHistory,
-} from "@openclaw/uirouter";
+} from "@afora/uirouter";
 import {
   agentRouteFromPath,
   INTERNAL_AGENT_PATH_PARAM,

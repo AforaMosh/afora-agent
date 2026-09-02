@@ -1,7 +1,7 @@
 // Qa Lab tests cover Crabline local-provider transport integration behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { AforaCrablineChannelDriverSelection } from "@openclaw/crabline";
+import type { AforaCrablineChannelDriverSelection } from "@afora/crabline";
 import { fetchWithSsrFGuard } from "afora-agent/plugin-sdk/ssrf-runtime";
 import { withTempDir } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, describe, expect, it, vi } from "vitest";

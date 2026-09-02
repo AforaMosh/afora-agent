@@ -1,4 +1,4 @@
-import { normalizeRouteBasePath, normalizeRoutePath } from "@openclaw/uirouter";
+import { normalizeRouteBasePath, normalizeRoutePath } from "@afora/uirouter";
 
 const DESKTOP_DOCUMENT_PATH = "/desktop";
 

@@ -1,6 +1,6 @@
 // Parses execution allowlist patterns for approval policy checks.
 import path from "node:path";
-import { safeRealpathSync } from "@openclaw/fs-safe/path";
+import { safeRealpathSync } from "@afora/fs-safe/path";
 import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { escapeRegExp as escapeRegExpLiteral } from "../shared/regexp.js";
 import { expandHomePrefix } from "./home-dir.js";

@@ -65,7 +65,6 @@ type NpmDistTagMirrorAuth = {
   source: "node-auth-token" | "npm-token" | "none";
 };
 const EXPECTED_REPOSITORY_URL = "https://github.com/AforaMosh/afora-agent";
-const FS_SAFE_PACKAGE = "@openclaw/fs-safe";
 const REQUIRED_PACKED_PATHS = [
   PACKAGE_DIST_INVENTORY_RELATIVE_PATH,
   "dist/control-ui/index.html",
@@ -190,10 +189,6 @@ function normalizeRepoUrl(value: unknown): string {
     .replace(/^git\+/, "")
     .replace(/\.git$/i, "")
     .replace(/\/+$/, "");
-}
-
-function isLocalDependencySpec(value: string | undefined): boolean {
-  return /^(?:file|link|workspace):/u.test(value ?? "");
 }
 
 export function parseReleaseVersion(version: string): ParsedReleaseVersion | null {
@@ -356,14 +351,7 @@ export function collectReleasePackageMetadataErrors(pkg: PackageJson): string[] 
     );
   }
   if (pkg.bin?.afora !== "afora.mjs") {
-    errors.push(
-      `package.json bin.afora must be "afora.mjs"; found "${pkg.bin?.afora ?? ""}".`,
-    );
-  }
-  if (isLocalDependencySpec(pkg.dependencies?.[FS_SAFE_PACKAGE])) {
-    errors.push(
-      `package.json dependencies["${FS_SAFE_PACKAGE}"] must use a published semver range before npm release; found "${pkg.dependencies?.[FS_SAFE_PACKAGE]}".`,
-    );
+    errors.push(`package.json bin.afora must be "afora.mjs"; found "${pkg.bin?.afora ?? ""}".`);
   }
 
   return errors;

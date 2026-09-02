@@ -1,4 +1,4 @@
-import { definePage } from "@openclaw/uirouter";
+import { definePage } from "@afora/uirouter";
 import { routePageSpec } from "../../app-route-paths.ts";
 
 export const page = definePage({

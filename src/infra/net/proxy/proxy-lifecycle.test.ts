@@ -33,7 +33,7 @@ const {
 });
 const forceResetGlobalDispatcherMock = vi.hoisted(() => vi.fn());
 
-vi.mock("@openclaw/proxyline", () => ({
+vi.mock("@afora/proxyline", () => ({
   installGlobalProxy: installGlobalProxyMock,
 }));
 

@@ -5,7 +5,7 @@ import {
   acquireFileLock as acquireFsSafeFileLock,
   drainFileLockManagerForTest,
   resetFileLockManagerForTest,
-} from "@openclaw/fs-safe/file-lock";
+} from "@afora/fs-safe/file-lock";
 import { asNullableRecord } from "@afora/normalization-core/record-coerce";
 import {
   isLockOwnerDefinitelyStale,

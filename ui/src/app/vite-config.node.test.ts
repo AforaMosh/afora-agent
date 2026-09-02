@@ -349,9 +349,7 @@ describe("Control UI Vite config", () => {
 
   it("resolves Control UI dev-server source aliases for internal packages", () => {
     const aliases = resolveSourcePackageAliasesForVite();
-    expect(
-      aliases.find((alias) => alias.find === "@afora/normalization-core/agent-id"),
-    )?.toEqual({
+    expect(aliases.find((alias) => alias.find === "@afora/normalization-core/agent-id"))?.toEqual({
       find: "@afora/normalization-core/agent-id",
       replacement: path.join(repoRoot, "packages/normalization-core/src/agent-id.ts"),
     });
@@ -383,21 +381,19 @@ describe("Control UI Vite config", () => {
     const aliases = resolveExternalPackageAliasesForVite(resolvePackage);
 
     expect(resolvePackage.mock.calls).toEqual([
-      ["@openclaw/libterminal/package.json"],
-      ["@openclaw/uirouter/package.json"],
+      ["@afora/libterminal/package.json"],
+      ["@afora/uirouter/package.json"],
     ]);
-    expect(aliases.find((alias) => alias.find === "@openclaw/libterminal/browser")).toEqual({
-      find: "@openclaw/libterminal/browser",
-      replacement: path.join("/parent/node_modules/@openclaw/libterminal", "dist/browser.js"),
+    expect(aliases.find((alias) => alias.find === "@afora/libterminal/browser")).toEqual({
+      find: "@afora/libterminal/browser",
+      replacement: path.join("/parent/node_modules/@afora/libterminal", "dist/browser.js"),
     });
   });
 
   it("keeps specific tsconfig aliases ahead of broad package aliases", () => {
     const aliases = resolveTsconfigPathAliasesForVite();
     const netPolicyIpIndex = aliases.findIndex((alias) => alias.find === "@afora/net-policy/ip");
-    const netPolicyPackageIndex = aliases.findIndex(
-      (alias) => alias.find === "@afora/net-policy",
-    );
+    const netPolicyPackageIndex = aliases.findIndex((alias) => alias.find === "@afora/net-policy");
     const netPolicyWildcardIndex = aliases.findIndex(
       (alias) =>
         alias.find instanceof RegExp && alias.replacement.includes("packages/net-policy/src/$1"),

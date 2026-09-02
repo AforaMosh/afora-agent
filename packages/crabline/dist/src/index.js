@@ -1,0 +1,14 @@
+export { resolveTelegramAdapterConfig } from "./providers/builtin/telegram.js";
+export { resolveWhatsAppAdapterConfig } from "./providers/builtin/whatsapp.js";
+export { startMattermostServer } from "./servers/mattermost.js";
+export { startMatrixServer } from "./servers/matrix.js";
+export { startSignalServer } from "./servers/signal.js";
+export { startSlackServer, startSlackServer as startSlackFakeServer } from "./servers/slack.js";
+export { startTelegramServer, startTelegramServer as startTelegramFakeServer, } from "./servers/telegram.js";
+export { startWhatsAppServer, startWhatsAppServer as startWhatsAppFakeServer, } from "./servers/whatsapp.js";
+export { startZaloServer } from "./servers/zalo.js";
+export { CRABLINE_SERVER_CHANNELS, CRABLINE_SERVER_CHANNELS as CRABLINE_FAKE_PROVIDER_CHANNELS, isCrablineServerChannel, isCrablineServerChannel as isCrablineFakeProviderChannel, startCrablineServer, startCrablineServer as startCrablineFakeProviderServer, } from "./servers/index.js";
+export { createAforaCrablineAgentDelivery, createAforaCrablineChannelReportNotes, createAforaCrablineProviderBinding as createAforaCrablineFakeProviderBinding, createAforaCrablineProviderBinding, createAforaCrablineInbound, createAforaCrablineOutboundFromRecorderEvent, AFORA_CRABLINE_ARTIFACT_POINTER_PATH, AFORA_CRABLINE_ARTIFACT_STORE_DIRECTORY, AFORA_CRABLINE_CHANNEL_CAPABILITY_MATRIX_PATH, AFORA_CRABLINE_CHANNEL_SMOKE_PATH, AFORA_CRABLINE_PROVIDER_READINESS_PATH, AFORA_CRABLINE_DEFAULT_CHANNEL, AFORA_CRABLINE_MANIFEST_PATH, probeAforaCrablineProvider as probeAforaCrablineFakeProvider, probeAforaCrablineProvider, resolveAforaCrablineChannel, resolveAforaCrablineChannelDriverSelection, runAforaCrablineProviderReadiness, runAforaCrablineChannelDriverSmoke, startAforaCrablineAdapter, } from "./afora.js";
+export { BUILTIN_ADAPTERS, FIXTURE_MODES, INBOUND_AUTHORS, INBOUND_NONCE_MODES, INBOUND_STRATEGIES, ManifestSchema, PROVIDER_PLATFORMS, ProviderConfigSchema, } from "./config/schema.js";
+export { AFORA_SUPPORT_CATALOG } from "./providers/catalog.js";
+export { createRegistry } from "./providers/registry.js";

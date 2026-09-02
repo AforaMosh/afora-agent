@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { AforaCrablineChannelDriverSelection } from "@openclaw/crabline";
+import type { AforaCrablineChannelDriverSelection } from "@afora/crabline";
 import { replaceFileAtomic } from "afora-agent/plugin-sdk/security-runtime";
 import { assertQaSuiteArtifactWritten } from "./artifact-assertion.js";
 import {
@@ -21,7 +21,7 @@ import { countQaSuiteFailedScenarios, type QaSuiteSummaryJson } from "./suite-su
 import { createQaSuiteReportNotes } from "./suite-support.js";
 import type { QaSuiteScenarioResult } from "./suite-types.js";
 
-type QaCrablineRuntime = typeof import("@openclaw/crabline");
+type QaCrablineRuntime = typeof import("@afora/crabline");
 type QaCrablineChannelDriverSmokeResult = Awaited<
   ReturnType<QaCrablineRuntime["runAforaCrablineChannelDriverSmoke"]>
 >;
@@ -167,13 +167,12 @@ export async function writeQaSuiteArtifacts(params: {
   // Non-Crabline package acceptance mounts this source without plugin-local
   // dependencies. Keep the owner runtime outside every unrelated live path.
   const crablineRuntime = crablineChannelDriverSelection
-    ? await import("@openclaw/crabline")
+    ? await import("@afora/crabline")
     : undefined;
   let crablineChannelDriverSmoke: QaCrablineChannelDriverSmokeResult | undefined;
   if (crablineChannelDriverSelection) {
     const runCrablineChannelDriverSmoke =
-      params.runCrablineChannelDriverSmoke ??
-      crablineRuntime?.runAforaCrablineChannelDriverSmoke;
+      params.runCrablineChannelDriverSmoke ?? crablineRuntime?.runAforaCrablineChannelDriverSmoke;
     if (!runCrablineChannelDriverSmoke) {
       throw new Error("Crabline runtime did not provide its channel-driver smoke helper.");
     }

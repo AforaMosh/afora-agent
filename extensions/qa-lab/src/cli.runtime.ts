@@ -5,7 +5,7 @@ import {
   isCrablineServerChannel,
   AFORA_CRABLINE_DEFAULT_CHANNEL,
   resolveAforaCrablineChannelDriverSelection,
-} from "@openclaw/crabline";
+} from "@afora/crabline";
 import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import { parseStrictPositiveInteger } from "afora-agent/plugin-sdk/number-runtime";
 import { parseBooleanValue, uniqueStrings } from "afora-agent/plugin-sdk/string-coerce-runtime";

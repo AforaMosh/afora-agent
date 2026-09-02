@@ -1,6 +1,6 @@
 // Wizard server-method tests cover stable lifecycle errors for process-local sessions.
 import fs from "node:fs/promises";
-import { __setFsSafeTestHooksForTest } from "@openclaw/fs-safe/test-hooks";
+import { __setFsSafeTestHooksForTest } from "@afora/fs-safe/test-hooks";
 import { expectDefined } from "@afora/normalization-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createDeferred } from "../../../test/helpers/promise.js";

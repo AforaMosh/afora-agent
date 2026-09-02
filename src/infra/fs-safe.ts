@@ -2,16 +2,16 @@
 import "./fs-safe-defaults.js";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { ensureDirectoryWithinRoot, findExistingAncestor } from "@openclaw/fs-safe/advanced";
-import { writeExternalFileWithinRoot as writeExternalFileWithinRootBase } from "@openclaw/fs-safe/output";
+import { ensureDirectoryWithinRoot, findExistingAncestor } from "@afora/fs-safe/advanced";
+import { writeExternalFileWithinRoot as writeExternalFileWithinRootBase } from "@afora/fs-safe/output";
 import {
   root as fsSafeRoot,
   type ReadResult,
   type Root as FsSafeRoot,
   type RootDefaults,
-} from "@openclaw/fs-safe/root";
+} from "@afora/fs-safe/root";
 
-export { FsSafeError, type FsSafeErrorCode } from "@openclaw/fs-safe/errors";
+export { FsSafeError, type FsSafeErrorCode } from "@afora/fs-safe/errors";
 export {
   assertAbsolutePathInput,
   canonicalPathFromExistingAncestor,
@@ -23,11 +23,11 @@ export {
   type EnsureAbsoluteDirectoryResult,
   type ResolvedAbsolutePath,
   type ResolvedWritableAbsolutePath,
-} from "@openclaw/fs-safe/advanced";
-export { isPathInside } from "@openclaw/fs-safe/path";
-export { pathExists, pathExistsSync } from "@openclaw/fs-safe/advanced";
-export { movePathToTrash, type MovePathToTrashOptions } from "@openclaw/fs-safe/advanced";
-export { readLocalFileFromRoots, resolveLocalPathFromRootsSync } from "@openclaw/fs-safe/advanced";
+} from "@afora/fs-safe/advanced";
+export { isPathInside } from "@afora/fs-safe/path";
+export { pathExists, pathExistsSync } from "@afora/fs-safe/advanced";
+export { movePathToTrash, type MovePathToTrashOptions } from "@afora/fs-safe/advanced";
+export { readLocalFileFromRoots, resolveLocalPathFromRootsSync } from "@afora/fs-safe/advanced";
 export {
   appendRegularFile,
   appendRegularFileSync,
@@ -36,28 +36,28 @@ export {
   resolveRegularFileAppendFlags,
   statRegularFile,
   statRegularFileSync,
-} from "@openclaw/fs-safe/advanced";
+} from "@afora/fs-safe/advanced";
 export {
   openLocalFileSafely,
   readLocalFileSafely,
   resolveOpenedFileRealPathForHandle,
   type OpenResult,
   type ReadResult,
-} from "@openclaw/fs-safe/root";
+} from "@afora/fs-safe/root";
 export { sanitizeUntrustedFileName } from "./fs-safe-advanced.js";
 export {
   readSecureFile,
   type SecureFileReadOptions,
   type SecureFileReadResult,
-} from "@openclaw/fs-safe/secure-file";
+} from "@afora/fs-safe/secure-file";
 export {
   walkDirectory,
   walkDirectorySync,
   type WalkDirectoryEntry,
   type WalkDirectoryOptions,
   type WalkDirectoryResult,
-} from "@openclaw/fs-safe/walk";
-export { withTimeout } from "@openclaw/fs-safe/advanced";
+} from "@afora/fs-safe/walk";
+export { withTimeout } from "@afora/fs-safe/advanced";
 
 // The broad Plugin SDK infra barrel re-exports this facade. Keep fs-safe 0.5's
 // new Root.walk capability core-only until a dedicated plugin contract is approved.

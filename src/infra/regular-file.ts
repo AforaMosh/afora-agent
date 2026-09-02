@@ -8,4 +8,4 @@ export {
   appendRegularFileSync,
   readRegularFile,
   readRegularFileSync,
-} from "@openclaw/fs-safe/advanced";
+} from "@afora/fs-safe/advanced";

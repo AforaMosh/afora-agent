@@ -2,7 +2,7 @@
 import type {
   CreateGhosttyTerminalOptions,
   TerminalDefaultColors,
-} from "@openclaw/libterminal/browser";
+} from "@afora/libterminal/browser";
 
 type TerminalTheme = NonNullable<
   NonNullable<CreateGhosttyTerminalOptions["terminalOptions"]>["theme"]

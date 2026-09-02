@@ -1,4 +1,4 @@
-import type { AforaCrablineChannelDriverSelection } from "@openclaw/crabline";
+import type { AforaCrablineChannelDriverSelection } from "@afora/crabline";
 import { parseBooleanValue } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { QaSuiteChannelDriverSelection } from "./crabline-artifacts.js";
 import type { QaProviderMode } from "./model-selection.js";
@@ -10,7 +10,7 @@ import type { QaScorecardChannelDriver } from "./scorecard-taxonomy.js";
 import { scenarioRequiresControlUi, splitModelRef } from "./suite-planning.js";
 import type { QaSuiteRunParams, QaSuiteScenarioResult, QaSuiteStartLabFn } from "./suite-types.js";
 
-type QaCrablineRuntime = typeof import("@openclaw/crabline");
+type QaCrablineRuntime = typeof import("@afora/crabline");
 
 /**
  * One bounded retry for live-model flake: flow scenarios time out under model

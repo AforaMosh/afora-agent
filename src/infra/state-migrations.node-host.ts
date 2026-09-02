@@ -1,6 +1,6 @@
 // Doctor-only import for the retired node-host JSON config.
 import path from "node:path";
-import { root, type Root } from "@openclaw/fs-safe";
+import { root, type Root } from "@afora/fs-safe";
 import { isRecord } from "@afora/normalization-core/record-coerce";
 import {
   LEGACY_NODE_HOST_CONFIG_CLAIM_SUFFIX,

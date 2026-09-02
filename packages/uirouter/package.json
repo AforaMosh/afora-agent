@@ -1,0 +1,16 @@
+{
+  "name": "@afora/uirouter",
+  "version": "0.1.1",
+  "private": true,
+  "description": "Small route matching, loading, and navigation state router for Afora UI surfaces.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  }
+}

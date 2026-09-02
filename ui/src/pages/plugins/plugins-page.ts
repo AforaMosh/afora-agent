@@ -1,6 +1,6 @@
+import type { RouteLocation } from "@afora/uirouter";
 import { consume } from "@lit/context";
 import { initialState, Task, TaskStatus } from "@lit/task";
-import type { RouteLocation } from "@openclaw/uirouter";
 import { html, type PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
@@ -44,11 +44,11 @@ import {
   type PluginMutationResult,
   type PluginSearchResult,
 } from "../../lib/plugins/index.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import {
   GatewayPageController,
   type GatewayPageChange,
 } from "../../lit/gateway-page-controller.ts";
-import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 import { fetchPluginIconBlobUrl } from "./icon-loader.ts";
 import { readPluginInstallPolicyWarning } from "./install-policy-warning.ts";

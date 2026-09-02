@@ -4,7 +4,7 @@ import http2 from "node:http2";
 import tls from "node:tls";
 import { decodeTextPrefix } from "@afora/normalization-core";
 import { resolveTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
-import { openProxyConnectTunnel } from "@openclaw/proxyline";
+import { openProxyConnectTunnel } from "@afora/proxyline";
 import { toErrorObject } from "./errors.js";
 import {
   getActiveManagedProxyUrl,

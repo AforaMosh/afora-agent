@@ -1,7 +1,7 @@
 // Doctor-only import for the retired device-auth JSON store.
 import fs from "node:fs";
 import path from "node:path";
-import { root } from "@openclaw/fs-safe";
+import { root } from "@afora/fs-safe";
 import { isRecord } from "@afora/normalization-core/record-coerce";
 import { normalizeDeviceAuthRole, normalizeDeviceAuthScopes } from "../shared/device-auth.js";
 import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";

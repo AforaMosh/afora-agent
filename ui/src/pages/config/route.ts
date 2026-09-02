@@ -1,5 +1,5 @@
-import type { RouteLocation } from "@openclaw/uirouter";
-import { definePage, redirect } from "@openclaw/uirouter";
+import type { RouteLocation } from "@afora/uirouter";
+import { definePage, redirect } from "@afora/uirouter";
 import { html, nothing } from "lit";
 import { pathForRoute, routePageSpec } from "../../app-route-paths.ts";
 import type { ApplicationContext } from "../../app/context.ts";

@@ -207,7 +207,7 @@ beforeAll(async () => {
     EventDispatcher: vi.fn(),
     defaultHttpInstance: mockBaseHttpInstance,
   }));
-  vi.doMock("@openclaw/proxyline", () => ({
+  vi.doMock("@afora/proxyline", () => ({
     createAmbientNodeProxyAgent: proxyAgentCtorMock,
     hasAmbientNodeProxyConfigured: vi.fn(() =>
       Boolean(
@@ -254,7 +254,7 @@ afterAll(() => {
   vi.doUnmock("./runtime.js");
   vi.doUnmock("./subagent-hooks.js");
   vi.doUnmock("@larksuiteoapi/node-sdk");
-  vi.doUnmock("@openclaw/proxyline");
+  vi.doUnmock("@afora/proxyline");
   vi.resetModules();
 });
 

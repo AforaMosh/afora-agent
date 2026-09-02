@@ -2,7 +2,7 @@
 /* @vitest-environment-options {"url":"http://chat-page.test/"} */
 
 import { expectDefined } from "@afora/normalization-core";
-import type { RouteLocation } from "@openclaw/uirouter";
+import type { RouteLocation } from "@afora/uirouter";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const nativeGateways = vi.hoisted(() => ({ current: null as NativeGatewaysCapability | null }));

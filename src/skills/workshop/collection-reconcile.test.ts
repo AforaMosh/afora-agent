@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { __setFsSafeTestHooksForTest } from "@openclaw/fs-safe/test-hooks";
+import { __setFsSafeTestHooksForTest } from "@afora/fs-safe/test-hooks";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AforaConfig } from "../../config/types.afora.js";
 import { sha256Hex } from "../../infra/crypto-digest.js";
@@ -8,10 +8,7 @@ import {
   closeAforaStateDatabaseForTest,
   openAforaStateDatabase,
 } from "../../state/afora-state-db.js";
-import {
-  createAforaTestState,
-  type AforaTestState,
-} from "../../test-utils/afora-test-state.js";
+import { createAforaTestState, type AforaTestState } from "../../test-utils/afora-test-state.js";
 import { createTrackedTempDirs } from "../../test-utils/tracked-temp-dirs.js";
 import { getSkillsSnapshotVersion } from "../runtime/refresh-state.js";
 import { writeSkill, writeWorkspaceSkills } from "../test-support/e2e-test-helpers.js";

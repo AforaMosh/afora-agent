@@ -2,7 +2,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
-import type { AforaCrablineChannelDriverSelection } from "@openclaw/crabline";
+import type { AforaCrablineChannelDriverSelection } from "@afora/crabline";
 import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import { parseStrictPositiveInteger } from "afora-agent/plugin-sdk/number-runtime";

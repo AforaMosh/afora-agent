@@ -6,7 +6,7 @@ import {
   type AforaCrablineChannelDriverSelection,
   type AforaCrablineInbound,
   type StartedAforaCrablineAdapter,
-} from "@openclaw/crabline";
+} from "@afora/crabline";
 import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { fetchWithSsrFGuard } from "afora-agent/plugin-sdk/ssrf-runtime";
 import {

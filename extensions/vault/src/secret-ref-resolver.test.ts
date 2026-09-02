@@ -8,6 +8,10 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 
 const resolverPath = fileURLToPath(new URL("../vault-secret-ref-resolver.js", import.meta.url));
+// The resolver imports afora-agent/plugin-sdk/* like a packaged plugin; in the repo checkout
+// only tsx with the root tsconfig paths can resolve that self-reference.
+const tsxCliPath = fileURLToPath(import.meta.resolve("tsx/cli"));
+const rootTsconfigPath = path.resolve("tsconfig.json");
 const secretIdHelperPath = fileURLToPath(new URL("../vault-secret-id.js", import.meta.url));
 const manifestPath = fileURLToPath(new URL("../afora.plugin.json", import.meta.url));
 const packagePath = fileURLToPath(new URL("../package.json", import.meta.url));
@@ -19,23 +23,27 @@ function runResolver(params: {
   timeoutMs?: number;
 }): Promise<{ stdout: string; stderr: string; code: number | null; timedOut: boolean }> {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [params.resolverExecutablePath ?? resolverPath], {
-      stdio: ["pipe", "pipe", "pipe"],
-      env: {
-        ...process.env,
-        VAULT_ADDR: "",
-        VAULT_TOKEN: "",
-        VAULT_TOKEN_FILE: "",
-        VAULT_NAMESPACE: "",
-        AFORA_VAULT_AUTH_METHOD: "",
-        AFORA_VAULT_AUTH_MOUNT: "",
-        AFORA_VAULT_AUTH_ROLE: "",
-        AFORA_VAULT_JWT_FILE: "",
-        AFORA_VAULT_KV_MOUNT: "",
-        AFORA_VAULT_KV_VERSION: "",
-        ...params.env,
+    const child = spawn(
+      process.execPath,
+      [tsxCliPath, "--tsconfig", rootTsconfigPath, params.resolverExecutablePath ?? resolverPath],
+      {
+        stdio: ["pipe", "pipe", "pipe"],
+        env: {
+          ...process.env,
+          VAULT_ADDR: "",
+          VAULT_TOKEN: "",
+          VAULT_TOKEN_FILE: "",
+          VAULT_NAMESPACE: "",
+          AFORA_VAULT_AUTH_METHOD: "",
+          AFORA_VAULT_AUTH_MOUNT: "",
+          AFORA_VAULT_AUTH_ROLE: "",
+          AFORA_VAULT_JWT_FILE: "",
+          AFORA_VAULT_KV_MOUNT: "",
+          AFORA_VAULT_KV_VERSION: "",
+          ...params.env,
+        },
       },
-    });
+    );
     let stdout = "";
     let stderr = "";
     let timedOut = false;
@@ -407,9 +415,9 @@ describe("plugin manifest", () => {
     );
     expect(manifest.secretProviderIntegrations?.vault?.allowInsecurePath).toBeUndefined();
     expect(resolverSource).toContain("#!/usr/bin/env node");
-    const pluginSdkRootImport = ["afora", "plugin-sdk"].join("/");
+    const pluginSdkRootImport = `from "${["afora-agent", "plugin-sdk"].join("/")}"`;
     expect(resolverSource).not.toContain(pluginSdkRootImport);
-    expect(resolverSource).toContain("@openclaw/fs-safe/secret");
+    expect(resolverSource).toContain("afora-agent/plugin-sdk/secret-file-runtime");
     expect(packageJson.afora?.build?.staticAssets).toContainEqual({
       source: "./vault-secret-ref-resolver.js",
       output: "vault-secret-ref-resolver.js",

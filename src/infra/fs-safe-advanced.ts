@@ -9,5 +9,5 @@ export {
   type FileIdentityStat,
   sameFileIdentity,
   sanitizeUntrustedFileName,
-} from "@openclaw/fs-safe/advanced";
-export { readSecretFile } from "@openclaw/fs-safe/secret";
+} from "@afora/fs-safe/advanced";
+export { readSecretFile } from "@afora/fs-safe/secret";

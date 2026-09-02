@@ -1,4 +1,4 @@
-import { normalizeRouteBasePath, normalizeRoutePath } from "@openclaw/uirouter";
+import { normalizeRouteBasePath, normalizeRoutePath } from "@afora/uirouter";
 
 const TERMINAL_DOCUMENT_PATH = "/terminal";
 

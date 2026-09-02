@@ -24,4 +24,4 @@ export {
   type ArchiveEntryKind,
   type ArchiveExtractLimits,
   type ExtractArchiveOptions,
-} from "@openclaw/fs-safe/archive";
+} from "@afora/fs-safe/archive";

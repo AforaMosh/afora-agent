@@ -1,0 +1,13 @@
+import type { ExtractArchiveOptions } from "./archive-options.js";
+export type { ArchiveLogger, ExtractArchiveOptions } from "./archive-options.js";
+export type { ArchiveEntryFilter, ArchiveEntryKind, ArchiveEntryModePolicy, ArchiveFilteredEntryPolicy, } from "./archive-policy.js";
+export { isWindowsDrivePath, normalizeArchiveEntryPath, resolveArchiveOutputPath, stripArchivePath, validateArchiveEntryPath, } from "./archive-entry.js";
+export { resolveArchiveKind, resolvePackedRootDir, type ArchiveKind } from "./archive-kind.js";
+export { readArchiveEntry } from "./archive-read.js";
+export { ARCHIVE_LIMIT_ERROR_CODE, ArchiveLimitError, DEFAULT_MAX_ARCHIVE_BYTES_ZIP, DEFAULT_MAX_ENTRIES, DEFAULT_MAX_EXTRACTED_BYTES, DEFAULT_MAX_ENTRY_BYTES, DEFAULT_MAX_META_ENTRY_BYTES, DEFAULT_MAX_ENTRY_PATH_COMPONENTS, type ArchiveExtractLimits, type ArchiveLimitErrorCode, } from "./archive-limits.js";
+export { ArchiveFormatError, type ArchiveFormatErrorCode } from "./archive-errors.js";
+export { ArchiveSecurityError, type ArchiveSecurityErrorCode } from "./archive-staging.js";
+export { createArchiveSymlinkTraversalError, mergeExtractedTreeIntoDestination, prepareArchiveDestinationDir, prepareArchiveOutputPath, withStagedArchiveDestination, } from "./archive-staging.js";
+export { createTarEntryPreflightChecker, type TarEntryInfo } from "./archive-tar.js";
+export { loadZipArchiveWithPreflight, readZipCentralDirectoryEntryCount, type ZipArchiveWithFiles, } from "./archive-zip-preflight.js";
+export declare function extractArchive(params: ExtractArchiveOptions): Promise<void>;

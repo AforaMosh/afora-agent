@@ -1,11 +1,11 @@
 // Exposes private secret file helpers with fs-safe defaults.
 import "./fs-safe-defaults.js";
-import { FsSafeError, type FsSafeErrorCode } from "@openclaw/fs-safe";
+import { FsSafeError, type FsSafeErrorCode } from "@afora/fs-safe";
 import {
   readSecretFileSync as readSecretFileSyncImpl,
   tryReadSecretFileSync as tryReadSecretFileSyncImpl,
   type SecretFileReadOptions as FsSafeSecretFileReadOptions,
-} from "@openclaw/fs-safe/secret";
+} from "@afora/fs-safe/secret";
 import { resolveUserPath } from "../utils.js";
 
 export {
@@ -16,8 +16,8 @@ export {
   readSecretFile,
   readSecretFileSync,
   type SecretFileReadOptions,
-} from "@openclaw/fs-safe/secret";
-export { writeSecretFileAtomic as writePrivateSecretFileAtomic } from "@openclaw/fs-safe/secret"; // Sanctioned domain alias.
+} from "@afora/fs-safe/secret";
+export { writeSecretFileAtomic as writePrivateSecretFileAtomic } from "@afora/fs-safe/secret"; // Sanctioned domain alias.
 
 export type SecretFileReadResult =
   | {

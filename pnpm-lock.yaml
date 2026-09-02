@@ -48,6 +48,12 @@ importers:
       '@afora/ai':
         specifier: workspace:*
         version: link:packages/ai
+      '@afora/fs-safe':
+        specifier: workspace:*
+        version: link:packages/fs-safe
+      '@afora/proxyline':
+        specifier: workspace:*
+        version: link:packages/proxyline
       '@agentclientprotocol/sdk':
         specifier: 1.3.0
         version: 1.3.0(zod@4.4.3)
@@ -87,12 +93,6 @@ importers:
       '@mozilla/readability':
         specifier: 0.6.0
         version: 0.6.0
-      '@openclaw/fs-safe':
-        specifier: 0.5.5
-        version: 0.5.5
-      '@openclaw/proxyline':
-        specifier: 0.3.4
-        version: 0.3.4(undici@8.9.0)
       '@silvia-odwyer/photon-node':
         specifier: 0.3.4
         version: 0.3.4
@@ -241,6 +241,9 @@ importers:
       '@a2ui/lit':
         specifier: 0.10.2
         version: 0.10.2(signal-polyfill@0.2.2)
+      '@afora/crabline':
+        specifier: workspace:*
+        version: link:packages/crabline
       '@afora/session-url-contract':
         specifier: workspace:*
         version: link:packages/session-url-contract
@@ -1487,9 +1490,6 @@ importers:
 
   extensions/onepassword:
     dependencies:
-      '@openclaw/fs-safe':
-        specifier: 0.5.5
-        version: 0.5.5
       execa:
         specifier: 10.0.0
         version: 10.0.0
@@ -1606,15 +1606,15 @@ importers:
 
   extensions/qa-lab:
     dependencies:
+      '@afora/crabline':
+        specifier: workspace:*
+        version: link:../../packages/crabline
       '@copilotkit/aimock':
         specifier: 1.37.4
         version: 1.37.4(vitest@4.1.10)
       '@modelcontextprotocol/sdk':
         specifier: 1.30.0
         version: 1.30.0(supports-color@10.2.2)(zod@4.4.3)
-      '@openclaw/crabline':
-        specifier: 0.1.11
-        version: 0.1.11
       p-limit:
         specifier: 7.3.1
         version: 7.3.1
@@ -2179,6 +2179,45 @@ importers:
         specifier: workspace:*
         version: link:../normalization-core
 
+  packages/crabline:
+    dependencies:
+      commander:
+        specifier: 15.0.0
+        version: 15.0.0
+      curve25519-js:
+        specifier: 0.0.4
+        version: 0.0.4
+      libsignal:
+        specifier: 6.0.0
+        version: 6.0.0
+      picocolors:
+        specifier: 1.1.1
+        version: 1.1.1
+      proper-lockfile:
+        specifier: 4.1.2
+        version: 4.1.2
+      re2js:
+        specifier: 2.8.6
+        version: 2.8.6
+      ws:
+        specifier: 8.21.1
+        version: 8.21.1
+      yaml:
+        specifier: 2.9.0
+        version: 2.9.0
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+
+  packages/fs-safe:
+    optionalDependencies:
+      jszip:
+        specifier: 3.10.1
+        version: 3.10.1
+      tar:
+        specifier: 7.5.22
+        version: 7.5.22
+
   packages/gateway-client:
     dependencies:
       '@afora/gateway-protocol':
@@ -2204,6 +2243,12 @@ importers:
       '@afora/normalization-core':
         specifier: workspace:*
         version: link:../normalization-core
+
+  packages/libterminal:
+    dependencies:
+      ghostty-web:
+        specifier: 0.4.0
+        version: 0.4.0
 
   packages/llm-core:
     dependencies:
@@ -2299,6 +2344,12 @@ importers:
 
   packages/plugin-sdk: {}
 
+  packages/proxyline:
+    dependencies:
+      undici:
+        specifier: '>=8.5.0 <9'
+        version: 8.9.0
+
   packages/retry: {}
 
   packages/sdk:
@@ -2340,6 +2391,8 @@ importers:
         specifier: workspace:*
         version: link:../normalization-core
 
+  packages/uirouter: {}
+
   packages/workboard-contract: {}
 
   ui:
@@ -2350,6 +2403,9 @@ importers:
       '@afora/gateway-protocol':
         specifier: workspace:*
         version: link:../packages/gateway-protocol
+      '@afora/libterminal':
+        specifier: workspace:*
+        version: link:../packages/libterminal
       '@afora/media-core':
         specifier: workspace:*
         version: link:../packages/media-core
@@ -2365,6 +2421,9 @@ importers:
       '@afora/session-url-contract':
         specifier: workspace:*
         version: link:../packages/session-url-contract
+      '@afora/uirouter':
+        specifier: workspace:*
+        version: link:../packages/uirouter
       '@afora/workboard-contract':
         specifier: workspace:*
         version: link:../packages/workboard-contract
@@ -2410,12 +2469,6 @@ importers:
       '@novnc/novnc':
         specifier: 1.7.0
         version: 1.7.0
-      '@openclaw/libterminal':
-        specifier: 0.3.2
-        version: 0.3.2
-      '@openclaw/uirouter':
-        specifier: 0.1.1
-        version: 0.1.1
       '@tanstack/lit-virtual':
         specifier: 3.13.36
         version: 3.13.36(lit@3.3.3)
@@ -4020,34 +4073,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@openclaw/crabline@0.1.11':
-    resolution: {integrity: sha512-A7KH6gi7tXfJmdyeCzhZ65cSrLk4lALbto3lNBOHp1C6uIirAgM4tcF9I7/LhNDX/dq/T+q2QytpVPhhsfwgQQ==}
-    engines: {node: '>=22'}
-    hasBin: true
-
-  '@openclaw/fs-safe@0.5.5':
-    resolution: {integrity: sha512-x8wYigrOwmnsE8v4LfAh2eTvvkuDMspBrQeBp/GyB9/c7eFf8aL7gK4keewDbhscKX1pACD8Yd+ehZq6o29xHw==}
-    engines: {node: '>=22'}
-
-  '@openclaw/libterminal@0.3.2':
-    resolution: {integrity: sha512-RbxYPG22kuEgvW2Gx8FK2uApYSgDi+yRahfR0lW7pcdMZvAWL9/iLJRVLEMKc1uAA69mAA/IW5AtwQ9LUdHypA==}
-    engines: {node: ^22.18.0 || >=24.11.0}
-    peerDependencies:
-      node-pty: '>=1.0.0'
-    peerDependenciesMeta:
-      node-pty:
-        optional: true
-
-  '@openclaw/proxyline@0.3.4':
-    resolution: {integrity: sha512-WuLE282PW7vLienDNFTjdSI/BCYDAepvr5siOTYABQhqFo8qbP9MgmJzZnwmskUqiYugGzle6gvaRbJTkwbZ8A==}
-    engines: {node: '>=22.19.0'}
-    peerDependencies:
-      undici: '>=8.5.0 <9'
-
-  '@openclaw/uirouter@0.1.1':
-    resolution: {integrity: sha512-aiZFvWmP/ndpS3em5xVtiPlj1k6asA8ueoNxGxekA1024EZlCwnICPZklG6g2sU4Wlntp9AYocLCr5/iuvL7hw==}
-    engines: {node: ^22.18.0 || >=24.11.0}
-
   '@opentelemetry/api-logs@0.221.0':
     resolution: {integrity: sha512-OlanaW1vv7ufTqQ3/fPLI4arGt5ZoM+P8abOMki6uEYnpRazepSWDwDnnw+la7kE26SHVC18//SMccrDvLKOXQ==}
     engines: {node: '>=8.0.0'}
@@ -5244,9 +5269,6 @@ packages:
 
   '@types/node@20.19.43':
     resolution: {integrity: sha512-6oYBAi5ikg4Pl+kGsoYtawUMBT2zZMCvPNF7pVLnHZfd1zf38DRiWn/gT01RYCdUqkv7Fhr+C9ot4/tb+2sVvA==}
-
-  '@types/node@22.20.1':
-    resolution: {integrity: sha512-EANqOCF9QFyra+4pfxUcX9STKJpCLjMbObVzljIJomAWSnuSIEAvyzEU53GaajbXJEgdh0iEcPL+DGvpUd4k1Q==}
 
   '@types/node@24.13.3':
     resolution: {integrity: sha512-Dh8vAsV36ig5wa9OX4pXvMc9D3Veibfw2wix0CUwYODLD8nkj9UsLjASr49nPg+2eKzxhBV+v7L8pXvT4e639Q==}
@@ -10970,37 +10992,6 @@ snapshots:
   '@openai/codex@0.147.0-win32-x64':
     optional: true
 
-  '@openclaw/crabline@0.1.11':
-    dependencies:
-      '@types/node': 22.20.1
-      commander: 15.0.0
-      curve25519-js: 0.0.4
-      libsignal: 6.0.0
-      picocolors: 1.1.1
-      proper-lockfile: 4.1.2
-      re2js: 2.8.6
-      ws: 8.21.1
-      yaml: 2.9.0
-      zod: 4.4.3
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
-
-  '@openclaw/fs-safe@0.5.5':
-    optionalDependencies:
-      jszip: 3.10.1
-      tar: 7.5.22
-
-  '@openclaw/libterminal@0.3.2':
-    dependencies:
-      ghostty-web: 0.4.0
-
-  '@openclaw/proxyline@0.3.4(undici@8.9.0)':
-    dependencies:
-      undici: 8.9.0
-
-  '@openclaw/uirouter@0.1.1': {}
-
   '@opentelemetry/api-logs@0.221.0':
     dependencies:
       '@opentelemetry/api': 1.9.1
@@ -12109,10 +12100,6 @@ snapshots:
     optional: true
 
   '@types/node@20.19.43':
-    dependencies:
-      undici-types: 6.21.0
-
-  '@types/node@22.20.1':
     dependencies:
       undici-types: 6.21.0
 

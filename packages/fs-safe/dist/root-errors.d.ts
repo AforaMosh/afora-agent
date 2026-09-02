@@ -1,0 +1,10 @@
+import { FsSafeError } from "./errors.js";
+export declare function fileNotFoundError(cause?: unknown): FsSafeError;
+export declare function outsideWorkspaceError(): FsSafeError;
+export declare function directoryComponentNotDirectoryError(cause?: unknown): FsSafeError;
+export declare function hardlinkedPathNotAllowedError(): FsSafeError;
+export declare function isAlreadyExistsError(error: unknown): boolean;
+export declare function normalizePinnedWriteError(error: unknown): Error;
+export declare function normalizePinnedPathError(error: unknown): Error;
+export declare function normalizeRemoveGuardError(error: unknown): Error;
+export declare function normalizeRemovePathError(error: unknown): Error;

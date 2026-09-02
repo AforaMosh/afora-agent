@@ -1,0 +1,1 @@
+export declare const SLACK_AFORA_CRABLINE_PROVIDER_BRIDGE: import("../shared.js").AforaCrablineProviderBridge<import("../../index.js").SlackServerManifest>;

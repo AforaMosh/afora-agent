@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { TextDecoder } from "node:util";
-import { root, type Root } from "@openclaw/fs-safe";
+import { root, type Root } from "@afora/fs-safe";
 import { listAgentWorkspaceDirs } from "../agents/workspace-dirs.js";
 import {
   LEGACY_WORKSPACE_ATTESTATION_DIRNAME,

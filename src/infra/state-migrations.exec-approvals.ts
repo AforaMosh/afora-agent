@@ -1,6 +1,6 @@
 // Doctor-only import for the retired exec approvals JSON store.
 import { isDeepStrictEqual } from "node:util";
-import { root, type Root } from "@openclaw/fs-safe";
+import { root, type Root } from "@afora/fs-safe";
 import { runAforaStateWriteTransaction } from "../state/afora-state-db.js";
 import {
   resolveExecApprovalsPath,

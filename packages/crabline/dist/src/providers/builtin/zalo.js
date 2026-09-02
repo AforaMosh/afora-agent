@@ -1,0 +1,80 @@
+import path from "node:path";
+import { CrablineError } from "../../core/errors.js";
+import { LocalMockProviderAdapter } from "../local-mock.js";
+import { getBuiltinTargetCodec, ZALO_ID_RULE } from "../target-normalizers.js";
+import { authorFromBotFlag, createSecretVerifier, genericMockPayloadWithNativeThread, isRecord, optionalRecord, optionalString, requireNativeInboundId, } from "./native-local-mock.js";
+export function resolveZaloAdapterConfig(config, env = process.env) {
+    return {
+        botToken: config.zalo?.botToken ?? env.ZALO_BOT_TOKEN ?? "local-mock-zalo-token",
+        webhookSecret: config.zalo?.webhookSecret ?? env.ZALO_WEBHOOK_SECRET,
+    };
+}
+export class ZaloProviderAdapter extends LocalMockProviderAdapter {
+    constructor(id, config, _userName, _runtime) {
+        const resolvedConfig = resolveZaloAdapterConfig(config);
+        const authenticateWebhook = resolvedConfig.webhookSecret
+            ? createSecretVerifier(resolvedConfig.webhookSecret)
+            : undefined;
+        super({
+            codec: getBuiltinTargetCodec("zalo"),
+            config,
+            id,
+            options: {
+                ...(authenticateWebhook
+                    ? {
+                        authenticateWebhookRequest(request) {
+                            return authenticateWebhook(request.headers.get("x-bot-api-secret-token"))
+                                ? undefined
+                                : new Response("unauthorized", { status: 401 });
+                        },
+                    }
+                    : {}),
+                defaultWebhook: { host: "127.0.0.1", path: "/zalo/webhook", port: 8794 },
+                endpointLabel: "webhook endpoint",
+                normalizeWebhookPayload: normalizeZaloWebhookPayload,
+                platform: "zalo",
+                publicUrl: config.zalo?.webhook.publicUrl,
+                recorderPath: config.zalo?.recorder.path
+                    ? path.resolve(config.zalo.recorder.path)
+                    : undefined,
+                webhook: config.zalo?.webhook,
+            },
+        });
+    }
+}
+export function normalizeZaloWebhookPayload(payload) {
+    if (!isRecord(payload)) {
+        throw new CrablineError("Zalo webhook payload must be an object", { kind: "inbound" });
+    }
+    if (optionalRecord(payload, "message") &&
+        optionalString(optionalRecord(payload, "message"), "threadId")) {
+        return genericMockPayloadWithNativeThread({
+            channelRule: ZALO_ID_RULE,
+            payload,
+            threadRule: ZALO_ID_RULE,
+        });
+    }
+    const wrapped = optionalRecord(payload, "result") ?? payload;
+    const message = optionalRecord(wrapped, "message");
+    const sender = optionalRecord(message ?? {}, "from") ?? optionalRecord(wrapped, "sender");
+    const chat = message ? optionalRecord(message, "chat") : undefined;
+    const senderId = sender ? optionalString(sender, "id") : undefined;
+    const chatId = chat ? optionalString(chat, "id") : senderId;
+    const text = message ? optionalString(message, "text") : undefined;
+    if (!senderId || !chatId || !text) {
+        throw new CrablineError("Zalo webhook payload requires sender identity, chat identity, and text", {
+            kind: "inbound",
+        });
+    }
+    return {
+        author: authorFromBotFlag(sender?.is_bot === true),
+        ...(optionalString(message ?? {}, "message_id")
+            ? { id: optionalString(message ?? {}, "message_id") }
+            : optionalString(message ?? {}, "msg_id")
+                ? { id: optionalString(message ?? {}, "msg_id") }
+                : {}),
+        raw: payload,
+        text,
+        threadId: requireNativeInboundId(chatId, ZALO_ID_RULE, "Zalo chat.id"),
+    };
+}

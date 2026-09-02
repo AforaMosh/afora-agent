@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import { access, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { AforaCrablineChannelDriverSelection } from "@openclaw/crabline";
+import type { AforaCrablineChannelDriverSelection } from "@afora/crabline";
 import { coerceErrorMessage, toStringifiedError } from "afora-agent/plugin-sdk/error-runtime";
 import { runExec } from "afora-agent/plugin-sdk/process-runtime";
 import { sleep } from "afora-agent/plugin-sdk/runtime-env";

@@ -3,9 +3,12 @@
 import fsSync from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { DEFAULT_SECRET_FILE_MAX_BYTES, tryReadSecretFileSync } from "@openclaw/fs-safe/secret";
-import { execa } from "execa";
 import { coerceErrorMessage as errorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import {
+  DEFAULT_SECRET_FILE_MAX_BYTES,
+  tryReadSecretFileSync,
+} from "afora-agent/plugin-sdk/secret-file-runtime";
+import { execa } from "execa";
 import { resolveTrustedOnePasswordCli } from "./onepassword-op-path.js";
 import { resolveOnePasswordSecretReference } from "./onepassword-secret-id.js";
 

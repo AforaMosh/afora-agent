@@ -1,4 +1,4 @@
-import type { RouteLoaderOptions } from "@openclaw/uirouter";
+import type { RouteLoaderOptions } from "@afora/uirouter";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import type { SessionsListResult } from "../../api/types.ts";

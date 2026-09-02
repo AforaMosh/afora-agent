@@ -2,7 +2,7 @@ import type {
   createTerminalDefaultColorQueryResponder,
   CreateGhosttyTerminalOptions,
   GhosttyTerminalController,
-} from "@openclaw/libterminal/browser";
+} from "@afora/libterminal/browser";
 import type { ReactiveControllerHost } from "lit";
 import type { TerminalGatewayClient } from "./terminal-connection.ts";
 import type { TerminalPanelTab } from "./terminal-panel-tabs.ts";

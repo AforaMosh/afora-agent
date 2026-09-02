@@ -5,7 +5,7 @@ read_when:
 title: "Secure file operations"
 ---
 
-Afora uses [`@openclaw/fs-safe`](https://github.com/afora/fs-safe) for security-sensitive local file operations: root-bounded reads/writes, atomic replacement, archive extraction, temp workspaces, JSON state, and secret-file handling.
+Afora uses the vendored `@afora/fs-safe` package (`packages/fs-safe`) for security-sensitive local file operations: root-bounded reads/writes, atomic replacement, archive extraction, temp workspaces, JSON state, and secret-file handling.
 
 It is a **library guardrail** for trusted Afora code that receives untrusted path names, not a sandbox. Host filesystem permissions, OS users, containers, and the agent/tool policy still define the real blast radius.
 
@@ -13,7 +13,7 @@ It is a **library guardrail** for trusted Afora code that receives untrusted pat
 
 Afora sets fs-safe's optional native helper to **off** by default:
 
-- native platform packages are optional and may be absent from minimal installs;
+- Afora bundles fs-safe into its own build and ships no native platform binding;
 - the guarded JavaScript paths support Afora's normal filesystem operations;
 - disabling native loading keeps runtime behavior deterministic across desktop, Docker, CI, and bundled-app environments.
 
@@ -34,7 +34,7 @@ The generic fs-safe environment name also works: `FS_SAFE_NATIVE_MODE`.
 
 fs-safe 0.5 temporarily maps the retired `FS_SAFE_PYTHON_MODE` and `AFORA_FS_SAFE_PYTHON_MODE` values to native modes and emits a deprecation warning. Migrate those names before fs-safe 0.6; Python interpreter path settings are no longer used.
 
-Use `require` (not `auto`) when native primitives are part of your security posture. `auto` uses the guarded JavaScript implementation when the platform binding is unavailable.
+`auto` uses the guarded JavaScript implementation when the platform binding is unavailable, which is always the case for an Afora install. `require` fails closed on every operation that needs the binding.
 
 ## What stays protected without native acceleration
 
@@ -56,11 +56,7 @@ The optional platform package provides policy-free filesystem primitives used by
 
 The TypeScript layer still owns policy, validation, retries, cleanup, and fallback decisions. Native support narrows filesystem race windows; it does not turn fs-safe into a sandbox.
 
-If your deployment requires those native primitives, install the matching optional platform package and set:
-
-```bash
-AFORA_FS_SAFE_NATIVE_MODE=require
-```
+Afora does not ship those bindings, so the sections above describe upstream fs-safe capability that an Afora install cannot enable. Deployments that need native primitives must supply their own fs-safe build; `AFORA_FS_SAFE_NATIVE_MODE=require` alone only makes the affected operations fail closed.
 
 ## Plugin and core guidance
 

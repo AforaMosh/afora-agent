@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { __setFsSafeTestHooksForTest } from "@openclaw/fs-safe/test-hooks";
+import { __setFsSafeTestHooksForTest } from "@afora/fs-safe/test-hooks";
 import { expectDefined } from "@afora/normalization-core";
 import JSZip from "jszip";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";

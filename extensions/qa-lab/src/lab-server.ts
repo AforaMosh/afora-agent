@@ -254,7 +254,8 @@ function detectQaEvidenceArtifactContentType(filePath: string): string {
 }
 
 async function startQaGatewayLoop(params: { state: QaBusState; baseUrl: string }) {
-  const { qaChannelPlugin, setQaChannelRuntime } = await import("afora-agent/plugin-sdk/qa-channel");
+  const { qaChannelPlugin, setQaChannelRuntime } =
+    await import("afora-agent/plugin-sdk/qa-channel");
   const runtime = createQaRunnerRuntime();
   setQaChannelRuntime(runtime);
   const cfg = createQaLabConfig(params.baseUrl);
@@ -323,7 +324,7 @@ export async function startQaLabServer(
     adapterFactories?: readonly QaTransportAdapterFactory[],
   ) => {
     const crabline =
-      selection.channelDriver === "crabline" ? await import("@openclaw/crabline") : undefined;
+      selection.channelDriver === "crabline" ? await import("@afora/crabline") : undefined;
     return resolveQaLabRunPlan({
       selection,
       scenarios: scenarioCatalog.scenarios,
@@ -797,7 +798,7 @@ export async function startQaLabServer(
               const [{ runQaSuite }, channelDriverSelection] = await Promise.all([
                 import("./suite-launch.runtime.js"),
                 selection.channelDriver === "crabline" && selection.channel
-                  ? import("@openclaw/crabline").then((module) =>
+                  ? import("@afora/crabline").then((module) =>
                       module.resolveAforaCrablineChannelDriverSelection({
                         channel: selection.channel!,
                       }),

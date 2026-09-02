@@ -1,0 +1,800 @@
+import { createHash, randomBytes } from "node:crypto";
+import { isIP } from "node:net";
+import path from "node:path";
+import { adminAuthError, hasAdminToken, InvalidJsonBodyError, isJsonObject, jsonResponse, parseUnknownRequestBody, queryRecord, readInteger, readTrimmedString, RequestBodyTooLargeError, startHttpJsonServer, } from "./http.js";
+import { recordCommittedServerEvent, recordServerEvent, } from "./recorder.js";
+const MAX_MATRIX_FILTER_BYTES = 1024 * 1024;
+const MAX_MATRIX_FILTERS = 100;
+const MAX_MATRIX_IDENTIFIER_BYTES = 255;
+const MAX_MATRIX_TIMELINE_EVENTS = 1_000;
+const MAX_MATRIX_TRANSACTION_RESPONSES = 1_000;
+const MATRIX_TRANSACTION_RETENTION_MS = 10 * 60_000;
+const MAX_NODE_TIMER_DELAY_MS = 2_147_483_647;
+class InvalidMatrixPathEncodingError extends Error {
+    constructor() {
+        super("Matrix request path contains invalid percent encoding.");
+        this.name = "InvalidMatrixPathEncodingError";
+    }
+}
+function matrixId(prefix, value, serverName) {
+    return `${prefix}${createHash("sha256").update(value).digest("hex").slice(0, 16)}:${serverName}`;
+}
+function isMatrixIpv4Address(value) {
+    const octets = value.split(".");
+    return (octets.length === 4 && octets.every((octet) => /^\d{1,3}$/u.test(octet) && Number(octet) <= 255));
+}
+function isMatrixServerName(value) {
+    const ipv6 = /^\[([^\]]+)\](?::(\d{1,5}))?$/u.exec(value);
+    if (ipv6) {
+        return isIP(ipv6[1]) === 6;
+    }
+    const hostAndPort = /^([^:]+?)(?::(\d{1,5}))?$/u.exec(value);
+    if (!hostAndPort) {
+        return false;
+    }
+    const hostname = hostAndPort[1];
+    if (isMatrixIpv4Address(hostname)) {
+        return true;
+    }
+    if (/^\d+\.\d+\.\d+\.\d+$/u.test(hostname)) {
+        return false;
+    }
+    return hostname.length <= 255 && /^[A-Za-z0-9.-]+$/u.test(hostname);
+}
+function hasLoneSurrogate(value) {
+    for (let index = 0; index < value.length; index += 1) {
+        const code = value.charCodeAt(index);
+        if (code >= 0xd800 && code <= 0xdbff) {
+            const next = value.charCodeAt(index + 1);
+            if (next < 0xdc00 || next > 0xdfff) {
+                return true;
+            }
+            index += 1;
+        }
+        else if (code >= 0xdc00 && code <= 0xdfff) {
+            return true;
+        }
+    }
+    return false;
+}
+function isMatrixScopedIdentifier(value, sigil) {
+    const separator = value.indexOf(":");
+    const localpart = value.slice(1, separator);
+    return (value.startsWith(sigil) &&
+        Buffer.byteLength(value, "utf8") <= MAX_MATRIX_IDENTIFIER_BYTES &&
+        separator >= (sigil === "@" ? 1 : 2) &&
+        !localpart.includes("\0") &&
+        !hasLoneSurrogate(localpart) &&
+        isMatrixServerName(value.slice(separator + 1)));
+}
+function isMatrixHashIdentifier(value, sigil, allowLegacyBase64) {
+    if (!value.startsWith(sigil) || Buffer.byteLength(value, "utf8") > MAX_MATRIX_IDENTIFIER_BYTES) {
+        return false;
+    }
+    const opaqueId = value.slice(1);
+    const encoding = allowLegacyBase64 && /^[A-Za-z0-9+/]{43}$/u.test(opaqueId)
+        ? "base64"
+        : /^[A-Za-z0-9_-]{43}$/u.test(opaqueId)
+            ? "base64url"
+            : undefined;
+    if (!encoding) {
+        return false;
+    }
+    const decoded = Buffer.from(opaqueId, encoding);
+    return decoded.length === 32 && decoded.toString(encoding).replace(/=+$/u, "") === opaqueId;
+}
+function isMatrixRoomId(value) {
+    return isMatrixScopedIdentifier(value, "!") || isMatrixHashIdentifier(value, "!", false);
+}
+function isMatrixEventId(value) {
+    return isMatrixScopedIdentifier(value, "$") || isMatrixHashIdentifier(value, "$", true);
+}
+function isMatrixUserId(value) {
+    return isMatrixScopedIdentifier(value, "@");
+}
+async function appendEvent(state, event, committed = false) {
+    const params = { event, onEvent: state.onEvent, recorderPath: state.recorderPath };
+    await (committed ? recordCommittedServerEvent(params) : recordServerEvent(params));
+}
+function authorized(request, token) {
+    const match = /^Bearer\s+(\S+)$/iu.exec(request.headers.authorization ?? "");
+    return match?.[1] === token;
+}
+function matrixError(errcode, error, status) {
+    return jsonResponse({ errcode, error }, status);
+}
+function matrixResourceLimitError(error) {
+    return jsonResponse({
+        admin_contact: "mailto:admin@localhost",
+        errcode: "M_RESOURCE_LIMIT_EXCEEDED",
+        error,
+    }, 503);
+}
+function decodeMatrixPathSegment(value) {
+    try {
+        return decodeURIComponent(value);
+    }
+    catch {
+        throw new InvalidMatrixPathEncodingError();
+    }
+}
+function eventId(state) {
+    return matrixId("$", `event-${state.nextEvent++}`, state.serverName);
+}
+function notifySyncWaiters(state) {
+    for (const resolve of state.syncWaiters) {
+        resolve();
+    }
+    state.syncWaiters.clear();
+}
+async function waitForSyncEvent(state, timeout) {
+    await new Promise((resolve) => {
+        const timer = setTimeout(() => {
+            state.syncWaiters.delete(onEvent);
+            resolve();
+        }, timeout);
+        const onEvent = () => {
+            clearTimeout(timer);
+            resolve();
+        };
+        state.syncWaiters.add(onEvent);
+    });
+}
+function createEvent(params) {
+    return {
+        content: params.content,
+        event_id: eventId(params.state),
+        origin_server_ts: Date.now(),
+        room_id: params.roomId,
+        sender: params.sender,
+        ...(params.stateKey !== undefined ? { state_key: params.stateKey } : {}),
+        type: params.type,
+        ...(params.transactionId ? { unsigned: { transaction_id: params.transactionId } } : {}),
+    };
+}
+function createRoom(params) {
+    const room = {
+        createdSequence: params.createdSequence,
+        ephemeral: [],
+        id: params.id,
+        lastDroppedTimelineSequence: undefined,
+        name: params.name,
+        state: [],
+        stateBeforeTimeline: new Map(),
+        timeline: [],
+        typingTimeouts: new Map(),
+        typingUsers: new Set(),
+        users: new Map([[params.botUserId, { display_name: "Afora QA" }]]),
+    };
+    room.state.push(createEvent({
+        content: { creator: params.botUserId, room_version: "10" },
+        roomId: room.id,
+        sender: params.botUserId,
+        state: params.state,
+        stateKey: "",
+        type: "m.room.create",
+    }), createEvent({
+        content: {
+            membership: "join",
+            displayname: "Afora QA",
+            ...(params.direct ? { is_direct: true } : {}),
+        },
+        roomId: room.id,
+        sender: params.botUserId,
+        state: params.state,
+        stateKey: params.botUserId,
+        type: "m.room.member",
+    }), createEvent({
+        content: { name: room.name },
+        roomId: room.id,
+        sender: params.botUserId,
+        state: params.state,
+        stateKey: "",
+        type: "m.room.name",
+    }));
+    for (const event of room.state) {
+        room.stateBeforeTimeline.set(matrixStateKey(event), event);
+    }
+    return room;
+}
+function matrixStateKey(event) {
+    return JSON.stringify([event.type, event.state_key ?? ""]);
+}
+function appendTimelineEvent(room, entry) {
+    room.timeline.push(entry);
+    if (room.timeline.length > MAX_MATRIX_TIMELINE_EVENTS) {
+        const dropped = room.timeline.splice(0, room.timeline.length - MAX_MATRIX_TIMELINE_EVENTS);
+        room.lastDroppedTimelineSequence = dropped.at(-1)?.sequence;
+        for (const droppedEntry of dropped) {
+            if (droppedEntry.event.state_key !== undefined) {
+                room.stateBeforeTimeline.set(matrixStateKey(droppedEntry.event), droppedEntry.event);
+            }
+        }
+    }
+}
+function appendEphemeralEvent(room, entry) {
+    room.ephemeral.push(entry);
+    if (room.ephemeral.length > MAX_MATRIX_TIMELINE_EVENTS) {
+        room.ephemeral.splice(0, room.ephemeral.length - MAX_MATRIX_TIMELINE_EVENTS);
+    }
+}
+function publishTypingState(state, room) {
+    appendEphemeralEvent(room, {
+        event: { content: { user_ids: [...room.typingUsers] }, type: "m.typing" },
+        sequence: state.nextSequence++,
+    });
+    notifySyncWaiters(state);
+}
+function rememberTransaction(state, key, response) {
+    state.transactions.set(key, response);
+}
+function forgetExpiredTransactions(state) {
+    const now = Date.now();
+    for (const [key, response] of state.transactions) {
+        if (response.expiresAt > now) {
+            break;
+        }
+        state.transactions.delete(key);
+    }
+}
+function transactionResponse(state, key) {
+    forgetExpiredTransactions(state);
+    const response = state.transactions.get(key);
+    if (!response) {
+        return undefined;
+    }
+    state.transactions.delete(key);
+    response.expiresAt = Date.now() + MATRIX_TRANSACTION_RETENTION_MS;
+    state.transactions.set(key, response);
+    return response;
+}
+function readTimelineLimit(filter) {
+    const room = filter?.room;
+    const timeline = isJsonObject(room) ? room.timeline : undefined;
+    const limit = isJsonObject(timeline) ? readInteger(timeline.limit) : undefined;
+    return limit === undefined ? undefined : Math.max(0, limit);
+}
+function resolveSyncFilter(url, state) {
+    const value = url.searchParams.get("filter");
+    if (value === null) {
+        return undefined;
+    }
+    const stored = state.filters.get(value);
+    if (stored) {
+        return stored.body;
+    }
+    try {
+        const parsed = JSON.parse(value);
+        return isJsonObject(parsed) ? parsed : matrixError("M_INVALID_PARAM", "Invalid filter", 400);
+    }
+    catch {
+        return matrixError("M_INVALID_PARAM", "Unknown filter", 400);
+    }
+}
+function syncRoom(room, since, timelineLimit) {
+    const available = room.timeline.filter((entry) => since === undefined || entry.sequence > since);
+    const timeline = timelineLimit === undefined
+        ? available
+        : available.slice(Math.max(0, available.length - timelineLimit));
+    const firstSequence = timeline[0]?.sequence;
+    const historyWasTrimmed = room.lastDroppedTimelineSequence !== undefined &&
+        (since === undefined || since < room.lastDroppedTimelineSequence);
+    const limited = historyWasTrimmed || timeline.length < available.length;
+    const omittedTimeline = available.slice(0, available.length - timeline.length);
+    const omittedState = new Map();
+    if (since === undefined || room.createdSequence > since || historyWasTrimmed) {
+        for (const [key, event] of room.stateBeforeTimeline) {
+            omittedState.set(key, event);
+        }
+    }
+    for (const entry of omittedTimeline) {
+        if (entry.event.state_key !== undefined) {
+            omittedState.set(matrixStateKey(entry.event), entry.event);
+        }
+    }
+    return {
+        account_data: { events: [] },
+        ephemeral: {
+            events: room.ephemeral
+                .filter((entry) => since === undefined || entry.sequence > since)
+                .map((entry) => entry.event),
+        },
+        state: {
+            events: [...omittedState.values()].filter((event) => !timeline.some((entry) => entry.event.event_id === event.event_id)),
+        },
+        timeline: {
+            events: timeline.map((entry) => entry.event),
+            limited,
+            prev_batch: `s${firstSequence === undefined ? (since ?? 0) : firstSequence - 1}`,
+        },
+        unread_notifications: { highlight_count: 0, notification_count: 0 },
+    };
+}
+function parseSyncToken(value) {
+    if (value === null) {
+        return undefined;
+    }
+    const match = /^s(\d+)$/u.exec(value);
+    if (!match) {
+        return null;
+    }
+    const sequence = Number(match[1]);
+    return Number.isSafeInteger(sequence) ? sequence : null;
+}
+async function handleSync(url, state) {
+    const since = parseSyncToken(url.searchParams.get("since"));
+    if (since === null || (since !== undefined && since > state.nextSequence - 1)) {
+        return matrixError("M_UNKNOWN_POS", "Unknown position", 400);
+    }
+    const filter = resolveSyncFilter(url, state);
+    if (filter instanceof Response) {
+        return filter;
+    }
+    const timelineLimit = readTimelineLimit(filter);
+    const timeout = Math.min(readInteger(url.searchParams.get("timeout")) ?? 0, 1_000);
+    const hasNewEvents = [...state.rooms.values()].some((room) => [...room.timeline, ...room.ephemeral].some((entry) => since === undefined || entry.sequence > since));
+    if (since !== undefined && !hasNewEvents && timeout > 0) {
+        await waitForSyncEvent(state, timeout);
+    }
+    const join = Object.fromEntries([...state.rooms.values()].map((room) => [room.id, syncRoom(room, since, timelineLimit)]));
+    return jsonResponse({
+        account_data: { events: [] },
+        device_lists: { changed: [], left: [] },
+        device_one_time_keys_count: {},
+        next_batch: `s${state.nextSequence - 1}`,
+        presence: { events: [] },
+        rooms: { invite: {}, join, knock: {}, leave: {} },
+        to_device: { events: [] },
+    });
+}
+function findRoom(state, encodedRoomId) {
+    return state.rooms.get(decodeMatrixPathSegment(encodedRoomId));
+}
+async function handleAdminInbound(params) {
+    const roomId = readTrimmedString(params.body.roomId);
+    const sender = readTrimmedString(params.body.sender ?? params.body.senderId);
+    const text = readTrimmedString(params.body.text);
+    if (!roomId || !sender || !text) {
+        return jsonResponse({ error: "roomId, senderId, and text are required", ok: false }, 400);
+    }
+    const threadId = readTrimmedString(params.body.threadId);
+    if (!isMatrixRoomId(roomId) ||
+        !isMatrixUserId(sender) ||
+        (threadId !== undefined && !isMatrixEventId(threadId))) {
+        return jsonResponse({ error: "Invalid Matrix identifier", ok: false }, 400);
+    }
+    const direct = params.body.direct === true;
+    const room = params.state.rooms.get(roomId) ??
+        createRoom({
+            botUserId: params.state.botUserId,
+            createdSequence: params.state.nextSequence++,
+            direct,
+            id: roomId,
+            name: readTrimmedString(params.body.roomName) ?? roomId,
+            serverName: params.state.serverName,
+            state: params.state,
+        });
+    params.state.rooms.set(roomId, room);
+    const senderName = readTrimmedString(params.body.senderName);
+    const existingProfile = room.users.get(sender);
+    if (existingProfile === undefined) {
+        room.users.set(sender, senderName ? { display_name: senderName } : {});
+        const membership = createEvent({
+            content: {
+                membership: "join",
+                ...(senderName ? { displayname: senderName } : {}),
+            },
+            roomId,
+            sender,
+            state: params.state,
+            stateKey: sender,
+            type: "m.room.member",
+        });
+        room.state.push(membership);
+        appendTimelineEvent(room, { event: membership, sequence: params.state.nextSequence++ });
+    }
+    else if (senderName && existingProfile.display_name !== senderName) {
+        room.users.set(sender, { ...existingProfile, display_name: senderName });
+        const membership = createEvent({
+            content: { membership: "join", displayname: senderName },
+            roomId,
+            sender,
+            state: params.state,
+            stateKey: sender,
+            type: "m.room.member",
+        });
+        const stateIndex = room.state.findIndex((event) => event.type === "m.room.member" && event.state_key === sender);
+        if (stateIndex >= 0) {
+            room.state[stateIndex] = membership;
+        }
+        else {
+            room.state.push(membership);
+        }
+        appendTimelineEvent(room, {
+            event: membership,
+            sequence: params.state.nextSequence++,
+        });
+    }
+    const content = { body: text, msgtype: "m.text" };
+    if (threadId) {
+        content["m.relates_to"] = {
+            event_id: threadId,
+            is_falling_back: true,
+            rel_type: "m.thread",
+            "m.in_reply_to": { event_id: threadId },
+        };
+    }
+    const event = createEvent({
+        content,
+        roomId,
+        sender,
+        state: params.state,
+        type: "m.room.message",
+    });
+    appendTimelineEvent(room, { event, sequence: params.state.nextSequence++ });
+    notifySyncWaiters(params.state);
+    return jsonResponse({ event, ok: true });
+}
+async function handleMatrixApi(params) {
+    const relativePath = params.path.replace(/^\/_matrix\/client\/(?:v3|r0)/u, "");
+    if (params.method === "GET" && relativePath === "/account/whoami") {
+        return jsonResponse({
+            device_id: params.state.deviceId,
+            is_guest: false,
+            user_id: params.state.botUserId,
+        });
+    }
+    if (params.method === "GET" && relativePath === "/joined_rooms") {
+        return jsonResponse({ joined_rooms: [...params.state.rooms.keys()] });
+    }
+    if (params.method === "GET" && relativePath === "/capabilities") {
+        return jsonResponse({ capabilities: {} });
+    }
+    let match = /^\/profile\/([^/]+)$/u.exec(relativePath);
+    if (params.method === "GET" && match) {
+        const userId = decodeMatrixPathSegment(match[1]);
+        const member = [...params.state.rooms.values()]
+            .map((room) => room.users.get(userId))
+            .find((profile) => profile !== undefined);
+        return member
+            ? jsonResponse({
+                ...(member.avatar_url ? { avatar_url: member.avatar_url } : {}),
+                ...(member.display_name ? { displayname: member.display_name } : {}),
+            })
+            : matrixError("M_NOT_FOUND", "Unknown user", 404);
+    }
+    if (params.method === "GET" && relativePath === "/pushrules/") {
+        const empty = { content: [], override: [], room: [], sender: [], underride: [] };
+        return jsonResponse({ global: empty });
+    }
+    if (params.method === "GET" && relativePath === "/sync") {
+        return await handleSync(params.url, params.state);
+    }
+    match = /^\/user\/([^/]+)\/filter$/u.exec(relativePath);
+    if (params.method === "POST" && match) {
+        const userId = decodeMatrixPathSegment(match[1]);
+        if (userId !== params.state.botUserId) {
+            return matrixError("M_FORBIDDEN", "Cannot create a filter for another user", 403);
+        }
+        const bytes = Buffer.byteLength(JSON.stringify(params.body), "utf8");
+        if (params.state.filters.size >= MAX_MATRIX_FILTERS ||
+            params.state.filterBytes + bytes > MAX_MATRIX_FILTER_BYTES) {
+            return matrixResourceLimitError("Too many stored filters");
+        }
+        const filterId = String(params.state.nextFilter++);
+        params.state.filters.set(filterId, { body: params.body, bytes });
+        params.state.filterBytes += bytes;
+        return jsonResponse({ filter_id: filterId });
+    }
+    match = /^\/user\/([^/]+)\/filter\/([^/]+)$/u.exec(relativePath);
+    if (params.method === "GET" && match) {
+        const userId = decodeMatrixPathSegment(match[1]);
+        if (userId !== params.state.botUserId) {
+            return matrixError("M_FORBIDDEN", "Cannot get filters for another user", 403);
+        }
+        const filter = params.state.filters.get(decodeMatrixPathSegment(match[2]));
+        return filter ? jsonResponse(filter.body) : matrixError("M_NOT_FOUND", "Unknown filter", 404);
+    }
+    match = /^\/rooms\/([^/]+)\/joined_members$/u.exec(relativePath);
+    if (params.method === "GET" && match) {
+        const room = findRoom(params.state, match[1]);
+        return room
+            ? jsonResponse({ joined: Object.fromEntries(room.users) })
+            : matrixError("M_NOT_FOUND", "Unknown room", 404);
+    }
+    match = /^\/rooms\/([^/]+)\/state\/([^/]+)(?:\/(.*))?$/u.exec(relativePath);
+    if (params.method === "GET" && match) {
+        const room = findRoom(params.state, match[1]);
+        if (!room) {
+            return matrixError("M_NOT_FOUND", "Unknown room", 404);
+        }
+        const eventType = decodeMatrixPathSegment(match[2]);
+        const stateKey = decodeMatrixPathSegment(match[3] ?? "");
+        if (eventType === "m.room.name" && stateKey === "") {
+            return jsonResponse({ name: room.name });
+        }
+        if (eventType === "m.room.canonical_alias" && stateKey === "") {
+            return matrixError("M_NOT_FOUND", "Unknown state event", 404);
+        }
+        if (eventType === "m.room.member") {
+            const membership = [...room.state]
+                .reverse()
+                .find((event) => event.type === "m.room.member" && event.state_key === stateKey);
+            return membership
+                ? jsonResponse(membership.content)
+                : matrixError("M_NOT_FOUND", "Unknown room member", 404);
+        }
+        return matrixError("M_NOT_FOUND", "Unknown state event", 404);
+    }
+    match = /^\/rooms\/([^/]+)\/send\/([^/]+)\/([^/]+)$/u.exec(relativePath);
+    if (params.method === "PUT" && match) {
+        const roomId = decodeMatrixPathSegment(match[1]);
+        const eventType = decodeMatrixPathSegment(match[2]);
+        const transactionId = decodeMatrixPathSegment(match[3]);
+        const transactionKey = JSON.stringify([
+            params.state.botUserId,
+            roomId,
+            eventType,
+            transactionId,
+        ]);
+        const existingResponse = transactionResponse(params.state, transactionKey);
+        if (existingResponse) {
+            params.recorderEvent.accepted =
+                existingResponse.status >= 200 && existingResponse.status < 300;
+            return jsonResponse(existingResponse.body, existingResponse.status);
+        }
+        if (params.state.transactions.size >= MAX_MATRIX_TRANSACTION_RESPONSES) {
+            params.recorderEvent.accepted = false;
+            return matrixResourceLimitError("Too many retained transaction responses");
+        }
+        const room = params.state.rooms.get(roomId);
+        if (!room) {
+            params.recorderEvent.accepted = false;
+            const body = { errcode: "M_NOT_FOUND", error: "Unknown room" };
+            rememberTransaction(params.state, transactionKey, {
+                body,
+                expiresAt: Date.now() + MATRIX_TRANSACTION_RETENTION_MS,
+                status: 404,
+            });
+            return jsonResponse(body, 404);
+        }
+        const event = createEvent({
+            content: params.body,
+            roomId: room.id,
+            sender: params.state.botUserId,
+            state: params.state,
+            transactionId,
+            type: eventType,
+        });
+        appendTimelineEvent(room, { event, sequence: params.state.nextSequence++ });
+        const body = { event_id: event.event_id };
+        rememberTransaction(params.state, transactionKey, {
+            body,
+            expiresAt: Date.now() + MATRIX_TRANSACTION_RETENTION_MS,
+            status: 200,
+        });
+        notifySyncWaiters(params.state);
+        params.recorderEvent.accepted = true;
+        return jsonResponse(body);
+    }
+    match = /^\/rooms\/([^/]+)\/typing\/([^/]+)$/u.exec(relativePath);
+    if (params.method === "PUT" && match) {
+        const room = findRoom(params.state, match[1]);
+        if (!room) {
+            return matrixError("M_NOT_FOUND", "Unknown room", 404);
+        }
+        const userId = decodeMatrixPathSegment(match[2]);
+        if (userId !== params.state.botUserId) {
+            return matrixError("M_FORBIDDEN", "Cannot set typing state for another user", 403);
+        }
+        if (typeof params.body.typing !== "boolean") {
+            return matrixError("M_BAD_JSON", "typing must be a boolean", 400);
+        }
+        const timeout = params.body.typing &&
+            typeof params.body.timeout === "number" &&
+            Number.isSafeInteger(params.body.timeout)
+            ? params.body.timeout
+            : undefined;
+        if (params.body.typing &&
+            (timeout === undefined || timeout < 1 || timeout > MAX_NODE_TIMER_DELAY_MS)) {
+            return matrixError("M_BAD_JSON", `timeout must be a positive integer no greater than ${MAX_NODE_TIMER_DELAY_MS}`, 400);
+        }
+        const existingTimeout = room.typingTimeouts.get(userId);
+        if (existingTimeout) {
+            clearTimeout(existingTimeout);
+            room.typingTimeouts.delete(userId);
+        }
+        if (params.body.typing) {
+            room.typingUsers.add(userId);
+            const timer = setTimeout(() => {
+                room.typingTimeouts.delete(userId);
+                if (room.typingUsers.delete(userId)) {
+                    publishTypingState(params.state, room);
+                }
+            }, timeout);
+            timer.unref();
+            room.typingTimeouts.set(userId, timer);
+        }
+        else {
+            room.typingUsers.delete(userId);
+        }
+        publishTypingState(params.state, room);
+        return jsonResponse({});
+    }
+    match = /^\/rooms\/([^/]+)\/receipt\/m\.read\/([^/]+)$/u.exec(relativePath);
+    if (params.method === "POST" && match) {
+        const room = findRoom(params.state, match[1]);
+        if (!room) {
+            return matrixError("M_NOT_FOUND", "Unknown room", 404);
+        }
+        const receiptEventId = decodeMatrixPathSegment(match[2]);
+        appendEphemeralEvent(room, {
+            event: {
+                content: {
+                    [receiptEventId]: {
+                        "m.read": {
+                            [params.state.botUserId]: {
+                                ts: Date.now(),
+                                ...(readTrimmedString(params.body.thread_id)
+                                    ? { thread_id: readTrimmedString(params.body.thread_id) }
+                                    : {}),
+                            },
+                        },
+                    },
+                },
+                type: "m.receipt",
+            },
+            sequence: params.state.nextSequence++,
+        });
+        notifySyncWaiters(params.state);
+        return jsonResponse({});
+    }
+    return matrixError("M_UNRECOGNIZED", "Unrecognized request", 404);
+}
+export async function startMatrixServer(params = {}) {
+    const host = params.host ?? "127.0.0.1";
+    const serverName = params.serverName ?? "matrix.test";
+    const state = {
+        accessToken: params.accessToken ?? `syt_crabline_${randomBytes(12).toString("hex")}`,
+        adminToken: params.adminToken ?? randomBytes(24).toString("hex"),
+        botUserId: params.botUserId ?? `@afora:${serverName}`,
+        deviceId: params.deviceId ?? "CRABLINE",
+        filterBytes: 0,
+        filters: new Map(),
+        nextEvent: 1,
+        nextFilter: 1,
+        nextSequence: 1,
+        onEvent: params.onEvent,
+        recorderPath: params.recorderPath ?? path.resolve("artifacts/crabline/matrix.jsonl"),
+        rooms: new Map(),
+        serverName,
+        syncWaiters: new Set(),
+        transactions: new Map(),
+    };
+    const roomId = params.roomId ?? matrixId("!", "default-room", serverName);
+    state.rooms.set(roomId, createRoom({
+        botUserId: state.botUserId,
+        createdSequence: 0,
+        id: roomId,
+        name: params.roomName ?? "Crabline Matrix Room",
+        serverName,
+        state,
+    }));
+    const server = await startHttpJsonServer({
+        handleError: (error) => {
+            if (error instanceof InvalidJsonBodyError) {
+                return matrixError("M_NOT_JSON", "Request body is not valid JSON", 400);
+            }
+            if (error instanceof RequestBodyTooLargeError) {
+                return matrixError("M_TOO_LARGE", "Request body is too large", 413);
+            }
+            if (error instanceof InvalidMatrixPathEncodingError) {
+                return matrixError("M_INVALID_PARAM", "Invalid request path encoding", 400);
+            }
+            return matrixError("M_UNKNOWN", "Internal server error", 500);
+        },
+        host,
+        port: params.port ?? 0,
+        serverName: "Matrix",
+        async handle(request) {
+            const url = new URL(request.url ?? "/", "http://localhost");
+            const method = request.method ?? "GET";
+            const type = url.pathname === "/crabline/matrix/inbound" ? "admin" : "api";
+            if (type === "admin") {
+                if (method !== "POST") {
+                    return jsonResponse({ error: "Method not allowed", ok: false }, 405);
+                }
+                if (!hasAdminToken(request, state.adminToken)) {
+                    request.resume();
+                    return adminAuthError();
+                }
+                const body = await parseUnknownRequestBody(request);
+                if (!isJsonObject(body)) {
+                    return jsonResponse({ error: "Request body must be a JSON object", ok: false }, 400);
+                }
+                await appendEvent(state, {
+                    at: new Date().toISOString(),
+                    ...(Object.keys(body).length > 0 ? { body } : {}),
+                    method,
+                    path: url.pathname,
+                    query: queryRecord(url),
+                    type,
+                });
+                return await handleAdminInbound({ body, state });
+            }
+            if (url.pathname === "/_matrix/client/versions" && method === "GET") {
+                await appendEvent(state, {
+                    at: new Date().toISOString(),
+                    method,
+                    path: url.pathname,
+                    query: queryRecord(url),
+                    type,
+                });
+                return jsonResponse({ unstable_features: {}, versions: ["v1.11"] });
+            }
+            if (!url.pathname.startsWith("/_matrix/client/")) {
+                return matrixError("M_UNRECOGNIZED", "Unrecognized request", 404);
+            }
+            if (!authorized(request, state.accessToken)) {
+                request.resume();
+                return matrixError("M_UNKNOWN_TOKEN", "Invalid access token", 401);
+            }
+            const parsedBody = ["POST", "PUT"].includes(method)
+                ? await parseUnknownRequestBody(request)
+                : {};
+            if (!isJsonObject(parsedBody)) {
+                return matrixError("M_BAD_JSON", "Request body must be a JSON object", 400);
+            }
+            const event = {
+                at: new Date().toISOString(),
+                ...(Object.keys(parsedBody).length > 0 ? { body: parsedBody } : {}),
+                method,
+                path: url.pathname,
+                query: queryRecord(url),
+                type,
+            };
+            const response = await handleMatrixApi({
+                body: parsedBody,
+                method,
+                path: url.pathname,
+                recorderEvent: event,
+                state,
+                url,
+            });
+            await appendEvent(state, event, response.ok && ["DELETE", "POST", "PUT"].includes(method));
+            return response;
+        },
+    });
+    const clientApiRoot = `${server.baseUrl}/_matrix/client/v3`;
+    return {
+        async close() {
+            for (const room of state.rooms.values()) {
+                for (const timer of room.typingTimeouts.values()) {
+                    clearTimeout(timer);
+                }
+                room.typingTimeouts.clear();
+            }
+            await server.close();
+        },
+        manifest: {
+            accessToken: state.accessToken,
+            adminToken: state.adminToken,
+            baseUrl: server.baseUrl,
+            botUserId: state.botUserId,
+            deviceId: state.deviceId,
+            endpoints: {
+                adminInboundUrl: `${server.baseUrl}/crabline/matrix/inbound`,
+                clientApiRoot,
+                syncUrl: `${clientApiRoot}/sync`,
+            },
+            env: {
+                MATRIX_ACCESS_TOKEN: state.accessToken,
+                MATRIX_BASE_URL: server.baseUrl,
+                MATRIX_USER_ID: state.botUserId,
+            },
+            provider: "matrix",
+            recorderPath: state.recorderPath,
+            version: 1,
+        },
+    };
+}

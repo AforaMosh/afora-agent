@@ -1,0 +1,21 @@
+{
+  "name": "@afora/proxyline",
+  "version": "0.3.4",
+  "private": true,
+  "description": "Process-global proxy routing for Node.js.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./dispatcher-brand": {
+      "types": "./dist/dispatcher-brand.d.ts",
+      "default": "./dist/dispatcher-brand.js"
+    }
+  },
+  "peerDependencies": {
+    "undici": ">=8.5.0 <9"
+  }
+}

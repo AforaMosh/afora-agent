@@ -1,0 +1,26 @@
+import type { BuiltinAdapterId, FixtureDefinition, ProviderPlatform } from "../config/schema.js";
+import type { LocalMockTargetCodec } from "./local-mock.js";
+import type { NativeIdRule } from "./native-ids.js";
+import type { NormalizedTarget } from "./types.js";
+export type BuiltinProviderAdapterId = Exclude<BuiltinAdapterId, "script">;
+export declare const DISCORD_SNOWFLAKE_RULE: NativeIdRule;
+export declare const FEISHU_CHAT_ID_RULE: NativeIdRule;
+export declare const FEISHU_MESSAGE_ID_RULE: NativeIdRule;
+export declare const GOOGLE_CHAT_SPACE_RULE: NativeIdRule;
+export declare const GOOGLE_CHAT_THREAD_RULE: NativeIdRule;
+export declare const IMESSAGE_THREAD_RULE: NativeIdRule;
+export declare const MATRIX_ROOM_ID_RULE: NativeIdRule;
+export declare const MATRIX_EVENT_ID_RULE: NativeIdRule;
+export declare const MATTERMOST_ID_RULE: NativeIdRule;
+export declare const MSTEAMS_CONVERSATION_ID_RULE: NativeIdRule;
+export declare const TELEGRAM_CHAT_ID_RULE: NativeIdRule;
+export declare const TELEGRAM_MESSAGE_THREAD_ID_RULE: NativeIdRule;
+export declare const WHATSAPP_WA_ID_RULE: NativeIdRule;
+export declare const ZALO_ID_RULE: NativeIdRule;
+export declare function createGenericLocalMockTargetCodec(platform: ProviderPlatform): LocalMockTargetCodec;
+export declare function parseCanonicalTelegramTopic(value: string): {
+    chatId: string;
+    topicId: string;
+} | undefined;
+export declare function getBuiltinTargetCodec(adapter: BuiltinProviderAdapterId): LocalMockTargetCodec;
+export declare function normalizeBuiltinTarget(adapter: BuiltinProviderAdapterId, target: FixtureDefinition["target"]): NormalizedTarget;

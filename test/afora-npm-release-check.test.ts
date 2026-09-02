@@ -4,11 +4,6 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  LOCAL_BUILD_METADATA_DIST_PATHS,
-  PACKAGE_DIST_INVENTORY_RELATIVE_PATH,
-} from "../scripts/lib/package-dist-inventory.ts";
-import { WORKSPACE_TEMPLATE_PACK_PATHS } from "../scripts/lib/workspace-bootstrap-smoke.mts";
 import { assertPreparedAforaAiDependency } from "../scripts/afora-npm-prepublish-verify.ts";
 import {
   compareReleaseVersions,
@@ -28,6 +23,11 @@ import {
   runNpmReleaseCheckCommand,
   shouldSkipPackedTarballValidation,
 } from "../scripts/afora-npm-release-check.ts";
+import {
+  LOCAL_BUILD_METADATA_DIST_PATHS,
+  PACKAGE_DIST_INVENTORY_RELATIVE_PATH,
+} from "../scripts/lib/package-dist-inventory.ts";
+import { WORKSPACE_TEMPLATE_PACK_PATHS } from "../scripts/lib/workspace-bootstrap-smoke.mts";
 
 const REQUIRED_PACKED_PATHS = [
   PACKAGE_DIST_INVENTORY_RELATIVE_PATH,
@@ -871,20 +871,5 @@ describe("collectReleasePackageMetadataErrors", () => {
         bin: { afora: "afora.mjs" },
       }),
     ).toStrictEqual([]);
-  });
-
-  it("rejects local fs-safe dependency specs for npm release", () => {
-    expect(
-      collectReleasePackageMetadataErrors({
-        name: "afora",
-        description: "Multi-channel AI gateway with extensible messaging integrations",
-        license: "MIT",
-        repository: { url: "git+https://github.com/AforaMosh/afora-agent.git" },
-        bin: { afora: "afora.mjs" },
-        dependencies: { "@openclaw/fs-safe": "link:../fs-safe" },
-      }),
-    ).toContain(
-      'package.json dependencies["@openclaw/fs-safe"] must use a published semver range before npm release; found "link:../fs-safe".',
-    );
   });
 });

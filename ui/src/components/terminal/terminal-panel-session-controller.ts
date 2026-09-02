@@ -1,4 +1,4 @@
-import type { GhosttyTerminalController } from "@openclaw/libterminal/browser";
+import type { GhosttyTerminalController } from "@afora/libterminal/browser";
 import type { ReactiveController } from "lit";
 import { t } from "../../i18n/index.ts";
 import { formatUiExternalText } from "../../lib/format-error.ts";
@@ -360,8 +360,7 @@ export class TerminalPanelSessionController
       connection,
       () => tabReference.current?.gatewaySessionId,
     );
-    const { createTerminalDefaultColorQueryResponder } =
-      await import("@openclaw/libterminal/browser");
+    const { createTerminalDefaultColorQueryResponder } = await import("@afora/libterminal/browser");
     const defaultColorQueries = createTerminalDefaultColorQueryResponder({
       getColors: () => terminalDynamicColors(this.host.themeMode),
       reply: (data) => startupInput.onData(TERMINAL_OUTPUT_ENCODER.encode(data)),

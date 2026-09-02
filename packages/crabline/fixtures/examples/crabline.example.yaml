@@ -1,0 +1,205 @@
+configVersion: 1
+userName: crabline
+
+providers:
+  local:
+    adapter: loopback
+    loopback:
+      delayMs: 0
+
+  telegram:
+    adapter: telegram
+    telegram:
+      # secretToken: test-token-placeholder
+      recorder:
+        path: ./.crabline/recorders/telegram.jsonl
+      webhook:
+        host: 127.0.0.1
+        port: 8790
+        path: /telegram/webhook
+
+  discord:
+    adapter: discord
+    discord:
+      recorder:
+        path: ./.crabline/recorders/discord.jsonl
+      webhook:
+        host: 127.0.0.1
+        port: 8788
+        path: /discord/interactions
+
+  slack:
+    adapter: slack
+    slack:
+      # signingSecret: test-token-placeholder
+      recorder:
+        path: ./.crabline/recorders/slack.jsonl
+      webhook:
+        host: 127.0.0.1
+        port: 8787
+        path: /slack/events
+
+  whatsapp:
+    adapter: whatsapp
+    whatsapp:
+      appSecret: placeholder
+      verifyToken: placeholder
+      recorder:
+        path: ./.crabline/recorders/whatsapp.jsonl
+      webhook:
+        host: 127.0.0.1
+        port: 8789
+        path: /whatsapp/webhook
+
+  msteams:
+    adapter: msteams
+    msteams:
+      # appId: teams-app-id-placeholder # Required for non-loopback/public webhooks.
+      recorder:
+        path: ./.crabline/recorders/msteams.jsonl
+      webhook:
+        host: 127.0.0.1
+        port: 8791
+        path: /msteams/webhook
+
+  googlechat:
+    adapter: googlechat
+    googlechat:
+      # pubsubAudience: https://example.test/googlechat/webhook
+      # pubsubServiceAccountEmail: chat-push@example.iam.gserviceaccount.com
+      recorder:
+        path: ./.crabline/recorders/googlechat.jsonl
+      webhook:
+        host: 127.0.0.1
+        port: 8792
+        path: /googlechat/webhook
+
+  feishu:
+    adapter: feishu
+    feishu:
+      # verificationToken: sample
+      # encryptKey: encrypt-key-placeholder
+      recorder:
+        path: ./.crabline/recorders/feishu.jsonl
+      webhook:
+        host: 127.0.0.1
+        port: 8795
+        path: /feishu/webhook
+
+  mattermost:
+    adapter: mattermost
+    mattermost:
+      recorder:
+        path: ./.crabline/recorders/mattermost.jsonl
+      webhook:
+        host: 127.0.0.1
+        port: 8793
+        path: /mattermost/webhook
+
+  zalo:
+    adapter: zalo
+    zalo:
+      # webhookSecret: test-token-placeholder
+      recorder:
+        path: ./.crabline/recorders/zalo.jsonl
+      webhook:
+        host: 127.0.0.1
+        port: 8794
+        path: /zalo/webhook
+
+  matrix:
+    adapter: matrix
+    matrix:
+      recorder:
+        path: ./.crabline/recorders/matrix.jsonl
+      webhook:
+        host: 127.0.0.1
+        port: 8797
+        path: /matrix/webhook
+
+  imessage:
+    adapter: imessage
+    imessage:
+      recorder:
+        path: ./.crabline/recorders/imessage.jsonl
+      webhook:
+        host: 127.0.0.1
+        port: 8796
+        path: /imessage/webhook
+
+fixtures:
+  - id: loopback-roundtrip
+    provider: local
+    mode: roundtrip
+    target:
+      id: echo-bot
+      behavior: echo
+
+  - id: telegram-dm
+    provider: telegram
+    mode: roundtrip
+    target:
+      id: "100000001"
+      behavior: agent
+
+  - id: discord-channel
+    provider: discord
+    mode: roundtrip
+    target:
+      id: "123456789012345678"
+      metadata:
+        guildId: "987654321098765432"
+
+  - id: slack-channel
+    provider: slack
+    mode: roundtrip
+    target:
+      id: C1234567890
+
+  - id: whatsapp-dm
+    provider: whatsapp
+    mode: roundtrip
+    target:
+      id: "15551234567"
+
+  - id: msteams-channel
+    provider: msteams
+    mode: roundtrip
+    target:
+      id: "19:conversation@thread.v2"
+
+  - id: googlechat-space
+    provider: googlechat
+    mode: roundtrip
+    target:
+      id: spaces/AAAA1234567
+
+  - id: feishu-chat
+    provider: feishu
+    mode: roundtrip
+    target:
+      id: oc_123
+
+  - id: mattermost-channel
+    provider: mattermost
+    mode: roundtrip
+    target:
+      id: channel-id
+
+  - id: zalo-chat
+    provider: zalo
+    mode: roundtrip
+    target:
+      id: chat-123
+
+  - id: matrix-room
+    provider: matrix
+    mode: roundtrip
+    target:
+      id: "!room:example.com"
+
+  - id: imessage-chat
+    provider: imessage
+    mode: roundtrip
+    target:
+      id: chat-guid

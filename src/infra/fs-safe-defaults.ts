@@ -1,5 +1,5 @@
 // Applies Afora's default fs-safe runtime configuration.
-import { configureFsSafeNative } from "@openclaw/fs-safe/config";
+import { configureFsSafeNative } from "@afora/fs-safe/config";
 
 // Afora does not rely on native helpers for normal filesystem safety. Tests
 // and operators can still opt in with fs-safe's documented env override.

@@ -16,6 +16,11 @@ export function isCountedSourcePath(filePath: string) {
   if (!SOURCE_EXTENSIONS.has(path.posix.extname(normalized))) {
     return false;
   }
+  // Vendored third-party packages ship their published dist in-tree; their internal
+  // env names are not Afora config surface, the same as when they lived in node_modules.
+  if (/^packages\/[^/]+\/dist\//u.test(normalized)) {
+    return false;
+  }
   if (
     /^(?:extensions\/(?:qa-lab|test-support)|.*\/(?:__tests__|test|tests|test-utils|test-support))\//u.test(
       normalized,

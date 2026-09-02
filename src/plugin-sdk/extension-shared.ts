@@ -1,6 +1,6 @@
 import { expectDefined } from "@afora/normalization-core";
 // Extension shared helpers expose cross-plugin runtime utilities that remain SDK-safe.
-import { createAmbientNodeProxyAgent, hasAmbientNodeProxyConfigured } from "@openclaw/proxyline";
+import { createAmbientNodeProxyAgent, hasAmbientNodeProxyConfigured } from "@afora/proxyline";
 import type { z } from "zod";
 import { resolveActiveManagedProxyTlsOptions } from "../infra/net/proxy/managed-proxy-undici.js";
 import { createDeferredCore } from "../shared/deferred.js";

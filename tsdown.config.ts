@@ -304,18 +304,16 @@ function shouldNeverBundleDeclarationDependency(id: string): boolean {
 function shouldAlwaysBundleDependency(id: string): boolean {
   return (
     id === "afora-agent/plugin-sdk/ssrf-runtime-internal" ||
-    id === "@openclaw/fs-safe" ||
-    id.startsWith("@openclaw/fs-safe/") ||
+    id === "@afora/fs-safe" ||
+    id.startsWith("@afora/fs-safe/") ||
+    id === "@afora/proxyline" ||
+    id.startsWith("@afora/proxyline/") ||
     id === "@afora/normalization-core" ||
     id.startsWith("@afora/normalization-core/") ||
     id === "@afora/retry" ||
     id === "@afora/media-core" ||
     id.startsWith("@afora/media-core/") ||
-    [
-      "@afora/acp-core",
-      "@afora/session-url-contract",
-      "@afora/workboard-contract",
-    ].includes(id) ||
+    ["@afora/acp-core", "@afora/session-url-contract", "@afora/workboard-contract"].includes(id) ||
     id.startsWith("@afora/acp-core/") ||
     id === "zod" ||
     id.startsWith("zod/")

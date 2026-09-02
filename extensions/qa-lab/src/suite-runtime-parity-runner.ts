@@ -1,5 +1,5 @@
 import path from "node:path";
-import type { AforaCrablineChannelDriverSelection } from "@openclaw/crabline";
+import type { AforaCrablineChannelDriverSelection } from "@afora/crabline";
 import type { QaCliBackendAuthMode } from "./gateway-child.js";
 import type {
   QaLabLatestReport,

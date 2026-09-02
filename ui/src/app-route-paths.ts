@@ -1,5 +1,5 @@
-import { normalizeRouteBasePath, normalizeRoutePath } from "@openclaw/uirouter";
-import type { RouteLocation } from "@openclaw/uirouter";
+import { normalizeRouteBasePath, normalizeRoutePath } from "@afora/uirouter";
+import type { RouteLocation } from "@afora/uirouter";
 import { isValidWorkboardBoardId } from "@afora/workboard-contract";
 import { DEFAULT_AGENT_PANEL, isAgentsPanel, type AgentsPanel } from "./lib/agents/panels.ts";
 import type { BoardFace } from "./lib/board/settings.ts";

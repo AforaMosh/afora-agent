@@ -1,6 +1,6 @@
 // Doctor-only import for the retired APNs registration JSON store.
 import path from "node:path";
-import { root, type Root } from "@openclaw/fs-safe";
+import { root, type Root } from "@afora/fs-safe";
 import { isRecord } from "@afora/normalization-core/record-coerce";
 import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import { runAforaStateWriteTransaction } from "../state/afora-state-db.js";

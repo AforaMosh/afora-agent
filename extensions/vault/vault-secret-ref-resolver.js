@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readSecretFileSync } from "@openclaw/fs-safe/secret";
+import { readSecretFileSync } from "afora-agent/plugin-sdk/secret-file-runtime";
 import { parseVaultSecretId } from "./vault-secret-id.js";
 
 const KUBERNETES_SERVICE_ACCOUNT_TOKEN_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/token";

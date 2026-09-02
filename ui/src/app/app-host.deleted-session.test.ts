@@ -1,6 +1,6 @@
 /* @vitest-environment jsdom */
 
-import type { RouteLocation, RouterState } from "@openclaw/uirouter";
+import type { RouteLocation, RouterState } from "@afora/uirouter";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { RouteId } from "../app-routes.ts";
 import { createStorageMock } from "../test-helpers/storage.ts";

@@ -1,6 +1,6 @@
 import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
-import { root, type Root } from "@openclaw/fs-safe";
+import { root, type Root } from "@afora/fs-safe";
 import { runAforaStateWriteTransaction } from "../state/afora-state-db.js";
 import {
   executeSqliteQuerySync,

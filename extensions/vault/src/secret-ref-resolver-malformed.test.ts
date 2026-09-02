@@ -1,9 +1,14 @@
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, it } from "vitest";
 
 const resolverPath = fileURLToPath(new URL("../vault-secret-ref-resolver.js", import.meta.url));
+// The resolver imports afora-agent/plugin-sdk/* like a packaged plugin; in the repo checkout
+// only tsx with the root tsconfig paths can resolve that self-reference.
+const tsxCliPath = fileURLToPath(import.meta.resolve("tsx/cli"));
+const rootTsconfigPath = path.resolve("tsconfig.json");
 
 it("keeps malformed successful Vault responses scoped per id", async () => {
   const server = createServer((_request, response) => {
@@ -21,14 +26,18 @@ it("keeps malformed successful Vault responses scoped per id", async () => {
   try {
     const result = await new Promise<{ stdout: string; stderr: string; code: number | null }>(
       (resolve, reject) => {
-        const child = spawn(process.execPath, [resolverPath], {
-          stdio: ["pipe", "pipe", "pipe"],
-          env: {
-            ...process.env,
-            VAULT_ADDR: `http://127.0.0.1:${address.port}`,
-            VAULT_TOKEN: "not-a-real-auth-header",
+        const child = spawn(
+          process.execPath,
+          [tsxCliPath, "--tsconfig", rootTsconfigPath, resolverPath],
+          {
+            stdio: ["pipe", "pipe", "pipe"],
+            env: {
+              ...process.env,
+              VAULT_ADDR: `http://127.0.0.1:${address.port}`,
+              VAULT_TOKEN: "not-a-real-auth-header",
+            },
           },
-        });
+        );
         let stdout = "";
         let stderr = "";
         child.stdout.setEncoding("utf8").on("data", (chunk) => (stdout += String(chunk)));

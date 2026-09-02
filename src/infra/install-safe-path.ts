@@ -5,7 +5,7 @@ export {
   resolveSafeInstallDir,
   safeDirName,
   safePathSegmentHashed,
-} from "@openclaw/fs-safe/advanced";
+} from "@afora/fs-safe/advanced";
 
 /** Returns the package basename for scoped npm names while preserving plain ids. */
 export function unscopedPackageName(name: string): string {

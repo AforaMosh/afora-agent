@@ -11,7 +11,7 @@ const UNSUPPORTED_PROXY_PROTOCOL_MESSAGE =
 
 type NodeProxyProtocol = "http" | "https";
 type ProxylineCreateAmbientNodeProxyAgent =
-  typeof import("@openclaw/proxyline").createAmbientNodeProxyAgent;
+  typeof import("@afora/proxyline").createAmbientNodeProxyAgent;
 type ProxylineAgentOptions = NonNullable<Parameters<ProxylineCreateAmbientNodeProxyAgent>[0]>;
 type ProxylineEnvSnapshot = NonNullable<ProxylineAgentOptions["env"]>;
 type ProxylineTlsOptions = ProxylineAgentOptions["proxyTls"];
@@ -120,7 +120,7 @@ function fixedProxyEnv(proxyUrl: URL): ProxylineEnvSnapshot {
 }
 
 function loadCreateAmbientNodeProxyAgent(): ProxylineCreateAmbientNodeProxyAgent {
-  return (require("@openclaw/proxyline") as typeof import("@openclaw/proxyline"))
+  return (require("@afora/proxyline") as typeof import("@afora/proxyline"))
     .createAmbientNodeProxyAgent;
 }
 

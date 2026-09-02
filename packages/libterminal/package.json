@@ -1,0 +1,48 @@
+{
+  "name": "@afora/libterminal",
+  "version": "0.3.2",
+  "private": true,
+  "description": "Shared TypeScript terminal protocol, streaming, browser, Node, and Worker primitives",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./protocol": {
+      "types": "./dist/protocol.d.ts",
+      "import": "./dist/protocol.js"
+    },
+    "./stream": {
+      "types": "./dist/stream.d.ts",
+      "import": "./dist/stream.js"
+    },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "import": "./dist/browser.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.js"
+    },
+    "./worker": {
+      "types": "./dist/worker.d.ts",
+      "import": "./dist/worker.js"
+    },
+    "./worker-assets": {
+      "types": "./dist/worker-assets.d.ts",
+      "import": "./dist/worker-assets.js"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "import": "./dist/testing.js"
+    },
+    "./protocol/terminal-v2.json": "./protocol/terminal-v2.json",
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "ghostty-web": "0.4.0"
+  }
+}
