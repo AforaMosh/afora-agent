@@ -21,3 +21,4 @@ path:src/infra/afora-env-alias.ts # env var compat shim, maps OPENCLAW_* to AFOR
 pattern:"openclaw": "afora\.mjs" # undocumented legacy bin alias, tenants have openclaw on PATH
 pattern:- "openclaw" # the published openclaw registry package name in pnpm-workspace.yaml release-age excludes
 pattern:openclaw@20[0-9][0-9]\. # published legacy release specs used as upgrade-test baselines
+pattern:tokenjuice/openclaw # third-party npm package "tokenjuice" publishes its host adapter at the ./openclaw export subpath; renaming the specifier makes the import unresolvable
