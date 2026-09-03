@@ -299,7 +299,10 @@ describe("sessions_spawn tool", () => {
     };
 
     expect(schema.properties?.runTimeoutSeconds).toMatchObject({ type: "integer", minimum: 0 });
-    expect(schema.properties?.runTimeoutSeconds?.description).toContain("configured subagent");
+    // The parameter is still accepted so an existing caller does not error, but the
+    // description has to tell the model it does nothing — otherwise it keeps passing
+    // a cap that is silently dropped.
+    expect(schema.properties?.runTimeoutSeconds?.description).toContain("ignored");
     expect(schema.properties?.timeoutSeconds).toBeUndefined();
   });
 
@@ -522,7 +525,8 @@ describe("sessions_spawn tool", () => {
             threadId: "current-thread",
           },
           cleanup: "keep",
-          runTimeoutSeconds: 1_200,
+          // Configured 1200s default dropped — runs are uncapped.
+          runTimeoutSeconds: 0,
           expectsCompletionMessage: true,
           spawnMode: "run",
         }),
@@ -708,8 +712,10 @@ describe("sessions_spawn tool", () => {
     });
 
     expect(result.details).toMatchObject({ status: "accepted", runId: "run-visible-timed" });
+    // Both a configured 1200s default and an explicit 1800s override are dropped:
+    // a visible dashboard session is a worker like any other, and a cap kills it.
     expect(registerRun).toHaveBeenCalledWith(
-      expect.objectContaining({ runId: "run-visible-timed", runTimeoutSeconds: 1_800 }),
+      expect.objectContaining({ runId: "run-visible-timed", runTimeoutSeconds: 0 }),
     );
   });
 

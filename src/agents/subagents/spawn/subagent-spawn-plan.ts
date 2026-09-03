@@ -40,35 +40,58 @@ export function splitModelRef(ref?: string) {
 }
 
 /**
- * Shortest run timeout a spawned worker can survive. Below this the cap is not a
- * preference but a run that cannot finish: a worker spends the first minutes
- * ingesting its workspace bootstrap, so a short timeout fires during warm-up and
- * kills it before its first tool call. Zero still means unlimited, and a caller
- * that wants a worker stopped early should kill the run rather than under-cap it.
+ * A subagent run is never capped by a wall clock. Zero is the value the rest of
+ * the stack already reads as "no deadline" — `resolveSubagentRunDurationMs`
+ * returns undefined for it, and `resolveAgentTimeoutMs` maps `overrideSeconds: 0`
+ * onto NO_TIMEOUT_MS — so returning zero disables both the run deadline and the
+ * wait path that classifies a run as timed_out.
  */
-const MIN_SUBAGENT_RUN_TIMEOUT_SECONDS = 900;
+const UNCAPPED_SUBAGENT_RUN_TIMEOUT_SECONDS = 0;
 
-/** Resolves the effective subagent run timeout from per-call override or config default. */
+/**
+ * Resolves the effective subagent run timeout. It is always uncapped.
+ *
+ * A run timeout kills a worker for taking too long, and that is the one failure
+ * this product cannot absorb: the work is discarded and the customer gets silence
+ * where a result should be. This replaces the 900s floor that shipped in 1.1.3 —
+ * a floor still leaves a cap, and a cap still kills. Measured across the fleet,
+ * the account that passed no timeout on any of its runs had the best record by a
+ * wide margin, and every worker death traced back to a cap firing on a long but
+ * healthy run.
+ *
+ * Both inputs are therefore ignored, not just the per-call one: a configured
+ * `agents.defaults.subagents.runTimeoutSeconds` is refused the same way, so a
+ * tenant seeded with one — or an operator who adds one later — cannot reintroduce
+ * the failure for a new account.
+ *
+ * The parameter is still accepted rather than rejected, so an existing caller
+ * does not start erroring; it is dropped with a warning that says so.
+ *
+ * This is not unbounded execution. The CLI's no-output kill still ends a worker
+ * that has genuinely stopped producing, which is an output-based signal rather
+ * than a wall clock, and `maxConcurrent` still bounds how many run at once. A
+ * worker that must stop early is killed, not starved by a timer.
+ */
 export function resolveConfiguredSubagentRunTimeoutSeconds(params: {
   cfg: OpenClawConfig;
   runTimeoutSeconds?: number;
 }) {
-  const cfgSubagentTimeout =
+  const requested =
+    typeof params.runTimeoutSeconds === "number" && Number.isFinite(params.runTimeoutSeconds)
+      ? Math.max(0, Math.floor(params.runTimeoutSeconds))
+      : undefined;
+  const configured =
     typeof params.cfg?.agents?.defaults?.subagents?.runTimeoutSeconds === "number" &&
     Number.isFinite(params.cfg.agents.defaults.subagents.runTimeoutSeconds)
       ? Math.max(0, Math.floor(params.cfg.agents.defaults.subagents.runTimeoutSeconds))
-      : 0;
-  const resolved =
-    typeof params.runTimeoutSeconds === "number" && Number.isFinite(params.runTimeoutSeconds)
-      ? Math.max(0, Math.floor(params.runTimeoutSeconds))
-      : cfgSubagentTimeout;
-  if (resolved > 0 && resolved < MIN_SUBAGENT_RUN_TIMEOUT_SECONDS) {
+      : undefined;
+  const dropped = requested ?? configured;
+  if (dropped !== undefined && dropped > 0) {
     log.warn(
-      `subagent run timeout ${resolved}s is below the ${MIN_SUBAGENT_RUN_TIMEOUT_SECONDS}s floor and would kill the worker during bootstrap; using the floor instead`,
+      `subagent run timeout ${dropped}s ignored: subagent runs are uncapped, because a run timeout kills the worker and discards its work. Kill the run to stop a worker early.`,
     );
-    return MIN_SUBAGENT_RUN_TIMEOUT_SECONDS;
   }
-  return resolved;
+  return UNCAPPED_SUBAGENT_RUN_TIMEOUT_SECONDS;
 }
 
 /** Resolves the subagent model plus thinking patch to apply to the spawned session. */
