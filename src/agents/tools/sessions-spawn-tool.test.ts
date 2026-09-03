@@ -469,7 +469,7 @@ describe("sessions_spawn tool", () => {
           session: { store: path.join(dir, "sessions.json") },
           agents: {
             defaults: {
-              subagents: { model: "openai/gpt-5.4", runTimeoutSeconds: 120 },
+              subagents: { model: "openai/gpt-5.4", runTimeoutSeconds: 1_200 },
             },
             list: [{ id: "main" }],
           },
@@ -522,7 +522,7 @@ describe("sessions_spawn tool", () => {
             threadId: "current-thread",
           },
           cleanup: "keep",
-          runTimeoutSeconds: 120,
+          runTimeoutSeconds: 1_200,
           expectsCompletionMessage: true,
           spawnMode: "run",
         }),
@@ -692,7 +692,7 @@ describe("sessions_spawn tool", () => {
       agentSessionKey: "agent:main:main",
       config: {
         agents: {
-          defaults: { subagents: { runTimeoutSeconds: 120 } },
+          defaults: { subagents: { runTimeoutSeconds: 1_200 } },
           list: [{ id: "main" }],
         },
       },
@@ -704,12 +704,12 @@ describe("sessions_spawn tool", () => {
     const result = await tool.execute("visible-timeout", {
       task: "inspect issue",
       visible: true,
-      runTimeoutSeconds: 7,
+      runTimeoutSeconds: 1_800,
     });
 
     expect(result.details).toMatchObject({ status: "accepted", runId: "run-visible-timed" });
     expect(registerRun).toHaveBeenCalledWith(
-      expect.objectContaining({ runId: "run-visible-timed", runTimeoutSeconds: 7 }),
+      expect.objectContaining({ runId: "run-visible-timed", runTimeoutSeconds: 1_800 }),
     );
   });
 

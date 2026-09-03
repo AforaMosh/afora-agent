@@ -5,6 +5,7 @@
  */
 import { formatThinkingLevels } from "../../../auto-reply/thinking.js";
 import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import { createSubsystemLogger } from "../../../logging/subsystem.js";
 import type { FastMode } from "../../../shared/fast-mode.js";
 import {
   resolveDefaultModelForAgent,
@@ -12,6 +13,8 @@ import {
   resolveSubagentSpawnModelSelection,
 } from "../../model-selection.js";
 import { resolveSubagentThinkingOverride } from "./subagent-spawn-thinking.js";
+
+const log = createSubsystemLogger("agents/subagent-spawn-plan");
 
 /** Splits a provider/model ref while preserving model-only refs. */
 export function splitModelRef(ref?: string) {
@@ -36,6 +39,15 @@ export function splitModelRef(ref?: string) {
   return { provider: undefined, model: trimmed };
 }
 
+/**
+ * Shortest run timeout a spawned worker can survive. Below this the cap is not a
+ * preference but a run that cannot finish: a worker spends the first minutes
+ * ingesting its workspace bootstrap, so a short timeout fires during warm-up and
+ * kills it before its first tool call. Zero still means unlimited, and a caller
+ * that wants a worker stopped early should kill the run rather than under-cap it.
+ */
+const MIN_SUBAGENT_RUN_TIMEOUT_SECONDS = 900;
+
 /** Resolves the effective subagent run timeout from per-call override or config default. */
 export function resolveConfiguredSubagentRunTimeoutSeconds(params: {
   cfg: OpenClawConfig;
@@ -46,9 +58,17 @@ export function resolveConfiguredSubagentRunTimeoutSeconds(params: {
     Number.isFinite(params.cfg.agents.defaults.subagents.runTimeoutSeconds)
       ? Math.max(0, Math.floor(params.cfg.agents.defaults.subagents.runTimeoutSeconds))
       : 0;
-  return typeof params.runTimeoutSeconds === "number" && Number.isFinite(params.runTimeoutSeconds)
-    ? Math.max(0, Math.floor(params.runTimeoutSeconds))
-    : cfgSubagentTimeout;
+  const resolved =
+    typeof params.runTimeoutSeconds === "number" && Number.isFinite(params.runTimeoutSeconds)
+      ? Math.max(0, Math.floor(params.runTimeoutSeconds))
+      : cfgSubagentTimeout;
+  if (resolved > 0 && resolved < MIN_SUBAGENT_RUN_TIMEOUT_SECONDS) {
+    log.warn(
+      `subagent run timeout ${resolved}s is below the ${MIN_SUBAGENT_RUN_TIMEOUT_SECONDS}s floor and would kill the worker during bootstrap; using the floor instead`,
+    );
+    return MIN_SUBAGENT_RUN_TIMEOUT_SECONDS;
+  }
+  return resolved;
 }
 
 /** Resolves the subagent model plus thinking patch to apply to the spawned session. */

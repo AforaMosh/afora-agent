@@ -200,21 +200,47 @@ describe("subagent spawn model + thinking plan", () => {
   it.each([
     {
       name: "uses config default timeout when agent omits runTimeoutSeconds",
-      configured: 120,
+      configured: 1_200,
       explicit: undefined,
-      expected: 120,
+      expected: 1_200,
     },
     {
       name: "explicit runTimeoutSeconds wins over config default",
       configured: 120,
-      explicit: 2,
-      expected: 2,
+      explicit: 1_800,
+      expected: 1_800,
     },
     {
       name: "falls back to 0 when config omits the timeout",
       configured: undefined,
       explicit: undefined,
       expected: 0,
+    },
+    {
+      // A cap this short cannot outlive bootstrap, so it only ever produces a
+      // killed run. Raising it is the difference between a result and a crash.
+      name: "raises an explicit sub-floor timeout to the floor",
+      configured: undefined,
+      explicit: 240,
+      expected: 900,
+    },
+    {
+      name: "raises a configured sub-floor timeout to the floor",
+      configured: 120,
+      explicit: undefined,
+      expected: 900,
+    },
+    {
+      name: "leaves zero as unlimited rather than raising it to the floor",
+      configured: undefined,
+      explicit: 0,
+      expected: 0,
+    },
+    {
+      name: "leaves a timeout at the floor untouched",
+      configured: undefined,
+      explicit: 900,
+      expected: 900,
     },
   ])("$name", ({ configured, explicit, expected }) => {
     expect(
