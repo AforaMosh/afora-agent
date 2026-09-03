@@ -11,7 +11,7 @@ import {
 describe("realtime voice activation names", () => {
   it("normalizes and validates one- or two-word activation names", () => {
     expect(normalizeSupportedRealtimeVoiceActivationName("  Afora  ")).toBe("afora");
-    expect(normalizeSupportedRealtimeVoiceActivationName("Afora")).toBe("afora");
+    expect(normalizeSupportedRealtimeVoiceActivationName("Afora Agent")).toBe("afora agent");
     expect(normalizeSupportedRealtimeVoiceActivationName("Claw Bot Helper")).toBeUndefined();
     expect(isSupportedRealtimeVoiceActivationName("Claw Bot")).toBe(true);
     expect(isSupportedRealtimeVoiceActivationName("Claw Bot Helper")).toBe(false);

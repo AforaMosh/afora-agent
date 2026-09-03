@@ -153,7 +153,7 @@ describe("MemoryMemoriesElement", () => {
   });
 
   it("loads a row file once, highlights the matched range, and keeps one row open", async () => {
-    const second = { ...result, path: "memory/projects/Afora.md", startLine: 1, endLine: 1 };
+    const second = { ...result, path: "memory/projects/Afora Agent.md", startLine: 1, endLine: 1 };
     const request = vi.fn((method: string) => {
       if (method === "memory.search") {
         return Promise.resolve({

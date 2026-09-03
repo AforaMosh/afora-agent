@@ -362,7 +362,7 @@ describe("discord doctor", () => {
           discord: {
             voice: {
               realtime: {
-                wakeNames: ["Claw", "Claw Bot Helper", "Afora"],
+                wakeNames: ["Claw", "Claw Bot Helper", "Afora Agent"],
               },
             },
             accounts: {
@@ -402,7 +402,7 @@ describe("discord doctor", () => {
     expect(result.config.channels?.discord?.voice?.realtime?.wakeNames).toEqual([
       "Claw",
       "Claw Bot",
-      "Afora",
+      "Afora Agent",
     ]);
     expect(result.config.channels?.discord?.accounts?.work?.voice?.realtime?.wakeNames).toEqual([
       "Work Bot",
