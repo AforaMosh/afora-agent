@@ -15,7 +15,10 @@ import {
   failTaskRunByRunId,
   setDetachedTaskDeliveryStatusByRunId,
 } from "../../../tasks/detached-task-runtime.js";
-import { resolveRequiredCompletionDeliveryFailureTerminalResult } from "../../../tasks/task-completion-contract.js";
+import {
+  resolveRequiredCompletionDeliveryFailureTerminalResult,
+  resolveRequiredCompletionTerminalResult,
+} from "../../../tasks/task-completion-contract.js";
 import type { TaskDeliveryStatus } from "../../../tasks/task-registry.types.js";
 import {
   buildAnnounceIdFromChildRun,
@@ -266,7 +269,15 @@ export const safeMarkRequiredCompletionDeliveryBlocked = (
     return;
   }
   const endedAt = args.entry.execution.endedAt ?? Date.now();
-  const terminalResult = resolveRequiredCompletionDeliveryFailureTerminalResult(args.reason);
+  const resultText = resolveSubagentCompletionResultText(args.entry);
+  // A worker that finished and produced a result did its job. Announce is a
+  // separate obligation: its failure belongs in the delivery fields (set by
+  // safeSetSubagentTaskDeliveryStatus), never in the worker's terminal outcome.
+  // Blocking here is only honest when the run left nothing to hand back at all,
+  // because then the required-completion contract genuinely went unmet.
+  const terminalResult = resultText?.trim()
+    ? resolveRequiredCompletionTerminalResult(resultText)
+    : resolveRequiredCompletionDeliveryFailureTerminalResult(args.reason);
   const target = resolveSubagentTaskTarget(params, args.entry);
   try {
     completeTaskRunByRunId({
@@ -275,7 +286,7 @@ export const safeMarkRequiredCompletionDeliveryBlocked = (
       sessionKey: target.sessionKey,
       endedAt,
       lastEventAt: Date.now(),
-      progressSummary: resolveSubagentCompletionResultText(args.entry),
+      progressSummary: resultText,
       terminalSummary: terminalResult.terminalSummary,
       terminalOutcome: terminalResult.terminalOutcome,
     });

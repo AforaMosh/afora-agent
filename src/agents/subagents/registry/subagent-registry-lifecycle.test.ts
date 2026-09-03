@@ -3533,11 +3533,47 @@ describe("subagent registry lifecycle hardening", () => {
       runtime: "subagent",
       sessionKey: entry.childSessionKey,
       progressSummary: "final answer",
+      // The worker finished and produced a result; only announce failed. That
+      // belongs in deliveryStatus (asserted above), never in the run's outcome.
+      terminalOutcome: undefined,
+      terminalSummary: undefined,
+    });
+    expect(persistOrThrow).toHaveBeenCalled();
+  });
+
+  it("blocks a required completion that left nothing to hand back when delivery gives up", async () => {
+    const entry = createRunEntry({
+      endedAt: 4_000,
+      endedReason: SUBAGENT_ENDED_REASON_COMPLETE,
+      expectsCompletionMessage: true,
+      completion: { required: true, resultText: null },
+      delivery: { status: "pending", lastError: "gateway request timeout for agent" },
+      outcome: { status: "ok" },
+      retainAttachmentsOnKeep: true,
+    });
+
+    const controller = createLifecycleController({
+      entry,
+      persistOrThrow: vi.fn(),
+      captureSubagentCompletionReply: vi.fn(async () => undefined),
+    });
+
+    await controller.finalizeResumedAnnounceGiveUp({
+      runId: entry.runId,
+      entry,
+      reason: "expiry",
+    });
+
+    // Nothing was produced, so the required-completion contract really did go
+    // unmet. Blocking here is the honest outcome, unlike the case above.
+    expectFields(firstCallArg(taskExecutorMocks.completeTaskRunByRunId), {
+      runId: entry.runId,
+      runtime: "subagent",
+      sessionKey: entry.childSessionKey,
       terminalOutcome: "blocked",
       terminalSummary:
         "Required completion delivery failed before reaching the requester: gateway request timeout for agent.",
     });
-    expect(persistOrThrow).toHaveBeenCalled();
   });
 
   it.each([
@@ -3702,19 +3738,10 @@ describe("subagent registry lifecycle hardening", () => {
     expect(entry.delivery?.suspendedAt).toBeTypeOf("number");
     expect(entry.delivery?.suspendedReason).toBe("expiry");
     expect(entry.cleanupCompletedAt).toBeUndefined();
-    expectFields(
-      findCallArg(
-        taskExecutorMocks.completeTaskRunByRunId,
-        (arg) => arg.terminalOutcome === "blocked",
-      ),
-      {
-        runId: entry.runId,
-        runtime: "subagent",
-        sessionKey: entry.childSessionKey,
-        terminalOutcome: "blocked",
-        terminalSummary:
-          "Required completion delivery failed before reaching the requester: UNAVAILABLE: requester wake failed; direct-primary: UNAVAILABLE: requester wake failed.",
-      },
+    // The announce error is recorded as a delivery fact above. The run itself
+    // completed, so nothing may re-terminalise it as blocked.
+    expect(taskExecutorMocks.completeTaskRunByRunId).not.toHaveBeenCalledWith(
+      expect.objectContaining({ terminalOutcome: "blocked" }),
     );
     expect(persist).toHaveBeenCalled();
   });
@@ -4467,7 +4494,7 @@ describe("requester settle wake trigger", () => {
     );
   });
 
-  it("marks yielded intentional non-delivery blocked after requester-settle exhaustion", async () => {
+  it("records yielded intentional non-delivery as a delivery failure, not a blocked run, after requester-settle exhaustion", async () => {
     const entry = createRunEntry({
       endedAt: 4_000,
       expectsCompletionMessage: true,
@@ -4524,7 +4551,7 @@ describe("requester settle wake trigger", () => {
         error: "requester settle wake attempts exhausted",
       }),
     );
-    expect(taskExecutorMocks.completeTaskRunByRunId).toHaveBeenCalledWith(
+    expect(taskExecutorMocks.completeTaskRunByRunId).not.toHaveBeenCalledWith(
       expect.objectContaining({ terminalOutcome: "blocked" }),
     );
   });
