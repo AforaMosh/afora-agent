@@ -506,7 +506,7 @@ describe("workboard gateway methods", () => {
     const createWorktree = vi.fn().mockResolvedValue({
       id: "managed-id",
       path: "/state/worktrees/fingerprint/wb-card",
-      branch: "afora-agent/wb-card",
+      branch: "afora/wb-card",
     });
     const api = {
       runtime: {

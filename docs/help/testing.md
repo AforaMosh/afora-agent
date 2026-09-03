@@ -965,7 +965,7 @@ pull the Open WebUI image and Open WebUI may need to finish its own
 cold-start setup. This lane expects a usable live model key, provided through
 the process environment, staged auth profiles, or an explicit
 `AFORA_PROFILE_FILE`. Successful runs print a small JSON payload like
-`{ "ok": true, "model": "afora-agent/default", ... }`.
+`{ "ok": true, "model": "afora/default", ... }`.
 
 `test:docker:mcp-channels` is intentionally deterministic and does not need a
 real Telegram, Discord, or iMessage account. It boots a seeded Gateway

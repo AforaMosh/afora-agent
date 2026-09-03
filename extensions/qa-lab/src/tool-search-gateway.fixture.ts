@@ -436,7 +436,7 @@ export async function runToolSearchGatewayLane(params: {
         "x-afora-session-key": sessionKey,
       },
       body: JSON.stringify({
-        model: "afora-agent/qa",
+        model: "afora/qa",
         input: [
           {
             type: "message",

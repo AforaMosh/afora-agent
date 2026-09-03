@@ -371,7 +371,7 @@ suite.define(() => {
             kind: "direct",
             label: "Cloud session",
             updatedAt: Date.now(),
-            worktree: { id: "worktree-1", branch: "afora-agent/cloud-e2e", repoRoot: WORKSPACE },
+            worktree: { id: "worktree-1", branch: "afora/cloud-e2e", repoRoot: WORKSPACE },
             placement: { state: "active" },
           },
           {

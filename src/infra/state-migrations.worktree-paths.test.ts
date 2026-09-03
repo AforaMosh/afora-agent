@@ -8,10 +8,7 @@ import { ManagedWorktreeService } from "../agents/worktrees/service.js";
 import { initializeManagedWorktreeTestRepository } from "../agents/worktrees/service.test-support.js";
 import type { AforaConfig } from "../config/config.js";
 import { EMPTY_LEGACY_SESSION_SURFACES } from "../plugins/legacy-session-surfaces.types.js";
-import {
-  closeAforaStateDatabaseForTest,
-  openAforaStateDatabase,
-} from "../state/afora-state-db.js";
+import { closeAforaStateDatabaseForTest, openAforaStateDatabase } from "../state/afora-state-db.js";
 import { requireNodeSqlite } from "./node-sqlite.js";
 import { detectLegacyStateMigrations, runLegacyStateMigrations } from "./state-migrations.js";
 
@@ -48,10 +45,7 @@ describe("managed worktree path state migrations", () => {
   it.skipIf(process.platform === "win32")(
     "canonicalizes persisted paths when the latest additive worktree column is absent",
     async () => {
-      const root = tempDirs.make(
-        "afora-worktree-path-migration-",
-        await fs.realpath(os.tmpdir()),
-      );
+      const root = tempDirs.make("afora-worktree-path-migration-", await fs.realpath(os.tmpdir()));
       const repo = await initializeManagedWorktreeTestRepository(root);
       const realStateDir = path.join(root, "real-state");
       const linkedStateDir = path.join(root, "linked-state");
@@ -76,7 +70,7 @@ describe("managed worktree path state migrations", () => {
         id: "legacy-removed",
         name: "removed",
         path: rawRemovedPath,
-        branch: "afora-agent/removed",
+        branch: "afora/removed",
         removedAt: 1,
       };
       const canonical = {
@@ -84,7 +78,7 @@ describe("managed worktree path state migrations", () => {
         id: "canonical-row",
         name: "canonical",
         path: path.join(canonicalRoot, live.repoFingerprint, "canonical"),
-        branch: "afora-agent/canonical",
+        branch: "afora/canonical",
       };
       const movedPath = path.join(root, "relocated-worktrees", "moved");
       const moved = {
@@ -92,7 +86,7 @@ describe("managed worktree path state migrations", () => {
         id: "moved-row",
         name: "moved",
         path: movedPath,
-        branch: "afora-agent/moved",
+        branch: "afora/moved",
       };
       insertRegistryWorktree(env, removed, { provisionedPaths: [] });
       insertRegistryWorktree(env, canonical, { provisionedPaths: [] });

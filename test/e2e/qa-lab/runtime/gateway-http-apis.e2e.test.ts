@@ -135,14 +135,14 @@ describe("Gateway HTTP API product proof", () => {
       expect(models.response.status).toBe(200);
       expect(models.body.object).toBe("list");
       expect((models.body.data as Array<{ id?: string }>).map((model) => model.id)).toEqual(
-        expect.arrayContaining(["afora-agent/main", "afora-agent/beta"]),
+        expect.arrayContaining(["afora/main", "afora/beta"]),
       );
 
       const chat = await fetchJson(port, "/v1/chat/completions", {
         method: "POST",
         headers: JSON_HEADERS,
         body: JSON.stringify({
-          model: "afora-agent/main",
+          model: "afora/main",
           stream: false,
           messages: [{ role: "user", content: "qa chat request" }],
         }),
@@ -160,7 +160,7 @@ describe("Gateway HTTP API product proof", () => {
         method: "POST",
         headers: JSON_HEADERS,
         body: JSON.stringify({
-          model: "afora-agent/main",
+          model: "afora/main",
           stream: false,
           input: "qa responses request",
         }),
@@ -190,7 +190,7 @@ describe("Gateway HTTP API product proof", () => {
         method: "POST",
         headers: JSON_HEADERS,
         body: JSON.stringify({
-          model: "afora-agent/main",
+          model: "afora/main",
           input: ["alpha", "beta"],
         }),
       });

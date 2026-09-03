@@ -157,14 +157,14 @@ describe("ManagedWorktreeService provisioned state", () => {
     await git(repo, "commit", "-m", "ignore local environment");
     await addRemote(root, repo);
     const legacyPath = path.join(root, "legacy-worktree");
-    await git(repo, "worktree", "add", "-b", "afora-agent/legacy", legacyPath, "HEAD");
+    await git(repo, "worktree", "add", "-b", "afora/legacy", legacyPath, "HEAD");
     insertRegistryWorktree(env, {
       id: "legacy",
       name: "legacy",
       repoFingerprint: "legacy-fingerprint",
       repoRoot: repo,
       path: legacyPath,
-      branch: "afora-agent/legacy",
+      branch: "afora/legacy",
       baseRef: "HEAD",
       ownerKind: "session",
       createdAt: now,

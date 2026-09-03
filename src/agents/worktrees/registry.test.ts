@@ -44,7 +44,7 @@ describe("managed worktree registry", () => {
       repoFingerprint: "0123456789abcdef",
       repoRoot: path.join(root, "repo"),
       path: path.join(root, "worktrees", "task"),
-      branch: "afora-agent/task",
+      branch: "afora/task",
       baseRef: "HEAD",
       ownerKind: "workboard",
       ownerId: "card-1",

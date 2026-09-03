@@ -28,11 +28,7 @@ export function readMcpCodeModeClientFetchLimits(
   env: NodeJS.ProcessEnv = process.env,
 ): McpCodeModeClientFetchLimits {
   return {
-    bodyMaxBytes: readPositiveIntEnv(
-      "AFORA_MCP_CODE_MODE_CLIENT_BODY_MAX_BYTES",
-      1024 * 1024,
-      env,
-    ),
+    bodyMaxBytes: readPositiveIntEnv("AFORA_MCP_CODE_MODE_CLIENT_BODY_MAX_BYTES", 1024 * 1024, env),
     timeoutMs: readPositiveIntEnv("AFORA_MCP_CODE_MODE_CLIENT_TIMEOUT_MS", 300_000, env),
   };
 }
@@ -120,7 +116,7 @@ async function main() {
   const gatewayUrl = process.env.GW_URL?.trim();
   const gatewayToken = process.env.GW_TOKEN?.trim();
   const stateDir = process.env.AFORA_STATE_DIR?.trim();
-  const model = process.env.AFORA_MCP_CODE_MODE_MODEL?.trim() || "afora-agent/main";
+  const model = process.env.AFORA_MCP_CODE_MODE_MODEL?.trim() || "afora/main";
   assert(gatewayUrl, "missing GW_URL");
   assert(gatewayToken, "missing GW_TOKEN");
   assert(stateDir, "missing AFORA_STATE_DIR");

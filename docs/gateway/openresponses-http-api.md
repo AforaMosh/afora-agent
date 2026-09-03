@@ -20,7 +20,7 @@ Operational behavior matches [OpenAI Chat Completions](/gateway/openai-http-api)
 - Treat the endpoint as full operator access to the gateway instance.
 - Shared-secret auth modes ignore a narrower bearer-declared `x-afora-scopes` and restore the full default operator scope set: `operator.admin`, `operator.approvals`, `operator.pairing`, `operator.read`, `operator.talk.secrets`, `operator.write`. Chat turns on this endpoint are treated as owner-sender turns.
 - Trusted identity-bearing HTTP modes (trusted-proxy, or `gateway.auth.mode="none"`) honor `x-afora-scopes` when present, otherwise fall back to the operator default scope set. Owner semantics are lost only when the caller explicitly narrows scopes and omits `operator.admin`.
-- Select agents with `model: "afora"`, `"afora-agent/default"`, `"afora-agent/<agentId>"`, or the `x-afora-agent-id` header.
+- Select agents with `model: "afora"`, `"afora/default"`, `"afora/<agentId>"`, or the `x-afora-agent-id` header.
 - Use `x-afora-model` to override the selected agent's backend model (requires `operator.admin` on identity-bearing auth paths).
 - Use `x-afora-session-key` for explicit session routing (rejected with `400 invalid_request_error` if it uses a reserved namespace: `subagent:`, `cron:`, `acp:`).
 - Use `x-afora-message-channel` for a non-default synthetic ingress channel context.

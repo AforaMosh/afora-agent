@@ -223,7 +223,7 @@ async function main() {
         "x-afora-agent": "qa",
       },
       body: JSON.stringify({
-        model: "afora-agent/qa",
+        model: "afora/qa",
         input: [
           {
             type: "message",

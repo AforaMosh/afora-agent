@@ -345,7 +345,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
       agentCommandMock.mockResolvedValueOnce({ payloads: [{ text: "hello" }] } as never);
       const selected = await postResponses(
         enabledPort,
-        { model: "afora-agent/default", input: "hi" },
+        { model: "afora/default", input: "hi" },
         { "x-afora-agent-id": "main" },
       );
       expect(selected.status).toBe(200);
@@ -724,7 +724,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
         list: [{ id: "main" }, { id: "beta" }],
       };
       resetConfigRuntimeState();
-      const resModel = await postResponses(port, { model: "afora-agent/beta", input: "hi" });
+      const resModel = await postResponses(port, { model: "afora/beta", input: "hi" });
       expect(resModel.status).toBe(200);
       const optsModel = firstAgentOpts();
       expect((optsModel as { sessionKey?: string } | undefined)?.sessionKey ?? "").toMatch(
@@ -736,7 +736,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
       resetConfigRuntimeState();
 
       mockAgentOnce([{ text: "hello" }]);
-      const resDefaultAlias = await postResponses(port, { model: "afora-agent/default", input: "hi" });
+      const resDefaultAlias = await postResponses(port, { model: "afora/default", input: "hi" });
       expect(resDefaultAlias.status).toBe(200);
       const optsDefaultAlias = firstAgentOpts();
       expect((optsDefaultAlias as { sessionKey?: string } | undefined)?.sessionKey ?? "").toMatch(
@@ -760,7 +760,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
       {
         agentCommandMock.mockClear();
-        const res = await postResponses(port, { model: "afora-agent/missing-agent", input: "hi" });
+        const res = await postResponses(port, { model: "afora/missing-agent", input: "hi" });
         expect(res.status).toBe(400);
         const json = (await res.json()) as { error?: { type?: string; message?: string } };
         expect(json.error?.type).toBe("invalid_request_error");

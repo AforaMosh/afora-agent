@@ -374,7 +374,7 @@ test("projects.remove refuses to delete a cloned checkout referenced by a live w
         repoFingerprint: fingerprint,
         repoRoot: repo,
         path: path.join(state.stateDir, "worktrees", fingerprint, "live-worktree"),
-        branch: "afora-agent/live-worktree",
+        branch: "afora/live-worktree",
         baseRef: "main",
         ownerKind: "session",
         ownerId: "agent:main:session",

@@ -71,7 +71,7 @@ describe("gateway OpenAI-compatible disabled HTTP routes", () => {
         expect(res.statusCode).toBe(200);
         expect(JSON.parse(getBody())).toMatchObject({
           object: "list",
-          data: expect.arrayContaining([expect.objectContaining({ id: "afora-agent/default" })]),
+          data: expect.arrayContaining([expect.objectContaining({ id: "afora/default" })]),
         });
       },
     });

@@ -156,7 +156,7 @@ describe("sessions.dispatch", () => {
     mocks.resolveTarget.mockReturnValue(
       targetWithEntry({
         sessionId,
-        worktree: { id: "worktree-1", branch: "afora-agent/cloud-test", repoRoot: "/repo" },
+        worktree: { id: "worktree-1", branch: "afora/cloud-test", repoRoot: "/repo" },
       }),
     );
     mocks.findLiveByOwner.mockReturnValue({
@@ -190,7 +190,7 @@ describe("sessions.dispatch", () => {
       targetWithEntry({
         sessionId,
         agentRuntimeOverride: "codex",
-        worktree: { id: "worktree-1", branch: "afora-agent/cloud-test", repoRoot: "/repo" },
+        worktree: { id: "worktree-1", branch: "afora/cloud-test", repoRoot: "/repo" },
       }),
     );
     mocks.findLiveByOwner.mockReturnValue({
@@ -224,7 +224,7 @@ describe("sessions.dispatch", () => {
     mocks.resolveTarget.mockReturnValue(
       targetWithEntry({
         sessionId,
-        worktree: { id: "worktree-1", branch: "afora-agent/cloud-test", repoRoot: "/repo" },
+        worktree: { id: "worktree-1", branch: "afora/cloud-test", repoRoot: "/repo" },
       }),
     );
     mocks.findLiveByOwner.mockReturnValue({
@@ -252,7 +252,7 @@ describe("sessions.dispatch", () => {
       targetWithEntry({
         sessionId,
         archivedAt: 2,
-        worktree: { id: "worktree-1", branch: "afora-agent/cloud-test", repoRoot: "/repo" },
+        worktree: { id: "worktree-1", branch: "afora/cloud-test", repoRoot: "/repo" },
       }),
     );
     const dispatch = vi.fn();
@@ -280,7 +280,7 @@ describe("sessions.dispatch", () => {
         sessionId,
         permissionMode: "workspace",
         sessionRoot: "/repo/worktree",
-        worktree: { id: "worktree-1", branch: "afora-agent/cloud-test", repoRoot: "/repo" },
+        worktree: { id: "worktree-1", branch: "afora/cloud-test", repoRoot: "/repo" },
       }),
     );
     mocks.findLiveByOwner.mockReturnValue({
@@ -311,7 +311,7 @@ describe("sessions.dispatch", () => {
     mocks.resolveTarget.mockReturnValue(
       targetWithEntry({
         sessionId,
-        worktree: { id: "worktree-1", branch: "afora-agent/cloud-test", repoRoot: "/repo" },
+        worktree: { id: "worktree-1", branch: "afora/cloud-test", repoRoot: "/repo" },
       }),
     );
     mocks.findLiveByOwner.mockReturnValue({
@@ -358,7 +358,7 @@ describe("sessions.dispatch", () => {
     mocks.resolveTarget.mockReturnValue(
       targetWithEntry({
         sessionId,
-        worktree: { id: "worktree-1", branch: "afora-agent/cloud-test", repoRoot: "/repo" },
+        worktree: { id: "worktree-1", branch: "afora/cloud-test", repoRoot: "/repo" },
       }),
     );
     mocks.findLiveByOwner.mockReturnValue({
@@ -421,7 +421,7 @@ describe("sessions.dispatch", () => {
     mocks.resolveTarget.mockReturnValue(
       targetWithEntry({
         sessionId,
-        worktree: { id: "worktree-1", branch: "afora-agent/cloud-test", repoRoot: "/repo" },
+        worktree: { id: "worktree-1", branch: "afora/cloud-test", repoRoot: "/repo" },
       }),
     );
     mocks.findLiveByOwner.mockReturnValue({
@@ -487,7 +487,7 @@ describe("sessions.dispatch", () => {
     mocks.resolveTarget.mockReturnValue(
       targetWithEntry({
         sessionId,
-        worktree: { id: "worktree-1", branch: "afora-agent/cloud-test", repoRoot: "/repo" },
+        worktree: { id: "worktree-1", branch: "afora/cloud-test", repoRoot: "/repo" },
       }),
     );
     mocks.findLiveByOwner.mockReturnValue({
@@ -588,7 +588,7 @@ describe("sessions.dispatch", () => {
         sessionId,
         providerOverride: "anthropic",
         modelOverride: "claude-test",
-        worktree: { id: "worktree-1", branch: "afora-agent/cloud-test", repoRoot: "/repo" },
+        worktree: { id: "worktree-1", branch: "afora/cloud-test", repoRoot: "/repo" },
       }),
     );
     const dispatch = vi.fn();
@@ -628,7 +628,7 @@ describe("sessions.dispatch", () => {
     mocks.resolveTarget.mockReturnValue(
       targetWithEntry({
         sessionId,
-        worktree: { id: "worktree-1", branch: "afora-agent/cloud-test", repoRoot: "/repo" },
+        worktree: { id: "worktree-1", branch: "afora/cloud-test", repoRoot: "/repo" },
       }),
     );
     mocks.findLiveByOwner.mockReturnValue({
@@ -663,7 +663,7 @@ describe("sessions.dispatch", () => {
     mocks.resolveTarget.mockReturnValue(
       targetWithEntry({
         sessionId,
-        worktree: { id: "worktree-1", branch: "afora-agent/cloud-test", repoRoot: "/repo" },
+        worktree: { id: "worktree-1", branch: "afora/cloud-test", repoRoot: "/repo" },
       }),
     );
     mocks.findLiveByOwner.mockReturnValue({
@@ -698,7 +698,7 @@ describe("sessions.dispatch", () => {
       targetWithEntry({
         sessionId,
         agentRuntimeOverride: "afora",
-        worktree: { id: "worktree-1", branch: "afora-agent/cloud-test", repoRoot: "/repo" },
+        worktree: { id: "worktree-1", branch: "afora/cloud-test", repoRoot: "/repo" },
       }),
     );
     mocks.findLiveByOwner.mockReturnValue({

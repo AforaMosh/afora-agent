@@ -58,7 +58,7 @@ describe("ManagedWorktreeService naming", () => {
 
   it("numbers inferred names around unmanaged Git and filesystem collisions", async () => {
     const anchor = await service.create({ repoRoot: repo, name: "anchor", baseRef: "HEAD" });
-    await git(repo, "branch", "afora-agent/release-planning");
+    await git(repo, "branch", "afora/release-planning");
     await fs.mkdir(path.join(path.dirname(anchor.path), "release-planning-2"));
 
     const created = await service.create({

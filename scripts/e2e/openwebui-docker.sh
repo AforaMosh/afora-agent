@@ -194,7 +194,7 @@ docker_e2e_docker_cmd run -d \
   -e WEBUI_ADMIN_PASSWORD="$ADMIN_PASSWORD" \
   -e WEBUI_ADMIN_NAME="Afora E2E" \
   -e ENABLE_SIGNUP=False \
-  -e DEFAULT_MODELS="afora-agent/default" \
+  -e DEFAULT_MODELS="afora/default" \
   "$OPENWEBUI_IMAGE" >/dev/null
 
 echo "Waiting for Open WebUI..."

@@ -1350,7 +1350,7 @@ test("sessions.create provisions and reuses a session worktree for later runs", 
     expect(created.ok).toBe(true);
     const key = requireNonEmptyString(created.payload?.key, "created session key");
     const worktree = created.payload?.worktree;
-    expect(worktree?.branch).toBe("afora-agent/release-planning");
+    expect(worktree?.branch).toBe("afora/release-planning");
     expect(created.payload?.entry.spawnedCwd).toBe(worktree?.path);
     expect(created.payload?.entry.permissionMode).toBe("workspace");
     expect(created.payload?.entry.sessionRoot).toBe(worktree?.path);
@@ -1439,7 +1439,7 @@ test("sessions.create preserves a committed worktree when initial-turn setup fai
 
     expect(loadSessionEntry({ sessionKey: key, storePath })).toMatchObject({
       sessionId: expect.any(String),
-      worktree: { id: expect.any(String), branch: "afora-agent/post-commit-worktree" },
+      worktree: { id: expect.any(String), branch: "afora/post-commit-worktree" },
     });
     const owned = findLiveRegistryWorktreeByOwner(process.env, "session", key);
     expect(owned).toBeDefined();
@@ -1612,7 +1612,7 @@ test.each([
 
       expect(created.ok, JSON.stringify(created.error)).toBe(true);
       worktreeId = created.payload?.worktree.id;
-      expect(created.payload?.worktree.branch).toBe("afora-agent/attachment-repair");
+      expect(created.payload?.worktree.branch).toBe("afora/attachment-repair");
       expect(created.payload?.entry).toMatchObject(expectedEntry);
       const sessionKey = requireNonEmptyString(created.payload?.key, "created session key");
       await waitForFast(() => expect(dashboardTitleScheduleMocks.schedule).toHaveBeenCalled());
@@ -1719,7 +1719,7 @@ test.each([
 
       expect(created.ok, JSON.stringify(created.error)).toBe(true);
       worktreeId = created.payload?.worktree.id;
-      expect(created.payload?.worktree.branch).toBe("afora-agent/investigate-the-raw-fallback-title");
+      expect(created.payload?.worktree.branch).toBe("afora/investigate-the-raw-fallback-title");
       expect(dashboardTitleGenerationMocks.generate).toHaveBeenCalledOnce();
     } finally {
       if (worktreeId) {
@@ -1829,7 +1829,7 @@ test("sessions.create maps worktree options and preserves a nested workspace cwd
       spawnedCwd: path.join(worktreePath, "packages", "app"),
       worktree: {
         id: "worktree-options",
-        branch: "afora-agent/target-task",
+        branch: "afora/target-task",
         repoRoot,
       },
     });

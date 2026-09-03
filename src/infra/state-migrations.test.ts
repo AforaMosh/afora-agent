@@ -3066,7 +3066,7 @@ describe("state migrations", () => {
       "legacy-fingerprint",
       path.join(root, "repo"),
       path.join(stateDir, "worktrees", "legacy"),
-      "afora-agent/legacy",
+      "afora/legacy",
       "HEAD",
       "session",
       1,

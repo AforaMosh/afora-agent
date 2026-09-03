@@ -77,7 +77,7 @@ describe("ManagedWorktreeService run-end cleanup outcomes", () => {
     ).rejects.toThrow("authority closed");
 
     expect(await git(repo, "worktree", "list", "--porcelain")).not.toContain("closed-authority");
-    expect(await git(repo, "branch", "--list", "afora-agent/closed-authority")).toBe("");
+    expect(await git(repo, "branch", "--list", "afora/closed-authority")).toBe("");
     expect(listRegistryWorktrees(env)).toEqual([]);
   });
 

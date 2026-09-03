@@ -153,7 +153,7 @@ describe("ManagedWorktreeService", () => {
     const repeated = await service.create({ repoRoot: repo, name: "remote-task" });
 
     expect(created.baseRef).toBe("origin/main");
-    expect(created.branch).toBe("afora-agent/remote-task");
+    expect(created.branch).toBe("afora/remote-task");
     expect(created.path).toContain(path.join("worktrees", created.repoFingerprint, "remote-task"));
     expect(await git(created.path, "branch", "--show-current")).toBe(created.branch);
     expect(repeated).toEqual(created);
@@ -339,7 +339,7 @@ describe("ManagedWorktreeService", () => {
       }),
     ).rejects.toThrow(/git rev-parse --symbolic-full-name --verify failed/);
 
-    expect(await git(repo, "branch", "--list", "afora-agent/ambiguous-ref")).toBe("");
+    expect(await git(repo, "branch", "--list", "afora/ambiguous-ref")).toBe("");
     expect(await service.list()).toEqual([]);
   });
 
@@ -356,9 +356,7 @@ describe("ManagedWorktreeService", () => {
       expect(await git(repo, "worktree", "list", "--porcelain")).toBe(before);
       expect(await git(repo, "branch", "--list", `afora/${name}`)).toBe("");
       expect(await service.list()).toEqual([]);
-      await expect(fs.readdir(path.join(env.AFORA_STATE_DIR!, "worktrees"))).resolves.toEqual(
-        [],
-      );
+      await expect(fs.readdir(path.join(env.AFORA_STATE_DIR!, "worktrees"))).resolves.toEqual([]);
     },
   );
 
@@ -410,7 +408,7 @@ describe("ManagedWorktreeService", () => {
       throw new Error("expected one concurrent create to succeed");
     }
     expect(await git(repo, "worktree", "list", "--porcelain")).toContain(created.path);
-    expect(await git(created.path, "branch", "--show-current")).toBe("afora-agent/concurrent");
+    expect(await git(created.path, "branch", "--show-current")).toBe("afora/concurrent");
   });
 
   it("falls back to local HEAD when fetch fails", async () => {
@@ -438,14 +436,14 @@ describe("ManagedWorktreeService", () => {
 
   it("preserves a pre-existing branch when a managed name collides", async () => {
     await addRemote(root, repo);
-    await git(repo, "branch", "afora-agent/existing-name", "HEAD");
-    const branchTip = await git(repo, "rev-parse", "afora-agent/existing-name");
+    await git(repo, "branch", "afora/existing-name", "HEAD");
+    const branchTip = await git(repo, "rev-parse", "afora/existing-name");
 
     await expect(service.create({ repoRoot: repo, name: "existing-name" })).rejects.toThrow(
       "branch already exists",
     );
 
-    expect(await git(repo, "rev-parse", "afora-agent/existing-name")).toBe(branchTip);
+    expect(await git(repo, "rev-parse", "afora/existing-name")).toBe(branchTip);
   });
 
   it("copies only included ignored regular files without following symlinks", async () => {
@@ -549,7 +547,7 @@ describe("ManagedWorktreeService", () => {
       service.create({ repoRoot: repo, name: "broken-setup", baseRef: "HEAD" }),
     ).rejects.toThrow("setup-broke");
     expect(await git(repo, "worktree", "list", "--porcelain")).not.toContain("broken-setup");
-    expect(await git(repo, "branch", "--list", "afora-agent/broken-setup")).toBe("");
+    expect(await git(repo, "branch", "--list", "afora/broken-setup")).toBe("");
   });
 
   it("restores tracked, untracked, and provisioned ignored files from the snapshot", async () => {

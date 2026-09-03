@@ -792,7 +792,7 @@ suite.define(() => {
           withWork
             ? {
                 execNode: nodeHash,
-                worktree: { branch: "afora-agent/wt-1", repoRoot: "/Users/dev/Projects/clawdbot" },
+                worktree: { branch: "afora/wt-1", repoRoot: "/Users/dev/Projects/clawdbot" },
               }
             : {},
         ),

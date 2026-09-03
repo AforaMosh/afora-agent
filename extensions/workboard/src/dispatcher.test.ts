@@ -750,7 +750,7 @@ describe("dispatchAndStartWorkboardCards", () => {
       workspace: {
         kind: "worktree",
         path: "/state/worktrees/fingerprint/wb-card",
-        branch: "afora-agent/wb-card",
+        branch: "afora/wb-card",
         sourcePath: "/repo",
       },
       workspaceAccess: { unrestricted: true },
@@ -758,7 +758,7 @@ describe("dispatchAndStartWorkboardCards", () => {
     const create = vi.fn().mockResolvedValue({
       id: "managed-id",
       path: "/state/worktrees/fingerprint/wb-card",
-      branch: "afora-agent/wb-card",
+      branch: "afora/wb-card",
     });
 
     await dispatchAndStartWorkboardCards({

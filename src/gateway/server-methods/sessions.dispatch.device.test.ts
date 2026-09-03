@@ -75,7 +75,7 @@ describe("sessions.dispatch device targets", () => {
     dispatchTestMocks.resolveTarget.mockReturnValue(
       makeSessionTarget({
         sessionId: dispatchTestSessionId,
-        worktree: { id: "worktree-1", branch: "afora-agent/device-test", repoRoot: "/repo" },
+        worktree: { id: "worktree-1", branch: "afora/device-test", repoRoot: "/repo" },
       }),
     );
     dispatchTestMocks.findLiveByOwner.mockReturnValue({
@@ -138,7 +138,7 @@ describe("sessions.dispatch device targets", () => {
     dispatchTestMocks.resolveTarget.mockReturnValue(
       makeSessionTarget({
         sessionId: dispatchTestSessionId,
-        worktree: { id: "worktree-1", branch: "afora-agent/device-test", repoRoot: "/repo" },
+        worktree: { id: "worktree-1", branch: "afora/device-test", repoRoot: "/repo" },
       }),
     );
     dispatchTestMocks.findLiveByOwner.mockReturnValue({
@@ -206,7 +206,7 @@ describe("sessions.dispatch device targets", () => {
         dispatchTestMocks.resolveTarget.mockReturnValue(
           makeSessionTarget({
             sessionId: dispatchTestSessionId,
-            worktree: { id: "worktree-1", branch: "afora-agent/device-test", repoRoot: "/repo" },
+            worktree: { id: "worktree-1", branch: "afora/device-test", repoRoot: "/repo" },
           }),
         );
         dispatchTestMocks.findLiveByOwner.mockReturnValue({

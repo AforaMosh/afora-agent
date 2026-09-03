@@ -348,7 +348,7 @@ describe("handleWorkboardCommand", () => {
     createWorktree.mockResolvedValue({
       id: "managed-id",
       path: "/state/worktrees/fingerprint/wb-card",
-      branch: "afora-agent/wb-card",
+      branch: "afora/wb-card",
     });
     await store.create({
       title: "Denied checkout",

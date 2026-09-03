@@ -240,7 +240,7 @@ const [richNpmCatalogFixture, clawhubCatalogFixture, yuanbaoCatalogFixture] = [
         defaultChoice: "clawhub",
         clawhub: {
           spec: "clawhub:afora/clawhub-chat@2026.5.2",
-          packageName: "afora-agent/clawhub-chat",
+          packageName: "afora/clawhub-chat",
           version: "2026.5.2",
           exactVersion: true,
         },
@@ -254,8 +254,7 @@ const [richNpmCatalogFixture, clawhubCatalogFixture, yuanbaoCatalogFixture] = [
     channelId: "afora-plugin-yuanbao",
     entry: {
       name: "afora-plugin-yuanbao",
-      description:
-        "Afora Yuanbao (元宝) channel plugin — community maintained, published on npm.",
+      description: "Afora Yuanbao (元宝) channel plugin — community maintained, published on npm.",
       source: "external",
       kind: "channel",
       afora: {

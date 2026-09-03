@@ -35,7 +35,7 @@ function shortenOpaqueIdRuns(text: string): string {
   return text.replace(OPAQUE_ID_RUN_RE, (match) => `…${match.slice(-4)}`);
 }
 
-const WORKTREE_BRANCH_PREFIX = "afora-agent/";
+const WORKTREE_BRANCH_PREFIX = "afora/";
 
 // `dm` is the pre-#11881 spelling of `direct`; those keys still persist and the
 // canonical parser still accepts both (src/sessions/session-key-utils.ts).

@@ -192,7 +192,7 @@ public enum ChatSessionSidebarModel {
         let repoRoot = session.worktree?.repoRoot?.trimmingCharacters(in: .whitespacesAndNewlines)
         let branch = session.worktree?.branch?.trimmingCharacters(in: .whitespacesAndNewlines)
         let repoName = repoRoot?.split(separator: "/").last.map(String.init)
-        let shortBranch = branch.map { $0.hasPrefix("afora-agent/") ? String($0.dropFirst("afora-agent/".count)) : $0 }
+        let shortBranch = branch.map { $0.hasPrefix("afora/") ? String($0.dropFirst("afora/".count)) : $0 }
         guard let repoName, !repoName.isEmpty else { return nil }
         guard let shortBranch, !shortBranch.isEmpty else { return repoName }
         return "\(repoName) \u{2387} \(shortBranch)"

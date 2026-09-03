@@ -330,7 +330,7 @@ suite.define(() => {
           repoFingerprint: "0123456789abcdef",
           repoRoot: WORKSPACE,
           path: worktreePath,
-          branch: "afora-agent/terminal-task",
+          branch: "afora/terminal-task",
           baseRef: "main",
           ownerKind: "manual",
           createdAt: 1,

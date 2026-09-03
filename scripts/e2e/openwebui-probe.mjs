@@ -325,7 +325,7 @@ for (let attempt = 1; attempt <= modelAttempts; attempt += 1) {
   if (modelsResult?.ok) {
     modelIds = extractModelIds(modelsResult.json);
     targetModel =
-      modelIds.find((id) => id === "afora-agent/default") ?? modelIds.find((id) => id === "afora");
+      modelIds.find((id) => id === "afora/default") ?? modelIds.find((id) => id === "afora");
     if (targetModel) {
       break;
     }

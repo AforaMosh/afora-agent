@@ -45,10 +45,10 @@ Treat this endpoint as **full operator access** to the gateway instance:
 
 Auth matrix:
 
-| Auth path                                                                                            | Behavior                                                                                                                                                                                                                                                                                                  |
-| ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Auth path                                                                                            | Behavior                                                                                                                                                                                                                                                                                               |
+| ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `gateway.auth.mode="token"` or `"password"` + `Authorization: Bearer ...`                            | Proves possession of the shared gateway secret. Ignores any `x-afora-scopes` header and restores the full default operator scope set: `operator.admin`, `operator.approvals`, `operator.pairing`, `operator.read`, `operator.talk.secrets`, `operator.write`. Treats chat turns as owner-sender turns. |
-| Trusted identity-bearing HTTP (trusted-proxy auth, or `gateway.auth.mode="none"` on private ingress) | Honors `x-afora-scopes` when present; falls back to the default operator scope set when absent. Loses owner semantics only when the caller explicitly narrows scopes and omits `operator.admin`. Requires `operator.admin` for owner-level controls such as `x-afora-model`.                        |
+| Trusted identity-bearing HTTP (trusted-proxy auth, or `gateway.auth.mode="none"` on private ingress) | Honors `x-afora-scopes` when present; falls back to the default operator scope set when absent. Loses owner semantics only when the caller explicitly narrows scopes and omits `operator.admin`. Requires `operator.admin` for owner-level controls such as `x-afora-model`.                           |
 
 See [Operator scopes](/gateway/operator-scopes), [Security](/gateway/security), and [Remote access](/gateway/remote).
 
@@ -58,8 +58,8 @@ Uses the Gateway auth configuration (see [Trusted proxy auth](/gateway/trusted-p
 
 | Mode                                | How to authenticate                                                                                                                                                                     |
 | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `gateway.auth.mode="token"`         | `Authorization: Bearer <token>`. Set via `gateway.auth.token` or `AFORA_GATEWAY_TOKEN`.                                                                                              |
-| `gateway.auth.mode="password"`      | `Authorization: Bearer <password>`. Set via `gateway.auth.password` or `AFORA_GATEWAY_PASSWORD`.                                                                                     |
+| `gateway.auth.mode="token"`         | `Authorization: Bearer <token>`. Set via `gateway.auth.token` or `AFORA_GATEWAY_TOKEN`.                                                                                                 |
+| `gateway.auth.mode="password"`      | `Authorization: Bearer <password>`. Set via `gateway.auth.password` or `AFORA_GATEWAY_PASSWORD`.                                                                                        |
 | `gateway.auth.mode="trusted-proxy"` | Route through the configured identity-aware proxy; it injects the required identity headers. Same-host loopback proxies need explicit `gateway.auth.trustedProxy.allowLoopback = true`. |
 | `gateway.auth.mode="none"`          | No auth header required (private ingress only).                                                                                                                                         |
 
@@ -78,21 +78,21 @@ Notes:
 
 Afora treats the OpenAI `model` field as an **agent target**, not a raw provider model id.
 
-| `model` value                                | Routes to                                                                                                                |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `afora`                                   | Configured default agent                                                                                                 |
-| `afora/default`                           | Configured default agent (stable alias; safe to hardcode even if the real default agent id changes between environments) |
+| `model` value                          | Routes to                                                                                                                |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `afora`                                | Configured default agent                                                                                                 |
+| `afora/default`                        | Configured default agent (stable alias; safe to hardcode even if the real default agent id changes between environments) |
 | `afora/<agentId>` or `afora:<agentId>` | Specific agent                                                                                                           |
-| `agent:<agentId>`                            | Specific agent (compatibility alias)                                                                                     |
+| `agent:<agentId>`                      | Specific agent (compatibility alias)                                                                                     |
 
 Optional request headers:
 
-| Header                                          | Effect                                                                                                                                                                                                                                                                      |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Header                                       | Effect                                                                                                                                                                                                                                                                   |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `x-afora-model: <provider/model-or-bare-id>` | Overrides the backend model for the selected agent. Shared-secret bearer callers can use this directly; identity-bearing callers (trusted-proxy, or private no-auth ingress with `x-afora-scopes`) need `operator.admin`, otherwise `403 missing scope: operator.admin`. |
-| `x-afora-agent-id: <agentId>`                | Compatibility override for agent selection.                                                                                                                                                                                                                                 |
-| `x-afora-session-key: <sessionKey>`          | Explicit session routing. Rejected with `400 invalid_request_error` if it uses a reserved internal namespace (`subagent:`, `cron:`, `acp:`).                                                                                                                                |
-| `x-afora-message-channel: <channel>`         | Sets the synthetic ingress channel context for channel-aware prompts/policies.                                                                                                                                                                                              |
+| `x-afora-agent-id: <agentId>`                | Compatibility override for agent selection.                                                                                                                                                                                                                              |
+| `x-afora-session-key: <sessionKey>`          | Explicit session routing. Rejected with `400 invalid_request_error` if it uses a reserved internal namespace (`subagent:`, `cron:`, `acp:`).                                                                                                                             |
+| `x-afora-message-channel: <channel>`         | Sets the synthetic ingress channel context for channel-aware prompts/policies.                                                                                                                                                                                           |
 
 `/v1/models` lists top-level agent targets (`afora`, `afora/default`, `afora/<agentId>`), not backend provider models and not sub-agents; sub-agents stay internal execution topology. If you omit `x-afora-model`, the selected agent runs with its normal configured model.
 
@@ -243,7 +243,7 @@ curl -sS http://127.0.0.1:18789/v1/chat/completions \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
   -d '{
-    "model": "afora-agent/default",
+    "model": "afora/default",
     "user": "conv:YOUR_CONVERSATION_ID",
     "messages": [{"role":"user","content":"Summarize my tasks for today"}]
   }'
@@ -258,7 +258,7 @@ curl -sS http://127.0.0.1:18789/v1/chat/completions \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
   -d '{
-    "model": "afora-agent/default",
+    "model": "afora/default",
     "messages": [{"role":"user","content":"hi"}]
   }'
 ```
@@ -271,7 +271,7 @@ curl -N http://127.0.0.1:18789/v1/chat/completions \
   -H 'Content-Type: application/json' \
   -H 'x-afora-model: openai/gpt-5.4' \
   -d '{
-    "model": "afora-agent/research",
+    "model": "afora/research",
     "stream": true,
     "messages": [{"role":"user","content":"hi"}]
   }'
@@ -299,7 +299,7 @@ curl -sS http://127.0.0.1:18789/v1/embeddings \
   -H 'Content-Type: application/json' \
   -H 'x-afora-model: openai/text-embedding-3-small' \
   -d '{
-    "model": "afora-agent/default",
+    "model": "afora/default",
     "input": ["alpha", "beta"]
   }'
 ```

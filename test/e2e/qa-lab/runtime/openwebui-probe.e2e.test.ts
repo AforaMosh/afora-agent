@@ -375,7 +375,7 @@ describe("scripts/e2e/openwebui-probe.mjs", () => {
         expect(request.headers.authorization).toBe("Bearer test-token");
         expect(request.headers.cookie).toContain("openwebui-session=test");
         response.writeHead(200, { "content-type": "application/json" });
-        response.end(JSON.stringify({ data: [{ id: "afora-agent/default" }] }));
+        response.end(JSON.stringify({ data: [{ id: "afora/default" }] }));
         return;
       }
       response.writeHead(404).end();
@@ -390,7 +390,7 @@ describe("scripts/e2e/openwebui-probe.mjs", () => {
       expect(result.status).toBe(0);
       expect(JSON.parse(result.stdout)).toMatchObject({
         mode: "models",
-        model: "afora-agent/default",
+        model: "afora/default",
         ok: true,
       });
     } finally {
@@ -412,7 +412,7 @@ describe("scripts/e2e/openwebui-probe.mjs", () => {
         }
         if (request.url === "/api/models") {
           response.writeHead(200, { "content-type": "application/json" });
-          response.end(JSON.stringify({ data: [{ id: "afora-agent/default" }] }));
+          response.end(JSON.stringify({ data: [{ id: "afora/default" }] }));
           return;
         }
         if (request.url === "/api/chat/completions") {
@@ -436,14 +436,14 @@ describe("scripts/e2e/openwebui-probe.mjs", () => {
 
       expect(result.status).toBe(0);
       expect(JSON.parse(result.stdout)).toMatchObject({
-        model: "afora-agent/default",
+        model: "afora/default",
         ok: true,
         reply: "Afora replied with nonce-123",
       });
       expect(chatRequests).toEqual([
         {
           messages: [{ content: "reply with nonce-123", role: "user" }],
-          model: "afora-agent/default",
+          model: "afora/default",
         },
       ]);
     } finally {
@@ -463,7 +463,7 @@ describe("scripts/e2e/openwebui-probe.mjs", () => {
       }
       if (request.url === "/api/models") {
         response.writeHead(200, { "content-type": "application/json" });
-        response.end(JSON.stringify({ data: [{ id: "afora-agent/default" }] }));
+        response.end(JSON.stringify({ data: [{ id: "afora/default" }] }));
         return;
       }
       if (request.url === "/api/chat/completions") {

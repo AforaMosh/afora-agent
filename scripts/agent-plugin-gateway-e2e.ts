@@ -397,7 +397,7 @@ async function main(): Promise<void> {
         "x-afora-session-key": "agent:main:openresponses:agent-plugin-gateway-e2e",
       },
       body: JSON.stringify({
-        model: "afora-agent/main",
+        model: "afora/main",
         input: "agent plugin bundle qa check",
         max_output_tokens: 256,
         stream: false,

@@ -1724,7 +1724,7 @@ describe("gateway session utils", () => {
       sessionId: "s1",
       updatedAt: 1,
       spawnedCwd: "/state/worktrees/abc/wt-1234",
-      worktree: { id: "wt-id", branch: "afora-agent/wt-1234", repoRoot: "/repo" },
+      worktree: { id: "wt-id", branch: "afora/wt-1234", repoRoot: "/repo" },
       execNode: "macbook",
       execCwd: "/Users/peter/Projects/afora",
     } as SessionEntry;
@@ -1735,7 +1735,7 @@ describe("gateway session utils", () => {
       key: "agent:main:dashboard:x",
       entry,
     });
-    expect(row.worktree).toEqual({ id: "wt-id", branch: "afora-agent/wt-1234", repoRoot: "/repo" });
+    expect(row.worktree).toEqual({ id: "wt-id", branch: "afora/wt-1234", repoRoot: "/repo" });
     expect(row.execNode).toBe("macbook");
     expect(row.execCwd).toBe("/Users/peter/Projects/afora");
   });

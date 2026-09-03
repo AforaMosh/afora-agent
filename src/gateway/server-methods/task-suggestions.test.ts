@@ -758,7 +758,7 @@ describe("task suggestion gateway methods", () => {
                 worktreePreserved: {
                   id: "preserved-worktree",
                   path: "/preserved-worktree",
-                  branch: "afora-agent/preserved-worktree",
+                  branch: "afora/preserved-worktree",
                 },
               }
             : {}),

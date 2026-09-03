@@ -489,7 +489,7 @@ For a dedicated 1Password guide covering service accounts, the bundled agent ski
             apiKey: {
               source: "exec",
               provider: "bws",
-              id: "afora-agent/providers/openai/apiKey",
+              id: "afora/providers/openai/apiKey",
             },
           },
         },
@@ -595,7 +595,7 @@ For a dedicated 1Password guide covering service accounts, the bundled agent ski
             apiKey: {
               source: "exec",
               provider: "pass_store",
-              id: "afora-agent/providers/openai/apiKey",
+              id: "afora/providers/openai/apiKey",
             },
           },
         },

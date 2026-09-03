@@ -53,7 +53,7 @@ export {
 
 export const AFORA_MODEL_ID = "afora";
 /** Default OpenAI-compatible model alias that targets the default Afora agent. */
-export const AFORA_DEFAULT_MODEL_ID = "afora-agent/default";
+export const AFORA_DEFAULT_MODEL_ID = "afora/default";
 
 class UnknownGatewayAgentError extends Error {
   constructor(readonly agentId: string) {

@@ -12,7 +12,7 @@ const suite = createControlUiE2eSuite({
 
 const restorableWorktree = {
   baseRef: "main",
-  branch: "afora-agent/test",
+  branch: "afora/test",
   createdAt: 1,
   id: "worktree-1",
   lastActiveAt: 2,

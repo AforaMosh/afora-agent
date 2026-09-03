@@ -190,7 +190,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       agentCommandMock.mockResolvedValueOnce({ payloads: [{ text: "hello" }] } as never);
       const selected = await postChatCompletions(
         enabledPort,
-        { model: "afora-agent/default", messages: [{ role: "user", content: "hi" }] },
+        { model: "afora/default", messages: [{ role: "user", content: "hi" }] },
         { "x-afora-agent-id": "main" },
       );
       expect(selected.status).toBe(200);
@@ -300,7 +300,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
       await expectAgentSessionKeyMatch({
         body: {
-          model: "afora-agent/beta",
+          model: "afora/beta",
           messages: [{ role: "user", content: "hi" }],
         },
         matcher: /^agent:beta:/,
@@ -311,7 +311,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
       await expectAgentSessionKeyMatch({
         body: {
-          model: "afora-agent/default",
+          model: "afora/default",
           messages: [{ role: "user", content: "hi" }],
         },
         headers: { "x-afora-agent-id": "main" },
@@ -335,7 +335,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       {
         agentCommandMock.mockClear();
         const res = await postChatCompletions(port, {
-          model: "afora-agent/missing-agent",
+          model: "afora/missing-agent",
           messages: [{ role: "user", content: "hi" }],
         });
         expect(res.status).toBe(400);
@@ -486,9 +486,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         expect(res.status).toBe(400);
         const json = (await res.json()) as { error?: { type?: string; message?: string } };
         expect(json.error?.type).toBe("invalid_request_error");
-        expect(json.error?.message).toBe(
-          "Invalid `model`. Use `afora` or `afora/<agentId>`.",
-        );
+        expect(json.error?.message).toBe("Invalid `model`. Use `afora` or `afora/<agentId>`.");
         expect(agentCommandMock).toHaveBeenCalledTimes(0);
       }
 

@@ -116,7 +116,7 @@ describe("managed worktrees session-owner product proof", () => {
       const clean = await createSessionWorktree({ name: "qa-session-clean", repo });
       expect(clean.worktree).toMatchObject({
         id: expect.any(String),
-        branch: "afora-agent/qa-session-clean",
+        branch: "afora/qa-session-clean",
         path: expect.any(String),
       });
       expect(clean.entry.worktree).toEqual({

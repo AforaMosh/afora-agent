@@ -601,7 +601,7 @@ struct RootTabsPresentationTests {
                 worktree: AforaChatSessionWorktree(id: "w1", branch: branch, repoRoot: repoRoot))
         }
         #expect(ChatSessionSidebarModel.workSubtitle(
-            for: entry(repoRoot: "/Users/dev/afora", branch: "afora-agent/fix-thing")) == "afora \u{2387} fix-thing")
+            for: entry(repoRoot: "/Users/dev/afora", branch: "afora/fix-thing")) == "afora \u{2387} fix-thing")
         #expect(ChatSessionSidebarModel.workSubtitle(
             for: entry(repoRoot: "/Users/dev/afora", branch: nil)) == "afora")
         #expect(ChatSessionSidebarModel.workSubtitle(for: entry(repoRoot: nil, branch: "main")) == nil)

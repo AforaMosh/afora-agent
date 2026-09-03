@@ -19,7 +19,7 @@ describe("sessions.reclaim", () => {
     dispatchTestMocks.resolveTarget.mockReturnValue(
       makeSessionTarget({
         sessionId: dispatchTestSessionId,
-        worktree: { id: "worktree-1", branch: "afora-agent/cloud-test", repoRoot: "/repo" },
+        worktree: { id: "worktree-1", branch: "afora/cloud-test", repoRoot: "/repo" },
       }),
     );
     dispatchTestMocks.findLiveByOwner.mockReturnValue({

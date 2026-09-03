@@ -146,7 +146,7 @@ describe("resolveGatewayRequestContext", () => {
     expect(() =>
       resolveGatewayRequestContext({
         req: createReq(),
-        model: "afora-agent/missing-agent",
+        model: "afora/missing-agent",
         sessionPrefix: "openai",
         defaultMessageChannel: "webchat",
       }),
@@ -294,16 +294,16 @@ describe("resolveOpenAiCompatibleHttpSenderIsOwner", () => {
 
   it("still requires operator.admin for trusted scope-bearing requests", () => {
     expect(
-      resolveOpenAiCompatibleHttpSenderIsOwner(
-        createReq({ "x-afora-scopes": "operator.write" }),
-        { authMethod: "trusted-proxy", trustDeclaredOperatorScopes: true },
-      ),
+      resolveOpenAiCompatibleHttpSenderIsOwner(createReq({ "x-afora-scopes": "operator.write" }), {
+        authMethod: "trusted-proxy",
+        trustDeclaredOperatorScopes: true,
+      }),
     ).toBe(false);
     expect(
-      resolveOpenAiCompatibleHttpSenderIsOwner(
-        createReq({ "x-afora-scopes": "operator.admin" }),
-        { authMethod: "trusted-proxy", trustDeclaredOperatorScopes: true },
-      ),
+      resolveOpenAiCompatibleHttpSenderIsOwner(createReq({ "x-afora-scopes": "operator.admin" }), {
+        authMethod: "trusted-proxy",
+        trustDeclaredOperatorScopes: true,
+      }),
     ).toBe(true);
   });
 });
