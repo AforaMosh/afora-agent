@@ -31,6 +31,12 @@ function withReseedGuidanceBudget(historyChars: number): number {
   return RESEED_CURRENCY_GUIDANCE.length + "\n".length + historyChars;
 }
 
+// The truncation marker is spent from the same history budget as the summary, so
+// the character the summary gets cut at moves with the length of the brand name in
+// it. Derive the budget from the marker instead of hard-coding a number, or this
+// boundary case silently stops landing on the emoji.
+const RESEED_TRUNCATION_MARKER = "[Afora reseed history truncated; older turns dropped]";
+
 function extractReseedHistory(prompt: string | undefined): string {
   return prompt?.match(/<conversation_history>\n([\s\S]*?)\n<\/conversation_history>/)?.[1] ?? "";
 }
@@ -1057,11 +1063,11 @@ describe("buildCliSessionHistoryPrompt", () => {
     const prompt = buildCliSessionHistoryPrompt({
       messages: [{ role: "compactionSummary", summary: `aa😀${"z".repeat(100)}` }],
       prompt: "next",
-      maxHistoryChars: withReseedGuidanceBudget(80),
+      maxHistoryChars: withReseedGuidanceBudget(RESEED_TRUNCATION_MARKER.length + 24),
     });
 
     expect(prompt).toContain(
-      `<conversation_history>\n${RESEED_CURRENCY_GUIDANCE}\n[Afora reseed history truncated; older turns dropped]\nCompaction summary: aa\n</conversation_history>`,
+      `<conversation_history>\n${RESEED_CURRENCY_GUIDANCE}\n${RESEED_TRUNCATION_MARKER}\nCompaction summary: aa\n</conversation_history>`,
     );
   });
 

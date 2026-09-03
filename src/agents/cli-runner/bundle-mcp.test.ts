@@ -438,7 +438,7 @@ describe("prepareCliBundleMcpConfig", () => {
     const raw = JSON.parse(await fs.readFile(generatedConfigPath, "utf-8")) as {
       mcpServers?: Record<string, { url?: string; headers?: Record<string, string> }>;
     };
-    expect(Object.keys(raw.mcpServers ?? {}).toSorted()).toEqual(["bundleProbe", "afora"]);
+    expect(Object.keys(raw.mcpServers ?? {}).toSorted()).toEqual(["afora", "bundleProbe"]);
     expect(raw.mcpServers?.afora?.url).toBe("http://127.0.0.1:23119/mcp");
     expect(raw.mcpServers?.afora?.headers?.Authorization).toBe("Bearer lb-tk-123");
     expect(raw.mcpServers?.afora?.headers?.["x-afora-cli-capture-key"]).toBe("");
@@ -452,9 +452,7 @@ describe("prepareCliBundleMcpConfig", () => {
       mcpServers?: Record<string, { url?: string; headers?: Record<string, string> }>;
     };
     expect(attemptRaw.mcpServers?.afora?.headers?.Authorization).toBe("Bearer lb-tk-123");
-    expect(attemptRaw.mcpServers?.afora?.headers?.["x-afora-cli-capture-key"]).toBe(
-      "attempt-123",
-    );
+    expect(attemptRaw.mcpServers?.afora?.headers?.["x-afora-cli-capture-key"]).toBe("attempt-123");
     expect(prepared.mcpConfigHash).toBe(otherEnvPrepared.mcpConfigHash);
     expect(prepared.mcpResumeHash).toBe(otherEnvPrepared.mcpResumeHash);
 
