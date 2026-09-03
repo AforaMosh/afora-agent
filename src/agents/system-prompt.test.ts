@@ -2060,6 +2060,10 @@ describe("buildSubagentSystemPrompt", () => {
     expect(prompt).toContain("Subagent results auto-announce");
     expect(prompt).toContain("never list histories, sleep, or poll in loops");
     expect(prompt).toContain("available turn-yield tool when needed");
+    // A denied turn-yield tool must not leave shell sleeping as the only read
+    // of "wait": a quiet process is killed and the run is lost.
+    expect(prompt).toContain("If no turn-yield tool is available, end the turn in words");
+    expect(prompt).toContain("Waiting is never a shell command");
     expect(prompt).toContain("objective, output, inputs/files, write scope");
     expect(prompt).toContain("Track expected session keys");
     expect(prompt).toContain("Late completion after final: reply ONLY NO_REPLY");

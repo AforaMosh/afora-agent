@@ -142,6 +142,22 @@ function requireSupervisorSpawnInput(): SupervisorSpawnInput {
   return call[0] as SupervisorSpawnInput;
 }
 
+/**
+ * These tests fence the activate/deactivate pair only. The bearer half of the
+ * grant capture is inert here so the fixture keeps satisfying the full type.
+ */
+function buildGrantCaptureFence(fence: {
+  activate: (captureKey: string) => void;
+  deactivate: (captureKey: string) => void;
+}): NonNullable<PreparedCliRunContext["preparedBackend"]["mcpClientGrantCapture"]> {
+  return {
+    transportToken: "transport-token-test",
+    adoptProcessToken: () => {},
+    revokeProcessToken: () => {},
+    ...fence,
+  };
+}
+
 beforeEach(() => {
   vi.unstubAllEnvs();
   resetAgentEventsForTest();
@@ -2633,10 +2649,10 @@ describe("executePreparedCliRun supervisor output capture", () => {
     context.preparedBackend.secretInput = secretInput;
     const activateCapture = vi.fn<(captureKey: string) => void>();
     const deactivateCapture = vi.fn<(captureKey: string) => void>();
-    context.preparedBackend.mcpClientGrantCapture = {
+    context.preparedBackend.mcpClientGrantCapture = buildGrantCaptureFence({
       activate: activateCapture,
       deactivate: deactivateCapture,
-    };
+    });
     supervisorSpawnMock.mockRejectedValueOnce(new Error("spawn failed"));
 
     await expect(executePreparedCliRun(context)).rejects.toThrow("spawn failed");
@@ -2654,10 +2670,10 @@ describe("executePreparedCliRun supervisor output capture", () => {
     context.mcpDeliveryCapture = true;
     const activateCapture = vi.fn<(captureKey: string) => void>();
     const deactivateCapture = vi.fn<(captureKey: string) => void>();
-    context.preparedBackend.mcpClientGrantCapture = {
+    context.preparedBackend.mcpClientGrantCapture = buildGrantCaptureFence({
       activate: activateCapture,
       deactivate: deactivateCapture,
-    };
+    });
     const captureKeys: string[] = [];
     supervisorSpawnMock.mockImplementation(async (...args: unknown[]) => {
       const input = args[0] as SupervisorSpawnInput;
