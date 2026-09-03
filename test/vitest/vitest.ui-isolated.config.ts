@@ -5,7 +5,10 @@
 import type { ViteUserConfig } from "vitest/config";
 import { controlUiLocaleModulesPlugin } from "../../ui/config/control-ui-locales.ts";
 import { createScopedVitestConfig } from "./vitest.scoped-config.ts";
-import { jsdomOptimizedDeps } from "./vitest.shared.config.ts";
+import {
+  jsdomOptimizedDeps,
+  vendoredPrebuiltPackageExternalPatterns,
+} from "./vitest.shared.config.ts";
 import { uiIsolatedTestFiles } from "./vitest.ui-isolated-paths.mjs";
 
 // Explicit nameable return type: inference reaches vite-internal names (TS4058/TS4082).
@@ -23,7 +26,26 @@ export function createUiIsolatedVitestConfig(
     setupFiles: ["ui/src/test-helpers/lit-warnings.setup.ts"],
     useNonIsolatedRunner: false,
   });
-  return { ...config, plugins: [...(config.plugins ?? []), controlUiLocaleModulesPlugin()] };
+  // The vendored prebuilt packages must stay externalized here: this is the one
+  // jsdom lane that imports them, and inlining them breaks `import.meta.url`.
+  const baseExternal = config.test?.server?.deps?.external;
+  return {
+    ...config,
+    plugins: [...(config.plugins ?? []), controlUiLocaleModulesPlugin()],
+    test: {
+      ...config.test,
+      server: {
+        ...config.test?.server,
+        deps: {
+          ...config.test?.server?.deps,
+          external:
+            baseExternal === true
+              ? true
+              : [...(baseExternal ?? []), ...vendoredPrebuiltPackageExternalPatterns],
+        },
+      },
+    },
+  };
 }
 
 export default createUiIsolatedVitestConfig();

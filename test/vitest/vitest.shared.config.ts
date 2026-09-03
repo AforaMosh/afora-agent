@@ -145,6 +145,41 @@ const dependencyModuleDirectories = ["/node_modules/", "/afora-pnpm-node-modules
 const dependencyExternalPatterns = [
   /\/afora-pnpm-node-modules\/(?!.*\/?vite\w*\/dist\/client\/env\.mjs$).*\.(?:cjs\.js|mjs)$/u,
 ];
+
+// crabline, fs-safe, libterminal, proxyline and uirouter used to be npm dependencies
+// and are now vendored into packages/ as workspace:*. They ship a prebuilt dist/ and
+// no src/ -- the dist IS the package. As npm dependencies Vitest externalized them;
+// as workspace packages they resolve to a real path under the repo root, so they get
+// inlined and transformed instead. Under jsdom Vite then rewrites their
+// `import.meta.url` to an http:// URL and `fileURLToPath` throws "The URL must be of
+// scheme file" (packages/fs-safe/dist/native.js:8) at import time. Restore the old
+// externalization for exactly those directories. Detected rather than listed so a
+// future vendored package needs no edit here.
+function detectVendoredPrebuiltPackageNames(): string[] {
+  const packagesDir = path.join(repoRoot, "packages");
+  if (!fs.existsSync(packagesDir)) {
+    return [];
+  }
+  return fs
+    .readdirSync(packagesDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .filter(
+      (name) =>
+        fs.existsSync(path.join(packagesDir, name, "dist")) &&
+        !fs.existsSync(path.join(packagesDir, name, "src")),
+    );
+}
+
+export const vendoredPrebuiltPackageExternalPatterns: RegExp[] =
+  detectVendoredPrebuiltPackageNames().map(
+    (name) =>
+      new RegExp(
+        `[/\\\\]packages[/\\\\]${name.replaceAll(/[.*+?^${}()|[\]\\]/gu, "\\$&")}[/\\\\]dist[/\\\\]`,
+        "u",
+      ),
+  );
+
 const sourcePluginSdkSubpaths = [
   ...new Set([...pluginSdkSubpaths, ...privateLocalOnlyPluginSdkSubpaths]),
 ].toSorted((left, right) => left.localeCompare(right));
