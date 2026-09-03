@@ -23,9 +23,9 @@ const VECTOR = {
     resource: "/extension?profile=chrome",
     flow: "extension",
   } satisfies RelayAuthProofFields,
-  serverProof: "ynhaAA_l2HkOGXQ8DvIWfzWwwGjDcV93aumHNe_NM-Q",
-  clientProof: "Rl8TStMYlPLxJPDYwSe__mtEjgMf1C4TM-ZN6sUipZ4",
-  acceptProof: "1R5MpHs6qnAdc0_X6vKBwj91tlRoWfNuGXaNfSD7VnI",
+  serverProof: "lBiVdMuFE9HPXUp8EMLB5OU67AfNV0L7ShurUNoOhHI",
+  clientProof: "lidcf3x7Vo6Y8xFcjKFKNAZbUcM8brVwUdpRsyIBi8I",
+  acceptProof: "0nW5oliZm7yd4x_O_bS5dhSUrenyiKFz_TtUOGdEvO0",
 };
 
 function challenge(overrides: Record<string, unknown> = {}) {

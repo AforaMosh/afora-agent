@@ -296,7 +296,7 @@ describe("cdp helpers", () => {
     const request = requireGuardedFetchRequest();
     expect(request?.url).toBe("http://127.0.0.1:9222/json/version");
     expect(request?.init?.headers).toEqual({
-      Authorization: "Basic b3BlbmNsYXc6cmVsYXktdG9rZW4=",
+      Authorization: "Basic YWZvcmE6cmVsYXktdG9rZW4=",
     });
     expect(release).toHaveBeenCalledTimes(1);
   });

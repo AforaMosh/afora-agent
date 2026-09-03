@@ -52,12 +52,12 @@ describe("browser relay auth v2 proofs", () => {
   it("matches the frozen Node/WebCrypto test vector", () => {
     expect(relayKeyIdFromHex(KEY)).toBe(VECTOR_FIELDS.keyId);
     expect(createRelayProof(KEY, "server", VECTOR_FIELDS)).toBe(
-      "ynhaAA_l2HkOGXQ8DvIWfzWwwGjDcV93aumHNe_NM-Q",
+      "lBiVdMuFE9HPXUp8EMLB5OU67AfNV0L7ShurUNoOhHI",
     );
     const clientProof = createRelayProof(KEY, "client", VECTOR_FIELDS);
-    expect(clientProof).toBe("Rl8TStMYlPLxJPDYwSe__mtEjgMf1C4TM-ZN6sUipZ4");
+    expect(clientProof).toBe("lidcf3x7Vo6Y8xFcjKFKNAZbUcM8brVwUdpRsyIBi8I");
     expect(createRelayProof(KEY, "accept", VECTOR_FIELDS, clientProof)).toBe(
-      "1R5MpHs6qnAdc0_X6vKBwj91tlRoWfNuGXaNfSD7VnI",
+      "0nW5oliZm7yd4x_O_bS5dhSUrenyiKFz_TtUOGdEvO0",
     );
   });
 
