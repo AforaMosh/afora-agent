@@ -427,7 +427,7 @@ export function attachGatewayWsConnectionHandler(params: AttachGatewayWsConnecti
       lastHandshakePhase === "ws_upgrade_started" &&
       !hasReceivedPreauthFrame &&
       lastFrameType === undefined &&
-      normalizeLowercaseStringOrEmpty(requestUserAgent).startsWith("afora-agent/") &&
+      normalizeLowercaseStringOrEmpty(requestUserAgent).startsWith("afora/") &&
       isLoopbackAddress(remoteAddr);
 
     const handleSocketClose = async (code: number, reason: Buffer) => {
