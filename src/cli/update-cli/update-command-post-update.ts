@@ -168,7 +168,7 @@ export async function finishUpdate(params: {
       );
       defaultRuntime.log(
         theme.muted(
-          `Examples: \`${replaceCliName("npm i -g afora-agent@latest", CLI_NAME)}\` or \`${replaceCliName("pnpm add -g afora-agent@latest", CLI_NAME)}\``,
+          `Examples: \`${replaceCliName("npm i -g afora@latest", CLI_NAME)}\` or \`${replaceCliName("pnpm add -g afora@latest", CLI_NAME)}\``,
         ),
       );
     }

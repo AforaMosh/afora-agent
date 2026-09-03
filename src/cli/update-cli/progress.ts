@@ -1,6 +1,6 @@
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 // Update command presentation helpers: spinner lifecycle, failure hints, and result summaries.
 import { spinner } from "@clack/prompts";
-import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { theme } from "../../../packages/terminal-core/src/theme.js";
 import { formatDurationPrecise } from "../../infra/format-time/format-duration.ts";
 import type {
@@ -95,9 +95,9 @@ function inferUpdateFailureHints(result: UpdateRunResult): string[] {
     hints.push(
       "If you recover with sudo/manual package install on a managed Gateway, stop the Gateway first so it does not load files while the package tree is being replaced.",
     );
-    hints.push("Example: npm config set prefix ~/.local && npm i -g afora-agent@latest");
+    hints.push("Example: npm config set prefix ~/.local && npm i -g afora@latest");
     hints.push(
-      "System install outline: afora gateway stop -> sudo <system-npm> i -g afora-agent@latest -> afora gateway install --force -> afora gateway restart.",
+      "System install outline: afora gateway stop -> sudo <system-npm> i -g afora@latest -> afora gateway install --force -> afora gateway restart.",
     );
   }
 
@@ -108,7 +108,7 @@ function inferUpdateFailureHints(result: UpdateRunResult): string[] {
     hints.push(
       "Detected native optional dependency build failure. The updater retries with --omit=optional automatically.",
     );
-    hints.push("If it still fails: npm i -g afora-agent@latest --omit=optional");
+    hints.push("If it still fails: npm i -g afora@latest --omit=optional");
   }
 
   return hints;

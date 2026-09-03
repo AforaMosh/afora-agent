@@ -385,7 +385,7 @@ function usage(): string {
   return `Usage: bash scripts/e2e/parallels-npm-update-smoke.sh [options]
 
 Options:
-  --package-spec <npm-spec>  Baseline npm package spec. Default: afora-agent@latest
+  --package-spec <npm-spec>  Baseline npm package spec. Default: afora@latest
   --update-target <target>    Target passed to guest 'afora update --tag'.
                              Default: host-served tgz packed from current checkout.
   --target-tarball <path>     Host-serve this prepared tgz for update and fresh install.

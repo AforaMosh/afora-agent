@@ -2311,7 +2311,7 @@ fix_npm_permissions() {
     ui_info "Configuring npm for user-local installs"
     mkdir -p "$HOME/.npm-global"
     npm config set prefix "$HOME/.npm-global" < /dev/null
-    ui_warn "Avoid sudo npm i -g for future Afora updates; use npm i -g afora-agent@latest so npm keeps using this user prefix instead of a different global prefix."
+    ui_warn "Avoid sudo npm i -g for future Afora updates; use npm i -g afora@latest so npm keeps using this user prefix instead of a different global prefix."
 
     persist_shell_path_prepend "$HOME/.npm-global/bin" "\$HOME/.npm-global/bin" || true
 

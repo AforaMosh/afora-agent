@@ -3,10 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
-import {
-  isSupportedAforaNodeVersion,
-  PROCESS_NODE_VERSION_CHECK,
-} from "../../../node-version.mjs";
+import { isSupportedAforaNodeVersion, PROCESS_NODE_VERSION_CHECK } from "../../../node-version.mjs";
 import { NODE_RELEASE_VERSION_CASES } from "../../../test/helpers/node-version-cases.js";
 import type { WorkerSshEndpoint } from "../../plugins/types.js";
 import { runCommandWithTimeout, type SpawnResult } from "../../process/exec.js";
@@ -452,7 +449,7 @@ describe("bootstrapWorker", () => {
       aforaVersion: VERSION,
       protocolFeatures: [],
       packageIntegrity: NPM_INTEGRITY,
-      packageSpec: "afora-agent@latest",
+      packageSpec: "afora@latest",
     };
 
     await expect(
@@ -469,7 +466,7 @@ describe("bootstrapWorker", () => {
       aforaVersion: "latest",
       protocolFeatures: [],
       packageIntegrity: NPM_INTEGRITY,
-      packageSpec: "afora-agent@latest",
+      packageSpec: "afora@latest",
     };
 
     await expect(
@@ -794,12 +791,7 @@ describe("bootstrapWorker", () => {
         await expect(fs.lstat(staleLock)).rejects.toMatchObject({ code: "ENOENT" });
         await expect(
           fs.readFile(
-            path.join(
-              remoteHome,
-              ".afora-worker",
-              artifact.bundleHash,
-              "bootstrap-receipt.json",
-            ),
+            path.join(remoteHome, ".afora-worker", artifact.bundleHash, "bootstrap-receipt.json"),
             "utf8",
           ),
         ).resolves.toBe(`${receiptJson}\n`);

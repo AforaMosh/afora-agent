@@ -60,13 +60,13 @@ export async function resolveInstallerTargetVersion(params: {
   if (resolvedVersion) {
     return resolvedVersion;
   }
-  const latestResult = await runCommand(npmCommand(), ["view", "afora-agent@latest", "version"], {
+  const latestResult = await runCommand(npmCommand(), ["view", "afora@latest", "version"], {
     logPath: join(params.logsDir, `${params.suiteName}-latest-version.log`),
     timeoutMs: 2 * 60 * 1000,
   });
   const latestVersion = latestResult.stdout.trim();
   if (!latestVersion) {
-    throw new Error("npm view afora-agent@latest version did not return a version.");
+    throw new Error("npm view afora@latest version did not return a version.");
   }
   return latestVersion;
 }

@@ -501,10 +501,7 @@ export function readRunnerOverrideEnv(env = process.env) {
       env.VAR_WINDOWS_RUNNER,
       env.AFORA_RELEASE_CHECKS_WINDOWS_RUNNER,
     ),
-    varMacosRunner: preferNonEmptyEnv(
-      env.VAR_MACOS_RUNNER,
-      env.AFORA_RELEASE_CHECKS_MACOS_RUNNER,
-    ),
+    varMacosRunner: preferNonEmptyEnv(env.VAR_MACOS_RUNNER, env.AFORA_RELEASE_CHECKS_MACOS_RUNNER),
   };
 }
 
@@ -663,7 +660,7 @@ export function verifyWindowsPackagedUpgradeFallbackInstall({
 
 export function resolveExplicitBaselineVersion(baselineSpec: string) {
   const trimmed = baselineSpec.trim();
-  if (!trimmed || trimmed === "afora-agent@latest") {
+  if (!trimmed || trimmed === "afora@latest") {
     return "";
   }
   if (trimmed.startsWith("afora@")) {

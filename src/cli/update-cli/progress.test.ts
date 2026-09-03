@@ -16,7 +16,7 @@ function makeResult(
     steps: [
       {
         name: stepName,
-        command: "npm i -g afora-agent@latest",
+        command: "npm i -g afora@latest",
         cwd: "/tmp",
         durationMs: 1,
         exitCode: 1,

@@ -2,10 +2,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { Writable } from "node:stream";
-import { confirm, isCancel } from "@clack/prompts";
 import { parseStrictPositiveInteger } from "@afora/normalization-core/number-coercion";
 import { err as resultError, ok, type Result } from "@afora/normalization-core/result";
 import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { confirm, isCancel } from "@clack/prompts";
 import { stylePromptMessage } from "../../../packages/terminal-core/src/prompt-style.js";
 import { theme } from "../../../packages/terminal-core/src/theme.js";
 import {
@@ -721,7 +721,7 @@ export async function resolvePackageRuntimePreflight(params: {
         ? "Upgrade the Node runtime that owns the managed Gateway service, then rerun `afora update`."
         : "Upgrade to Node 22.22.3+, Node 24.15.0+, or Node 25.9.0+, then rerun `afora update`.",
       "Bare `npm i -g afora-agent` can silently install an older compatible release.",
-      "After upgrading Node, use `npm i -g afora-agent@latest`.",
+      "After upgrading Node, use `npm i -g afora@latest`.",
     ].join("\n"),
   );
 }

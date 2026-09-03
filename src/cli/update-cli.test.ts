@@ -663,9 +663,7 @@ describe("update-cli", () => {
 
   const stripAforaPackageAlias = (spec: string) => {
     const trimmed = spec.trim();
-    return trimmed.toLowerCase().startsWith("afora@")
-      ? trimmed.slice("afora@".length)
-      : trimmed;
+    return trimmed.toLowerCase().startsWith("afora@") ? trimmed.slice("afora@".length) : trimmed;
   };
 
   const isNpmGitPackageSpec = (spec: string) => {
@@ -1181,9 +1179,7 @@ describe("update-cli", () => {
   const setupInstalledPackageRoot = (baseDir: string, version = "2026.4.21") =>
     setupInstalledPackageAtNodeModules(path.join(baseDir, "node_modules"), version);
 
-  const mockRunningManagedGateway = (
-    programArguments: string[] = ["afora", "gateway", "run"],
-  ) => {
+  const mockRunningManagedGateway = (programArguments: string[] = ["afora", "gateway", "run"]) => {
     serviceReadCommand.mockResolvedValue({
       programArguments,
       environment: {
@@ -4133,7 +4129,7 @@ describe("update-cli", () => {
 
     expect(getErrorOutput()).not.toContain("Downgrade confirmation required.");
     expect(defaultRuntime.exit).not.toHaveBeenCalled();
-    expectPackageInstallSpec("afora-agent@latest");
+    expectPackageInstallSpec("afora@latest");
     expectFreshPostUpdateDoctor({ yes: false });
   });
 
@@ -4523,9 +4519,9 @@ describe("update-cli", () => {
     const doctorCall = doctorCommandCall();
     expect(doctorCall?.[0][0]).toContain("node");
     expect(doctorCall?.[0].slice(1)).toEqual([entryPath, "doctor", "--non-interactive"]);
-    expect(
-      (doctorCall?.[1].env as NodeJS.ProcessEnv | undefined)?.AFORA_UPDATE_IN_PROGRESS,
-    ).toBe("1");
+    expect((doctorCall?.[1].env as NodeJS.ProcessEnv | undefined)?.AFORA_UPDATE_IN_PROGRESS).toBe(
+      "1",
+    );
     expect(
       (doctorCall?.[1].env as NodeJS.ProcessEnv | undefined)
         ?.AFORA_UPDATE_PARENT_ALLOWS_GATEWAY_ACTIVATION,
@@ -5254,10 +5250,7 @@ describe("update-cli", () => {
   });
 
   it("stops a running managed git gateway when wrapper commands hide the service root", async () => {
-    const wrapperPath = path.join(
-      createCaseDir("afora-update-wrapper-service"),
-      "gateway-wrapper",
-    );
+    const wrapperPath = path.join(createCaseDir("afora-update-wrapper-service"), "gateway-wrapper");
     mockRunningManagedGateway([wrapperPath, "gateway", "run"]);
     const preparations = mockGitUpdateAfterMutation();
 
@@ -5721,14 +5714,7 @@ describe("update-cli", () => {
       "mingw64",
       "bin",
     );
-    const portableGitUsr = path.join(
-      localAppData,
-      "Afora",
-      "deps",
-      "portable-git",
-      "usr",
-      "bin",
-    );
+    const portableGitUsr = path.join(localAppData, "Afora", "deps", "portable-git", "usr", "bin");
     await fs.mkdir(portableGitMingw, { recursive: true });
     await fs.mkdir(portableGitUsr, { recursive: true });
     mockPackageInstallStatus(tempDir);
@@ -7150,11 +7136,7 @@ describe("update-cli", () => {
       fs.mkdir(updatedRoot, { recursive: true }),
     ]);
     await Promise.all([
-      fs.writeFile(
-        oldPackageJson,
-        JSON.stringify({ name: "afora", version: "2026.4.24" }),
-        "utf8",
-      ),
+      fs.writeFile(oldPackageJson, JSON.stringify({ name: "afora", version: "2026.4.24" }), "utf8"),
       fs.writeFile(
         updatedPackageJson,
         JSON.stringify({ name: "afora", version: "2026.4.24" }),
@@ -7683,9 +7665,8 @@ describe("update-cli", () => {
       .mockResolvedValueOnce(postDoctorSnapshot)
       .mockResolvedValueOnce(postDoctorSnapshot);
     loadInstalledPluginIndexInstallRecords.mockResolvedValueOnce(postDoctorRecords);
-    syncPluginsForUpdateChannel.mockImplementationOnce(
-      async (params: { config?: AforaConfig }) =>
-        pluginSyncResult(params.config ?? baseConfig, true),
+    syncPluginsForUpdateChannel.mockImplementationOnce(async (params: { config?: AforaConfig }) =>
+      pluginSyncResult(params.config ?? baseConfig, true),
     );
 
     await updateFinalizeCommand({ json: true, timeout: "9", restart: false });
@@ -8049,12 +8030,9 @@ describe("update-cli", () => {
   it("uses AFORA_HOME for the default dev checkout directory", async () => {
     const homedirSpy = vi.spyOn(os, "homedir").mockReturnValue("/tmp/oc-home");
     try {
-      await withEnvAsync(
-        { AFORA_GIT_DIR: undefined, AFORA_HOME: "/srv/afora-home" },
-        async () => {
-          expect(resolveGitInstallDir()).toBe(path.posix.join("/srv/afora-home", "afora"));
-        },
-      );
+      await withEnvAsync({ AFORA_GIT_DIR: undefined, AFORA_HOME: "/srv/afora-home" }, async () => {
+        expect(resolveGitInstallDir()).toBe(path.posix.join("/srv/afora-home", "afora"));
+      });
     } finally {
       homedirSpy.mockRestore();
     }

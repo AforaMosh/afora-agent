@@ -52,7 +52,7 @@ validate_afora_package_spec() {
   if [[ "$spec" =~ ^afora@(alpha|beta|latest|[0-9]{4}\.[1-9][0-9]*\.[1-9][0-9]*(-[1-9][0-9]*|-(alpha|beta)\.[1-9][0-9]*)?)$ ]]; then
     return 0
   fi
-  echo "AFORA_NPM_TELEGRAM_PACKAGE_SPEC must be afora@alpha, afora@beta, afora-agent@latest, or an exact Afora release version; got: $spec" >&2
+  echo "AFORA_NPM_TELEGRAM_PACKAGE_SPEC must be afora@alpha, afora@beta, afora@latest, or an exact Afora release version; got: $spec" >&2
   exit 1
 }
 

@@ -98,7 +98,7 @@ validate_baseline_package_spec() {
   if [[ "$spec" =~ ^afora@(alpha|beta|latest|[0-9]{4}\.[1-9][0-9]*\.[1-9][0-9]*(-[1-9][0-9]*|-(alpha|beta)\.[1-9][0-9]*)?)$ ]]; then
     return 0
   fi
-  echo "AFORA_UPGRADE_SURVIVOR_BASELINE must be afora-agent@latest, afora@beta, afora@alpha, an exact Afora release version, or a bare release version; got: $spec" >&2
+  echo "AFORA_UPGRADE_SURVIVOR_BASELINE must be afora@latest, afora@beta, afora@alpha, an exact Afora release version, or a bare release version; got: $spec" >&2
   return 1
 }
 
@@ -128,7 +128,7 @@ normalize_baseline() {
       baseline_version_expected="0"
       ;;
     dev | main | "")
-      echo "AFORA_UPGRADE_SURVIVOR_BASELINE must be afora-agent@latest, afora@beta, afora@alpha, afora@<version>, or a bare version" >&2
+      echo "AFORA_UPGRADE_SURVIVOR_BASELINE must be afora@latest, afora@beta, afora@alpha, afora@<version>, or a bare version" >&2
       return 1
       ;;
     *)

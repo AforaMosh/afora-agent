@@ -758,8 +758,8 @@ describe("runGatewayUpdate", () => {
     onBaseInstall?: () => Promise<CommandResult>;
     onOmitOptionalInstall?: () => Promise<CommandResult>;
   }) {
-    const baseInstallKey = npmGlobalInstallCommand("afora-agent@latest");
-    const omitOptionalInstallKey = npmGlobalInstallCommand("afora-agent@latest", ["--omit=optional"]);
+    const baseInstallKey = npmGlobalInstallCommand("afora@latest");
+    const omitOptionalInstallKey = npmGlobalInstallCommand("afora@latest", ["--omit=optional"]);
 
     return async (argv: string[]): Promise<CommandResult> => {
       const key = normalizeNpmFreshnessArgs(argv).join(" ");
@@ -2814,7 +2814,7 @@ describe("runGatewayUpdate", () => {
   it.each([
     {
       title: "updates global npm installs when detected",
-      expectedInstallCommand: npmGlobalInstallCommand("afora-agent@latest"),
+      expectedInstallCommand: npmGlobalInstallCommand("afora@latest"),
     },
     {
       title: "uses update channel for global npm installs when tag is omitted",
@@ -2873,7 +2873,7 @@ describe("runGatewayUpdate", () => {
     const { calls, runCommand } = createGlobalInstallHarness({
       pkgRoot,
       npmRootOutput: nodeModules,
-      installCommand: npmGlobalInstallCommand("afora-agent@latest"),
+      installCommand: npmGlobalInstallCommand("afora@latest"),
       onInstall: async () => {
         await writeGlobalPackageVersion(pkgRoot);
         await writeGatewayEntrypoint(pkgRoot);
@@ -2916,7 +2916,7 @@ describe("runGatewayUpdate", () => {
     const { calls, runCommand } = createGlobalInstallHarness({
       pkgRoot,
       npmRootOutput: nodeModules,
-      installCommand: npmGlobalInstallCommand("afora-agent@latest"),
+      installCommand: npmGlobalInstallCommand("afora@latest"),
       onInstall: async () => {
         await writeGlobalPackageVersion(pkgRoot);
         await writeGatewayEntrypoint(pkgRoot);
@@ -2953,7 +2953,7 @@ describe("runGatewayUpdate", () => {
     const { calls, runCommand } = createGlobalInstallHarness({
       pkgRoot,
       npmRootOutput: nodeModules,
-      installCommand: npmGlobalInstallCommand("afora-agent@latest"),
+      installCommand: npmGlobalInstallCommand("afora@latest"),
       gitRootMode: "missing",
       onInstall: async () => writeGlobalPackageVersion(pkgRoot),
     });
@@ -2962,7 +2962,7 @@ describe("runGatewayUpdate", () => {
 
     expect(result.status).toBe("ok");
     expect(result.mode).toBe("npm");
-    expect(calls).toContain(npmGlobalInstallCommand("afora-agent@latest"));
+    expect(calls).toContain(npmGlobalInstallCommand("afora@latest"));
   });
 
   it("rejects a tag override for the extended-stable global package channel", async () => {
@@ -2970,7 +2970,7 @@ describe("runGatewayUpdate", () => {
     const { calls, runCommand } = createGlobalInstallHarness({
       pkgRoot,
       npmRootOutput: nodeModules,
-      installCommand: npmGlobalInstallCommand("afora-agent@latest"),
+      installCommand: npmGlobalInstallCommand("afora@latest"),
     });
 
     const result = await runWithCommand(runCommand, {
@@ -2986,7 +2986,7 @@ describe("runGatewayUpdate", () => {
       reason: "extended-stable-tag-unsupported",
       steps: [],
     });
-    expect(calls).not.toContain(npmGlobalInstallCommand("afora-agent@latest"));
+    expect(calls).not.toContain(npmGlobalInstallCommand("afora@latest"));
   });
 
   it("cleans stale npm rename dirs before global update", async () => {
@@ -3021,7 +3021,7 @@ describe("runGatewayUpdate", () => {
       pkgRoot,
       npmRootOutput: nodeModules,
       npmVersion: "11.15.9",
-      installCommand: npmGlobalInstallCommand("afora-agent@latest"),
+      installCommand: npmGlobalInstallCommand("afora@latest"),
     });
 
     const result = await runWithCommand(runCommand, { cwd: pkgRoot });
@@ -3081,7 +3081,7 @@ describe("runGatewayUpdate", () => {
 
   it("fails global npm update when bundled runtime sidecars are missing after install", async () => {
     const { nodeModules, pkgRoot } = await createGlobalPackageFixture(tempDir);
-    const expectedInstallCommand = npmGlobalInstallCommand("afora-agent@latest");
+    const expectedInstallCommand = npmGlobalInstallCommand("afora@latest");
     const { runCommand } = createGlobalInstallHarness({
       pkgRoot,
       npmRootOutput: nodeModules,
@@ -3120,14 +3120,7 @@ describe("runGatewayUpdate", () => {
       "mingw64",
       "bin",
     );
-    const portableGitUsr = path.join(
-      localAppData,
-      "Afora",
-      "deps",
-      "portable-git",
-      "usr",
-      "bin",
-    );
+    const portableGitUsr = path.join(localAppData, "Afora", "deps", "portable-git", "usr", "bin");
     await fs.mkdir(portableGitMingw, { recursive: true });
     await fs.mkdir(portableGitUsr, { recursive: true });
 
@@ -3136,7 +3129,7 @@ describe("runGatewayUpdate", () => {
     const { runCommand } = createGlobalInstallHarness({
       pkgRoot,
       npmRootOutput: nodeModules,
-      installCommand: npmGlobalInstallCommand("afora-agent@latest"),
+      installCommand: npmGlobalInstallCommand("afora@latest"),
       onInstall: async (options) => {
         installEnv = options?.env;
         await writeGlobalPackageVersion(options?.packageRoot ?? pkgRoot);
@@ -3168,7 +3161,7 @@ describe("runGatewayUpdate", () => {
     const { runCommand } = createGlobalInstallHarness({
       pkgRoot,
       npmRootOutput: nodeModules,
-      installCommand: npmGlobalInstallCommand("afora-agent@latest"),
+      installCommand: npmGlobalInstallCommand("afora@latest"),
       onInstall: async (options) => {
         await writeGlobalPackageVersion(options?.packageRoot ?? pkgRoot);
         if (options?.installPrefix) {
@@ -3206,7 +3199,7 @@ describe("runGatewayUpdate", () => {
     const { calls, runCommand } = createGlobalInstallHarness({
       pkgRoot,
       pnpmRootOutput: nodeModules,
-      installCommand: npmGlobalInstallCommand("afora-agent@latest"),
+      installCommand: npmGlobalInstallCommand("afora@latest"),
       onInstall: async (options) => {
         await writeGlobalPackageVersion(options?.packageRoot ?? pkgRoot);
       },
@@ -3259,7 +3252,7 @@ describe("runGatewayUpdate", () => {
 
       const { calls, runCommand } = createGlobalInstallHarness({
         pkgRoot,
-        installCommand: "bun add -g --trust afora-agent@latest",
+        installCommand: "bun add -g --trust afora@latest",
         onInstall: async () => {
           await writeGlobalPackageVersion(pkgRoot);
         },
@@ -3271,7 +3264,7 @@ describe("runGatewayUpdate", () => {
       expect(result.mode).toBe("bun");
       expect(result.before?.version).toBe("1.0.0");
       expect(result.after?.version).toBe("2.0.0");
-      expect(calls).toContain("bun add -g --trust afora-agent@latest");
+      expect(calls).toContain("bun add -g --trust afora@latest");
     });
   });
 

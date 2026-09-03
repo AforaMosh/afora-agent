@@ -17,7 +17,7 @@ export AFORA_DISABLE_BUNDLED_PLUGINS=1
 export AFORA_NO_ONBOARD=1
 export AFORA_NO_PROMPT=1
 
-baseline="${AFORA_UPDATE_CORRUPT_PLUGIN_BASELINE:-afora-agent@latest}"
+baseline="${AFORA_UPDATE_CORRUPT_PLUGIN_BASELINE:-afora@latest}"
 update_timeout_seconds="$(afora_e2e_read_positive_int_env AFORA_UPDATE_CORRUPT_PLUGIN_TIMEOUT_SECONDS 900)"
 default_update_step_timeout_seconds="$update_timeout_seconds"
 if [ "$update_timeout_seconds" -gt 60 ]; then

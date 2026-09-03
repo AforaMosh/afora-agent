@@ -91,7 +91,7 @@ async function main(argv: string[]) {
   const previousVersion = args["previous-version"]?.trim() || "";
   const baselineSpec =
     args["baseline-spec"]?.trim() ||
-    (previousVersion ? `afora@${previousVersion}` : "afora-agent@latest");
+    (previousVersion ? `afora@${previousVersion}` : "afora@latest");
   const providedBaselineTgz = args["baseline-tgz"]?.trim()
     ? resolve(args["baseline-tgz"].trim())
     : "";

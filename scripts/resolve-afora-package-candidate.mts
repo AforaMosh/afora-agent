@@ -283,9 +283,7 @@ function resolvePackedAforaTarballFilename(value: unknown) {
     filename !== path.basename(filename) ||
     filename !== path.win32.basename(filename)
   ) {
-    throw new Error(
-      `npm pack reported unsafe Afora tarball filename: ${JSON.stringify(filename)}`,
-    );
+    throw new Error(`npm pack reported unsafe Afora tarball filename: ${JSON.stringify(filename)}`);
   }
   return filename;
 }
@@ -293,7 +291,7 @@ function resolvePackedAforaTarballFilename(value: unknown) {
 export function validateAforaPackageSpec(spec: string) {
   if (!AFORA_PACKAGE_SPEC_RE.test(spec)) {
     throw new Error(
-      `package_spec must be afora@alpha, afora@beta, afora@extended-stable, afora-agent@latest, or an exact Afora release version; got: ${spec}`,
+      `package_spec must be afora@alpha, afora@beta, afora@extended-stable, afora@latest, or an exact Afora release version; got: ${spec}`,
     );
   }
 }

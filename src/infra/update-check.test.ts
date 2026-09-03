@@ -81,7 +81,7 @@ describe("resolveNpmChannelTag", () => {
     await expect(
       fetchNpmPackageTargetStatus({
         target: "latest",
-        spec: "afora-agent@latest",
+        spec: "afora@latest",
         command: "/opt/afora/node/bin/npm",
         timeoutMs: 1000,
         cwd: "/tmp/afora-project",
@@ -98,7 +98,7 @@ describe("resolveNpmChannelTag", () => {
       [
         "/opt/afora/node/bin/npm",
         "view",
-        "afora-agent@latest",
+        "afora@latest",
         "version",
         "engines.node",
         "afora.schemaVersions",

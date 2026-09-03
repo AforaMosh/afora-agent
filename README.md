@@ -36,7 +36,7 @@ iwr -useb https://afora.ai/install.ps1 | iex
 Already manage Node.js? Install the published package instead (Node 22.22.3+, 24.15+, or 25.9+):
 
 ```bash
-npm install -g afora-agent@latest --allow-scripts=afora
+npm install -g afora@latest --allow-scripts=afora
 ```
 
 That command is for npm 12 or npm 11.16+. On npm 11.12 and earlier, omit
@@ -80,13 +80,13 @@ Tools run on the host for the main session unless you configure sandboxing. Read
 
 ## Documentation
 
-| Goal                             | Start here                                                                                                                                                                                                                                                           |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Configure models and auth        | [Models](https://docs.afora.ai/concepts/models) · [Model providers](https://docs.afora.ai/concepts/model-providers)                                                                                                                                            |
-| Connect a messaging service      | [Channels](https://docs.afora.ai/channels)                                                                                                                                                                                                                        |
-| Add tools, skills, and plugins   | [Tools](https://docs.afora.ai/tools) · [Skills](https://docs.afora.ai/tools/skills) · [Plugins](https://docs.afora.ai/plugins) · [ClawHub](https://clawhub.ai)                                                                                              |
-| Run apps and device nodes        | [Platforms](https://docs.afora.ai/platforms) · [Nodes](https://docs.afora.ai/nodes)                                                                                                                                                                            |
-| Use the CLI and chat commands    | [CLI reference](https://docs.afora.ai/cli) · [Slash commands](https://docs.afora.ai/tools/slash-commands)                                                                                                                                                      |
+| Goal                             | Start here                                                                                                                                                                                                                                               |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Configure models and auth        | [Models](https://docs.afora.ai/concepts/models) · [Model providers](https://docs.afora.ai/concepts/model-providers)                                                                                                                                      |
+| Connect a messaging service      | [Channels](https://docs.afora.ai/channels)                                                                                                                                                                                                               |
+| Add tools, skills, and plugins   | [Tools](https://docs.afora.ai/tools) · [Skills](https://docs.afora.ai/tools/skills) · [Plugins](https://docs.afora.ai/plugins) · [ClawHub](https://clawhub.ai)                                                                                           |
+| Run apps and device nodes        | [Platforms](https://docs.afora.ai/platforms) · [Nodes](https://docs.afora.ai/nodes)                                                                                                                                                                      |
+| Use the CLI and chat commands    | [CLI reference](https://docs.afora.ai/cli) · [Slash commands](https://docs.afora.ai/tools/slash-commands)                                                                                                                                                |
 | Configure or operate the Gateway | [Configuration](https://docs.afora.ai/gateway/configuration) · [Architecture](https://docs.afora.ai/concepts/architecture) · [Updating](https://docs.afora.ai/install/updating) · [Release channels](https://docs.afora.ai/install/development-channels) |
 
 ## Development

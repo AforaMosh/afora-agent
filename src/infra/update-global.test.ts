@@ -117,14 +117,14 @@ describe("update global helpers", () => {
   });
 
   it("applies an unflagged npm policy to primary and retry argv", () => {
+    expect(globalInstallArgs("npm", "afora@latest", null, null, null, "unflagged")).not.toContain(
+      "--allow-scripts=afora",
+    );
+    expect(globalInstallFallbackArgs("npm", "afora@latest", null, null, null, "unflagged")).toEqual(
+      expect.arrayContaining(["--omit=optional"]),
+    );
     expect(
-      globalInstallArgs("npm", "afora-agent@latest", null, null, null, "unflagged"),
-    ).not.toContain("--allow-scripts=afora");
-    expect(
-      globalInstallFallbackArgs("npm", "afora-agent@latest", null, null, null, "unflagged"),
-    ).toEqual(expect.arrayContaining(["--omit=optional"]));
-    expect(
-      globalInstallFallbackArgs("npm", "afora-agent@latest", null, null, null, "unflagged"),
+      globalInstallFallbackArgs("npm", "afora@latest", null, null, null, "unflagged"),
     ).not.toContain("--allow-scripts=afora");
   });
 
@@ -162,7 +162,7 @@ describe("update global helpers", () => {
     { packageName: "afora", spec: "afora@1.2.x", expected: null },
     { packageName: "afora", spec: "afora@1.2", expected: null },
     { packageName: "afora", spec: "afora@*", expected: null },
-    { packageName: "afora", spec: "afora-agent@latest", expected: null },
+    { packageName: "afora", spec: "afora@latest", expected: null },
     { packageName: "afora", spec: "afora@beta", expected: null },
     { packageName: "afora", spec: "afora@next", expected: null },
     { packageName: "afora", spec: "afora@main", expected: null },
@@ -185,7 +185,9 @@ describe("update global helpers", () => {
     expect(canResolveRegistryVersionForPackageTarget("latest")).toBe(true);
     expect(canResolveRegistryVersionForPackageTarget("2026.3.22")).toBe(true);
     expect(canResolveRegistryVersionForPackageTarget("main")).toBe(false);
-    expect(canResolveRegistryVersionForPackageTarget("github:AforaMosh/afora-agent#main")).toBe(false);
+    expect(canResolveRegistryVersionForPackageTarget("github:AforaMosh/afora-agent#main")).toBe(
+      false,
+    );
     expect(canResolveRegistryVersionForPackageTarget("/tmp/afora.tgz")).toBe(false);
   });
 
@@ -531,12 +533,12 @@ describe("update global helpers", () => {
       await expect(
         detectGlobalInstallManagerForRoot(runCommand, pkgRoot, 1000),
       ).resolves.toBeNull();
-      expect(globalInstallArgs("npm", "afora-agent@latest", pkgRoot)).toEqual([
+      expect(globalInstallArgs("npm", "afora@latest", pkgRoot)).toEqual([
         "npm",
         "i",
         "-g",
         "--allow-scripts=afora",
-        "afora-agent@latest",
+        "afora@latest",
         "--no-fund",
         "--no-audit",
         "--loglevel=error",
@@ -746,27 +748,27 @@ describe("update global helpers", () => {
   });
 
   it("builds npm staged install argv with an explicit prefix", () => {
-    expect(globalInstallArgs("npm", "afora-agent@latest", null, "/tmp/stage")).toEqual([
+    expect(globalInstallArgs("npm", "afora@latest", null, "/tmp/stage")).toEqual([
       "npm",
       "i",
       "-g",
       "--allow-scripts=afora",
       "--prefix",
       "/tmp/stage",
-      "afora-agent@latest",
+      "afora@latest",
       "--no-fund",
       "--no-audit",
       "--loglevel=error",
       "--min-release-age=0",
     ]);
-    expect(globalInstallFallbackArgs("npm", "afora-agent@latest", null, "/tmp/stage")).toEqual([
+    expect(globalInstallFallbackArgs("npm", "afora@latest", null, "/tmp/stage")).toEqual([
       "npm",
       "i",
       "-g",
       "--allow-scripts=afora",
       "--prefix",
       "/tmp/stage",
-      "afora-agent@latest",
+      "afora@latest",
       "--omit=optional",
       "--no-fund",
       "--no-audit",
@@ -792,34 +794,28 @@ describe("update global helpers", () => {
 
   it("keeps commas in ancestor directories out of npm's lifecycle policy", () => {
     expect(
-      globalInstallArgs(
-        "npm",
-        "/tmp/build,cache/afora-candidate",
-        null,
-        null,
-        "/tmp/build,cache",
-      ),
+      globalInstallArgs("npm", "/tmp/build,cache/afora-candidate", null, null, "/tmp/build,cache"),
     ).toContain("--allow-scripts=./afora-candidate");
   });
 
   it("builds global install argv for each supported manager", () => {
-    expect(globalInstallArgs("npm", "afora-agent@latest")).toEqual([
+    expect(globalInstallArgs("npm", "afora@latest")).toEqual([
       "npm",
       "i",
       "-g",
       "--allow-scripts=afora",
-      "afora-agent@latest",
+      "afora@latest",
       "--no-fund",
       "--no-audit",
       "--loglevel=error",
       "--min-release-age=0",
     ]);
-    expect(globalInstallArgs("pnpm", "afora-agent@latest")).toEqual([
+    expect(globalInstallArgs("pnpm", "afora@latest")).toEqual([
       "pnpm",
       "add",
       "-g",
       "--allow-build=afora",
-      "afora-agent@latest",
+      "afora@latest",
     ]);
     expect(globalInstallArgs("pnpm", "github:AforaMosh/afora-agent#release/2026.5.12")).toEqual([
       "pnpm",
@@ -828,12 +824,12 @@ describe("update global helpers", () => {
       "--allow-build=afora",
       "github:AforaMosh/afora-agent#release/2026.5.12",
     ]);
-    expect(globalInstallArgs("bun", "afora-agent@latest")).toEqual([
+    expect(globalInstallArgs("bun", "afora@latest")).toEqual([
       "bun",
       "add",
       "-g",
       "--trust",
-      "afora-agent@latest",
+      "afora@latest",
     ]);
     expect(globalInstallArgs("bun", "/tmp/afora-current.tgz")).toEqual([
       "bun",
@@ -856,19 +852,19 @@ describe("update global helpers", () => {
       "--trust",
       "afora@github:AforaMosh/afora-agent#main",
     ]);
-    expect(globalInstallFallbackArgs("npm", "afora-agent@latest")).toEqual([
+    expect(globalInstallFallbackArgs("npm", "afora@latest")).toEqual([
       "npm",
       "i",
       "-g",
       "--allow-scripts=afora",
-      "afora-agent@latest",
+      "afora@latest",
       "--omit=optional",
       "--no-fund",
       "--no-audit",
       "--loglevel=error",
       "--min-release-age=0",
     ]);
-    expect(globalInstallFallbackArgs("pnpm", "afora-agent@latest")).toBeNull();
+    expect(globalInstallFallbackArgs("pnpm", "afora@latest")).toBeNull();
   });
 
   it("resolves npm prefix layouts for normal global roots", () => {
@@ -1023,22 +1019,19 @@ describe("update global helpers", () => {
   });
 
   it("rejects invalid inventory files during global verify", async () => {
-    await withTestDir(
-      { prefix: "afora-update-global-invalid-inventory-" },
-      async (packageRoot) => {
-        await writeGlobalPackageJson(packageRoot, "2026.4.15");
-        await fs.mkdir(path.join(packageRoot, "dist"), { recursive: true });
-        await fs.writeFile(
-          path.join(packageRoot, PACKAGE_DIST_INVENTORY_RELATIVE_PATH),
-          "{not-json}\n",
-          "utf8",
-        );
+    await withTestDir({ prefix: "afora-update-global-invalid-inventory-" }, async (packageRoot) => {
+      await writeGlobalPackageJson(packageRoot, "2026.4.15");
+      await fs.mkdir(path.join(packageRoot, "dist"), { recursive: true });
+      await fs.writeFile(
+        path.join(packageRoot, PACKAGE_DIST_INVENTORY_RELATIVE_PATH),
+        "{not-json}\n",
+        "utf8",
+      );
 
-        await expect(collectInstalledGlobalPackageErrors({ packageRoot })).resolves.toContain(
-          `invalid package dist inventory ${PACKAGE_DIST_INVENTORY_RELATIVE_PATH}`,
-        );
-      },
-    );
+      await expect(collectInstalledGlobalPackageErrors({ packageRoot })).resolves.toContain(
+        `invalid package dist inventory ${PACKAGE_DIST_INVENTORY_RELATIVE_PATH}`,
+      );
+    });
   });
 
   it("verifies legacy sidecars for installed bundled plugins without inventory", async () => {
@@ -1053,32 +1046,24 @@ describe("update global helpers", () => {
   });
 
   it("still enforces critical sidecars when the inventory omits them", async () => {
-    await withTestDir(
-      { prefix: "afora-update-global-critical-sidecars-" },
-      async (packageRoot) => {
-        await writeGlobalPackageJson(packageRoot, "2026.4.15");
-        await writeBundledPluginPackageJson(packageRoot, "telegram", "@afora/telegram");
-        await writePackageDistInventory(packageRoot);
+    await withTestDir({ prefix: "afora-update-global-critical-sidecars-" }, async (packageRoot) => {
+      await writeGlobalPackageJson(packageRoot, "2026.4.15");
+      await writeBundledPluginPackageJson(packageRoot, "telegram", "@afora/telegram");
+      await writePackageDistInventory(packageRoot);
 
-        await expect(collectInstalledGlobalPackageErrors({ packageRoot })).resolves.toContain(
-          `missing bundled runtime sidecar ${TELEGRAM_RUNTIME_API}`,
-        );
-      },
-    );
+      await expect(collectInstalledGlobalPackageErrors({ packageRoot })).resolves.toContain(
+        `missing bundled runtime sidecar ${TELEGRAM_RUNTIME_API}`,
+      );
+    });
   });
 
   it("ignores stale metadata for non-packaged private QA plugins during inventory verify", async () => {
-    await withTestDir(
-      { prefix: "afora-update-global-stale-private-qa-" },
-      async (packageRoot) => {
-        await writeGlobalPackageJson(packageRoot, "2026.4.15");
-        await writeBundledPluginPackageJson(packageRoot, "qa-lab", "@afora/qa-lab");
-        await writePackageDistInventory(packageRoot);
+    await withTestDir({ prefix: "afora-update-global-stale-private-qa-" }, async (packageRoot) => {
+      await writeGlobalPackageJson(packageRoot, "2026.4.15");
+      await writeBundledPluginPackageJson(packageRoot, "qa-lab", "@afora/qa-lab");
+      await writePackageDistInventory(packageRoot);
 
-        await expect(collectInstalledGlobalPackageErrors({ packageRoot })).resolves.toStrictEqual(
-          [],
-        );
-      },
-    );
+      await expect(collectInstalledGlobalPackageErrors({ packageRoot })).resolves.toStrictEqual([]);
+    });
   });
 });

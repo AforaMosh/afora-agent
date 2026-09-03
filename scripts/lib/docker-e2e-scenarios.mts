@@ -46,7 +46,7 @@ export const BUNDLED_PLUGIN_INSTALL_UNINSTALL_SHARDS = 24;
 const upgradeSurvivorCommand = upgradeSurvivorScriptCommand();
 const publishedUpgradeSurvivorCommand = upgradeSurvivorScriptCommand(
   "AFORA_UPGRADE_SURVIVOR_PUBLISHED_BASELINE=1",
-  'export AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC="${AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC:-afora-agent@latest}"; export AFORA_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT="${AFORA_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT:-1500s}"',
+  'export AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC="${AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC:-afora@latest}"; export AFORA_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT="${AFORA_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT:-1500s}"',
 );
 const rootManagedVpsUpgradeCommand = upgradeSurvivorScriptCommand(
   "AFORA_UPGRADE_SURVIVOR_PUBLISHED_BASELINE=1 AFORA_UPGRADE_SURVIVOR_ROOT_MANAGED_VPS=1",
@@ -54,7 +54,7 @@ const rootManagedVpsUpgradeCommand = upgradeSurvivorScriptCommand(
 );
 const updateRestartAuthCommand = upgradeSurvivorScriptCommand(
   "AFORA_UPGRADE_SURVIVOR_PUBLISHED_BASELINE=1 AFORA_UPGRADE_SURVIVOR_UPDATE_RESTART_MODE=auto-auth",
-  'export AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC="${AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC:-afora-agent@latest}"; export AFORA_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT="${AFORA_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT:-1500s}"',
+  'export AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC="${AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC:-afora@latest}"; export AFORA_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT="${AFORA_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT:-1500s}"',
 );
 const updateMigrationCommand = upgradeSurvivorScriptCommand(
   "AFORA_UPGRADE_SURVIVOR_PUBLISHED_BASELINE=1",
@@ -349,17 +349,13 @@ function kitchenSinkRpcLane() {
 }
 
 export const mainLanes: DockerE2eLane[] = [
-  lane(
-    "docker-selected-plugins",
-    "AFORA_SKIP_DOCKER_BUILD=0 pnpm test:docker:selected-plugins",
-    {
-      e2eImageKind: false,
-      estimateSeconds: 600,
-      resources: ["docker"],
-      timeoutMs: 30 * 60 * 1000,
-      weight: 4,
-    },
-  ),
+  lane("docker-selected-plugins", "AFORA_SKIP_DOCKER_BUILD=0 pnpm test:docker:selected-plugins", {
+    e2eImageKind: false,
+    estimateSeconds: 600,
+    resources: ["docker"],
+    timeoutMs: 30 * 60 * 1000,
+    weight: 4,
+  }),
   serviceLane("compose-setup", "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:compose-setup", {
     stateScenario: "empty",
     timeoutMs: 20 * 60 * 1000,
@@ -374,15 +370,11 @@ export const mainLanes: DockerE2eLane[] = [
       weight: 3,
     },
   ),
-  npmLane(
-    "docker-package-install",
-    "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:package-install",
-    {
-      stateScenario: "empty",
-      timeoutMs: 20 * 60 * 1000,
-      weight: 3,
-    },
-  ),
+  npmLane("docker-package-install", "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:package-install", {
+    stateScenario: "empty",
+    timeoutMs: 20 * 60 * 1000,
+    weight: 3,
+  }),
   liveLane("live-models", liveDockerScriptCommand("test-live-models-docker.sh"), {
     providers: ["claude-cli", "google-gemini-cli"],
     timeoutMs: LIVE_PROFILE_TIMEOUT_MS,
@@ -446,15 +438,11 @@ export const mainLanes: DockerE2eLane[] = [
     stateScenario: "empty",
     weight: 3,
   }),
-  serviceLane(
-    "codex-media-path",
-    "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:codex-media-path",
-    {
-      resources: ["npm"],
-      stateScenario: "empty",
-      weight: 3,
-    },
-  ),
+  serviceLane("codex-media-path", "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:codex-media-path", {
+    resources: ["npm"],
+    stateScenario: "empty",
+    weight: 3,
+  }),
   npmLane(
     "npm-onboard-channel-agent",
     "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:npm-onboard-channel-agent",
@@ -565,11 +553,11 @@ export const mainLanes: DockerE2eLane[] = [
   lane("system-agent-rescue", "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:system-agent-rescue", {
     stateScenario: "empty",
   }),
-  serviceLane(
-    "cron-mcp-cleanup",
-    "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:cron-mcp-cleanup",
-    { resources: ["npm"], stateScenario: "empty", weight: 3 },
-  ),
+  serviceLane("cron-mcp-cleanup", "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:cron-mcp-cleanup", {
+    resources: ["npm"],
+    stateScenario: "empty",
+    weight: 3,
+  }),
   ...createPackageUpdateMaintenanceLanes(),
   npmLane("update-migration", updateMigrationCommand, {
     stateScenario: "upgrade-survivor",

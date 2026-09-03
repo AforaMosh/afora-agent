@@ -283,7 +283,7 @@ export function normalizeUpgradeSurvivorBaselineSpec(raw: string | undefined): s
     throw new Error(
       `invalid published upgrade survivor baseline: ${JSON.stringify(
         value,
-      )}. Expected afora-agent@latest, afora@beta, afora@alpha, or afora@YYYY.M.PATCH.`,
+      )}. Expected afora@latest, afora@beta, afora@alpha, or afora@YYYY.M.PATCH.`,
     );
   }
   return spec;
@@ -380,8 +380,7 @@ function supportsUpgradeSurvivorScenarioAtBaseline(
   return (
     (scenario !== "plugin-deps-cleanup" ||
       supportsUpgradeSurvivorPluginDependencyCleanup(baselineSpec)) &&
-    (scenario !== "acpx-afora-tools-bridge" ||
-      supportsUpgradeSurvivorAcpToolsBridge(baselineSpec))
+    (scenario !== "acpx-afora-tools-bridge" || supportsUpgradeSurvivorAcpToolsBridge(baselineSpec))
   );
 }
 
