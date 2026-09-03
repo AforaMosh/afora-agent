@@ -9,6 +9,7 @@ import { defineConfig, defineProject } from "vitest/config";
 import {
   jsdomOptimizedDeps,
   resolveDefaultVitestPool,
+  vendoredPrebuiltPackageExternalPatterns,
 } from "../test/vitest/vitest.shared.config.ts";
 import { uiIsolatedTestFiles } from "../test/vitest/vitest.ui-isolated-paths.mjs";
 import { controlUiLocaleModulesPlugin } from "./config/control-ui-locales.ts";
@@ -92,6 +93,9 @@ const sharedUiTestConfig = {
   // without this the checks-ui lane flakes on cold hover/interaction tests.
   testTimeout: 60_000,
   hookTimeout: 60_000,
+  // Same reason as the root runner: the vendored prebuilt packages must stay
+  // externalized or `fileURLToPath(import.meta.url)` throws under jsdom.
+  server: { deps: { external: vendoredPrebuiltPackageExternalPatterns } },
 } as const;
 const nodeDrivenBrowserLayoutTests = [
   "src/ui/chat/sidebar-session-picker.browser.test.ts",

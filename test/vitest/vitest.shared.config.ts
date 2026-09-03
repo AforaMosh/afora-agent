@@ -142,10 +142,6 @@ const workerConfig = resolveSharedVitestWorkerConfig({
   localScheduling,
 });
 const dependencyModuleDirectories = ["/node_modules/", "/afora-pnpm-node-modules/"];
-const dependencyExternalPatterns = [
-  /\/afora-pnpm-node-modules\/(?!.*\/?vite\w*\/dist\/client\/env\.mjs$).*\.(?:cjs\.js|mjs)$/u,
-];
-
 // crabline, fs-safe, libterminal, proxyline and uirouter used to be npm dependencies
 // and are now vendored into packages/ as workspace:*. They ship a prebuilt dist/ and
 // no src/ -- the dist IS the package. As npm dependencies Vitest externalized them;
@@ -179,6 +175,11 @@ export const vendoredPrebuiltPackageExternalPatterns: RegExp[] =
         "u",
       ),
   );
+
+const dependencyExternalPatterns = [
+  /\/afora-pnpm-node-modules\/(?!.*\/?vite\w*\/dist\/client\/env\.mjs$).*\.(?:cjs\.js|mjs)$/u,
+  ...vendoredPrebuiltPackageExternalPatterns,
+];
 
 const sourcePluginSdkSubpaths = [
   ...new Set([...pluginSdkSubpaths, ...privateLocalOnlyPluginSdkSubpaths]),
