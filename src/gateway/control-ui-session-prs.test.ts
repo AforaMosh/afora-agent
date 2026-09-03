@@ -15,11 +15,13 @@ let cacheEpochMs = Date.now();
 
 describe("parseGitHubRemoteUrl", () => {
   it("parses https, scp-like, and ssh remotes", () => {
-    const expected = { owner: "afora", repo: "afora" };
+    const expected = { owner: "AforaMosh", repo: "afora-agent" };
     expect(parseGitHubRemoteUrl("https://github.com/AforaMosh/afora-agent.git")).toEqual(expected);
     expect(parseGitHubRemoteUrl("https://github.com/AforaMosh/afora-agent")).toEqual(expected);
     expect(parseGitHubRemoteUrl("git@github.com:AforaMosh/afora-agent.git")).toEqual(expected);
-    expect(parseGitHubRemoteUrl("ssh://git@github.com/AforaMosh/afora-agent.git")).toEqual(expected);
+    expect(parseGitHubRemoteUrl("ssh://git@github.com/AforaMosh/afora-agent.git")).toEqual(
+      expected,
+    );
   });
 
   it("rejects non-GitHub and malformed remotes", () => {
@@ -73,8 +75,8 @@ describe("loadControlUiSessionPullRequests", () => {
       pullRequests: [
         {
           number: 103469,
-          owner: "afora",
-          repo: "afora",
+          owner: "AforaMosh",
+          repo: "afora-agent",
           branch: context.branch,
           title: "fix(macos): tighten the link-browser tab header",
           url: "https://github.com/AforaMosh/afora-agent/pull/103469",
@@ -86,8 +88,8 @@ describe("loadControlUiSessionPullRequests", () => {
         },
       ],
       branch: {
-        owner: "afora",
-        repo: "afora",
+        owner: "AforaMosh",
+        repo: "afora-agent",
         branch: context.branch,
         createUrl:
           "https://github.com/AforaMosh/afora-agent/pull/new/claude/browser-tabs-tighter-header",
@@ -170,8 +172,8 @@ describe("loadControlUiSessionPullRequests", () => {
     expect(result.pullRequests).toEqual([
       {
         number: 103469,
-        owner: "afora",
-        repo: "afora",
+        owner: "AforaMosh",
+        repo: "afora-agent",
         branch: context.branch,
         title: "fix(macos): tighten the link-browser tab header",
         url: "https://github.com/AforaMosh/afora-agent/pull/103469",
@@ -238,15 +240,15 @@ describe("loadControlUiSessionPullRequests", () => {
   it("falls back to the fork parent repo when the origin repo has no PRs", async () => {
     const fetchImpl = routedFetch([
       {
-        match: "/repos/fork-owner/afora/pulls?head=",
+        match: "/repos/fork-owner/afora-agent/pulls?head=",
         response: () => githubJson([]),
       },
       {
-        match: "/repos/fork-owner/afora",
+        match: "/repos/fork-owner/afora-agent",
         response: () =>
           githubJson({
             fork: true,
-            parent: { name: "afora", owner: { login: "afora" } },
+            parent: { name: "afora-agent", owner: { login: "AforaMosh" } },
           }),
       },
       {
@@ -583,8 +585,8 @@ describe("loadControlUiSessionPullRequests", () => {
     expect(result).toEqual({
       pullRequests: [],
       branch: {
-        owner: "afora",
-        repo: "afora",
+        owner: "AforaMosh",
+        repo: "afora-agent",
         branch: context.branch,
         createUrl:
           "https://github.com/AforaMosh/afora-agent/pull/new/claude/browser-tabs-tighter-header",
@@ -618,8 +620,8 @@ describe("loadControlUiSessionPullRequests", () => {
     expect(result.pullRequests).toEqual([
       {
         number: 103469,
-        owner: "afora",
-        repo: "afora",
+        owner: "AforaMosh",
+        repo: "afora-agent",
         branch: context.branch,
         title: "fix(macos): tighten the link-browser tab header",
         url: "https://github.com/AforaMosh/afora-agent/pull/103469",

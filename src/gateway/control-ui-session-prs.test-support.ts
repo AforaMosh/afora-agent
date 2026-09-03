@@ -43,14 +43,14 @@ export function pullListItem(overrides: Record<string, unknown> = {}): Record<st
     draft: false,
     merged_at: null,
     head: { sha: "a".repeat(40) },
-    base: { ref: "main", repo: { name: "afora", owner: { login: "afora" } } },
+    base: { ref: "main", repo: { name: "afora-agent", owner: { login: "AforaMosh" } } },
     ...overrides,
   };
 }
 
 export const testGitContext: GitContext = {
-  owner: "afora",
-  repo: "afora",
+  owner: "AforaMosh",
+  repo: "afora-agent",
   branch: "claude/browser-tabs-tighter-header",
 };
 

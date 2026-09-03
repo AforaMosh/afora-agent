@@ -54,8 +54,8 @@ describe("listGatewayAgentsBasic", () => {
 
       expect(result.agents).toEqual([
         { id: "main", kind: "agent", name: undefined },
-        { id: "crestodian", kind: "system", name: undefined },
         { id: "afora", kind: "system", name: undefined },
+        { id: "crestodian", kind: "system", name: undefined },
       ]);
     });
   });

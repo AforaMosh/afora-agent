@@ -147,8 +147,8 @@ describe("session branch diff stats", () => {
 
     const result = await loadBranchState();
     expect(result.branch).toEqual({
-      owner: "afora",
-      repo: "afora",
+      owner: "AforaMosh",
+      repo: "afora-agent",
       branch: "feature",
       additions: 4,
       deletions: 1,
@@ -186,8 +186,8 @@ describe("session branch diff stats", () => {
     const result = await loadBranchState();
     // Unpushed branches have no GitHub pull/new page, but changed files still get a row.
     expect(result.branch).toEqual({
-      owner: "afora",
-      repo: "afora",
+      owner: "AforaMosh",
+      repo: "afora-agent",
       branch: "feature",
       additions: 1,
       deletions: 0,
@@ -202,8 +202,8 @@ describe("session branch diff stats", () => {
     const result = await loadBranchState();
     // With equal remote refs, dirty work remains visible without a Create PR link.
     expect(result.branch).toEqual({
-      owner: "afora",
-      repo: "afora",
+      owner: "AforaMosh",
+      repo: "afora-agent",
       branch: "feature",
       additions: 1,
       deletions: 0,
@@ -226,8 +226,8 @@ describe("session branch diff stats", () => {
     const result = await loadBranchState({ pullRequests: [mergedPull(mergedHead)] });
     // Ignore the stale merged +1; only the uncommitted follow-up counts.
     expect(result.branch).toEqual({
-      owner: "afora",
-      repo: "afora",
+      owner: "AforaMosh",
+      repo: "afora-agent",
       branch: "feature",
       additions: 1,
       deletions: 0,
@@ -238,10 +238,12 @@ describe("session branch diff stats", () => {
     const mergedHead = await initializeFeatureHead({ trackFeature: true });
 
     const result = await loadMergedBranchState(mergedHead, {
-      base: { ref: "release", repo: { name: "afora", owner: { login: "afora" } } },
+      base: { ref: "release", repo: { name: "afora-agent", owner: { login: "AforaMosh" } } },
     });
     // A release-branch merge leaves the default-branch Create PR available.
-    expect(result.branch?.createUrl).toBe("https://github.com/AforaMosh/afora-agent/pull/new/feature");
+    expect(result.branch?.createUrl).toBe(
+      "https://github.com/AforaMosh/afora-agent/pull/new/feature",
+    );
   });
 
   it("suppresses the row via local HEAD when the merged remote ref was pruned", async () => {
@@ -281,8 +283,8 @@ describe("session branch diff stats", () => {
     const result = await loadMergedBranchState(mergedHead, { merge_commit_sha: mergeCommit });
     // A merge base containing the landing proves this new commit is a second PR.
     expect(result.branch).toEqual({
-      owner: "afora",
-      repo: "afora",
+      owner: "AforaMosh",
+      repo: "afora-agent",
       branch: "feature",
       additions: 1,
       deletions: 0,
@@ -301,7 +303,7 @@ describe("session branch diff stats", () => {
 
     const result = await loadMergedBranchState(mergedHead, {
       merge_commit_sha: mergeCommit,
-      base: { ref: "release", repo: { name: "afora", owner: { login: "afora" } } },
+      base: { ref: "release", repo: { name: "afora-agent", owner: { login: "AforaMosh" } } },
     });
     // Once the release landing reaches main, its non-default base no longer matters.
     expect(result.branch).toBeUndefined();
@@ -321,8 +323,8 @@ describe("session branch diff stats", () => {
     const result = await loadMergedBranchState(mergedHead, { merge_commit_sha: mergeCommit });
     // The merge base contains the merged head, leaving only the follow-up to compare.
     expect(result.branch).toEqual({
-      owner: "afora",
-      repo: "afora",
+      owner: "AforaMosh",
+      repo: "afora-agent",
       branch: "feature",
       additions: 1,
       deletions: 0,
@@ -361,8 +363,8 @@ describe("session branch diff stats", () => {
     });
     // Only PR1 is in the merge base, so show the follow-up but keep Create PR off.
     expect(result.branch).toEqual({
-      owner: "afora",
-      repo: "afora",
+      owner: "AforaMosh",
+      repo: "afora-agent",
       branch: "feature",
       additions: 1,
       deletions: 0,
@@ -421,8 +423,8 @@ describe("session branch diff stats", () => {
     const result = await loadBranchState({ pullRequests: [mergedPull(mergedHead)] });
     // Count the post-merge commit, but hide Create PR until the branch incorporates the landing.
     expect(result.branch).toEqual({
-      owner: "afora",
-      repo: "afora",
+      owner: "AforaMosh",
+      repo: "afora-agent",
       branch: "feature",
       additions: 1,
       deletions: 0,
