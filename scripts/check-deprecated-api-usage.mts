@@ -156,7 +156,7 @@ const internalFacadeImportPatterns = [
 // tsconfig aliases both afora/plugin-sdk/* and @afora/plugin-sdk/* to src/plugin-sdk/*.
 function resolveInternalFacadeModulePath(repoPath: string, specifier: string) {
   const stripped = specifier.replace(/\.[cm]?[jt]sx?$/u, "");
-  const packageSubpath = stripped.replace(/^@?afora\/plugin-sdk\//u, "");
+  const packageSubpath = stripped.replace(/^@?afora-agent\/plugin-sdk\//u, "");
   if (packageSubpath !== stripped) {
     return `src/plugin-sdk/${packageSubpath}`;
   }

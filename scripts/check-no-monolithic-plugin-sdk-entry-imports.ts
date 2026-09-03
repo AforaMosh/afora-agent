@@ -6,11 +6,11 @@ import { collectFilesSync, isCodeFile, relativeToCwd } from "./check-file-utils.
 
 const LEGACY_BROAD_SUBPATH_PATTERNS = [
   {
-    pattern: /["']afora\/plugin-sdk\/config-runtime["']/,
+    pattern: /["']afora-agent\/plugin-sdk\/config-runtime["']/,
     label: "afora-agent/plugin-sdk/config-runtime",
   },
   {
-    pattern: /["']afora\/plugin-sdk\/infra-runtime["']/,
+    pattern: /["']afora-agent\/plugin-sdk\/infra-runtime["']/,
     label: "afora-agent/plugin-sdk/infra-runtime",
   },
 ] as const;

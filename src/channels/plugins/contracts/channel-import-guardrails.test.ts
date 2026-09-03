@@ -93,7 +93,7 @@ const SAME_CHANNEL_SDK_GUARDS: GuardedSource[] = [
   }),
   ...["src/account-inspect.ts", "src/accounts.ts", "src/token.ts"].map((relativePath) =>
     createGuardedSource("telegram", relativePath, [
-      /["']afora\/plugin-sdk\/account-resolution["']/,
+      /["']afora-agent\/plugin-sdk\/account-resolution["']/,
     ]),
   ),
   ...[
@@ -142,7 +142,7 @@ const SETUP_BARREL_GUARDS: GuardedSource[] = [
 const CHANNEL_CONFIG_SCHEMA_GUARDS: GuardedSource[] = [
   {
     path: bundledPluginFile("tlon", "src/config-schema.ts"),
-    forbiddenPatterns: [/["']afora\/plugin-sdk\/core["']/],
+    forbiddenPatterns: [/["']afora-agent\/plugin-sdk\/core["']/],
   },
 ];
 

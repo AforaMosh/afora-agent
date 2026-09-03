@@ -118,7 +118,7 @@ function createNeverBundleDependencyMatcher(packageJson: PluginPackageJson) {
 }
 
 const HOST_PLUGIN_SDK_IMPORT_RE =
-  /(?:\bfrom\s+|\bimport\s*(?:\(\s*)?|\b(?:require|_+require\d*)\(\s*)["'](afora\/plugin-sdk\/[^"']+)["']/gu;
+  /(?:\bfrom\s+|\bimport\s*(?:\(\s*)?|\b(?:require|_+require\d*)\(\s*)["'](afora-agent\/plugin-sdk\/[^"']+)["']/gu;
 
 function listRuntimeJavaScriptFiles(rootDir: string): string[] {
   if (!fs.existsSync(rootDir)) {

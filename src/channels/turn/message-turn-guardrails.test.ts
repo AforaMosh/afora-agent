@@ -113,7 +113,7 @@ function listTsFiles(relativeDir: string): string[] {
 function collectReplyHistoryBindings(source: string): Set<string> {
   const bindings = new Set<string>();
   const importOrExportPattern =
-    /\b(?:import|export)\s*\{([\s\S]*?)\}\s*from\s*["']afora\/plugin-sdk\/reply-history["']/g;
+    /\b(?:import|export)\s*\{([\s\S]*?)\}\s*from\s*["']afora-agent\/plugin-sdk\/reply-history["']/g;
   for (const match of source.matchAll(importOrExportPattern)) {
     const block = match[1] ?? "";
     for (const nameMatch of block.matchAll(/\b[A-Za-z_][A-Za-z0-9_]*\b/g)) {

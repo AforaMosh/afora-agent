@@ -68,7 +68,7 @@ function readPrivateLocalOnlySubpaths(): Set<string> {
 }
 
 function parsePluginSdkSubpath(specifier: string): string | null {
-  return specifier.match(/^@?afora\/plugin-sdk\/(.+)$/u)?.[1] ?? null;
+  return specifier.match(/^@?afora-agent\/plugin-sdk\/(.+)$/u)?.[1] ?? null;
 }
 
 function isGeneratedBuildArtifact(filePath: string): boolean {

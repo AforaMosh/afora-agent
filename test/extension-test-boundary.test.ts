@@ -335,7 +335,7 @@ describe("non-extension test boundaries", () => {
 
   it("keeps extension tests off the legacy test alias and repo helper bridges", () => {
     const bannedPatterns = [
-      /["']afora\/plugin-sdk\/test-utils["']/u,
+      /["']afora-agent\/plugin-sdk\/test-utils["']/u,
       /["'](?:\.\.\/)+(?:test\/helpers\/channels\/)[^"']+["']/u,
       /["'](?:\.\.\/)+(?:src\/channels\/plugins\/contracts\/test-helpers\/)[^"']+["']/u,
       /["'](?:\.\.\/)+(?:test\/helpers\/plugins\/)[^"']+["']/u,
@@ -382,7 +382,7 @@ describe("non-extension test boundaries", () => {
       "WhatsAppConfigSchema",
     ]);
     const bundledFacadeBindingPattern =
-      /\b(?:import|export)\s+(?:type\s+)?\{(?<bindings>[^}]*)\}\s*from\s*["']afora\/plugin-sdk\/bundled-channel-config-schema["']/gu;
+      /\b(?:import|export)\s+(?:type\s+)?\{(?<bindings>[^}]*)\}\s*from\s*["']afora-agent\/plugin-sdk\/bundled-channel-config-schema["']/gu;
 
     const offenders = files.flatMap((file) => {
       const source = fs.readFileSync(path.join(repoRoot, file), "utf8");

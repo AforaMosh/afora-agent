@@ -11,7 +11,7 @@ const RUNTIME_ENTRY_HELPER_RE = /(^|\/)plugin-entry\.runtime\.[cm]?[jt]s$/;
 const SOURCE_MODULE_EXTENSIONS = [".ts", ".mts", ".cts", ".js", ".mjs", ".cjs"] as const;
 const FORBIDDEN_CONTRACT_MODULE_SPECIFIER_PATTERNS = [
   /^vitest$/u,
-  /^afora\/plugin-sdk\/testing$/u,
+  /^afora-agent\/plugin-sdk\/testing$/u,
   /(^|\/)test-api(?:\.[cm]?[jt]s)?$/u,
   /(^|\/)__tests__(\/|$)/u,
   /(^|\/)test-support(\/|$)/u,

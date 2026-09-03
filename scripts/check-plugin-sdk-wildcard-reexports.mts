@@ -7,7 +7,7 @@ import {
 } from "./lib/extension-wildcard-reexport-scanner.mts";
 
 const WILDCARD_PLUGIN_SDK_REEXPORT_PATTERN =
-  /^\s*export\s+(?:type\s+)?\*\s+(?:as\s+[$\w]+\s+)?from\s+["']afora\/plugin-sdk\//u;
+  /^\s*export\s+(?:type\s+)?\*\s+(?:as\s+[$\w]+\s+)?from\s+["']afora-agent\/plugin-sdk\//u;
 const policy = {
   // SDK wildcard exposure is only a public extension-root barrel policy.
   fileScope: "extension-root-api-files",

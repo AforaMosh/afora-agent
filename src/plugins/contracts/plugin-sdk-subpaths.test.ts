@@ -481,7 +481,7 @@ describe("plugin-sdk subpath exports", () => {
         resolve(REPO_ROOT, "test"),
       ],
       pattern:
-        /(?:from\s+|import\s+(?:type\s+)?|import\s*\(\s*)["']afora\/plugin-sdk\/channel-runtime(?=["'])/u,
+        /(?:from\s+|import\s+(?:type\s+)?|import\s*\(\s*)["']afora-agent\/plugin-sdk\/channel-runtime(?=["'])/u,
       exclude: ["src/plugins/compat/registry.ts", "src/plugins/sdk-alias.test.ts"],
     });
   });
@@ -1361,7 +1361,9 @@ describe("plugin-sdk subpath exports", () => {
     const channelActionsSdk = await importResolvedPluginSdkSubpath(
       "afora-agent/plugin-sdk/channel-actions",
     );
-    const pluginEntrySdk = await importResolvedPluginSdkSubpath("afora-agent/plugin-sdk/plugin-entry");
+    const pluginEntrySdk = await importResolvedPluginSdkSubpath(
+      "afora-agent/plugin-sdk/plugin-entry",
+    );
     const channelLifecycleSdk = await importResolvedPluginSdkSubpath(
       "afora-agent/plugin-sdk/channel-lifecycle",
     );

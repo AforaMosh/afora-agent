@@ -7,15 +7,15 @@ type Offender = { file: string; hint: string; line?: number; specifier?: string 
 
 const FORBIDDEN_PATTERNS: Array<{ pattern: RegExp; hint: string }> = [
   {
-    pattern: /["']afora\/plugin-sdk["']/,
+    pattern: /["']afora-agent\/plugin-sdk["']/,
     hint: "Use afora/plugin-sdk/<subpath> instead of the monolithic root entry.",
   },
   {
-    pattern: /["']afora\/plugin-sdk\/test-utils["']/,
+    pattern: /["']afora-agent\/plugin-sdk\/test-utils["']/,
     hint: "Use a focused plugin-sdk test subpath for the public extension test surface.",
   },
   {
-    pattern: /["']afora\/plugin-sdk\/compat["']/,
+    pattern: /["']afora-agent\/plugin-sdk\/compat["']/,
     hint: "Use a focused public plugin-sdk subpath instead of compat.",
   },
   {
