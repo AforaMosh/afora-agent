@@ -2,7 +2,10 @@
 import { createRequire } from "node:module";
 import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 
-const CORE_PACKAGE_NAME = "afora-agent";
+// "afora-agent" is this repository's manifest name; "afora" is the published
+// package and the bin entry. A core package.json can present either, so this
+// guard accepts both -- matching CORE_PACKAGE_NAMES in src/infra/afora-root.ts.
+const CORE_PACKAGE_NAMES = new Set(["afora-agent", "afora"]);
 
 const PACKAGE_JSON_CANDIDATES = [
   "../package.json",
@@ -31,7 +34,7 @@ function readVersionFromJsonCandidates(
         if (!version) {
           continue;
         }
-        if (opts.requirePackageName && parsed.name !== CORE_PACKAGE_NAME) {
+        if (opts.requirePackageName && !CORE_PACKAGE_NAMES.has(parsed.name ?? "")) {
           continue;
         }
         return version;
