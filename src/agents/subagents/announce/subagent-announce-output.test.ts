@@ -340,6 +340,30 @@ describe("readSubagentOutput", () => {
     ).resolves.toBe("1 tool call(s) made without visible output.");
   });
 
+  it("returns the pre-yield progress of a timed-out run instead of discarding it", async () => {
+    installOutputDeps({
+      messages: [
+        { role: "assistant", content: [{ type: "text", text: "Ran 12 lanes; 3 still failing." }] },
+        ...sessionsYieldTurn(),
+      ],
+    });
+
+    await expect(
+      readSubagentOutput("agent:main:subagent:child", { status: "timeout" }),
+    ).resolves.toBe("Ran 12 lanes; 3 still failing.");
+  });
+
+  it("keeps pre-yield text out of the output of a run that is still owed a continuation", async () => {
+    installOutputDeps({
+      messages: [
+        { role: "assistant", content: [{ type: "text", text: "Ran 12 lanes; 3 still failing." }] },
+        ...sessionsYieldTurn(),
+      ],
+    });
+
+    await expect(readSubagentOutput("agent:main:subagent:child")).resolves.toBeUndefined();
+  });
+
   it("does not fall back to tool output when the last assistant turn is empty", async () => {
     installOutputDeps({
       messages: [

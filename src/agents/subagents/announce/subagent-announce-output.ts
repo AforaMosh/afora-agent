@@ -76,6 +76,12 @@ type SubagentOutputSnapshot = {
   latestSilentText?: string;
   latestToolCallCount?: number;
   waitingForContinuation?: boolean;
+  /**
+   * Text produced before a yield cleared it, because a continuation was
+   * expected to replace it. A run killed on its timeout never gets that
+   * continuation, leaving this the only record of what the worker did.
+   */
+  preYieldAssistantText?: string;
 };
 
 type AgentWaitResult = {
@@ -177,11 +183,16 @@ function summarizeSubagentOutputHistory(messages: Array<unknown>): SubagentOutpu
       snapshot.latestSilentText = undefined;
       snapshot.latestToolCallCount = undefined;
       snapshot.waitingForContinuation = false;
+      snapshot.preYieldAssistantText = undefined;
       previousAssistantCalledYield = false;
       continue;
     }
     if (role === "assistant") {
       if (assistantCallsSessionsYield(message)) {
+        // Newest text wins, but a second yield with nothing between must not
+        // erase what the first one preserved.
+        snapshot.preYieldAssistantText =
+          snapshot.latestAssistantText ?? snapshot.preYieldAssistantText;
         snapshot.latestAssistantText = undefined;
         snapshot.latestSilentText = undefined;
         snapshot.waitingForContinuation = true;
@@ -210,6 +221,7 @@ function summarizeSubagentOutputHistory(messages: Array<unknown>): SubagentOutpu
       continue;
     }
     if (isSessionsYieldToolResult(message, previousAssistantCalledYield)) {
+      snapshot.preYieldAssistantText ??= snapshot.latestAssistantText;
       snapshot.latestAssistantText = undefined;
       snapshot.latestSilentText = undefined;
       snapshot.waitingForContinuation = true;
@@ -225,8 +237,12 @@ function selectSubagentOutputText(
   snapshot: SubagentOutputSnapshot,
   outcome?: SubagentRunOutcome,
 ): string | undefined {
+  const timedOut = outcome?.status === "timeout";
   if (snapshot.waitingForContinuation) {
-    return undefined;
+    // A yielded run is still owed a continuation, so its pre-yield text is not
+    // an answer. A timed-out run is terminal: the continuation will never come,
+    // and discarding the text here is how a killed worker reads as a crash.
+    return timedOut ? snapshot.preYieldAssistantText : undefined;
   }
   if (snapshot.latestSilentText) {
     return snapshot.latestSilentText;
@@ -236,11 +252,10 @@ function selectSubagentOutputText(
   }
   // Tool activity is partial-progress evidence only for a timed-out run. It is
   // not authoritative completion output when producer terminal facts are absent.
-  if (
-    outcome?.status === "timeout" &&
-    snapshot.latestToolCallCount &&
-    snapshot.latestToolCallCount > 0
-  ) {
+  if (timedOut && snapshot.preYieldAssistantText) {
+    return snapshot.preYieldAssistantText;
+  }
+  if (timedOut && snapshot.latestToolCallCount && snapshot.latestToolCallCount > 0) {
     return `${snapshot.latestToolCallCount} tool call(s) made without visible output.`;
   }
   return undefined;
