@@ -40,8 +40,8 @@ function issuePreviewResponse(overrides: Record<string, unknown> = {}) {
     kind: "issue",
     login: "octocat",
     number: 99815,
-    owner: "afora",
-    repo: "afora",
+    owner: "AforaMosh",
+    repo: "afora-agent",
     state: "open",
     title: "Keep hover previews reachable",
     updatedAt: "2026-07-05T09:55:00Z",
@@ -111,8 +111,8 @@ describe("afora-github-link-hovercard-provider", () => {
       login: "steipete",
       mergedAt: "2026-07-04T09:53:52Z",
       number: 99816,
-      owner: "Afora",
-      repo: "Afora",
+      owner: "aforamosh",
+      repo: "Afora-Agent",
       state: "closed",
       title: "fix(agents): derive conversation scope from trusted group facts",
       updatedAt: "2026-07-05T09:55:00Z",
@@ -162,8 +162,8 @@ describe("afora-github-link-hovercard-provider", () => {
       {
         kind: "pull",
         number: 99816,
-        owner: "afora",
-        repo: "afora",
+        owner: "AforaMosh",
+        repo: "afora-agent",
       },
       { signal: expect.any(AbortSignal) },
     );
@@ -309,7 +309,10 @@ describe("afora-github-link-hovercard-provider", () => {
     expect(request).not.toHaveBeenCalled();
     expect(document.querySelector(".github-link-hovercard")).toBeNull();
 
-    const missingLink = createLink("https://github.com/AforaMosh/afora-agent/issues/999999", "missing");
+    const missingLink = createLink(
+      "https://github.com/AforaMosh/afora-agent/issues/999999",
+      "missing",
+    );
     missingLink.provider.client = { request } as unknown as GatewayBrowserClient;
     await hover(missingLink.anchor);
     expect(document.querySelector(".github-link-hovercard")?.textContent).toContain(
@@ -335,7 +338,9 @@ describe("afora-github-link-hovercard-provider", () => {
 
   it("leaves no popup state on the link when hover ends before opening", async () => {
     const request = vi.fn();
-    const { anchor, provider } = createLink("https://github.com/AforaMosh/afora-agent/issues/99815");
+    const { anchor, provider } = createLink(
+      "https://github.com/AforaMosh/afora-agent/issues/99815",
+    );
     provider.client = { request } as unknown as GatewayBrowserClient;
 
     anchor.dispatchEvent(new MouseEvent("pointerover", { bubbles: true, composed: true }));
