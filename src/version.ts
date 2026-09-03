@@ -2,7 +2,7 @@
 import { createRequire } from "node:module";
 import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 
-const CORE_PACKAGE_NAME = "afora";
+const CORE_PACKAGE_NAME = "afora-agent";
 
 const PACKAGE_JSON_CANDIDATES = [
   "../package.json",
