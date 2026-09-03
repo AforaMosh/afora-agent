@@ -26,7 +26,7 @@ When sandboxing is enabled and `workspaceAccess` is not `"rw"`, tools operate in
 - A non-default `AFORA_STATE_DIR` keeps the default workspace at `<state-dir>/workspace`, including scheduled maintenance and the initial `main` agent entry.
 - Non-default agents (`agents.entries.*`) without an explicit workspace resolve to `<state-dir>/workspace-<agentId>`, not the shared default workspace.
 
-Override in `~/.AforaMosh/afora-agent.json`:
+Override in `~/.afora/afora.json`:
 
 ```json5
 {
@@ -108,7 +108,7 @@ If a required bootstrap file is missing, Afora injects a "missing file" marker i
 
 These live under `~/.afora/` and should NOT be committed to the workspace repo:
 
-- `~/.AforaMosh/afora-agent.json` (config)
+- `~/.afora/afora.json` (config)
 - `~/.afora/state/afora.sqlite` (shared workspace setup state and attestations)
 - `~/.afora/agents/<agentId>/agent/afora-agent.sqlite` (model auth profiles, routing state, standing intents, and other agent-scoped durability)
 - `~/.afora/agents/<agentId>/agent/afora-agent.sqlite` (session rows, transcripts, and per-agent runtime state)
@@ -217,7 +217,7 @@ Suggested `.gitignore` starter:
     Clone the repo to the desired path (default `~/.afora/workspace`).
   </Step>
   <Step title="Update config">
-    Set `agents.defaults.workspace` to that path in `~/.AforaMosh/afora-agent.json`.
+    Set `agents.defaults.workspace` to that path in `~/.afora/afora.json`.
   </Step>
   <Step title="Seed missing files">
     Run `afora setup --workspace <path>` to seed any missing files.

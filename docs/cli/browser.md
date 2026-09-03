@@ -76,7 +76,7 @@ afora browser --browser-profile afora reset-profile
 
 ## If the command is missing
 
-If `afora browser` is an unknown command, check `plugins.allow` in `~/.AforaMosh/afora-agent.json`. When `plugins.allow` is present, list the bundled browser plugin explicitly unless the config already has a root `browser` block:
+If `afora browser` is an unknown command, check `plugins.allow` in `~/.afora/afora.json`. When `plugins.allow` is present, list the bundled browser plugin explicitly unless the config already has a root `browser` block:
 
 ```json5
 {

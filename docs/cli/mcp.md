@@ -23,14 +23,14 @@ Use [`afora acp`](/cli/acp) when Afora should host a coding harness session itse
 
 ## Choose the right MCP path
 
-| Goal                                                                | Use                                                                  | Why                                                                                                             |
-| ------------------------------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Let an external MCP client read/send Afora channel conversations | `afora mcp serve`                                                 | Afora is the MCP server and exposes Gateway-backed conversations over stdio.                                 |
-| Save third-party MCP servers for Afora-managed agent runs        | `afora mcp add`, `set`, `configure`, `tools`, `login`             | Afora is the MCP client-side registry and later projects those servers into eligible runtimes.               |
-| Check a saved server without running an agent turn                  | `afora mcp status`, `doctor`, `probe`                             | `status` and `doctor` inspect config; `probe` opens a live MCP connection and lists capabilities.               |
-| Edit MCP config from a browser                                      | Control UI `/settings/mcp` (`/mcp` alias)                            | The page shows inventory, enablement, OAuth/filter summaries, command hints, and a scoped `mcp` editor.         |
-| Give Codex app-server a scoped native MCP server                    | `mcp.servers.<name>.codex`                                           | The `codex` block only affects Codex app-server thread projection and is stripped before native config handoff. |
-| Run ACP-hosted harness sessions                                     | [`afora acp`](/cli/acp) and [ACP Agents](/tools/acp-agents-setup) | ACP bridge mode does not accept per-session MCP server injection; configure gateway/plugin bridges instead.     |
+| Goal                                                             | Use                                                               | Why                                                                                                             |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Let an external MCP client read/send Afora channel conversations | `afora mcp serve`                                                 | Afora is the MCP server and exposes Gateway-backed conversations over stdio.                                    |
+| Save third-party MCP servers for Afora-managed agent runs        | `afora mcp add`, `set`, `configure`, `tools`, `login`             | Afora is the MCP client-side registry and later projects those servers into eligible runtimes.                  |
+| Check a saved server without running an agent turn               | `afora mcp status`, `doctor`, `probe`                             | `status` and `doctor` inspect config; `probe` opens a live MCP connection and lists capabilities.               |
+| Edit MCP config from a browser                                   | Control UI `/settings/mcp` (`/mcp` alias)                         | The page shows inventory, enablement, OAuth/filter summaries, command hints, and a scoped `mcp` editor.         |
+| Give Codex app-server a scoped native MCP server                 | `mcp.servers.<name>.codex`                                        | The `codex` block only affects Codex app-server thread projection and is stripped before native config handoff. |
+| Run ACP-hosted harness sessions                                  | [`afora acp`](/cli/acp) and [ACP Agents](/tools/acp-agents-setup) | ACP bridge mode does not accept per-session MCP server injection; configure gateway/plugin bridges instead.     |
 
 <Tip>
 If you are not sure which path you need, start with `afora mcp status --verbose`. It shows what Afora has saved without starting any MCP servers.
@@ -551,7 +551,7 @@ Use `--json` for scripts and dashboards. Field sets can grow over time, so consu
   <Accordion title="status --json">
     ```json
     {
-      "path": "/home/user/.AforaMosh/afora-agent.json",
+      "path": "/home/user/.afora/afora.json",
       "servers": [
         {
           "name": "docs",
@@ -586,7 +586,7 @@ Use `--json` for scripts and dashboards. Field sets can grow over time, so consu
     ```json
     {
       "ok": true,
-      "path": "/home/user/.AforaMosh/afora-agent.json",
+      "path": "/home/user/.afora/afora.json",
       "servers": [
         {
           "name": "docs",
@@ -698,7 +698,7 @@ Connects to a remote MCP server over HTTP Server-Sent Events.
 | `headers`                   | Optional key-value map of HTTP headers (for example auth tokens) |
 | `connectionTimeoutMs`       | Per-server connection timeout in ms (optional)                   |
 | `requestTimeoutMs`          | Per-server MCP request timeout in milliseconds                   |
-| `auth: "oauth"`             | Use MCP OAuth credentials saved by `afora mcp login`          |
+| `auth: "oauth"`             | Use MCP OAuth credentials saved by `afora mcp login`             |
 | `sslVerify`                 | Set false only for explicitly trusted private HTTPS endpoints    |
 | `clientCert` / `clientKey`  | mTLS client certificate and key paths                            |
 | `supportsParallelToolCalls` | Hint that concurrent calls are safe for this server              |
@@ -831,17 +831,17 @@ If the provider rotates tokens or the authorization state gets stuck, run `afora
 
 `streamable-http` is an additional transport option alongside `sse` and `stdio`. It uses HTTP streaming for bidirectional communication with remote MCP servers.
 
-| Field                       | Description                                                                            |
-| --------------------------- | -------------------------------------------------------------------------------------- |
-| `url`                       | HTTP or HTTPS URL of the remote server (required)                                      |
+| Field                       | Description                                                                         |
+| --------------------------- | ----------------------------------------------------------------------------------- |
+| `url`                       | HTTP or HTTPS URL of the remote server (required)                                   |
 | `transport`                 | Set to `"streamable-http"` to select this transport; when omitted, Afora uses `sse` |
-| `headers`                   | Optional key-value map of HTTP headers (for example auth tokens)                       |
-| `connectionTimeoutMs`       | Per-server connection timeout in ms (optional)                                         |
-| `requestTimeoutMs`          | Per-server MCP request timeout in milliseconds                                         |
+| `headers`                   | Optional key-value map of HTTP headers (for example auth tokens)                    |
+| `connectionTimeoutMs`       | Per-server connection timeout in ms (optional)                                      |
+| `requestTimeoutMs`          | Per-server MCP request timeout in milliseconds                                      |
 | `auth: "oauth"`             | Use MCP OAuth credentials saved by `afora mcp login`                                |
-| `sslVerify`                 | Set false only for explicitly trusted private HTTPS endpoints                          |
-| `clientCert` / `clientKey`  | mTLS client certificate and key paths                                                  |
-| `supportsParallelToolCalls` | Hint that concurrent calls are safe for this server                                    |
+| `sslVerify`                 | Set false only for explicitly trusted private HTTPS endpoints                       |
+| `clientCert` / `clientKey`  | mTLS client certificate and key paths                                               |
+| `supportsParallelToolCalls` | Hint that concurrent calls are safe for this server                                 |
 
 Afora config uses `transport: "streamable-http"` as the canonical spelling. CLI-native MCP `type: "http"` values are accepted when saved through `afora mcp set` and repaired by `afora doctor --fix` in existing config, but `transport` is what embedded Afora consumes directly.
 

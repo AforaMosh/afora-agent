@@ -84,7 +84,7 @@ Input safety limits:
 
 ## Plugin Defaults
 
-Set plugin-wide defaults in `~/.AforaMosh/afora-agent.json`:
+Set plugin-wide defaults in `~/.afora/afora.json`:
 
 ```json5
 {

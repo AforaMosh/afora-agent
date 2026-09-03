@@ -273,7 +273,7 @@ function resolveBrowserBaseUrl(params: {
   }
   if (!resolved.enabled) {
     throw new Error(
-      "Browser control is disabled. Set browser.enabled=true in ~/.AforaMosh/afora-agent.json.",
+      "Browser control is disabled. Set browser.enabled=true in ~/.afora/afora.json.",
     );
   }
   return undefined;

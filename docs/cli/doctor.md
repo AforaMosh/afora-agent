@@ -28,13 +28,13 @@ Related:
 
 Doctor has five postures:
 
-| Posture                   | Command                                      | Behavior                                                                        |
-| ------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
+| Posture                   | Command                                | Behavior                                                                        |
+| ------------------------- | -------------------------------------- | ------------------------------------------------------------------------------- |
 | Inspect                   | `afora doctor` / `afora doctor --json` | Advisory checks in human or machine-readable form.                              |
-| Repair                    | `afora doctor --fix`                      | Applies supported repairs, using prompts unless non-interactive repair is safe. |
-| Lint                      | `afora doctor --lint [--json]`            | Read-only findings with threshold-based exit codes for CI gates.                |
-| Shared SQLite maintenance | `afora doctor --state-sqlite compact`     | Explicitly checkpoints, compacts, and verifies the canonical shared state DB.   |
-| Session SQLite migration  | `afora doctor --session-sqlite <mode>`    | Inspects, imports, validates, compacts, recovers, or restores session state.    |
+| Repair                    | `afora doctor --fix`                   | Applies supported repairs, using prompts unless non-interactive repair is safe. |
+| Lint                      | `afora doctor --lint [--json]`         | Read-only findings with threshold-based exit codes for CI gates.                |
+| Shared SQLite maintenance | `afora doctor --state-sqlite compact`  | Explicitly checkpoints, compacts, and verifies the canonical shared state DB.   |
+| Session SQLite migration  | `afora doctor --session-sqlite <mode>` | Inspects, imports, validates, compacts, recovers, or restores session state.    |
 
 Use `afora doctor --json` when an operator or script wants the advisory Doctor report as JSON. It exits successfully after producing a report; inspect `ok` and `findings` for health state. Use explicit `afora doctor --lint --json` when CI should exit nonzero for findings at the selected severity threshold. Prefer `--fix` when a human operator wants Doctor to edit config or state.
 
@@ -93,7 +93,7 @@ afora channels status --probe
 | `--session-sqlite-store <path>` | With `--session-sqlite`: select one legacy `sessions.json` store path.                                                                                                                  |
 | `--session-sqlite-agent <id>`   | With `--session-sqlite`: select one configured agent.                                                                                                                                   |
 | `--session-sqlite-all-agents`   | With `--session-sqlite`: select configured and discovered agent stores.                                                                                                                 |
-| `--github-issue`                | With `--session-sqlite recover`: prepare a sanitized AforaMosh/afora-agent issue report; doctor creates it with `gh` after `--yes` or interactive confirmation.                             |
+| `--github-issue`                | With `--session-sqlite recover`: prepare a sanitized AforaMosh/afora-agent issue report; doctor creates it with `gh` after `--yes` or interactive confirmation.                         |
 | `--json`                        | Emit read-only JSON. Bare `--json` is advisory; combine with `--lint` for threshold-based exit codes. With another machine mode, emit that mode's existing JSON report.                 |
 | `--severity-min <level>`        | With `--lint`: drop findings below `info`, `warning`, or `error`.                                                                                                                       |
 | `--all`                         | With `--lint`: run all registered checks, including opt-in checks excluded from the default set.                                                                                        |
@@ -416,7 +416,7 @@ compare restored legacy artifacts with the SQLite rows before importing.
 - Non-interactive `doctor` runs skip eager plugin loading so headless health checks stay fast. Interactive sessions still load the plugin surfaces needed by the legacy health/repair flow.
 - `--lint` is stricter than `--non-interactive`: always read-only, never prompts, never applies safe migrations. Use `doctor --fix` or `doctor --repair` when you want doctor to make changes.
 - Doctor does not execute `exec` SecretRefs while checking secrets by default. Use `--allow-exec` (with or without `--lint`) only when you intentionally want doctor to run those configured secret resolvers.
-- Any config write (including a `--fix` repair) rotates a backup to `~/.AforaMosh/afora-agent.json.bak` (with a numbered `.bak.1`..`.bak.4` ring). `--fix` also drops unknown config keys reported by schema validation, listing each removal; it skips this while an update is in progress so partially written upgrade state is not stripped before its migration finishes.
+- Any config write (including a `--fix` repair) rotates a backup to `~/.afora/afora.json.bak` (with a numbered `.bak.1`..`.bak.4` ring). `--fix` also drops unknown config keys reported by schema validation, listing each removal; it skips this while an update is in progress so partially written upgrade state is not stripped before its migration finishes.
 - If `afora.json` cannot be parsed and no last-known-good config can be recovered, `doctor --fix` preserves the original as `afora.json.clobbered.<timestamp>`, leaves the current file unchanged, and exits with an error instead of writing a partial replacement.
 - Set `AFORA_SERVICE_REPAIR_POLICY=external` when another supervisor owns the gateway lifecycle. Doctor still reports gateway/service health and applies non-service repairs, but skips service install/start/restart/bootstrap and legacy service cleanup.
 - Doctor reports the managed Gateway's applied heap limit and the adaptive derivation used for the current host or container memory limit. Use `afora gateway status` for the same report outside a repair pass.

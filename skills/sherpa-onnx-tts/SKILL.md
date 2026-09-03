@@ -72,7 +72,7 @@ Resolve the active state directory first:
 STATE_DIR="${AFORA_STATE_DIR:-$HOME/.afora}"
 ```
 
-Then write those resolved paths into the active Afora config file (`$AFORA_CONFIG_PATH`, default `~/.AforaMosh/afora-agent.json`):
+Then write those resolved paths into the active Afora config file (`$AFORA_CONFIG_PATH`, default `~/.afora/afora.json`):
 
 ```json5
 {

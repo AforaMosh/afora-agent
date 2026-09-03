@@ -17,7 +17,7 @@ Install the official IRC plugin, then configure it under `channels.irc`.
 afora plugins install @afora/irc
 ```
 
-2. Set at least host, nick, and the channels to join in `~/.AforaMosh/afora-agent.json`:
+2. Set at least host, nick, and the channels to join in `~/.afora/afora.json`:
 
 ```json5
 {
@@ -56,10 +56,10 @@ IRC does not provide a replayable delivery ID or resend messages missed by a dis
 | `port`                        | `6697` with TLS, `6667` plain | 1-65535                                                     |
 | `tls`                         | `true`                        | Set `false` only for intentional plaintext                  |
 | `nick`                        | none (required)               | Bot nick                                                    |
-| `username`                    | nick, else `afora`         | IRC username                                                |
-| `realname`                    | `Afora`                    | Realname/GECOS field                                        |
+| `username`                    | nick, else `afora`            | IRC username                                                |
+| `realname`                    | `Afora`                       | Realname/GECOS field                                        |
 | `password` / `passwordFile`   | none                          | Server password; file must be a regular file                |
-| `channels`                    | none                          | Channels to join (`["#afora"]`)                          |
+| `channels`                    | none                          | Channels to join (`["#afora"]`)                             |
 | `accounts` / `defaultAccount` | none                          | Multi-account setup; env vars fill only the default account |
 
 ## Security defaults

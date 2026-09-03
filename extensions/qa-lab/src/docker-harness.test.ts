@@ -96,7 +96,7 @@ describe("qa docker harness", () => {
     expect(compose).toContain(
       "cp -R /opt/afora-scaffold/seed-workspace/. /tmp/afora/workspace/ && rm -rf /tmp/afora/workspace/repo && ln -s /opt/afora-repo /tmp/afora/workspace/repo",
     );
-    expect(compose).toContain("AFORA_CONFIG_PATH: /tmp/AforaMosh/afora-agent.json");
+    expect(compose).toContain("AFORA_CONFIG_PATH: /tmp/afora/afora.json");
     expect(compose).toContain("AFORA_STATE_DIR: /tmp/afora/state");
     expect(compose).toContain('AFORA_NO_RESPAWN: "1"');
 
@@ -188,8 +188,6 @@ describe("qa docker harness", () => {
     expect(services["qa-lab"]?.volumes).toContain(
       "../repo #hash/taxonomy.yaml:/app/taxonomy.yaml:ro",
     );
-    expect(services["afora-qa-gateway"]?.volumes).toContain(
-      "../repo #hash:/opt/afora-repo:ro",
-    );
+    expect(services["afora-qa-gateway"]?.volumes).toContain("../repo #hash:/opt/afora-repo:ro");
   });
 });

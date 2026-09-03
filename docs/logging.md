@@ -20,11 +20,11 @@ logs live, how to read them, and how to configure log levels and formats.
 By default, the Gateway writes a rolling log file per day. The default profile
 keeps the historical path:
 
-`/tmp/AforaMosh/afora-agent-YYYY-MM-DD.log`
+`/tmp/afora/afora-YYYY-MM-DD.log`
 
 Named profiles use a profile-qualified filename in the same directory:
 
-`/tmp/AforaMosh/afora-agent-<profile>-YYYY-MM-DD.log`
+`/tmp/afora/afora-<profile>-YYYY-MM-DD.log`
 
 The filename profile segment is lowercase and limited to letters, numbers, and
 dashes. Simple lowercase names stay readable, so the `--dev` shorthand writes
@@ -45,7 +45,7 @@ active file, such as `afora-YYYY-MM-DD.1.log` or
 `afora-dev-YYYY-MM-DD.1.log`, and keeps writing to a fresh active log instead
 of suppressing diagnostics.
 
-You can override the path in `~/.AforaMosh/afora-agent.json`:
+You can override the path in `~/.afora/afora.json`:
 
 ```json
 {
@@ -187,7 +187,7 @@ afora gateway --verbose --ws-log full
 
 ## Configuring logging
 
-All logging configuration lives under `logging` in `~/.AforaMosh/afora-agent.json`.
+All logging configuration lives under `logging` in `~/.afora/afora.json`.
 
 ```json
 {

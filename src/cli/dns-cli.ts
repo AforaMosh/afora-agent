@@ -172,9 +172,7 @@ export function registerDnsCli(program: Command) {
       );
       defaultRuntime.log("");
       defaultRuntime.log(
-        theme.heading(
-          "Recommended config ($AFORA_CONFIG_PATH, default ~/.AforaMosh/afora-agent.json):",
-        ),
+        theme.heading("Recommended config ($AFORA_CONFIG_PATH, default ~/.afora/afora.json):"),
       );
       defaultRuntime.writeJson({
         gateway: { bind: "auto" },
@@ -269,7 +267,7 @@ export function registerDnsCli(program: Command) {
         defaultRuntime.log("");
         defaultRuntime.log(
           theme.muted(
-            "Note: set discovery.wideArea.domain in the active Afora config ($AFORA_CONFIG_PATH, default ~/.AforaMosh/afora-agent.json) on the gateway and restart the gateway so it writes the DNS-SD zone.",
+            "Note: set discovery.wideArea.domain in the active Afora config ($AFORA_CONFIG_PATH, default ~/.afora/afora.json) on the gateway and restart the gateway so it writes the DNS-SD zone.",
           ),
         );
       }

@@ -1222,37 +1222,34 @@ NODE
     expect(result?.stderr ?? "").toBe("");
   });
 
-  it.each(["afora.json", "clawdbot.json"])(
-    "detects %s under AFORA_STATE_DIR",
-    (configName) => {
-      const tmp = mkdtempSync(join(tmpdir(), "afora-install-state-config-"));
-      const stateDir = join(tmp, "state");
-      mkdirSync(stateDir, { recursive: true });
-      writeFileSync(join(stateDir, configName), "{}\n");
+  it.each(["afora.json", "clawdbot.json"])("detects %s under AFORA_STATE_DIR", (configName) => {
+    const tmp = mkdtempSync(join(tmpdir(), "afora-install-state-config-"));
+    const stateDir = join(tmp, "state");
+    mkdirSync(stateDir, { recursive: true });
+    writeFileSync(join(stateDir, configName), "{}\n");
 
-      let result: ReturnType<typeof runInstallShell> | undefined;
-      try {
-        result = runInstallShell(
-          [
-            `cd ${JSON.stringify(process.cwd())}`,
-            `source ${JSON.stringify(SCRIPT_PATH)}`,
-            'if has_afora_config; then printf "configured=1\\n"; else printf "configured=0\\n"; fi',
-          ].join("\n"),
-          {
-            AFORA_CONFIG_PATH: undefined,
-            AFORA_STATE_DIR: stateDir,
-            TERM: "dumb",
-          },
-        );
-      } finally {
-        rmSync(tmp, { force: true, recursive: true });
-      }
+    let result: ReturnType<typeof runInstallShell> | undefined;
+    try {
+      result = runInstallShell(
+        [
+          `cd ${JSON.stringify(process.cwd())}`,
+          `source ${JSON.stringify(SCRIPT_PATH)}`,
+          'if has_afora_config; then printf "configured=1\\n"; else printf "configured=0\\n"; fi',
+        ].join("\n"),
+        {
+          AFORA_CONFIG_PATH: undefined,
+          AFORA_STATE_DIR: stateDir,
+          TERM: "dumb",
+        },
+      );
+    } finally {
+      rmSync(tmp, { force: true, recursive: true });
+    }
 
-      expect(result?.status).toBe(0);
-      expect(result?.stdout).toContain("configured=1");
-      expect(result?.stderr ?? "").toBe("");
-    },
-  );
+    expect(result?.status).toBe(0);
+    expect(result?.stdout).toContain("configured=1");
+    expect(result?.stderr ?? "").toBe("");
+  });
 
   it("does not fall back to home config when AFORA_STATE_DIR is set", () => {
     const tmp = mkdtempSync(join(tmpdir(), "afora-install-state-override-"));
@@ -1412,7 +1409,7 @@ NODE
       NO_PROMPT=0
       OS=linux
       mkdir -p "$HOME/.afora"
-      printf '{}\\n' > "$HOME/.AforaMosh/afora-agent.json"
+      printf '{}\\n' > "$HOME/.afora/afora.json"
 
       bootstrap_gum_temp() { :; }
       print_installer_banner() { :; }
@@ -2762,11 +2759,7 @@ NODE
     mkdirSync(npmBin, { recursive: true });
     mkdirSync(staleBin, { recursive: true });
     mkdirSync(gitBin, { recursive: true });
-    for (const bin of [
-      join(npmBin, "afora"),
-      join(staleBin, "afora"),
-      join(gitBin, "afora"),
-    ]) {
+    for (const bin of [join(npmBin, "afora"), join(staleBin, "afora"), join(gitBin, "afora")]) {
       writeFileSync(bin, "#!/bin/sh\nexit 0\n");
       chmodSync(bin, 0o755);
     }

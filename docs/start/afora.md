@@ -47,7 +47,7 @@ afora channels login
 afora gateway --port 18789
 ```
 
-3. Put a minimal config in `~/.AforaMosh/afora-agent.json`:
+3. Put a minimal config in `~/.afora/afora.json`:
 
 ```json5
 {

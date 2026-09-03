@@ -53,12 +53,12 @@ describe("Nix integration (U3, U5, U9)", () => {
 
     it("STATE_DIR respects AFORA_HOME when state override is unset", () => {
       const customHome = path.join(path.sep, "custom", "home");
-      expect(
-        resolveStateDir(envWith({ AFORA_HOME: customHome, AFORA_STATE_DIR: undefined })),
-      ).toBe(path.join(path.resolve(customHome), ".afora"));
+      expect(resolveStateDir(envWith({ AFORA_HOME: customHome, AFORA_STATE_DIR: undefined }))).toBe(
+        path.join(path.resolve(customHome), ".afora"),
+      );
     });
 
-    it("CONFIG_PATH defaults to AFORA_HOME/.AforaMosh/afora-agent.json", () => {
+    it("CONFIG_PATH defaults to AFORA_HOME/.afora/afora.json", () => {
       const customHome = path.join(path.sep, "custom", "home");
       expect(
         resolveConfigPathCandidate(
@@ -71,7 +71,7 @@ describe("Nix integration (U3, U5, U9)", () => {
       ).toBe(path.join(path.resolve(customHome), ".afora", "afora.json"));
     });
 
-    it("CONFIG_PATH defaults to ~/.AforaMosh/afora-agent.json when env not set", () => {
+    it("CONFIG_PATH defaults to ~/.afora/afora.json when env not set", () => {
       expect(
         resolveConfigPathCandidate(
           envWith({ AFORA_CONFIG_PATH: undefined, AFORA_STATE_DIR: undefined }),
@@ -81,9 +81,7 @@ describe("Nix integration (U3, U5, U9)", () => {
 
     it("CONFIG_PATH respects AFORA_CONFIG_PATH override", () => {
       expect(
-        resolveConfigPathCandidate(
-          envWith({ AFORA_CONFIG_PATH: "/nix/store/abc/afora.json" }),
-        ),
+        resolveConfigPathCandidate(envWith({ AFORA_CONFIG_PATH: "/nix/store/abc/afora.json" })),
       ).toBe(path.resolve("/nix/store/abc/afora.json"));
     });
 
@@ -117,19 +115,13 @@ describe("Nix integration (U3, U5, U9)", () => {
 
     it("prefers AFORA_GATEWAY_PORT over config", () => {
       expect(
-        resolveGatewayPort(
-          { gateway: { port: 19002 } },
-          envWith({ AFORA_GATEWAY_PORT: "19001" }),
-        ),
+        resolveGatewayPort({ gateway: { port: 19002 } }, envWith({ AFORA_GATEWAY_PORT: "19001" })),
       ).toBe(19001);
     });
 
     it("falls back to config when env is invalid", () => {
       expect(
-        resolveGatewayPort(
-          { gateway: { port: 19003 } },
-          envWith({ AFORA_GATEWAY_PORT: "nope" }),
-        ),
+        resolveGatewayPort({ gateway: { port: 19003 } }, envWith({ AFORA_GATEWAY_PORT: "nope" })),
       ).toBe(19003);
     });
   });

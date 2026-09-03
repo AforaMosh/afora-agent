@@ -92,7 +92,7 @@ config; new configs should always use `microsoft`.
 
 ## Configuration
 
-TTS config lives under `tts` in `~/.AforaMosh/afora-agent.json`. Pick a
+TTS config lives under `tts` in `~/.afora/afora.json`. Pick a
 preset and adapt the provider block. The `speakerVoice`/`speakerVoiceId`
 fields shown below are canonical; each provider's own `voice`/`voiceId`/
 `voiceName` field names still work as legacy aliases.

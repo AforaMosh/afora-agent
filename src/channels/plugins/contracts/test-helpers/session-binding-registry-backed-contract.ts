@@ -71,7 +71,7 @@ export function describeSessionBindingRegistryBackedContract(id: string) {
       resetPluginRuntimeStateForTest();
       clearRuntimeConfigSnapshot();
       // Keep the suite hermetic; some contract helpers resolve runtime artifacts through config-aware
-      // plugin boundaries, so never fall back to the developer's real ~/.AforaMosh/afora-agent.json here.
+      // plugin boundaries, so never fall back to the developer's real ~/.afora/afora.json here.
       const runtimeConfig = resolveSessionBindingContractRuntimeConfig(entry.id);
       // These registry-backed contract suites intentionally exercise bundled runtime facades.
       // Opt the bundled-runtime cases in so the activation boundary behaves like real runtime usage.

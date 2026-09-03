@@ -56,7 +56,7 @@ describe("logging/logger browser-safe import", () => {
 
     expect(resolvePreferredAforaTmpDir).not.toHaveBeenCalled();
     expect(module.DEFAULT_LOG_DIR).toBe("/tmp/afora");
-    expect(module.DEFAULT_LOG_FILE).toBe("/tmp/AforaMosh/afora-agent.log");
+    expect(module.DEFAULT_LOG_FILE).toBe("/tmp/afora/afora.log");
   });
 
   it("disables file logging when imported in a browser-like environment", async () => {
@@ -64,7 +64,7 @@ describe("logging/logger browser-safe import", () => {
 
     expect(module.getResolvedLoggerSettings()).toStrictEqual({
       level: "silent",
-      file: "/tmp/AforaMosh/afora-agent.log",
+      file: "/tmp/afora/afora.log",
       maxFileBytes: 100 * 1024 * 1024,
     });
     expect(module.isFileLogLevelEnabled("info")).toBe(false);

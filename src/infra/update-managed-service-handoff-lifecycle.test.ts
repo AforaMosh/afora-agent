@@ -8,10 +8,7 @@ import path from "node:path";
 import { PassThrough, type Readable } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
-import {
-  closeAforaStateDatabaseForTest,
-  openAforaStateDatabase,
-} from "../state/afora-state-db.js";
+import { closeAforaStateDatabaseForTest, openAforaStateDatabase } from "../state/afora-state-db.js";
 import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 import {
   executeSqliteQuerySync,
@@ -216,7 +213,7 @@ async function runHelperWithExistingSentinel(params: {
     restartDelayMs: 500,
     parentPid: process.pid,
     execPath: "/usr/local/bin/node",
-    argv1: "/opt/AforaMosh/afora-agent.mjs",
+    argv1: "/opt/afora/afora.mjs",
     ...(params.handoffId ? { handoffId: params.handoffId } : {}),
     env,
     meta: {
@@ -331,7 +328,7 @@ async function runHelperWithCommand(params: {
     restartDelayMs: 0,
     parentPid: process.pid,
     execPath: "/usr/local/bin/node",
-    argv1: "/opt/AforaMosh/afora-agent.mjs",
+    argv1: "/opt/afora/afora.mjs",
     env: { AFORA_STATE_DIR: tmpDir },
     meta: { sessionKey: "agent:test:webchat:dm:user-123" },
   });
@@ -439,7 +436,7 @@ describe("managed service update handoff", () => {
       restartDrainTimeoutMs: 300_000,
       parentPid: 12345,
       execPath: "/definitely/missing/afora-node",
-      argv1: "/opt/AforaMosh/afora-agent.mjs",
+      argv1: "/opt/afora/afora.mjs",
       meta: { sessionKey: "agent:test:webchat:dm:user-123" },
     });
     await vi.waitFor(() => expect(spawnMock).toHaveBeenCalledTimes(1), FAST_WAIT_OPTS);
@@ -471,7 +468,7 @@ describe("managed service update handoff", () => {
       restartDrainTimeoutMs: 300_000,
       parentPid: 12345,
       execPath: "/usr/local/bin/node",
-      argv1: "/opt/AforaMosh/afora-agent.mjs",
+      argv1: "/opt/afora/afora.mjs",
       supervisor: "systemd",
       env: { PATH: binDir, AFORA_SYSTEMD_UNIT: "afora-gateway.service" },
       meta: {},
@@ -505,7 +502,7 @@ describe("managed service update handoff", () => {
       restartDrainTimeoutMs: undefined,
       parentPid: 12345,
       execPath: "/usr/local/bin/node",
-      argv1: "/opt/AforaMosh/afora-agent.mjs",
+      argv1: "/opt/afora/afora.mjs",
       meta: {},
     });
     const rejection = resultPromise.catch((err: unknown) => err);
@@ -546,7 +543,7 @@ describe("managed service update handoff", () => {
       restartDelayMs: 500,
       parentPid: 12345,
       execPath: "/usr/local/bin/node",
-      argv1: "/opt/AforaMosh/afora-agent.mjs",
+      argv1: "/opt/afora/afora.mjs",
       env: {
         ...supervisorEnv,
         ...serviceIdentityEnv,
@@ -597,7 +594,7 @@ describe("managed service update handoff", () => {
       restartDelayMs: 500,
       parentPid: 12345,
       execPath: "/usr/local/bin/node",
-      argv1: "/opt/AforaMosh/afora-agent.mjs",
+      argv1: "/opt/afora/afora.mjs",
       handoffId: "handoff-123",
       channel: "beta",
       supervisor: "systemd",
@@ -645,7 +642,7 @@ describe("managed service update handoff", () => {
     });
     expect(helperParams.commandArgv).toEqual([
       "/usr/local/bin/node",
-      "/opt/AforaMosh/afora-agent.mjs",
+      "/opt/afora/afora.mjs",
       "update",
       "--yes",
       "--json",
@@ -748,7 +745,7 @@ describe("managed service update handoff", () => {
         restartDelayMs: 500,
         parentPid: 12345,
         execPath: "/usr/local/bin/node",
-        argv1: "/opt/AforaMosh/afora-agent.mjs",
+        argv1: "/opt/afora/afora.mjs",
         supervisor: testCase.supervisor,
         env: testCase.env,
         meta: { sessionKey: "agent:test:webchat:dm:user-123" },
@@ -1015,7 +1012,7 @@ describe("managed service update handoff", () => {
       restartDelayMs: 2_000,
       parentPid: process.pid,
       execPath: "/usr/local/bin/node",
-      argv1: "/opt/AforaMosh/afora-agent.mjs",
+      argv1: "/opt/afora/afora.mjs",
       env: {},
       meta: { sessionKey: "agent:test:webchat:dm:user-123" },
     });
@@ -1030,9 +1027,7 @@ describe("managed service update handoff", () => {
   });
 
   it("waits indefinitely when restart draining has no deadline", async () => {
-    const tmpDir = await fs.mkdtemp(
-      path.join(os.tmpdir(), "afora-handoff-default-timeout-test-"),
-    );
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-handoff-default-timeout-test-"));
     tempDirs.add(tmpDir);
 
     const { startManagedServiceUpdateHandoff } =
@@ -1043,7 +1038,7 @@ describe("managed service update handoff", () => {
       restartDelayMs: 0,
       parentPid: process.pid,
       execPath: "/usr/local/bin/node",
-      argv1: "/opt/AforaMosh/afora-agent.mjs",
+      argv1: "/opt/afora/afora.mjs",
       env: {},
       meta: { sessionKey: "agent:test:webchat:dm:user-123" },
     });

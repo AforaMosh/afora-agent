@@ -193,7 +193,7 @@ This is idempotent and safe to run multiple times.
     sudo docker images | grep afora-sandbox
 
     # Build the sandbox image if missing (requires a source checkout)
-    cd /opt/AforaMosh/afora-agent
+    cd /opt/afora/afora
     sudo -u afora ./scripts/sandbox-setup.sh
     # For npm installs without a source checkout, see
     # https://docs.afora.ai/gateway/sandboxing#images-and-setup

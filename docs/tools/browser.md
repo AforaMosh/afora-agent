@@ -150,7 +150,7 @@ Set `browser.defaultProfile: "afora"` if you want managed mode by default.
 
 ## Configuration
 
-Browser settings live in `~/.AforaMosh/afora-agent.json`.
+Browser settings live in `~/.afora/afora.json`.
 
 ```json5
 {

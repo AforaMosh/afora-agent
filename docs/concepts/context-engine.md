@@ -19,7 +19,7 @@ Afora ships with a built-in `legacy` engine and uses it by default. Install and 
     ```bash
     afora doctor
     # or inspect config directly:
-    cat ~/.AforaMosh/afora-agent.json | jq '.plugins.slots.contextEngine'
+    cat ~/.afora/afora.json | jq '.plugins.slots.contextEngine'
     ```
   </Step>
   <Step title="Install a plugin engine">

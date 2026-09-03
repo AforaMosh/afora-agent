@@ -796,7 +796,7 @@ Hardening: keep permissions tight (`700` on dirs, `600` on files); use full-disk
 
 ### File permissions
 
-- `~/.AforaMosh/afora-agent.json`: `600` (user read/write only)
+- `~/.afora/afora.json`: `600` (user read/write only)
 - `~/.afora`: `700` (user only)
 
 `afora doctor` can warn and offer to tighten these.
@@ -866,7 +866,7 @@ For phone-number-based channels, consider running the assistant on a separate nu
 
 ### Audit
 
-1. Check Gateway logs with `afora logs` (or `afora --profile <profile> logs` for a named profile). The default path is `/tmp/AforaMosh/afora-agent-YYYY-MM-DD.log`; named profiles use `/tmp/AforaMosh/afora-agent-<profile>-YYYY-MM-DD.log`, unless `logging.file` overrides it.
+1. Check Gateway logs with `afora logs` (or `afora --profile <profile> logs` for a named profile). The default path is `/tmp/afora/afora-YYYY-MM-DD.log`; named profiles use `/tmp/afora/afora-<profile>-YYYY-MM-DD.log`, unless `logging.file` overrides it.
 2. Review the relevant transcript(s): `~/.afora/agents/<agentId>/sessions/*.jsonl`.
 3. Review recent config changes that could have widened access: `gateway.bind`, `gateway.auth`, DM/group policies, `tools.elevated`, plugin changes.
 4. Re-run `afora security audit --deep` and confirm critical findings are resolved.

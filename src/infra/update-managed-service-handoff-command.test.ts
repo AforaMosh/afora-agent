@@ -60,7 +60,7 @@ async function startHandoffAndReadCommand(params: {
     ...(params.tag ? { tag: params.tag } : {}),
     parentPid: 12345,
     execPath: "/usr/local/bin/node",
-    argv1: "/opt/AforaMosh/afora-agent.mjs",
+    argv1: "/opt/afora/afora.mjs",
     meta: {},
     ...(params.devTarget ? { devTarget: params.devTarget } : {}),
     ...(params.env ? { env: params.env } : {}),
@@ -96,7 +96,7 @@ describe("managed service update handoff command", () => {
 
     expect(result.commandArgv).toEqual([
       "/usr/local/bin/node",
-      "/opt/AforaMosh/afora-agent.mjs",
+      "/opt/afora/afora.mjs",
       "update",
       "--yes",
       "--json",
@@ -114,7 +114,7 @@ describe("managed service update handoff command", () => {
 
     expect(result.commandArgv).toEqual([
       "/usr/local/bin/node",
-      "/opt/AforaMosh/afora-agent.mjs",
+      "/opt/afora/afora.mjs",
       "update",
       "--yes",
       "--json",

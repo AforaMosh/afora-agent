@@ -82,7 +82,7 @@ describe("trajectory metadata", () => {
       "/Users/tester/project/afora.js",
       "--api-key",
       "super-secret",
-      "--config=/Users/tester/.AforaMosh/afora-agent.json",
+      "--config=/Users/tester/.afora/afora.json",
     ];
     try {
       const metadata = buildTrajectoryRunMetadata({

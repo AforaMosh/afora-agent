@@ -377,7 +377,7 @@ describe("gateway CPU scenario guard", () => {
       cwd,
       env: {
         HOME: "/real/user/home",
-        AFORA_CONFIG_PATH: "/real/user/.AforaMosh/afora-agent.json",
+        AFORA_CONFIG_PATH: "/real/user/.afora/afora.json",
         AFORA_HOME: "/real/user/home",
         AFORA_STATE_DIR: "/real/user/.afora",
       },

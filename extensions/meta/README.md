@@ -51,7 +51,7 @@ export MODEL_API_KEY=<key>
 ```
 
 ```json5
-// ~/.AforaMosh/afora-agent.json
+// ~/.afora/afora.json
 {
   agents: {
     defaults: {

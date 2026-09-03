@@ -90,7 +90,7 @@ Optional compatibility controls:
 
 ## Where to set the key
 
-**Via config:** run `afora configure --section web`. It stores the key in `~/.AforaMosh/afora-agent.json` under `plugins.entries.perplexity.config.webSearch.apiKey`. That field also accepts SecretRef objects.
+**Via config:** run `afora configure --section web`. It stores the key in `~/.afora/afora.json` under `plugins.entries.perplexity.config.webSearch.apiKey`. That field also accepts SecretRef objects.
 
 **Via environment:** set `PERPLEXITY_API_KEY` or `OPENROUTER_API_KEY` in the Gateway process environment. For a gateway install, put it in `~/.afora/.env` (or your service environment). See [Env vars](/help/faq#env-vars-and-env-loading).
 

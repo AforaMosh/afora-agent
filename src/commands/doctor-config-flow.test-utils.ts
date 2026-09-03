@@ -157,7 +157,7 @@ export async function runDoctorConfigWithInput<T>(params: {
       ? { agentRosterIncludeOwned: params.agentRosterIncludeOwned }
       : {}),
     exists: params.exists ?? true,
-    path: "/virtual/.AforaMosh/afora-agent.json",
+    path: "/virtual/.afora/afora.json",
     preflightMode: params.preflightMode ?? inferredPreflightMode,
   });
   try {

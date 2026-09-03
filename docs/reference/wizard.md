@@ -238,7 +238,7 @@ Onboarding detects whether `signal-cli` is on `PATH` and, if missing, offers to 
 
 ## What the wizard writes
 
-Typical fields in `~/.AforaMosh/afora-agent.json`:
+Typical fields in `~/.afora/afora.json`:
 
 - `agents.defaults.workspace`
 - `agents.defaults.skipBootstrap` when `--skip-bootstrap` is passed

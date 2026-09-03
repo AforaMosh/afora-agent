@@ -44,7 +44,7 @@ Record these before changing bind, proxy, Tailscale, or channel policy:
 - Agents reachable from non-local senders.
 - Tool profile, sandbox mode, and elevated tool policy for each reachable agent.
 - External credentials available to those agents.
-- Backup location for `~/.AforaMosh/afora-agent.json` and credentials.
+- Backup location for `~/.afora/afora.json` and credentials.
 
 If more than one person can message the bot, treat this as shared delegated
 tool authority, not per-user host isolation.

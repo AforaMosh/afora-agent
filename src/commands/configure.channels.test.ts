@@ -80,9 +80,7 @@ function optionLabels(options: Array<{ value: unknown; label: string }> | undefi
 
 function expectUnknownChannelRemovalPrompt(unsafeChannel: string, label: string) {
   expectOption(selectArg().options, channelChoice(unsafeChannel), label);
-  expect(confirmArg().message).toBe(
-    `Delete ${label} configuration from ~/.AforaMosh/afora-agent.json?`,
-  );
+  expect(confirmArg().message).toBe(`Delete ${label} configuration from ~/.afora/afora.json?`);
   expect(note).toHaveBeenCalledWith(
     `${label} removed from config.\nNote: credentials/sessions on disk are unchanged.`,
     "Channel removed",
@@ -138,9 +136,7 @@ describe("removeChannelConfigWizard", () => {
       {} as never,
     );
 
-    expect(confirmArg().message).toBe(
-      "Delete Telegram configuration from ~/.AforaMosh/afora-agent.json?",
-    );
+    expect(confirmArg().message).toBe("Delete Telegram configuration from ~/.afora/afora.json?");
     expect(next.channels).toEqual({ twitch: { token: "secret" } });
     expect(note).toHaveBeenCalledWith(
       "Telegram removed from config.\nNote: credentials/sessions on disk are unchanged.",
@@ -161,7 +157,7 @@ describe("removeChannelConfigWizard", () => {
       {} as never,
     );
 
-    expect(confirmArg().message).toBe("Delete done configuration from ~/.AforaMosh/afora-agent.json?");
+    expect(confirmArg().message).toBe("Delete done configuration from ~/.afora/afora.json?");
     expect(next.channels).toEqual({ telegram: { token: "secret" } });
     expect(note).toHaveBeenCalledWith(
       "done removed from config.\nNote: credentials/sessions on disk are unchanged.",
@@ -228,7 +224,7 @@ describe("removeChannelConfigWizard", () => {
 
     expectOption(selectArg().options, channelChoice("telegram"), "Telegram\\nBot");
     expect(confirmArg().message).toBe(
-      "Delete Telegram\\nBot configuration from ~/.AforaMosh/afora-agent.json?",
+      "Delete Telegram\\nBot configuration from ~/.afora/afora.json?",
     );
     expect(note).toHaveBeenCalledWith(
       "Telegram\\nBot removed from config.\nNote: credentials/sessions on disk are unchanged.",

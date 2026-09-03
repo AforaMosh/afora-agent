@@ -200,7 +200,7 @@ Example:
 2. Create an **Azure Bot** (App ID + secret + tenant ID).
 3. Build a **Teams app package** referencing the bot, including the RSC permissions below.
 4. Upload/install the Teams app into a team (or personal scope for DMs).
-5. Configure `msteams` in `~/.AforaMosh/afora-agent.json` (or env vars) and start the gateway.
+5. Configure `msteams` in `~/.afora/afora.json` (or env vars) and start the gateway.
 6. The gateway listens for Bot Framework webhook traffic on `/api/messages` by default.
 
 ### Step 1: Create Azure Bot
@@ -208,14 +208,14 @@ Example:
 1. Go to [Create Azure Bot](https://portal.azure.com/#create/Microsoft.AzureBot)
 2. Fill in the **Basics** tab:
 
-   | Field              | Value                                                    |
-   | ------------------ | -------------------------------------------------------- |
+   | Field              | Value                                                 |
+   | ------------------ | ----------------------------------------------------- |
    | **Bot handle**     | Your bot name, e.g., `afora-msteams` (must be unique) |
-   | **Subscription**   | Select your Azure subscription                           |
-   | **Resource group** | Create new or use existing                               |
-   | **Pricing tier**   | **Free** for dev/testing                                 |
-   | **Type of App**    | **Single Tenant** (recommended; see note below)          |
-   | **Creation type**  | **Create new Microsoft App ID**                          |
+   | **Subscription**   | Select your Azure subscription                        |
+   | **Resource group** | Create new or use existing                            |
+   | **Pricing tier**   | **Free** for dev/testing                              |
+   | **Type of App**    | **Single Tenant** (recommended; see note below)       |
+   | **Creation type**  | **Create new Microsoft App ID**                       |
 
 <Warning>
 Creation of new multi-tenant bots was deprecated after 2025-07-31. Use **Single Tenant** for new bots.
@@ -674,7 +674,7 @@ For non-public Teams clouds, set `cloud` and the matching proactive boundary whe
 
 Microsoft publishes the global proactive Bot Connector endpoints in the [Create the conversation](https://learn.microsoft.com/en-us/microsoftteams/platform/bots/how-to/conversations/send-proactive-messages?tabs=dotnet#create-the-conversation) section of the Teams proactive messaging docs. Use the incoming activity's `serviceUrl` when available; otherwise use Microsoft's table below.
 
-| Teams environment | Afora config                                             | Proactive `serviceUrl`                             |
+| Teams environment | Afora config                                                | Proactive `serviceUrl`                             |
 | ----------------- | ----------------------------------------------------------- | -------------------------------------------------- |
 | Public            | no cloud/serviceUrl config needed                           | `https://smba.trafficmanager.net/teams`            |
 | GCC               | set `serviceUrl`; no separate Teams SDK cloud preset exists | `https://smba.infra.gcc.teams.microsoft.com/teams` |

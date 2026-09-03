@@ -29,7 +29,7 @@ Cover:
 
 ```bash
 export AFORA_PARALLELS_DISCORD_TOKEN="$(
-  ssh peters-mac-studio-1 'jq -r ".channels.discord.token" ~/.AforaMosh/afora-agent.json' | tr -d '\n'
+  ssh peters-mac-studio-1 'jq -r ".channels.discord.token" ~/.afora/afora.json' | tr -d '\n'
 )"
 
 pnpm test:parallels:macos \

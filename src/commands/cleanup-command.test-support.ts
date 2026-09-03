@@ -29,7 +29,7 @@ vi.mock("../config/config.js", () => ({
   get isNixMode() {
     return cleanupConfigState.isNixMode;
   },
-  resolveConfigPath: () => "/tmp/.AforaMosh/afora-agent.json",
+  resolveConfigPath: () => "/tmp/.afora/afora.json",
 }));
 
 vi.mock("../daemon/service.js", () => ({
@@ -56,7 +56,7 @@ export function resetCleanupCommandMocks() {
   vi.clearAllMocks();
   const cleanupPlan = {
     stateDir: "/tmp/.afora",
-    configPath: "/tmp/.AforaMosh/afora-agent.json",
+    configPath: "/tmp/.afora/afora.json",
     oauthDir: "/tmp/.afora/credentials",
     configInsideState: true,
     oauthInsideState: true,

@@ -426,7 +426,7 @@ describe("respawnGatewayProcessForUpdate", () => {
     expect(result.mode).toBe("spawned");
     expect(spawnMock).toHaveBeenCalledWith(
       process.execPath,
-      ["/app/node_modules/AforaMosh/afora-agent.mjs", "gateway", "run"],
+      ["/app/node_modules/afora-agent/afora.mjs", "gateway", "run"],
       {
         detached: true,
         env: process.env,

@@ -67,20 +67,20 @@ Environment keys use letters, digits, and underscores and cannot start with a di
 
 ### Create options
 
-| Option                    | Default                               | Description                                                                                    |
-| ------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `--image <ref>`           | `ghcr.io/AforaMosh/afora-agent:latest`    | Container image for the cell.                                                                  |
-| `--runtime <runtime>`     | `docker`                              | Container CLI: `docker` or `podman`.                                                           |
-| `--port <number>`         | Automatically allocated from `19100`  | Loopback host port. An explicitly selected port must not belong to another registered cell.    |
-| `--memory <value>`        | `2g`                                  | Container memory limit in Docker/Podman syntax.                                                |
-| `--cpus <value>`          | `2`                                   | Container CPU limit.                                                                           |
-| `--disk <size>`           | None                                  | Cap the container writable layer when the storage backend supports quotas.                     |
-| `--network <mode>`        | `bridge`                              | Outbound network mode: `bridge` or `internal`.                                                 |
-| `--pids-limit <number>`   | `512`                                 | Maximum number of processes in the container.                                                  |
-| `--env <KEY=VALUE>`       | None                                  | Pass an environment variable to the cell. Repeat for multiple values.                          |
-| `--gateway-token <value>` | Random 32-character hexadecimal token | Use a supplied Gateway token instead of generating one. See [Token handling](#token-handling). |
-| `--no-start`              | Cell starts                           | Create the container without starting it.                                                      |
-| `--json`                  | Human-readable output                 | Print machine-readable output.                                                                 |
+| Option                    | Default                                | Description                                                                                    |
+| ------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `--image <ref>`           | `ghcr.io/AforaMosh/afora-agent:latest` | Container image for the cell.                                                                  |
+| `--runtime <runtime>`     | `docker`                               | Container CLI: `docker` or `podman`.                                                           |
+| `--port <number>`         | Automatically allocated from `19100`   | Loopback host port. An explicitly selected port must not belong to another registered cell.    |
+| `--memory <value>`        | `2g`                                   | Container memory limit in Docker/Podman syntax.                                                |
+| `--cpus <value>`          | `2`                                    | Container CPU limit.                                                                           |
+| `--disk <size>`           | None                                   | Cap the container writable layer when the storage backend supports quotas.                     |
+| `--network <mode>`        | `bridge`                               | Outbound network mode: `bridge` or `internal`.                                                 |
+| `--pids-limit <number>`   | `512`                                  | Maximum number of processes in the container.                                                  |
+| `--env <KEY=VALUE>`       | None                                   | Pass an environment variable to the cell. Repeat for multiple values.                          |
+| `--gateway-token <value>` | Random 32-character hexadecimal token  | Use a supplied Gateway token instead of generating one. See [Token handling](#token-handling). |
+| `--no-start`              | Cell starts                            | Create the container without starting it.                                                      |
+| `--json`                  | Human-readable output                  | Print machine-readable output.                                                                 |
 
 Automatic allocation selects the first unused registry port at or above `19100`. Fleet rejects duplicate tenant IDs and explicit ports already assigned to another cell.
 
@@ -275,14 +275,14 @@ Before first start, Fleet initializes the cell config with `gateway.mode=local`,
 
 Fleet pins the official image's container paths with these environment values:
 
-| Variable                 | Container value                      |
-| ------------------------ | ------------------------------------ |
-| `HOME`                   | `/home/node`                         |
-| `AFORA_HOME`          | `/home/node`                         |
-| `AFORA_STATE_DIR`     | `/home/node/.afora`               |
-| `AFORA_CONFIG_PATH`   | `/home/node/.AforaMosh/afora-agent.json` |
-| `AFORA_WORKSPACE_DIR` | `/home/node/.afora/workspace`     |
-| `AFORA_GATEWAY_TOKEN` | Generated or supplied cell token     |
+| Variable              | Container value                  |
+| --------------------- | -------------------------------- |
+| `HOME`                | `/home/node`                     |
+| `AFORA_HOME`          | `/home/node`                     |
+| `AFORA_STATE_DIR`     | `/home/node/.afora`              |
+| `AFORA_CONFIG_PATH`   | `/home/node/.afora/afora.json`   |
+| `AFORA_WORKSPACE_DIR` | `/home/node/.afora/workspace`    |
+| `AFORA_GATEWAY_TOKEN` | Generated or supplied cell token |
 
 The official image defaults to the non-root `node` user with UID 1000. Fleet keeps the private `0700` bind mounts writable without making them world-accessible. Rootful Docker runs the cell with the invoking non-root UID and GID; rootless Docker uses container UID 0, which maps to the invoking unprivileged host user inside the daemon's user namespace. Podman uses `keep-id` with the invoking UID and GID. When Fleet itself runs as root against a rootful runtime, it retains the image user and assigns the initial mount files to UID/GID 1000.
 

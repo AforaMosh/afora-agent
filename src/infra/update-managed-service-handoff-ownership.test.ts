@@ -8,10 +8,7 @@ import path from "node:path";
 import { PassThrough } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
-import {
-  closeAforaStateDatabaseForTest,
-  openAforaStateDatabase,
-} from "../state/afora-state-db.js";
+import { closeAforaStateDatabaseForTest, openAforaStateDatabase } from "../state/afora-state-db.js";
 import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 import { claimAforaStateOwnership } from "../state/afora-state-ownership-operations.js";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "./kysely-sync.js";
@@ -115,7 +112,7 @@ async function runOwnershipHelper(params: {
     restartDelayMs: 500,
     parentPid: process.pid,
     execPath: "/usr/local/bin/node",
-    argv1: "/opt/AforaMosh/afora-agent.mjs",
+    argv1: "/opt/afora/afora.mjs",
     ...(params.handoffId ? { handoffId: params.handoffId } : {}),
     env,
     meta: {

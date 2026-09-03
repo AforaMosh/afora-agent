@@ -104,7 +104,7 @@ Enable, disable, and override:
   macOS hosts (`enabledByDefaultOnPlatforms: ["darwin"]`) and auto-disables
   inside detected containers; Linux, Windows, and other containerized
   deployments need explicit `plugins enable bonjour`.
-- `gateway.bind` in `~/.AforaMosh/afora-agent.json` controls the Gateway bind mode.
+- `gateway.bind` in `~/.afora/afora.json` controls the Gateway bind mode.
 - `AFORA_SSH_PORT` overrides the advertised SSH port (only takes effect
   when `discovery.mdns.mode="full"`).
 - `AFORA_TAILNET_DNS` publishes a `tailnetDns` hint (MagicDNS).

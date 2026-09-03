@@ -458,9 +458,7 @@ describe("Parallels smoke model selection", () => {
     const logPath = join(tempDir, "phase.log");
     writeFileSync(logPath, ["Afora 0.0.1", "x".repeat(4096), "Afora 2026.6.7"].join("\n"));
 
-    await expect(extractLastAforaVersionFromLog(logPath, undefined, 128)).resolves.toBe(
-      "2026.6.7",
-    );
+    await expect(extractLastAforaVersionFromLog(logPath, undefined, 128)).resolves.toBe("2026.6.7");
   });
 
   it("keeps the public shell entrypoints as thin TypeScript launchers", () => {
@@ -763,9 +761,7 @@ describe("Parallels smoke model selection", () => {
 
   it("accepts npm 10/11 array and npm 12 workspace result shapes", () => {
     expect(
-      packageArtifactTesting.resolveNpmPackTarballFilename([
-        { filename: "afora-2026.6.11.tgz" },
-      ]),
+      packageArtifactTesting.resolveNpmPackTarballFilename([{ filename: "afora-2026.6.11.tgz" }]),
     ).toBe("afora-2026.6.11.tgz");
     expect(
       packageArtifactTesting.resolveNpmPackTarballFilename({
@@ -1448,12 +1444,12 @@ kill -TERM "$$"`,
     expect(macos).toContain('const guestAfora = "afora"');
     expect(macos).toContain('const guestNode = "node"');
     expect(macos).toContain('const guestNpm = "npm"');
-    expect(macos).toContain("$(npm root -g)/AforaMosh/afora-agent.mjs");
+    expect(macos).toContain("$(npm root -g)/afora-agent/afora.mjs");
     expect(macos).toContain("guestAforaEntryExec");
     expect(macos).not.toContain('const guestAfora = "/opt/homebrew/bin/afora"');
     expect(macos).not.toContain('const guestNode = "/opt/homebrew/bin/node"');
     expect(macos).not.toContain('const guestNpm = "/opt/homebrew/bin/npm"');
-    expect(macos).not.toContain("/opt/homebrew/lib/node_modules/AforaMosh/afora-agent.mjs");
+    expect(macos).not.toContain("/opt/homebrew/lib/node_modules/afora-agent/afora.mjs");
   });
 
   it("keeps Windows gateway reachability on a real deadline with start recovery", () => {
@@ -2040,9 +2036,7 @@ kill -TERM "$$"`,
   it("runs the Windows agent turn through the detached done-file runner", () => {
     expect(windows).toContain('guestPowerShellBackground(\n      "agent-turn"');
     expect(windows).toContain("AFORA_PARALLELS_WINDOWS_AGENT_TIMEOUT_S");
-    expect(windows).toContain(
-      'readPositiveIntEnv(\n    "AFORA_PARALLELS_WINDOWS_AGENT_TIMEOUT_S"',
-    );
+    expect(windows).toContain('readPositiveIntEnv(\n    "AFORA_PARALLELS_WINDOWS_AGENT_TIMEOUT_S"');
     expect(windows).toContain("windowsAgentTurnConfigPatchScript(this.auth.modelId)");
     expect(windows).toContain("--model");
     expect(windows).toContain('resolveParallelsModelTimeoutSeconds("windows")');
@@ -2142,9 +2136,7 @@ kill -TERM "$$"`,
     expect(packageArtifact).toContain(
       'readPositiveIntEnv("AFORA_PARALLELS_PACKAGE_LOCK_TIMEOUT_MS", 30 * 60_000)',
     );
-    expect(npmUpdate).toContain(
-      'readPositiveIntEnv("AFORA_PARALLELS_NPM_UPDATE_TIMEOUT_S", 2700)',
-    );
+    expect(npmUpdate).toContain('readPositiveIntEnv("AFORA_PARALLELS_NPM_UPDATE_TIMEOUT_S", 2700)');
   });
 
   it("waits through transient Windows restoring state before VM operations", () => {

@@ -192,8 +192,8 @@ describe("resolveHomeDir", () => {
 describe("shortenHomePath", () => {
   it("uses $AFORA_HOME prefix when AFORA_HOME is set", () => {
     withEnv({ AFORA_HOME: "/srv/afora-home", HOME: "/home/other" }, () => {
-      expect(shortenHomePath(`${path.resolve("/srv/afora-home")}/.AforaMosh/afora-agent.json`)).toBe(
-        "$AFORA_HOME/.AforaMosh/afora-agent.json",
+      expect(shortenHomePath(`${path.resolve("/srv/afora-home")}/.afora/afora.json`)).toBe(
+        "$AFORA_HOME/.afora/afora.json",
       );
     });
   });
@@ -233,10 +233,8 @@ describe("shortenHomeInString", () => {
   it("uses $AFORA_HOME replacement when AFORA_HOME is set", () => {
     withEnv({ AFORA_HOME: "/srv/afora-home", HOME: "/home/other" }, () => {
       expect(
-        shortenHomeInString(
-          `config: ${path.resolve("/srv/afora-home")}/.AforaMosh/afora-agent.json`,
-        ),
-      ).toBe("config: $AFORA_HOME/.AforaMosh/afora-agent.json");
+        shortenHomeInString(`config: ${path.resolve("/srv/afora-home")}/.afora/afora.json`),
+      ).toBe("config: $AFORA_HOME/.afora/afora.json");
     });
   });
 

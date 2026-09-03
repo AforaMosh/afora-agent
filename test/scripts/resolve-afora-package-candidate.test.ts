@@ -840,7 +840,7 @@ describe("resolve-afora-package-candidate", () => {
     };
     const requestedUrls: string[] = [];
 
-    await downloadUrl("https://packages.internal:8443/artifactory/AforaMosh/afora-agent.tgz", target, {
+    await downloadUrl("https://packages.internal:8443/artifactory/afora/afora.tgz", target, {
       fetchImpl: async (url: URL) => {
         requestedUrls.push(url.toString());
         return new Response(new Uint8Array([4, 5, 6]), {
@@ -853,13 +853,11 @@ describe("resolve-afora-package-candidate", () => {
       trustedSource,
     });
 
-    expect(requestedUrls).toEqual([
-      "https://packages.internal:8443/artifactory/AforaMosh/afora-agent.tgz",
-    ]);
+    expect(requestedUrls).toEqual(["https://packages.internal:8443/artifactory/afora/afora.tgz"]);
     await expect(readFile(target)).resolves.toEqual(Buffer.from([4, 5, 6]));
 
     await expect(
-      downloadUrl("https://evil.internal:8443/artifactory/AforaMosh/afora-agent.tgz", target, {
+      downloadUrl("https://evil.internal:8443/artifactory/afora/afora.tgz", target, {
         fetchImpl: unexpectedFetch,
         lookupHost: lookupAddresses([{ address: "10.0.0.9", family: 4 }]),
         trustedSource,
@@ -925,7 +923,7 @@ describe("resolve-afora-package-candidate", () => {
     };
 
     await expect(
-      downloadUrl("https://packages.internal:8443/artifactory/AforaMosh/afora-agent.tgz", target, {
+      downloadUrl("https://packages.internal:8443/artifactory/afora/afora.tgz", target, {
         fetchImpl: async () =>
           new Response(null, {
             headers: { location: "https://metadata.internal:8443/artifactory/afora/pwn.tgz" },
@@ -955,30 +953,26 @@ describe("resolve-afora-package-candidate", () => {
     const requestHeaders: Array<Record<string, string> | undefined> = [];
 
     try {
-      await downloadUrl(
-        "https://packages.internal:8443/artifactory/AforaMosh/afora-agent.tgz",
-        target,
-        {
-          fetchImpl: async (_url: URL, init?: RequestInit) => {
-            requestHeaders.push(init?.headers as Record<string, string> | undefined);
-            if (requestHeaders.length === 1) {
-              return new Response(null, {
-                headers: {
-                  location: "https://mirror.internal:8443/artifactory/AforaMosh/afora-agent.tgz",
-                },
-                status: 302,
-              });
-            }
-            return new Response(new Uint8Array([4, 5, 6]), {
-              headers: { "content-length": "3" },
-              status: 200,
+      await downloadUrl("https://packages.internal:8443/artifactory/afora/afora.tgz", target, {
+        fetchImpl: async (_url: URL, init?: RequestInit) => {
+          requestHeaders.push(init?.headers as Record<string, string> | undefined);
+          if (requestHeaders.length === 1) {
+            return new Response(null, {
+              headers: {
+                location: "https://mirror.internal:8443/artifactory/afora/afora.tgz",
+              },
+              status: 302,
             });
-          },
-          lookupHost: lookupAddresses([{ address: "10.0.0.8", family: 4 }]),
-          maxBytes: 3,
-          trustedSource,
+          }
+          return new Response(new Uint8Array([4, 5, 6]), {
+            headers: { "content-length": "3" },
+            status: 200,
+          });
         },
-      );
+        lookupHost: lookupAddresses([{ address: "10.0.0.8", family: 4 }]),
+        maxBytes: 3,
+        trustedSource,
+      });
     } finally {
       if (previousToken === undefined) {
         delete process.env.AFORA_TRUSTED_PACKAGE_TOKEN;

@@ -41,9 +41,9 @@ Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS,
     ```
     If RPC is down, fall back to:
     ```bash
-    tail -f "/tmp/AforaMosh/afora-agent-$(date +%F).log"
+    tail -f "/tmp/afora/afora-$(date +%F).log"
     # Named profile example:
-    tail -f "/tmp/AforaMosh/afora-agent-dev-$(date +%F).log"
+    tail -f "/tmp/afora/afora-dev-$(date +%F).log"
     ```
     File logs are separate from service logs; see [Logging](/logging) and [Troubleshooting](/gateway/troubleshooting).
   </Step>
@@ -130,11 +130,11 @@ First-run Q&A - install, onboard, auth routes, subscriptions, initial failures -
 
 <AccordionGroup>
   <Accordion title="How do I customize skills without keeping the repo dirty?">
-    Use managed overrides instead of editing the repo copy. Put changes in `~/.afora/skills/<name>/SKILL.md` (or add a folder via `skills.load.extraDirs` in `~/.AforaMosh/afora-agent.json`). Precedence: `<workspace>/skills` -> `<workspace>/.agents/skills` -> `~/.agents/skills` -> `~/.afora/skills` -> bundled -> `skills.load.extraDirs`, so managed overrides win over bundled skills without touching git. To install globally but limit visibility to some agents, keep the shared copy in `~/.afora/skills` and control visibility with `agents.defaults.skills` / `agents.entries.*.skills`. Only upstream-worthy edits should go out as PRs against the repo copy.
+    Use managed overrides instead of editing the repo copy. Put changes in `~/.afora/skills/<name>/SKILL.md` (or add a folder via `skills.load.extraDirs` in `~/.afora/afora.json`). Precedence: `<workspace>/skills` -> `<workspace>/.agents/skills` -> `~/.agents/skills` -> `~/.afora/skills` -> bundled -> `skills.load.extraDirs`, so managed overrides win over bundled skills without touching git. To install globally but limit visibility to some agents, keep the shared copy in `~/.afora/skills` and control visibility with `agents.defaults.skills` / `agents.entries.*.skills`. Only upstream-worthy edits should go out as PRs against the repo copy.
   </Accordion>
 
   <Accordion title="Can I load skills from a custom folder?">
-    Yes: add directories via `skills.load.extraDirs` in `~/.AforaMosh/afora-agent.json` (lowest precedence in the order above). `clawhub` installs into `./skills` by default, which Afora treats as `<workspace>/skills` on the next session. To limit visibility to certain agents, pair with `agents.defaults.skills` or `agents.entries.*.skills`.
+    Yes: add directories via `skills.load.extraDirs` in `~/.afora/afora.json` (lowest precedence in the order above). `clawhub` installs into `./skills` by default, which Afora treats as `<workspace>/skills` on the next session. To limit visibility to certain agents, pair with `agents.defaults.skills` or `agents.entries.*.skills`.
   </Accordion>
 
   <Accordion title="How can I use different models or settings for different tasks?">
@@ -556,7 +556,7 @@ First-run Q&A - install, onboard, auth routes, subscriptions, initial failures -
 
 <AccordionGroup>
   <Accordion title="What format is the config? Where is it?">
-    Afora reads an optional **JSON5** config from `$AFORA_CONFIG_PATH` (default: `~/.AforaMosh/afora-agent.json`). If the file is missing, it uses safe-ish defaults, including a default workspace of `~/.afora/workspace`.
+    Afora reads an optional **JSON5** config from `$AFORA_CONFIG_PATH` (default: `~/.afora/afora.json`). If the file is missing, it uses safe-ish defaults, including a default workspace of `~/.afora/workspace`.
   </Accordion>
 
   <Accordion title='I set gateway.bind: "lan" (or "tailnet") and now nothing listens / the UI says unauthorized'>
@@ -1245,7 +1245,7 @@ Model Q&A - defaults, selection, aliases, switching, failover, auth profiles - l
 
 <AccordionGroup>
   <Accordion title="Where are logs?">
-    File logs (structured): `/tmp/AforaMosh/afora-agent-YYYY-MM-DD.log` for the default profile, or `/tmp/AforaMosh/afora-agent-<profile>-YYYY-MM-DD.log` for a named profile. Set a stable path via `logging.file`; file log level via `logging.level`; console verbosity via `--verbose` and `logging.consoleLevel`.
+    File logs (structured): `/tmp/afora/afora-YYYY-MM-DD.log` for the default profile, or `/tmp/afora/afora-<profile>-YYYY-MM-DD.log` for a named profile. Set a stable path via `logging.file`; file log level via `logging.level`; console verbosity via `--verbose` and `logging.consoleLevel`.
 
     Fastest tail:
 

@@ -20,7 +20,7 @@ Examples below are aligned with the current config schema. For the exhaustive re
 }
 ```
 
-Save to `~/.AforaMosh/afora-agent.json` and you can DM the bot from that number.
+Save to `~/.afora/afora.json` and you can DM the bot from that number.
 
 ### Recommended starter
 
@@ -94,7 +94,7 @@ Save to `~/.AforaMosh/afora-agent.json` and you can DM the bot from that number.
   // Logging
   logging: {
     level: "info",
-    file: "/tmp/AforaMosh/afora-agent.log",
+    file: "/tmp/afora/afora.log",
     consoleLevel: "info",
     consoleStyle: "pretty",
   },

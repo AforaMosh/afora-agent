@@ -204,7 +204,7 @@ export const prestartContainerEnvFlags = [
   "-e HOME=/home/node",
   "-e AFORA_HOME=/home/node",
   "-e AFORA_STATE_DIR=/home/node/.afora",
-  "-e AFORA_CONFIG_PATH=/home/node/.AforaMosh/afora-agent.json",
+  "-e AFORA_CONFIG_PATH=/home/node/.afora/afora.json",
   "-e AFORA_CONFIG_DIR=/home/node/.afora",
   "-e AFORA_WORKSPACE_DIR=/home/node/.afora/workspace",
 ].join(" ");

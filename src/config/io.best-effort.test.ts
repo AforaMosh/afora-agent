@@ -3,10 +3,7 @@ import fs from "node:fs/promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { executeSqliteQueryTakeFirstSync, getNodeSqliteKysely } from "../infra/kysely-sync.js";
 import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
-import {
-  closeAforaStateDatabaseForTest,
-  openAforaStateDatabase,
-} from "../state/afora-state-db.js";
+import { closeAforaStateDatabaseForTest, openAforaStateDatabase } from "../state/afora-state-db.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import {
   readBestEffortConfig,
@@ -156,7 +153,7 @@ describe("readBestEffortConfig", () => {
 
   it("records why an unparseable config was ignored by best-effort reads", async () => {
     await withTempHome(async (home) => {
-      const configPath = `${home}/.AforaMosh/afora-agent.json`;
+      const configPath = `${home}/.afora/afora.json`;
       await fs.mkdir(`${home}/.afora`, { recursive: true });
       await fs.writeFile(configPath, "{ definitely not json", "utf-8");
       const warn = vi.spyOn(console, "warn").mockImplementation(() => {});

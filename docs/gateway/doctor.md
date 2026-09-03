@@ -75,7 +75,7 @@ afora doctor
 To review changes before writing, open the config file first:
 
 ```bash
-cat ~/.AforaMosh/afora-agent.json
+cat ~/.afora/afora.json
 ```
 
 ## Read-only lint mode
@@ -84,8 +84,8 @@ cat ~/.AforaMosh/afora-agent.json
 `afora doctor --fix`. They share the same Doctor rule registry, but they do
 not select or act on rules in the same way:
 
-| Mode                     | Prompts   | Writes config/state     | Output                 | Use it for                       |
-| ------------------------ | --------- | ----------------------- | ---------------------- | -------------------------------- |
+| Mode                  | Prompts   | Writes config/state     | Output                 | Use it for                       |
+| --------------------- | --------- | ----------------------- | ---------------------- | -------------------------------- |
 | `afora doctor`        | yes       | no                      | friendly health report | a human checking status          |
 | `afora doctor --json` | no        | no                      | JSON advisory report   | machine-readable operator checks |
 | `afora doctor --fix`  | sometimes | yes, with repair policy | friendly repair log    | applying approved repairs        |
@@ -246,7 +246,7 @@ That stages grounded durable candidates into the short-term dreaming store while
 
   </Accordion>
   <Accordion title="2. Legacy config key migrations">
-    When the config contains a deprecated key with an active migration, other commands refuse to run and ask you to run `afora doctor`. Doctor explains which legacy keys were found, shows the migration it applied, and rewrites `~/.AforaMosh/afora-agent.json` with the updated schema. Gateway startup refuses legacy config formats and asks you to run `afora doctor --fix`; it does not rewrite `afora.json` on startup. Cron job store migrations are also handled by `afora doctor --fix`.
+    When the config contains a deprecated key with an active migration, other commands refuse to run and ask you to run `afora doctor`. Doctor explains which legacy keys were found, shows the migration it applied, and rewrites `~/.afora/afora.json` with the updated schema. Gateway startup refuses legacy config formats and asks you to run `afora doctor --fix`; it does not rewrite `afora.json` on startup. Cron job store migrations are also handled by `afora doctor --fix`.
 
     <Note>
       Doctor only carries automatic migrations for roughly two months after a
@@ -467,7 +467,7 @@ That stages grounded durable candidates into the short-term dreaming store while
     - **Main session "1-line JSONL"**: flags when the main transcript has only one line (history is not accumulating).
     - **Multiple state dirs**: warns when multiple `~/.afora` folders exist across home directories, or when `AFORA_STATE_DIR` points elsewhere (history can split between installs).
     - **Remote mode reminder**: if `gateway.mode=remote`, doctor reminds you to run it on the remote host (the state lives there).
-    - **Config file permissions**: warns if `~/.AforaMosh/afora-agent.json` is group/world readable and offers to tighten to `600`.
+    - **Config file permissions**: warns if `~/.afora/afora.json` is group/world readable and offers to tighten to `600`.
 
   </Accordion>
   <Accordion title="5. Model auth health (OAuth expiry)">

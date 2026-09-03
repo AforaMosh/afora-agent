@@ -7,7 +7,7 @@ read_when:
 doc-schema-version: 1
 ---
 
-Field-level reference for `~/.AforaMosh/afora-agent.json`: keys, defaults, and links to deeper subsystem pages. For task-oriented setup guidance, see [Configuration](/gateway/configuration). Channel- and plugin-owned command catalogs and deep memory knobs live on their own pages, not here.
+Field-level reference for `~/.afora/afora.json`: keys, defaults, and links to deeper subsystem pages. For task-oriented setup guidance, see [Configuration](/gateway/configuration). Channel- and plugin-owned command catalogs and deep memory knobs live on their own pages, not here.
 
 Config format is **JSON5** (comments + trailing commas allowed). All fields are optional; Afora uses safe defaults when omitted.
 
@@ -1445,7 +1445,7 @@ writer is best-effort, not a lossless compliance archive.
 {
   logging: {
     level: "info",
-    file: "/tmp/AforaMosh/afora-agent.log",
+    file: "/tmp/afora/afora.log",
     consoleLevel: "info",
     consoleStyle: "pretty", // pretty | json
     redactPatterns: ["\\bTOKEN\\b\\s*[=:]\\s*([\"']?)([^\\s\"']+)\\1"],
@@ -1453,7 +1453,7 @@ writer is best-effort, not a lossless compliance archive.
 }
 ```
 
-- Default log file: `/tmp/AforaMosh/afora-agent-YYYY-MM-DD.log`; named profiles use `/tmp/AforaMosh/afora-agent-<profile>-YYYY-MM-DD.log`.
+- Default log file: `/tmp/afora/afora-YYYY-MM-DD.log`; named profiles use `/tmp/afora/afora-<profile>-YYYY-MM-DD.log`.
 - Set `logging.file` for a stable path.
 - `consoleLevel` bumps to `debug` when `--verbose`.
 - `consoleStyle`: `"pretty"` or `"json"`. The earlier `"compact"` value is retired; [`afora doctor --fix`](/cli/doctor) maps it to `"pretty"`.
@@ -1736,7 +1736,7 @@ deprecated. New configuration should use the `Attachment*` variables.
 Split config into multiple files:
 
 ```json5
-// ~/.AforaMosh/afora-agent.json
+// ~/.afora/afora.json
 {
   gateway: { port: 18789 },
   agents: { $include: "./agents.json5" },

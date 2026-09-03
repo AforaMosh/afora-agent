@@ -1,5 +1,8 @@
 // Codex plugin module implements command plugins management behavior.
-import type { PluginCommandContext, PluginCommandResult } from "afora-agent/plugin-sdk/plugin-entry";
+import type {
+  PluginCommandContext,
+  PluginCommandResult,
+} from "afora-agent/plugin-sdk/plugin-entry";
 import { CODEX_PLUGINS_MARKETPLACE_NAME } from "./app-server/config.js";
 import { isOpenAiCuratedMarketplaceName } from "./app-server/plugin-inventory.js";
 import type { v2 } from "./app-server/protocol.js";
@@ -691,7 +694,7 @@ function formatPluginList(
   const keyW = Math.max(...rows.map((r) => r.displayKey.length));
   const pluginW = Math.max(...rows.map((r) => r.pluginName.length));
   return [
-    "Codex sub-plugins in Afora config (~/.AforaMosh/afora-agent.json):",
+    "Codex sub-plugins in Afora config (~/.afora/afora.json):",
     "",
     ...rows.map(
       (r) =>

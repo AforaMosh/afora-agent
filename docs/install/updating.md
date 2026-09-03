@@ -265,7 +265,7 @@ path applies the same Afora-only Bun trust when it owns the install.
 
 ## Auto-updater
 
-Off by default. Enable it in `~/.AforaMosh/afora-agent.json`:
+Off by default. Enable it in `~/.afora/afora.json`:
 
 ```json5
 {

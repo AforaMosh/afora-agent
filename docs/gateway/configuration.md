@@ -7,7 +7,7 @@ read_when:
 title: "Configuration"
 ---
 
-Afora reads an optional <Tooltip tip="JSON5 supports comments and trailing commas">**JSON5**</Tooltip> config from `~/.AforaMosh/afora-agent.json`. If the file is missing, Afora uses safe defaults.
+Afora reads an optional <Tooltip tip="JSON5 supports comments and trailing commas">**JSON5**</Tooltip> config from `~/.afora/afora.json`. If the file is missing, Afora uses safe defaults.
 
 The active config path must be a regular file. Afora-owned writes replace it atomically (rename onto the path), so a symlinked `afora.json` gets its target replaced rather than written through - avoid symlinked config layouts. If you keep config outside the default state directory, point `AFORA_CONFIG_PATH` directly at the real file.
 
@@ -33,7 +33,7 @@ field map and defaults.
 ## Minimal config
 
 ```json5
-// ~/.AforaMosh/afora-agent.json
+// ~/.afora/afora.json
 {
   agents: { defaults: { workspace: "~/.afora/workspace" } },
   channels: { whatsapp: { allowFrom: ["+15555550123"] } },
@@ -71,7 +71,7 @@ field map and defaults.
     with **Hide advanced** on the divider to collapse them again.
   </Tab>
   <Tab title="Direct edit">
-    Edit `~/.AforaMosh/afora-agent.json` directly. The Gateway watches the file and applies changes automatically (see [hot reload](#config-hot-reload)).
+    Edit `~/.afora/afora.json` directly. The Gateway watches the file and applies changes automatically (see [hot reload](#config-hot-reload)).
   </Tab>
 </Tabs>
 
@@ -486,7 +486,7 @@ candidate contains a redacted secret placeholder such as `***` or `[redacted]`.
     Use `$include` to organize large configs:
 
     ```json5
-    // ~/.AforaMosh/afora-agent.json
+    // ~/.afora/afora.json
     {
       gateway: { port: 18789 },
       agents: { $include: "./agents.json5" },
@@ -520,7 +520,7 @@ candidate contains a redacted secret placeholder such as `***` or `[redacted]`.
 
 ## Config hot reload
 
-The Gateway watches `~/.AforaMosh/afora-agent.json` and applies changes automatically - no manual restart needed for most settings.
+The Gateway watches `~/.afora/afora.json` and applies changes automatically - no manual restart needed for most settings.
 
 Direct file edits are treated as untrusted until they validate. The watcher waits
 for editor temp-write/rename churn to settle, reads the final file, and rejects

@@ -184,7 +184,7 @@ This guide uses Debian on GCP Compute Engine. Ubuntu also works; map packages ac
           NODE_ENV: production
           TERM: xterm-256color
           AFORA_STATE_DIR: /home/node/.afora
-          AFORA_CONFIG_PATH: /home/node/.AforaMosh/afora-agent.json
+          AFORA_CONFIG_PATH: /home/node/.afora/afora.json
           AFORA_CONFIG_DIR: /home/node/.afora
           AFORA_WORKSPACE_DIR: /home/node/.afora/workspace
           AFORA_GATEWAY_BIND: ${AFORA_GATEWAY_BIND}
@@ -221,7 +221,7 @@ This guide uses Debian on GCP Compute Engine. Ubuntu also works; map packages ac
           HOME: /home/node
           TERM: xterm-256color
           AFORA_STATE_DIR: /home/node/.afora
-          AFORA_CONFIG_PATH: /home/node/.AforaMosh/afora-agent.json
+          AFORA_CONFIG_PATH: /home/node/.afora/afora.json
           AFORA_CONFIG_DIR: /home/node/.afora
           AFORA_WORKSPACE_DIR: /home/node/.afora/workspace
           AFORA_GATEWAY_TOKEN: ${AFORA_GATEWAY_TOKEN}

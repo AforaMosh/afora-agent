@@ -53,10 +53,7 @@ suite.define(() => {
             canGoForward: false,
           };
           const stamp = () =>
-            document.documentElement.classList.add(
-              "afora-native-macos",
-              "afora-native-web-chrome",
-            );
+            document.documentElement.classList.add("afora-native-macos", "afora-native-web-chrome");
           if (document.documentElement) {
             stamp();
           } else {
@@ -67,7 +64,7 @@ suite.define(() => {
           methodResponses: {
             "logs.tail": {
               cursor: logLines.length,
-              file: "/tmp/AforaMosh/afora-agent-2026-07-21.log",
+              file: "/tmp/afora/afora-2026-07-21.log",
               lines: logLines,
               reset: true,
             },

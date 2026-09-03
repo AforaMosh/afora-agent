@@ -1,5 +1,8 @@
 // Codex plugin module implements command handlers behavior.
-import type { PluginCommandContext, PluginCommandResult } from "afora-agent/plugin-sdk/plugin-entry";
+import type {
+  PluginCommandContext,
+  PluginCommandResult,
+} from "afora-agent/plugin-sdk/plugin-entry";
 import { defaultCodexAppInventoryCache } from "./app-server/app-inventory-cache.js";
 import {
   resolveCodexAppServerAuthAccountCacheKey,
@@ -101,7 +104,7 @@ export async function handleCodexSubcommand(
       return {
         text:
           "Codex sub-plugin management is not wired up (codexPluginsManagementIo dep is undefined). " +
-          "Edit ~/.AforaMosh/afora-agent.json or use `afora config patch` until the runtime exposes the IO.",
+          "Edit ~/.afora/afora.json or use `afora config patch` until the runtime exposes the IO.",
       };
     }
     let appServerScope: ReturnType<typeof resolveCommandAppServerScope> | undefined;

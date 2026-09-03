@@ -111,7 +111,7 @@ Edit `afora.json` in `scripts/k8s/manifests/configmap.yaml`. See [Gateway config
 The init container seeds `afora.json` and workspace `AGENTS.md` only when each file is missing from the PVC. The persisted copy is the source of truth after first boot: changes made through Afora (`onboard`, `channels add`, `doctor --fix`, Control UI) survive pod restarts, and updating the ConfigMap does not overwrite an existing PVC copy. To intentionally reseed a file from an updated ConfigMap, delete the persisted copy and restart:
 
 ```bash
-kubectl exec -n afora deploy/afora -- rm /home/node/.AforaMosh/afora-agent.json
+kubectl exec -n afora deploy/afora -- rm /home/node/.afora/afora.json
 kubectl rollout restart -n afora deploy/afora
 ```
 

@@ -252,10 +252,7 @@ export function parseArgs(argv: string[]): LinuxOptions {
 class LinuxSmoke extends SmokeRunController<LinuxOptions> {
   private auth: ProviderAuth;
   private disableBonjour = parseBoolEnv(process.env.AFORA_PARALLELS_LINUX_DISABLE_BONJOUR);
-  private agentTimeoutSeconds = readPositiveIntEnv(
-    "AFORA_PARALLELS_LINUX_AGENT_TIMEOUT_S",
-    1500,
-  );
+  private agentTimeoutSeconds = readPositiveIntEnv("AFORA_PARALLELS_LINUX_AGENT_TIMEOUT_S", 1500);
   private artifact: PackageArtifact | null = null;
   private latestVersion = "";
   private snapshot!: SnapshotInfo;
@@ -333,9 +330,7 @@ class LinuxSmoke extends SmokeRunController<LinuxOptions> {
     await this.phase("fresh.reset-state", 180, () => this.resetState());
     await this.phase("fresh.preflight", 90, () => this.logGuestPreflight());
     await this.phase("fresh.install-latest-bootstrap", 420, () => this.installLatestRelease());
-    await this.phase("fresh.install-main", 420, () =>
-      this.installMainTgz("afora-main-fresh.tgz"),
-    );
+    await this.phase("fresh.install-main", 420, () => this.installMainTgz("afora-main-fresh.tgz"));
     this.status.freshVersion = await this.extractLastVersion("fresh.install-main");
     await this.phase("fresh.verify-main-version", 90, () => this.verifyTargetVersion());
     await this.phase("fresh.onboard-ref", 420, () => this.runRefOnboard());
@@ -623,7 +618,7 @@ JS
 python3 - <<'PY'
 import json
 from pathlib import Path
-config_path = Path("/root/.AforaMosh/afora-agent.json")
+config_path = Path("/root/.afora/afora.json")
 config = json.loads(config_path.read_text()) if config_path.exists() else {}
 plugins = config.setdefault("plugins", {})
 load = plugins.setdefault("load", {})
@@ -670,7 +665,7 @@ PY`);
 rm -f /tmp/afora-parallels-linux-gateway.log
 setsid sh -lc ` +
         shellQuote(
-          `exec env AFORA_HOME=/root AFORA_STATE_DIR=/root/.afora AFORA_CONFIG_PATH=/root/.AforaMosh/afora-agent.json AFORA_ALLOW_ROOT=1${bonjourEnv} ${this.auth.apiKeyEnv}=${shellQuote(
+          `exec env AFORA_HOME=/root AFORA_STATE_DIR=/root/.afora AFORA_CONFIG_PATH=/root/.afora/afora.json AFORA_ALLOW_ROOT=1${bonjourEnv} ${this.auth.apiKeyEnv}=${shellQuote(
             this.auth.apiKeyValue,
           )} afora gateway run --bind loopback --port 18789 --force >/tmp/afora-parallels-linux-gateway.log 2>&1`,
         ) +
@@ -762,7 +757,7 @@ setsid sh -lc ` +
 python3 - <<'PY'
 import json
 from pathlib import Path
-config_path = Path("/root/.AforaMosh/afora-agent.json")
+config_path = Path("/root/.afora/afora.json")
 config = json.loads(config_path.read_text()) if config_path.exists() else {}
 plugins = config.setdefault("plugins", {})
 load = plugins.setdefault("load", {})

@@ -141,7 +141,7 @@ This guide assumes Ubuntu or Debian on Hetzner. On another Linux VPS, map packag
           NODE_ENV: production
           TERM: xterm-256color
           AFORA_STATE_DIR: /home/node/.afora
-          AFORA_CONFIG_PATH: /home/node/.AforaMosh/afora-agent.json
+          AFORA_CONFIG_PATH: /home/node/.afora/afora.json
           AFORA_CONFIG_DIR: /home/node/.afora
           AFORA_WORKSPACE_DIR: /home/node/.afora/workspace
           AFORA_GATEWAY_BIND: ${AFORA_GATEWAY_BIND}

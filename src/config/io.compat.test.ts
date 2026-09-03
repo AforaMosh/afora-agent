@@ -43,12 +43,7 @@ function withTempHome<T>(run: (home: string) => Promise<T>): Promise<T> {
   return withTempDir("afora-config-compat-", run);
 }
 
-async function writeConfig(
-  home: string,
-  dirname: ".afora",
-  port: number,
-  filename = "afora.json",
-) {
+async function writeConfig(home: string, dirname: ".afora", port: number, filename = "afora.json") {
   const dir = path.join(home, dirname);
   await fs.mkdir(dir, { recursive: true });
   const configPath = path.join(dir, filename);
@@ -64,7 +59,7 @@ function createIoForHome(home: string, env: NodeJS.ProcessEnv = {} as NodeJS.Pro
 }
 
 describe("config io paths", () => {
-  it("uses ~/.AforaMosh/afora-agent.json when config exists", async () => {
+  it("uses ~/.afora/afora.json when config exists", async () => {
     await withTempHome(async (home) => {
       const configPath = await writeConfig(home, ".afora", 19001);
       const io = createIoForHome(home);
@@ -72,7 +67,7 @@ describe("config io paths", () => {
     });
   });
 
-  it("defaults to ~/.AforaMosh/afora-agent.json when config is missing", async () => {
+  it("defaults to ~/.afora/afora.json when config is missing", async () => {
     await withTempHome(async (home) => {
       const io = createIoForHome(home);
       expect(io.configPath).toBe(path.join(home, ".afora", "afora.json"));

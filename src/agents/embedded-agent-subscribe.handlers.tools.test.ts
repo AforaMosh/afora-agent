@@ -3749,7 +3749,7 @@ describe("control UI credential redaction (issue #72283)", () => {
     await executeTool(ctx, {
       toolName: "exec",
       toolCallId: "tool-exec-secret",
-      args: { command: "cat ~/.AforaMosh/afora-agent.json" },
+      args: { command: "cat ~/.afora/afora.json" },
       isError: false,
       result: {
         details: {

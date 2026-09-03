@@ -251,7 +251,7 @@ describe("repairLoadedGatewayServiceForStart", () => {
         [
           "Refusing to repair the managed Gateway service because the current invocation targets a different Gateway:",
           '- AFORA_STATE_DIR: installed="/home/afora/.afora", ambient="/home/afora/stress-state"',
-          '- AFORA_CONFIG_PATH: installed="/home/afora/.AforaMosh/afora-agent.json", ambient="/home/afora/stress-state/afora.json"',
+          '- AFORA_CONFIG_PATH: installed="/home/afora/.afora/afora.json", ambient="/home/afora/stress-state/afora.json"',
           '- gateway.port: installed="18789", ambient="18999"',
           `Run \`afora gateway ${action}\` with the installed state directory, config path, and port (or unset conflicting environment overrides). To retarget intentionally, run \`afora gateway install --force\`.`,
         ].join("\n"),
@@ -273,7 +273,7 @@ describe("repairLoadedGatewayServiceForStart", () => {
         sourceConfig: { gateway: { port: 18_789 } },
         config: { gateway: { port: 18_789 } },
       },
-      writeOptions: { expectedConfigPath: "/home/afora/.AforaMosh/afora-agent.json" },
+      writeOptions: { expectedConfigPath: "/home/afora/.afora/afora.json" },
     });
     const installMock = vi.fn(async () => {});
     const service = {

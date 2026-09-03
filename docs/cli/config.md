@@ -401,7 +401,7 @@ afora config set channels.discord.token \
     {
       "ok": true,
       "operations": 1,
-      "configPath": "/home/user/.AforaMosh/afora-agent.json",
+      "configPath": "/home/user/.afora/afora.json",
       "inputModes": ["builder"],
       "checks": {
         "schema": false,
@@ -418,7 +418,7 @@ afora config set channels.discord.token \
     {
       "ok": false,
       "operations": 1,
-      "configPath": "/home/user/.AforaMosh/afora-agent.json",
+      "configPath": "/home/user/.afora/afora.json",
       "inputModes": ["builder"],
       "checks": {
         "schema": false,

@@ -37,7 +37,7 @@ services:
       AFORA_GATEWAY_TOKEN: ${AFORA_GATEWAY_TOKEN}
       AFORA_HOME: /home/node
       AFORA_STATE_DIR: /home/node/.afora
-      AFORA_CONFIG_PATH: /home/node/.AforaMosh/afora-agent.json
+      AFORA_CONFIG_PATH: /home/node/.afora/afora.json
       AFORA_WORKSPACE_DIR: /home/node/.afora/workspace
     volumes:
       - afora-config:/home/node/.afora

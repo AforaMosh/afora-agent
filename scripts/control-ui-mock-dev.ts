@@ -854,7 +854,7 @@ function buildConfigMocks(options: { swarmEnabled?: boolean; workboardEnabled?: 
     },
   };
   const get = {
-    path: "~/.AforaMosh/afora-agent.json",
+    path: "~/.afora/afora.json",
     exists: true,
     raw: `${JSON.stringify(config, null, 2)}\n`,
     hash: "mock-config-hash",

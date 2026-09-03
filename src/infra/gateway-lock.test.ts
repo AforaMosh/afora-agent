@@ -641,7 +641,7 @@ describe("gateway lock", () => {
           platform: "linux",
           readProcessCmdline: () => [
             "node",
-            "/srv/AforaMosh/afora-agent.mjs",
+            "/srv/afora/afora.mjs",
             "doctor",
             "--state-sqlite",
             "compact",

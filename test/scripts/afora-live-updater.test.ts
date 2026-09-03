@@ -1458,14 +1458,14 @@ console.log(JSON.stringify({ ok: true, channels: {} }));
       repointManagedGatewayDeployment(
         checkout,
         {
-          configPath: "/Users/test/.AforaMosh/afora-agent.json",
+          configPath: "/Users/test/.afora/afora.json",
           entrypoint: snapshot,
           label: "ai.afora.gateway",
           port: 18789,
         },
         () => {},
         () => ({
-          configPath: "/Users/test/.AforaMosh/afora-agent.json",
+          configPath: "/Users/test/.afora/afora.json",
           entrypoint: snapshot,
           label: "ai.afora.gateway",
           port: 18789,
@@ -1482,7 +1482,12 @@ console.log(JSON.stringify({ ok: true, channels: {} }));
 
   test("rejects Git URL rewrites that change the effective fetch source", () => {
     const { mirror, origin } = makeFixture();
-    git(mirror, "config", `url.${origin}.insteadOf`, "https://github.com/AforaMosh/afora-agent.git");
+    git(
+      mirror,
+      "config",
+      `url.${origin}.insteadOf`,
+      "https://github.com/AforaMosh/afora-agent.git",
+    );
 
     const result = spawnSync(process.execPath, [script, "--checkout", mirror], {
       encoding: "utf8",

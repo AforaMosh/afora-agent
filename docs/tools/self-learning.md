@@ -119,7 +119,7 @@ afora config set skills.workshop.autonomous.mode propose
 afora config set skills.workshop.autonomous.mode off
 ```
 
-Or edit `~/.AforaMosh/afora-agent.json`:
+Or edit `~/.afora/afora.json`:
 
 ```json5
 {

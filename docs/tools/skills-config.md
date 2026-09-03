@@ -9,7 +9,7 @@ read_when:
 ---
 
 Most skills configuration lives under `skills` in
-`~/.AforaMosh/afora-agent.json`. Agent-specific visibility lives under
+`~/.afora/afora.json`. Agent-specific visibility lives under
 `agents.defaults.skills` and `agents.entries.*.skills`.
 
 ```json5

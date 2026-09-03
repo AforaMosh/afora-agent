@@ -140,7 +140,7 @@ afora hooks disable command-logger
 
 ## Configuration
 
-Hooks can be configured in `~/.AforaMosh/afora-agent.json`:
+Hooks can be configured in `~/.afora/afora.json`:
 
 ```json
 {

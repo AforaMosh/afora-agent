@@ -28289,138 +28289,138 @@
         }
       }
     },
-    "Config invalid; fix it in ~/.AforaMosh/afora-agent.json.": {
+    "Config invalid; fix it in ~/.afora/afora.json.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Config invalid; fix it in ~/.AforaMosh/afora-agent.json."
+            "value": "Config invalid; fix it in ~/.afora/afora.json."
           }
         },
         "zh-CN": {
           "stringUnit": {
             "state": "new",
-            "value": "Config invalid; fix it in ~/.AforaMosh/afora-agent.json."
+            "value": "Config invalid; fix it in ~/.afora/afora.json."
           }
         },
         "zh-TW": {
           "stringUnit": {
             "state": "new",
-            "value": "Config invalid; fix it in ~/.AforaMosh/afora-agent.json."
+            "value": "Config invalid; fix it in ~/.afora/afora.json."
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "new",
-            "value": "Config invalid; fix it in ~/.AforaMosh/afora-agent.json."
+            "value": "Config invalid; fix it in ~/.afora/afora.json."
           }
         },
         "de": {
           "stringUnit": {
             "state": "new",
-            "value": "Config invalid; fix it in ~/.AforaMosh/afora-agent.json."
+            "value": "Config invalid; fix it in ~/.afora/afora.json."
           }
         },
         "es": {
           "stringUnit": {
             "state": "new",
-            "value": "Config invalid; fix it in ~/.AforaMosh/afora-agent.json."
+            "value": "Config invalid; fix it in ~/.afora/afora.json."
           }
         },
         "ja-JP": {
           "stringUnit": {
             "state": "new",
-            "value": "Config invalid; fix it in ~/.AforaMosh/afora-agent.json."
+            "value": "Config invalid; fix it in ~/.afora/afora.json."
           }
         },
         "ko": {
           "stringUnit": {
             "state": "new",
-            "value": "Config invalid; fix it in ~/.AforaMosh/afora-agent.json."
+            "value": "Config invalid; fix it in ~/.afora/afora.json."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "new",
-            "value": "Config invalid; fix it in ~/.AforaMosh/afora-agent.json."
+            "value": "Config invalid; fix it in ~/.afora/afora.json."
           }
         },
         "hi": {
           "stringUnit": {
             "state": "new",
-            "value": "Config invalid; fix it in ~/.AforaMosh/afora-agent.json."
+            "value": "Config invalid; fix it in ~/.afora/afora.json."
           }
         },
         "ar": {
           "stringUnit": {
             "state": "new",
-            "value": "Config invalid; fix it in ~/.AforaMosh/afora-agent.json."
+            "value": "Config invalid; fix it in ~/.afora/afora.json."
           }
         },
         "it": {
           "stringUnit": {
             "state": "new",
-            "value": "Config invalid; fix it in ~/.AforaMosh/afora-agent.json."
+            "value": "Config invalid; fix it in ~/.afora/afora.json."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "new",
-            "value": "Config invalid; fix it in ~/.AforaMosh/afora-agent.json."
+            "value": "Config invalid; fix it in ~/.afora/afora.json."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "new",
-            "value": "Config invalid; fix it in ~/.AforaMosh/afora-agent.json."
+            "value": "Config invalid; fix it in ~/.afora/afora.json."
           }
         },
         "id": {
           "stringUnit": {
             "state": "new",
-            "value": "Config invalid; fix it in ~/.AforaMosh/afora-agent.json."
+            "value": "Config invalid; fix it in ~/.afora/afora.json."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "new",
-            "value": "Config invalid; fix it in ~/.AforaMosh/afora-agent.json."
+            "value": "Config invalid; fix it in ~/.afora/afora.json."
           }
         },
         "th": {
           "stringUnit": {
             "state": "new",
-            "value": "Config invalid; fix it in ~/.AforaMosh/afora-agent.json."
+            "value": "Config invalid; fix it in ~/.afora/afora.json."
           }
         },
         "vi": {
           "stringUnit": {
             "state": "new",
-            "value": "Config invalid; fix it in ~/.AforaMosh/afora-agent.json."
+            "value": "Config invalid; fix it in ~/.afora/afora.json."
           }
         },
         "nl": {
           "stringUnit": {
             "state": "new",
-            "value": "Config invalid; fix it in ~/.AforaMosh/afora-agent.json."
+            "value": "Config invalid; fix it in ~/.afora/afora.json."
           }
         },
         "fa": {
           "stringUnit": {
             "state": "new",
-            "value": "Config invalid; fix it in ~/.AforaMosh/afora-agent.json."
+            "value": "Config invalid; fix it in ~/.afora/afora.json."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "new",
-            "value": "Config invalid; fix it in ~/.AforaMosh/afora-agent.json."
+            "value": "Config invalid; fix it in ~/.afora/afora.json."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "new",
-            "value": "Config invalid; fix it in ~/.AforaMosh/afora-agent.json."
+            "value": "Config invalid; fix it in ~/.afora/afora.json."
           }
         }
       }
@@ -46377,138 +46377,138 @@
         }
       }
     },
-    "Edit ~/.AforaMosh/afora-agent.json using the schema-driven form.": {
+    "Edit ~/.afora/afora.json using the schema-driven form.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Edit ~/.AforaMosh/afora-agent.json using the schema-driven form."
+            "value": "Edit ~/.afora/afora.json using the schema-driven form."
           }
         },
         "zh-CN": {
           "stringUnit": {
             "state": "translated",
-            "value": "使用基于架构的表单编辑 ~/.AforaMosh/afora-agent.json。"
+            "value": "使用基于架构的表单编辑 ~/.afora/afora.json。"
           }
         },
         "zh-TW": {
           "stringUnit": {
             "state": "translated",
-            "value": "使用結構描述驅動的表單編輯 ~/.AforaMosh/afora-agent.json。"
+            "value": "使用結構描述驅動的表單編輯 ~/.afora/afora.json。"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Edite ~/.AforaMosh/afora-agent.json usando o formulário orientado por esquema."
+            "value": "Edite ~/.afora/afora.json usando o formulário orientado por esquema."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bearbeiten Sie ~/.AforaMosh/afora-agent.json mithilfe des schemagesteuerten Formulars."
+            "value": "Bearbeiten Sie ~/.afora/afora.json mithilfe des schemagesteuerten Formulars."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Edita ~/.AforaMosh/afora-agent.json usando el formulario basado en el esquema."
+            "value": "Edita ~/.afora/afora.json usando el formulario basado en el esquema."
           }
         },
         "ja-JP": {
           "stringUnit": {
             "state": "translated",
-            "value": "スキーマ駆動フォームを使用して ~/.AforaMosh/afora-agent.json を編集します。"
+            "value": "スキーマ駆動フォームを使用して ~/.afora/afora.json を編集します。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "스키마 기반 양식을 사용하여 ~/.AforaMosh/afora-agent.json을 편집하세요."
+            "value": "스키마 기반 양식을 사용하여 ~/.afora/afora.json을 편집하세요."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Modifiez ~/.AforaMosh/afora-agent.json à l’aide du formulaire basé sur le schéma."
+            "value": "Modifiez ~/.afora/afora.json à l’aide du formulaire basé sur le schéma."
           }
         },
         "hi": {
           "stringUnit": {
             "state": "translated",
-            "value": "schema-driven फ़ॉर्म का उपयोग करके ~/.AforaMosh/afora-agent.json संपादित करें।"
+            "value": "schema-driven फ़ॉर्म का उपयोग करके ~/.afora/afora.json संपादित करें।"
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "حرّر ~/.AforaMosh/afora-agent.json باستخدام النموذج المستند إلى المخطط."
+            "value": "حرّر ~/.afora/afora.json باستخدام النموذج المستند إلى المخطط."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Modifica ~/.AforaMosh/afora-agent.json usando il modulo basato sullo schema."
+            "value": "Modifica ~/.afora/afora.json usando il modulo basato sullo schema."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Şema odaklı formu kullanarak ~/.AforaMosh/afora-agent.json dosyasını düzenleyin."
+            "value": "Şema odaklı formu kullanarak ~/.afora/afora.json dosyasını düzenleyin."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Редагуйте ~/.AforaMosh/afora-agent.json за допомогою форми на основі схеми."
+            "value": "Редагуйте ~/.afora/afora.json за допомогою форми на основі схеми."
           }
         },
         "id": {
           "stringUnit": {
             "state": "translated",
-            "value": "Edit ~/.AforaMosh/afora-agent.json menggunakan formulir berbasis skema."
+            "value": "Edit ~/.afora/afora.json menggunakan formulir berbasis skema."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Edytuj ~/.AforaMosh/afora-agent.json za pomocą formularza opartego na schemacie."
+            "value": "Edytuj ~/.afora/afora.json za pomocą formularza opartego na schemacie."
           }
         },
         "th": {
           "stringUnit": {
             "state": "translated",
-            "value": "แก้ไข ~/.AforaMosh/afora-agent.json โดยใช้แบบฟอร์มที่ขับเคลื่อนด้วยสคีมา"
+            "value": "แก้ไข ~/.afora/afora.json โดยใช้แบบฟอร์มที่ขับเคลื่อนด้วยสคีมา"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chỉnh sửa ~/.AforaMosh/afora-agent.json bằng biểu mẫu dựa trên schema."
+            "value": "Chỉnh sửa ~/.afora/afora.json bằng biểu mẫu dựa trên schema."
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bewerk ~/.AforaMosh/afora-agent.json met het schemagestuurde formulier."
+            "value": "Bewerk ~/.afora/afora.json met het schemagestuurde formulier."
           }
         },
         "fa": {
           "stringUnit": {
             "state": "translated",
-            "value": "با استفاده از فرم مبتنی بر schema، فایل ~/.AforaMosh/afora-agent.json را ویرایش کنید."
+            "value": "با استفاده از فرم مبتنی بر schema، فایل ~/.afora/afora.json را ویرایش کنید."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Редактируйте ~/.AforaMosh/afora-agent.json с помощью формы на основе схемы."
+            "value": "Редактируйте ~/.afora/afora.json с помощью формы на основе схемы."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Redigera ~/.AforaMosh/afora-agent.json med det schemastyrda formuläret."
+            "value": "Redigera ~/.afora/afora.json med det schemastyrda formuläret."
           }
         }
       }
@@ -136137,138 +136137,138 @@
         }
       }
     },
-    "Stored in ~/.AforaMosh/afora-agent.json. Prefer AFORA_GATEWAY_PASSWORD for production.": {
+    "Stored in ~/.afora/afora.json. Prefer AFORA_GATEWAY_PASSWORD for production.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Stored in ~/.AforaMosh/afora-agent.json. Prefer AFORA_GATEWAY_PASSWORD for production."
+            "value": "Stored in ~/.afora/afora.json. Prefer AFORA_GATEWAY_PASSWORD for production."
           }
         },
         "zh-CN": {
           "stringUnit": {
             "state": "translated",
-            "value": "存储在 ~/.AforaMosh/afora-agent.json 中。生产环境建议使用 AFORA_GATEWAY_PASSWORD。"
+            "value": "存储在 ~/.afora/afora.json 中。生产环境建议使用 AFORA_GATEWAY_PASSWORD。"
           }
         },
         "zh-TW": {
           "stringUnit": {
             "state": "translated",
-            "value": "儲存在 ~/.AforaMosh/afora-agent.json。正式環境建議使用 AFORA_GATEWAY_PASSWORD。"
+            "value": "儲存在 ~/.afora/afora.json。正式環境建議使用 AFORA_GATEWAY_PASSWORD。"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Armazenado em ~/.AforaMosh/afora-agent.json. Prefira AFORA_GATEWAY_PASSWORD para produção."
+            "value": "Armazenado em ~/.afora/afora.json. Prefira AFORA_GATEWAY_PASSWORD para produção."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gespeichert in ~/.AforaMosh/afora-agent.json. Für die Produktion bevorzugt AFORA_GATEWAY_PASSWORD verwenden."
+            "value": "Gespeichert in ~/.afora/afora.json. Für die Produktion bevorzugt AFORA_GATEWAY_PASSWORD verwenden."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Almacenado en ~/.AforaMosh/afora-agent.json. Prefiere AFORA_GATEWAY_PASSWORD para producción."
+            "value": "Almacenado en ~/.afora/afora.json. Prefiere AFORA_GATEWAY_PASSWORD para producción."
           }
         },
         "ja-JP": {
           "stringUnit": {
             "state": "translated",
-            "value": "~/.AforaMosh/afora-agent.json に保存されます。本番環境では AFORA_GATEWAY_PASSWORD を推奨します。"
+            "value": "~/.afora/afora.json に保存されます。本番環境では AFORA_GATEWAY_PASSWORD を推奨します。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "~/.AforaMosh/afora-agent.json에 저장됩니다. 프로덕션에서는 AFORA_GATEWAY_PASSWORD를 권장합니다."
+            "value": "~/.afora/afora.json에 저장됩니다. 프로덕션에서는 AFORA_GATEWAY_PASSWORD를 권장합니다."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Stocké dans ~/.AforaMosh/afora-agent.json. Préférez AFORA_GATEWAY_PASSWORD pour la production."
+            "value": "Stocké dans ~/.afora/afora.json. Préférez AFORA_GATEWAY_PASSWORD pour la production."
           }
         },
         "hi": {
           "stringUnit": {
             "state": "translated",
-            "value": "~/.AforaMosh/afora-agent.json में संग्रहीत। प्रोडक्शन के लिए AFORA_GATEWAY_PASSWORD को प्राथमिकता दें।"
+            "value": "~/.afora/afora.json में संग्रहीत। प्रोडक्शन के लिए AFORA_GATEWAY_PASSWORD को प्राथमिकता दें।"
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "مخزّنة في ~/.AforaMosh/afora-agent.json. يُفضّل استخدام AFORA_GATEWAY_PASSWORD للإنتاج."
+            "value": "مخزّنة في ~/.afora/afora.json. يُفضّل استخدام AFORA_GATEWAY_PASSWORD للإنتاج."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Archiviato in ~/.AforaMosh/afora-agent.json. Preferisci AFORA_GATEWAY_PASSWORD per la produzione."
+            "value": "Archiviato in ~/.afora/afora.json. Preferisci AFORA_GATEWAY_PASSWORD per la produzione."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "~/.AforaMosh/afora-agent.json içinde saklanır. Üretim için AFORA_GATEWAY_PASSWORD kullanmayı tercih edin."
+            "value": "~/.afora/afora.json içinde saklanır. Üretim için AFORA_GATEWAY_PASSWORD kullanmayı tercih edin."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Зберігається в ~/.AforaMosh/afora-agent.json. Для production краще використовувати AFORA_GATEWAY_PASSWORD."
+            "value": "Зберігається в ~/.afora/afora.json. Для production краще використовувати AFORA_GATEWAY_PASSWORD."
           }
         },
         "id": {
           "stringUnit": {
             "state": "translated",
-            "value": "Disimpan di ~/.AforaMosh/afora-agent.json. Sebaiknya gunakan AFORA_GATEWAY_PASSWORD untuk produksi."
+            "value": "Disimpan di ~/.afora/afora.json. Sebaiknya gunakan AFORA_GATEWAY_PASSWORD untuk produksi."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Przechowywane w ~/.AforaMosh/afora-agent.json. W środowisku produkcyjnym preferuj AFORA_GATEWAY_PASSWORD."
+            "value": "Przechowywane w ~/.afora/afora.json. W środowisku produkcyjnym preferuj AFORA_GATEWAY_PASSWORD."
           }
         },
         "th": {
           "stringUnit": {
             "state": "translated",
-            "value": "จัดเก็บไว้ใน ~/.AforaMosh/afora-agent.json แนะนำให้ใช้ AFORA_GATEWAY_PASSWORD สำหรับการใช้งานจริง"
+            "value": "จัดเก็บไว้ใน ~/.afora/afora.json แนะนำให้ใช้ AFORA_GATEWAY_PASSWORD สำหรับการใช้งานจริง"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Được lưu trong ~/.AforaMosh/afora-agent.json. Nên dùng AFORA_GATEWAY_PASSWORD cho môi trường production."
+            "value": "Được lưu trong ~/.afora/afora.json. Nên dùng AFORA_GATEWAY_PASSWORD cho môi trường production."
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Opgeslagen in ~/.AforaMosh/afora-agent.json. Gebruik bij voorkeur AFORA_GATEWAY_PASSWORD voor productie."
+            "value": "Opgeslagen in ~/.afora/afora.json. Gebruik bij voorkeur AFORA_GATEWAY_PASSWORD voor productie."
           }
         },
         "fa": {
           "stringUnit": {
             "state": "translated",
-            "value": "در ~/.AforaMosh/afora-agent.json ذخیره می‌شود. برای محیط تولید، AFORA_GATEWAY_PASSWORD را ترجیح دهید."
+            "value": "در ~/.afora/afora.json ذخیره می‌شود. برای محیط تولید، AFORA_GATEWAY_PASSWORD را ترجیح دهید."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Хранится в ~/.AforaMosh/afora-agent.json. Для production предпочитайте AFORA_GATEWAY_PASSWORD."
+            "value": "Хранится в ~/.afora/afora.json. Для production предпочитайте AFORA_GATEWAY_PASSWORD."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lagras i ~/.AforaMosh/afora-agent.json. Föredra AFORA_GATEWAY_PASSWORD för produktion."
+            "value": "Lagras i ~/.afora/afora.json. Föredra AFORA_GATEWAY_PASSWORD för produktion."
           }
         }
       }
@@ -158441,138 +158441,138 @@
         }
       }
     },
-    "Used by the CLI session loader; stored in ~/.AforaMosh/afora-agent.json.": {
+    "Used by the CLI session loader; stored in ~/.afora/afora.json.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Used by the CLI session loader; stored in ~/.AforaMosh/afora-agent.json."
+            "value": "Used by the CLI session loader; stored in ~/.afora/afora.json."
           }
         },
         "zh-CN": {
           "stringUnit": {
             "state": "translated",
-            "value": "由 CLI 会话加载器使用；存储在 ~/.AforaMosh/afora-agent.json 中。"
+            "value": "由 CLI 会话加载器使用；存储在 ~/.afora/afora.json 中。"
           }
         },
         "zh-TW": {
           "stringUnit": {
             "state": "translated",
-            "value": "供 CLI 工作階段載入器使用；儲存在 ~/.AforaMosh/afora-agent.json。"
+            "value": "供 CLI 工作階段載入器使用；儲存在 ~/.afora/afora.json。"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Usado pelo carregador de sessões da CLI; armazenado em ~/.AforaMosh/afora-agent.json."
+            "value": "Usado pelo carregador de sessões da CLI; armazenado em ~/.afora/afora.json."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wird vom CLI-Sitzungslader verwendet; gespeichert in ~/.AforaMosh/afora-agent.json."
+            "value": "Wird vom CLI-Sitzungslader verwendet; gespeichert in ~/.afora/afora.json."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lo usa el cargador de sesiones de la CLI; se almacena en ~/.AforaMosh/afora-agent.json."
+            "value": "Lo usa el cargador de sesiones de la CLI; se almacena en ~/.afora/afora.json."
           }
         },
         "ja-JP": {
           "stringUnit": {
             "state": "translated",
-            "value": "CLI セッションローダーで使用されます。~/.AforaMosh/afora-agent.json に保存されます。"
+            "value": "CLI セッションローダーで使用されます。~/.afora/afora.json に保存されます。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "CLI 세션 로더에서 사용되며 ~/.AforaMosh/afora-agent.json에 저장됩니다."
+            "value": "CLI 세션 로더에서 사용되며 ~/.afora/afora.json에 저장됩니다."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Utilisé par le chargeur de sessions CLI ; stocké dans ~/.AforaMosh/afora-agent.json."
+            "value": "Utilisé par le chargeur de sessions CLI ; stocké dans ~/.afora/afora.json."
           }
         },
         "hi": {
           "stringUnit": {
             "state": "translated",
-            "value": "CLI सेशन लोडर द्वारा उपयोग किया जाता है; ~/.AforaMosh/afora-agent.json में संग्रहीत।"
+            "value": "CLI सेशन लोडर द्वारा उपयोग किया जाता है; ~/.afora/afora.json में संग्रहीत।"
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "يُستخدم بواسطة محمّل جلسات CLI؛ ويُخزّن في ~/.AforaMosh/afora-agent.json."
+            "value": "يُستخدم بواسطة محمّل جلسات CLI؛ ويُخزّن في ~/.afora/afora.json."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Usato dal loader di sessione della CLI; archiviato in ~/.AforaMosh/afora-agent.json."
+            "value": "Usato dal loader di sessione della CLI; archiviato in ~/.afora/afora.json."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "CLI oturum yükleyicisi tarafından kullanılır; ~/.AforaMosh/afora-agent.json içinde saklanır."
+            "value": "CLI oturum yükleyicisi tarafından kullanılır; ~/.afora/afora.json içinde saklanır."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Використовується завантажувачем сеансів CLI; зберігається в ~/.AforaMosh/afora-agent.json."
+            "value": "Використовується завантажувачем сеансів CLI; зберігається в ~/.afora/afora.json."
           }
         },
         "id": {
           "stringUnit": {
             "state": "translated",
-            "value": "Digunakan oleh pemuat sesi CLI; disimpan di ~/.AforaMosh/afora-agent.json."
+            "value": "Digunakan oleh pemuat sesi CLI; disimpan di ~/.afora/afora.json."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Używane przez loader sesji CLI; przechowywane w ~/.AforaMosh/afora-agent.json."
+            "value": "Używane przez loader sesji CLI; przechowywane w ~/.afora/afora.json."
           }
         },
         "th": {
           "stringUnit": {
             "state": "translated",
-            "value": "ใช้โดยตัวโหลดเซสชัน CLI; จัดเก็บไว้ใน ~/.AforaMosh/afora-agent.json"
+            "value": "ใช้โดยตัวโหลดเซสชัน CLI; จัดเก็บไว้ใน ~/.afora/afora.json"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Được dùng bởi trình tải phiên CLI; được lưu trong ~/.AforaMosh/afora-agent.json."
+            "value": "Được dùng bởi trình tải phiên CLI; được lưu trong ~/.afora/afora.json."
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gebruikt door de CLI-sessielader; opgeslagen in ~/.AforaMosh/afora-agent.json."
+            "value": "Gebruikt door de CLI-sessielader; opgeslagen in ~/.afora/afora.json."
           }
         },
         "fa": {
           "stringUnit": {
             "state": "translated",
-            "value": "توسط بارگذار نشست CLI استفاده می‌شود؛ در ~/.AforaMosh/afora-agent.json ذخیره می‌شود."
+            "value": "توسط بارگذار نشست CLI استفاده می‌شود؛ در ~/.afora/afora.json ذخیره می‌شود."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Используется загрузчиком сеансов CLI; хранится в ~/.AforaMosh/afora-agent.json."
+            "value": "Используется загрузчиком сеансов CLI; хранится в ~/.afora/afora.json."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Används av CLI-sessionsinläsaren; lagras i ~/.AforaMosh/afora-agent.json."
+            "value": "Används av CLI-sessionsinläsaren; lagras i ~/.afora/afora.json."
           }
         }
       }

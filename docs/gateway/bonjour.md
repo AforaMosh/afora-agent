@@ -60,7 +60,7 @@ Once clients accept Tailnet DNS, iOS nodes and CLI discovery can browse `_afora-
 
 ### Gateway listener security
 
-The gateway WS port (default `18789`) binds to loopback by default. For LAN/Tailnet access, bind explicitly and keep auth enabled. For Tailnet-only setups, set `gateway.bind: "tailnet"` in `~/.AforaMosh/afora-agent.json` and restart the gateway (or the macOS menubar app).
+The gateway WS port (default `18789`) binds to loopback by default. For LAN/Tailnet access, bind explicitly and keep auth enabled. For Tailnet-only setups, set `gateway.bind: "tailnet"` in `~/.afora/afora.json` and restart the gateway (or the macOS menubar app).
 
 ## What advertises
 
@@ -219,14 +219,14 @@ Bonjour/DNS-SD often escapes bytes in service instance names as decimal `\DDD` s
 
 ## Enabling / disabling / configuration
 
-| Setting                                              | Effect                                                                            |
-| ---------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Setting                                           | Effect                                                                            |
+| ------------------------------------------------- | --------------------------------------------------------------------------------- |
 | `afora plugins enable bonjour`                    | Enables the bundled LAN discovery plugin on hosts where it isn't default-enabled. |
 | `afora plugins disable bonjour`                   | Disables LAN multicast advertising by disabling the bundled plugin.               |
 | `AFORA_DISABLE_BONJOUR=1` (or `true`/`yes`/`on`)  | Disables LAN multicast advertising without changing plugin config.                |
 | `AFORA_DISABLE_BONJOUR=0` (or `false`/`no`/`off`) | Forces LAN multicast advertising on, including inside detected containers.        |
-| `discovery.mdns.mode`                                | `off` \| `minimal` (default) \| `full` — see modes above.                         |
-| `gateway.bind`                                       | Controls the gateway bind mode in `~/.AforaMosh/afora-agent.json`.                    |
+| `discovery.mdns.mode`                             | `off` \| `minimal` (default) \| `full` — see modes above.                         |
+| `gateway.bind`                                    | Controls the gateway bind mode in `~/.afora/afora.json`.                          |
 | `AFORA_SSH_PORT`                                  | Overrides the SSH port when `sshPort` is advertised (full mode).                  |
 | `AFORA_TAILNET_DNS`                               | Publishes a MagicDNS hint in TXT when mDNS full mode is enabled.                  |
 | `AFORA_CLI_PATH`                                  | Overrides the advertised CLI path (full mode).                                    |

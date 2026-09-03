@@ -15,7 +15,7 @@ Workspace `.env` files are a lower-trust source: Afora ignores provider credenti
 1. **Process environment** (what the Gateway process already has from the parent shell/daemon).
 2. **`.env` in the current working directory** (dotenv default; does not override; provider credentials and protected runtime controls are ignored).
 3. **Global `.env`** at `~/.afora/.env` (aka `$AFORA_STATE_DIR/.env`; recommended for provider API keys; does not override except for recorded Afora-managed systemd service values).
-4. **Config `env` block** in `~/.AforaMosh/afora-agent.json` (applied only if missing).
+4. **Config `env` block** in `~/.afora/afora.json` (applied only if missing).
 5. **Optional login-shell import** (`env.shellEnv.enabled` or `AFORA_LOAD_SHELL_ENV=1`), applied only for missing expected keys.
 
 On fresh Ubuntu installs that use the default state dir, Afora also treats `~/.config/afora/gateway.env` as a compatibility fallback after the global `.env`. If both files exist and disagree, Afora keeps `~/.afora/.env` and prints a warning.
@@ -28,9 +28,9 @@ The variables below are the supported environment contract for operators. Undocu
 
 ### Paths and instances
 
-| Variable                 | Purpose                                                           |
-| ------------------------ | ----------------------------------------------------------------- |
-| `AFORA_HOME`          | Override the home directory used for Afora path defaults.      |
+| Variable              | Purpose                                                           |
+| --------------------- | ----------------------------------------------------------------- |
+| `AFORA_HOME`          | Override the home directory used for Afora path defaults.         |
 | `AFORA_STATE_DIR`     | Override the mutable state directory.                             |
 | `AFORA_CONFIG_PATH`   | Override the active config file path.                             |
 | `AFORA_WORKSPACE_DIR` | Override the default agent workspace.                             |
@@ -40,8 +40,8 @@ The variables below are the supported environment contract for operators. Undocu
 
 ### Gateway and authentication
 
-| Variable                    | Purpose                                                         |
-| --------------------------- | --------------------------------------------------------------- |
+| Variable                 | Purpose                                                         |
+| ------------------------ | --------------------------------------------------------------- |
 | `AFORA_GATEWAY_URL`      | Override the remote Gateway URL used by clients.                |
 | `AFORA_GATEWAY_PORT`     | Override the local Gateway port.                                |
 | `AFORA_GATEWAY_TOKEN`    | Supply token authentication for Gateway servers and clients.    |
@@ -57,8 +57,8 @@ Installed third-party plugins may declare additional credential variables in the
 
 ### Logging and diagnostics
 
-| Variable                             | Purpose                                                       |
-| ------------------------------------ | ------------------------------------------------------------- |
+| Variable                          | Purpose                                                       |
+| --------------------------------- | ------------------------------------------------------------- |
 | `AFORA_LOG_LEVEL`                 | Override file and console log levels.                         |
 | `AFORA_DEBUG_MODEL_TRANSPORT`     | Enable model transport timing diagnostics.                    |
 | `AFORA_DEBUG_MODEL_PAYLOAD`       | Select redacted model payload diagnostics.                    |
@@ -70,8 +70,8 @@ Installed third-party plugins may declare additional credential variables in the
 
 ### Feature and runtime toggles
 
-| Variable                             | Purpose                                                                      |
-| ------------------------------------ | ---------------------------------------------------------------------------- |
+| Variable                          | Purpose                                                                      |
+| --------------------------------- | ---------------------------------------------------------------------------- |
 | `AFORA_LOAD_SHELL_ENV`            | Import missing expected variables from the login shell.                      |
 | `AFORA_SHELL_ENV_TIMEOUT_MS`      | Set the login-shell import timeout.                                          |
 | `AFORA_EXEC_SHELL_SNAPSHOT`       | Disable exec shell snapshots with `0`.                                       |
@@ -92,7 +92,7 @@ Use one of these trusted sources for provider credentials instead:
 
 - The Gateway process environment, such as a shell, launchd/systemd unit, container secret, or CI secret.
 - The global runtime dotenv file at `~/.afora/.env` or `$AFORA_STATE_DIR/.env`.
-- The config `env` block in `~/.AforaMosh/afora-agent.json`.
+- The config `env` block in `~/.afora/afora.json`.
 - Optional login-shell import when `env.shellEnv.enabled` or `AFORA_LOAD_SHELL_ENV=1` is enabled.
 
 If you previously stored provider keys or endpoint routing values only in a workspace `.env`, move them to one of the trusted sources above. Workspace `.env` can still provide ordinary project variables that are not credentials, endpoint redirects, host overrides, or `AFORA_*` runtime controls.
@@ -222,12 +222,12 @@ shorthand values.
 
 ## Path-related env vars
 
-| Variable                 | Purpose                                                                                                                                                                                                                                 |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Variable              | Purpose                                                                                                                                                                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `AFORA_HOME`          | Override the home directory used for internal Afora path defaults (`~/.afora/`, agent dirs, sessions, credentials, installer onboarding, and the default dev checkout). Useful when running Afora as a dedicated service user. |
-| `AFORA_STATE_DIR`     | Override the state directory (default `~/.afora`).                                                                                                                                                                                   |
-| `AFORA_CONFIG_PATH`   | Override the config file path (default `~/.AforaMosh/afora-agent.json`).                                                                                                                                                                    |
-| `AFORA_INCLUDE_ROOTS` | Path-list of directories where `$include` directives may resolve files outside the config directory (default: none - `$include` is confined to the config dir). Tilde-expanded.                                                         |
+| `AFORA_STATE_DIR`     | Override the state directory (default `~/.afora`).                                                                                                                                                                             |
+| `AFORA_CONFIG_PATH`   | Override the config file path (default `~/.afora/afora.json`).                                                                                                                                                                 |
+| `AFORA_INCLUDE_ROOTS` | Path-list of directories where `$include` directives may resolve files outside the config directory (default: none - `$include` is confined to the config dir). Tilde-expanded.                                                |
 
 ## Agent helper tool downloads
 
@@ -238,8 +238,8 @@ unavailable instead of triggering a network request.
 
 ## Logging
 
-| Variable                         | Purpose                                                                                                                                                                                      |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Variable                      | Purpose                                                                                                                                                                                      |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AFORA_LOG_LEVEL`             | Override log level for both file and console (e.g. `debug`, `trace`). Takes precedence over `logging.level` and `logging.consoleLevel` in config. Invalid values are ignored with a warning. |
 | `AFORA_DEBUG_MODEL_TRANSPORT` | Emit targeted model request/response timing diagnostics at `info` level without enabling global debug logs.                                                                                  |
 | `AFORA_DEBUG_MODEL_PAYLOAD`   | Model payload diagnostics: `summary`, `tools`, or `full-redacted`. `full-redacted` is capped and redacted but may include prompt/message text.                                               |

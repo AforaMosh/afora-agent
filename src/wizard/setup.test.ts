@@ -201,7 +201,7 @@ const resolveGatewayPort = vi.hoisted(() =>
 );
 const readConfigFileSnapshot = vi.hoisted(() =>
   vi.fn(async () => ({
-    path: "/tmp/.AforaMosh/afora-agent.json",
+    path: "/tmp/.afora/afora.json",
     exists: false,
     raw: null as string | null,
     parsed: {},
@@ -595,13 +595,9 @@ describe("runSetupWizard", () => {
     return dir;
   }
 
-  function configSnapshot(
-    config: AforaConfig,
-    exists = true,
-    runtimeConfig: AforaConfig = config,
-  ) {
+  function configSnapshot(config: AforaConfig, exists = true, runtimeConfig: AforaConfig = config) {
     return {
-      path: "/tmp/.AforaMosh/afora-agent.json",
+      path: "/tmp/.afora/afora.json",
       exists,
       raw: exists ? "{}" : null,
       parsed: config,
@@ -782,7 +778,7 @@ describe("runSetupWizard", () => {
   it("skips provider entries without an id during preferred-provider lookup", async () => {
     setupChannels.mockClear();
     readConfigFileSnapshot.mockResolvedValueOnce({
-      path: "/tmp/.AforaMosh/afora-agent.json",
+      path: "/tmp/.afora/afora.json",
       exists: true,
       raw: "{}",
       parsed: {},
@@ -845,7 +841,7 @@ describe("runSetupWizard", () => {
 
   it("exits when config is invalid", async () => {
     readConfigFileSnapshot.mockResolvedValueOnce({
-      path: "/tmp/.AforaMosh/afora-agent.json",
+      path: "/tmp/.afora/afora.json",
       exists: true,
       raw: "{}",
       parsed: {},
@@ -1017,7 +1013,7 @@ describe("runSetupWizard", () => {
   it("seeds interactive remote setup from command flags", async () => {
     const remoteToken = "REDACTED";
     readConfigFileSnapshot.mockResolvedValueOnce({
-      path: "/tmp/.AforaMosh/afora-agent.json",
+      path: "/tmp/.afora/afora.json",
       exists: true,
       raw: "{}",
       parsed: {},
@@ -1167,7 +1163,7 @@ describe("runSetupWizard", () => {
 
   it("does not reuse stored remote credentials for an overridden URL", async () => {
     readConfigFileSnapshot.mockResolvedValueOnce({
-      path: "/tmp/.AforaMosh/afora-agent.json",
+      path: "/tmp/.afora/afora.json",
       exists: true,
       raw: "{}",
       parsed: {},
@@ -1358,7 +1354,7 @@ describe("runSetupWizard", () => {
 
   it("skips the security acknowledgement after it was accepted once", async () => {
     readConfigFileSnapshot.mockResolvedValueOnce({
-      path: "/tmp/.AforaMosh/afora-agent.json",
+      path: "/tmp/.afora/afora.json",
       exists: true,
       raw: "{}",
       parsed: {},
@@ -1846,7 +1842,7 @@ describe("runSetupWizard", () => {
 
   it("preserves concurrent edits while migrating pending plugin install records", async () => {
     const pendingInstallSnapshot = {
-      path: "/tmp/.AforaMosh/afora-agent.json",
+      path: "/tmp/.afora/afora.json",
       exists: true,
       raw: "{}",
       parsed: {},
@@ -1996,7 +1992,7 @@ describe("runSetupWizard", () => {
     promptDefaultModel.mockClear();
     replaceConfigFile.mockClear();
     readConfigFileSnapshot.mockResolvedValue({
-      path: "/tmp/.AforaMosh/afora-agent.json",
+      path: "/tmp/.afora/afora.json",
       exists: true,
       raw: "{}",
       parsed: {},
@@ -2066,7 +2062,7 @@ describe("runSetupWizard", () => {
     const currentWorkspace = await makeCaseDir("current-fleet-workspace-");
     const requestedWorkspace = await makeCaseDir("requested-fleet-workspace-");
     readConfigFileSnapshot.mockResolvedValueOnce({
-      path: "/tmp/.AforaMosh/afora-agent.json",
+      path: "/tmp/.afora/afora.json",
       exists: true,
       raw: "{}",
       parsed: {},
@@ -2621,7 +2617,7 @@ describe("runSetupWizard", () => {
       },
     ]);
     readConfigFileSnapshot.mockResolvedValueOnce({
-      path: "/tmp/.AforaMosh/afora-agent.json",
+      path: "/tmp/.afora/afora.json",
       exists: true,
       raw: "{}",
       parsed: {},
@@ -2677,7 +2673,7 @@ describe("runSetupWizard", () => {
     process.env.AFORA_GATEWAY_PASSWORD = "gateway-ref-password"; // pragma: allowlist secret
     probeGatewayReachable.mockClear();
     readConfigFileSnapshot.mockResolvedValueOnce({
-      path: "/tmp/.AforaMosh/afora-agent.json",
+      path: "/tmp/.afora/afora.json",
       exists: true,
       raw: "{}",
       parsed: {},

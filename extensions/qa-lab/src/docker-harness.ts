@@ -126,7 +126,7 @@ ${imageBlock}    pull_policy: never
     ports:
       - "127.0.0.1:${params.gatewayPort}:18789"
     environment:
-      AFORA_CONFIG_PATH: /tmp/AforaMosh/afora-agent.json
+      AFORA_CONFIG_PATH: /tmp/afora/afora.json
       AFORA_STATE_DIR: /tmp/afora/state
       AFORA_NO_RESPAWN: "1"
       AFORA_SKIP_GMAIL_WATCHER: "1"
@@ -158,7 +158,7 @@ ${
     command:
       - sh
       - -lc
-      - mkdir -p /tmp/afora/workspace /tmp/afora/state && cp /opt/afora-scaffold/afora.json /tmp/AforaMosh/afora-agent.json && cp -R /opt/afora-scaffold/seed-workspace/. /tmp/afora/workspace/ && rm -rf /tmp/afora/workspace/repo && ln -s /opt/afora-repo /tmp/afora/workspace/repo && exec node dist/index.js gateway run --port 18789 --bind lan --allow-unconfigured
+      - mkdir -p /tmp/afora/workspace /tmp/afora/state && cp /opt/afora-scaffold/afora.json /tmp/afora/afora.json && cp -R /opt/afora-scaffold/seed-workspace/. /tmp/afora/workspace/ && rm -rf /tmp/afora/workspace/repo && ln -s /opt/afora-repo /tmp/afora/workspace/repo && exec node dist/index.js gateway run --port 18789 --bind lan --allow-unconfigured
 `;
 }
 

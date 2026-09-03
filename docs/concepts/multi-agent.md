@@ -47,15 +47,15 @@ when personas must not share compiled wiki knowledge.
 
 ## Paths
 
-| What                             | Default                                                                                | Override                                                                                    |
-| -------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Config                           | `~/.AforaMosh/afora-agent.json`                                                            | `AFORA_CONFIG_PATH`                                                                      |
-| State dir                        | `~/.afora`                                                                          | `AFORA_STATE_DIR`                                                                        |
-| Default agent's workspace        | `<stateDir>/workspace` (`~/.afora-<profile>/workspace` for a named profile)         | `agents.entries.*.workspace`, then `agents.defaults.workspace`, or `AFORA_WORKSPACE_DIR` |
-| Other agents' workspace          | `<stateDir>/workspace-<agentId>` (or `<agents.defaults.workspace>/<agentId>` when set) | `agents.entries.*.workspace`                                                                |
-| Agent dir                        | `~/.afora/agents/<agentId>/agent`                                                   | `agents.entries.*.agentDir`                                                                 |
-| Sessions and transcripts         | `~/.afora/agents/<agentId>/agent/afora-agent.sqlite`                             | —                                                                                           |
-| Legacy/archive session artifacts | `~/.afora/agents/<agentId>/sessions`                                                | —                                                                                           |
+| What                             | Default                                                                                | Override                                                                                 |
+| -------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Config                           | `~/.afora/afora.json`                                                                  | `AFORA_CONFIG_PATH`                                                                      |
+| State dir                        | `~/.afora`                                                                             | `AFORA_STATE_DIR`                                                                        |
+| Default agent's workspace        | `<stateDir>/workspace` (`~/.afora-<profile>/workspace` for a named profile)            | `agents.entries.*.workspace`, then `agents.defaults.workspace`, or `AFORA_WORKSPACE_DIR` |
+| Other agents' workspace          | `<stateDir>/workspace-<agentId>` (or `<agents.defaults.workspace>/<agentId>` when set) | `agents.entries.*.workspace`                                                             |
+| Agent dir                        | `~/.afora/agents/<agentId>/agent`                                                      | `agents.entries.*.agentDir`                                                              |
+| Sessions and transcripts         | `~/.afora/agents/<agentId>/agent/afora-agent.sqlite`                                   | —                                                                                        |
+| Legacy/archive session artifacts | `~/.afora/agents/<agentId>/sessions`                                                   | —                                                                                        |
 
 ### Single-agent mode (default)
 
@@ -349,7 +349,7 @@ Channels supporting multiple accounts: `discord`, `feishu`, `googlechat`, `imess
     afora channels login --channel whatsapp --account biz
     ```
 
-    `~/.AforaMosh/afora-agent.json` (JSON5):
+    `~/.afora/afora.json` (JSON5):
 
     ```js
     {

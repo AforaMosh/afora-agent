@@ -65,7 +65,7 @@ Payload fields (all optional unless noted):
 
 ## Historical tailnet usage
 
-- Bind the bridge to a tailnet IP: `bridge.bind: "tailnet"` in `~/.AforaMosh/afora-agent.json` (historical only; `bridge.*` is no longer valid config).
+- Bind the bridge to a tailnet IP: `bridge.bind: "tailnet"` in `~/.afora/afora.json` (historical only; `bridge.*` is no longer valid config).
 - Clients connected via MagicDNS name or tailnet IP.
 - Bonjour does not cross networks; wide-area DNS-SD or a manual host/port was required otherwise.
 

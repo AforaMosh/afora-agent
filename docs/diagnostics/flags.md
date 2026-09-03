@@ -155,10 +155,10 @@ diagnostics artifacts; review before sharing them outside your machine.
 Flags emit logs into the standard diagnostics log file. By default:
 
 ```
-/tmp/AforaMosh/afora-agent-YYYY-MM-DD.log
+/tmp/afora/afora-YYYY-MM-DD.log
 ```
 
-Named profiles use `/tmp/AforaMosh/afora-agent-<profile>-YYYY-MM-DD.log`; for
+Named profiles use `/tmp/afora/afora-<profile>-YYYY-MM-DD.log`; for
 example, `--dev` uses `afora-dev-YYYY-MM-DD.log`.
 
 If you set `logging.file`, use that path instead. Logs are JSONL (one JSON

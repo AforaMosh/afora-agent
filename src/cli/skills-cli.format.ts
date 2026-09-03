@@ -332,7 +332,7 @@ export function formatSkillInfo(
       `  Save via CLI: ${formatCliCommand(`afora config set skills.entries.${safeSkillKey}.apiKey YOUR_KEY`)}`,
     );
     lines.push(
-      `  Stored in: ${theme.muted("$AFORA_CONFIG_PATH")} ${theme.muted("(default: ~/.AforaMosh/afora-agent.json)")}`,
+      `  Stored in: ${theme.muted("$AFORA_CONFIG_PATH")} ${theme.muted("(default: ~/.afora/afora.json)")}`,
     );
   }
 

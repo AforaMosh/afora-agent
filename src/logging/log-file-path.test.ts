@@ -90,28 +90,28 @@ describe("profile rolling log families", () => {
   it("preserves the profile segment across date rollover", () => {
     expect(
       resolveRollingLogFilePathForDate(
-        "/tmp/AforaMosh/afora-agent-dev-2026-07-22.log",
+        "/tmp/afora/afora-dev-2026-07-22.log",
         new Date(2026, 6, 23, 12, 0, 0),
       ),
-    ).toBe("/tmp/AforaMosh/afora-agent-dev-2026-07-23.log");
+    ).toBe("/tmp/afora/afora-dev-2026-07-23.log");
   });
 
   it("expands the legacy YYYY-MM-DD placeholder", () => {
     expect(
       resolveRollingLogFilePathForDate(
-        "/tmp/AforaMosh/afora-agent-YYYY-MM-DD.log",
+        "/tmp/afora/afora-YYYY-MM-DD.log",
         new Date(2026, 6, 23, 12, 0, 0),
       ),
-    ).toBe("/tmp/AforaMosh/afora-agent-2026-07-23.log");
+    ).toBe("/tmp/afora/afora-2026-07-23.log");
   });
 
   it("keeps default and named profile fallback families separate", () => {
-    expect(
-      isSameRollingLogFileFamily("afora-dev-2026-07-22.log", "afora-dev-2026-07-21.log"),
-    ).toBe(true);
-    expect(
-      isSameRollingLogFileFamily("afora-dev-2026-07-22.log", "afora-2026-07-22.log"),
-    ).toBe(false);
+    expect(isSameRollingLogFileFamily("afora-dev-2026-07-22.log", "afora-dev-2026-07-21.log")).toBe(
+      true,
+    );
+    expect(isSameRollingLogFileFamily("afora-dev-2026-07-22.log", "afora-2026-07-22.log")).toBe(
+      false,
+    );
   });
 
   it("keeps legacy explicit dated paths rolling without broadening the override contract", () => {

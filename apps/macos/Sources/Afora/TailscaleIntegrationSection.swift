@@ -259,7 +259,7 @@ struct TailscaleIntegrationSection: View {
             .textFieldStyle(.roundedBorder)
             .frame(maxWidth: 240)
             .onSubmit { Task { await self.applySettings() } }
-        Text("Stored in ~/.AforaMosh/afora-agent.json. Prefer AFORA_GATEWAY_PASSWORD for production.")
+        Text("Stored in ~/.afora/afora.json. Prefer AFORA_GATEWAY_PASSWORD for production.")
             .font(.caption)
             .foregroundStyle(.secondary)
         Button("Update password") { Task { await self.applySettings() } }
@@ -469,9 +469,9 @@ struct TailscaleIntegrationSection: View {
         }
 
         let statusMessage = if connectionMode == .local, !isPaused {
-            "Saved to ~/.AforaMosh/afora-agent.json. Restarting gateway…"
+            "Saved to ~/.afora/afora.json. Restarting gateway…"
         } else {
-            "Saved to ~/.AforaMosh/afora-agent.json. Restart the gateway to apply."
+            "Saved to ~/.afora/afora.json. Restart the gateway to apply."
         }
         return GatewayTailscaleApplyMessages(
             statusMessage: statusMessage,

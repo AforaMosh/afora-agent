@@ -7,13 +7,7 @@ import { applyCliProfileEnv, parseCliProfileArgs } from "./profile.js";
 
 describe("parseCliProfileArgs", () => {
   it("leaves gateway --dev for subcommands", () => {
-    const res = parseCliProfileArgs([
-      "node",
-      "afora",
-      "gateway",
-      "--dev",
-      "--allow-unconfigured",
-    ]);
+    const res = parseCliProfileArgs(["node", "afora", "gateway", "--dev", "--allow-unconfigured"]);
     if (!res.ok) {
       throw new Error(res.error);
     }
@@ -85,15 +79,7 @@ describe("parseCliProfileArgs", () => {
       throw new Error(res.error);
     }
     expect(res.profile).toBeNull();
-    expect(res.argv).toEqual([
-      "node",
-      "afora",
-      "qa",
-      "matrix",
-      "--profile",
-      "fast",
-      "--fail-fast",
-    ]);
+    expect(res.argv).toEqual(["node", "afora", "qa", "matrix", "--profile", "fast", "--fail-fast"]);
   });
 
   it("preserves Matrix QA --profile after leading root options", () => {
@@ -320,9 +306,7 @@ describe("applyCliProfileEnv", () => {
       AFORA_STATE_DIR: inheritedStateDir,
       AFORA_CONFIG_PATH: path.join(inheritedStateDir, "afora.json"),
       AFORA_GATEWAY_PORT: "18789",
-      AFORA_LAUNCHD_LABEL: inheritedProfile
-        ? `ai.afora.${inheritedProfile}`
-        : "ai.afora.gateway",
+      AFORA_LAUNCHD_LABEL: inheritedProfile ? `ai.afora.${inheritedProfile}` : "ai.afora.gateway",
       AFORA_SYSTEMD_UNIT: inheritedProfile
         ? `afora-gateway-${inheritedProfile}.service`
         : "afora-gateway.service",
@@ -527,7 +511,7 @@ describe("applyCliProfileEnv", () => {
     {
       name: "the default profile",
       inheritedProfile: undefined,
-      inheritedConfigPath: "/home/peter/.AforaMosh/afora-agent.json",
+      inheritedConfigPath: "/home/peter/.afora/afora.json",
     },
     {
       name: "another named profile",
@@ -569,9 +553,7 @@ describe("applyCliProfileEnv", () => {
 
     const resolvedHome = path.resolve("/srv/afora-home");
     expect(env.AFORA_STATE_DIR).toBe(path.join(resolvedHome, ".afora-work"));
-    expect(env.AFORA_CONFIG_PATH).toBe(
-      path.join(resolvedHome, ".afora-work", "afora.json"),
-    );
+    expect(env.AFORA_CONFIG_PATH).toBe(path.join(resolvedHome, ".afora-work", "afora.json"));
   });
 });
 
@@ -630,9 +612,7 @@ describe("formatCliCommand", () => {
   });
 
   it("handles command with no args after afora", () => {
-    expect(formatCliCommand("afora", { AFORA_PROFILE: "test" })).toBe(
-      "afora --profile test",
-    );
+    expect(formatCliCommand("afora", { AFORA_PROFILE: "test" })).toBe("afora --profile test");
   });
 
   it("handles pnpm wrapper", () => {
@@ -642,9 +622,9 @@ describe("formatCliCommand", () => {
   });
 
   it("inserts --container when a container hint is set", () => {
-    expect(
-      formatCliCommand("afora gateway status --deep", { AFORA_CONTAINER_HINT: "demo" }),
-    ).toBe("afora --container demo gateway status --deep");
+    expect(formatCliCommand("afora gateway status --deep", { AFORA_CONTAINER_HINT: "demo" })).toBe(
+      "afora --container demo gateway status --deep",
+    );
   });
 
   it("ignores unsafe container hints", () => {
@@ -665,9 +645,7 @@ describe("formatCliCommand", () => {
   });
 
   it("does not prepend --container for update commands", () => {
-    expect(formatCliCommand("afora update", { AFORA_CONTAINER_HINT: "demo" })).toBe(
-      "afora update",
-    );
+    expect(formatCliCommand("afora update", { AFORA_CONTAINER_HINT: "demo" })).toBe("afora update");
     expect(
       formatCliCommand("pnpm afora update --channel beta", { AFORA_CONTAINER_HINT: "demo" }),
     ).toBe("pnpm afora update --channel beta");

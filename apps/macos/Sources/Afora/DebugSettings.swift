@@ -444,7 +444,7 @@ struct DebugSettings: View {
                                     .font(.footnote)
                                     .foregroundStyle(.secondary)
                             } else {
-                                Text("Used by the CLI session loader; stored in ~/.AforaMosh/afora-agent.json.")
+                                Text("Used by the CLI session loader; stored in ~/.afora/afora.json.")
                                     .font(.footnote)
                                     .foregroundStyle(.secondary)
                             }

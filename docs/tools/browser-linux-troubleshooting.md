@@ -46,7 +46,7 @@ sudo dpkg -i google-chrome-stable_current_amd64.deb
 sudo apt --fix-broken install -y  # if there are dependency errors
 ```
 
-Update `~/.AforaMosh/afora-agent.json`:
+Update `~/.afora/afora.json`:
 
 ```json
 {
@@ -115,14 +115,14 @@ curl -s http://127.0.0.1:18791/tabs
 
 ### Config reference
 
-| Option                      | Description                                                          | Default                                                            |
-| --------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `browser.enabled`           | Enable browser control                                               | `true`                                                             |
-| `browser.executablePath`    | Path to a Chromium-based browser binary (Chrome/Brave/Edge/Chromium) | auto-detected (prefers the OS default browser when Chromium-based) |
-| `browser.headless`          | Run without GUI                                                      | `false`                                                            |
+| Option                   | Description                                                          | Default                                                            |
+| ------------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `browser.enabled`        | Enable browser control                                               | `true`                                                             |
+| `browser.executablePath` | Path to a Chromium-based browser binary (Chrome/Brave/Edge/Chromium) | auto-detected (prefers the OS default browser when Chromium-based) |
+| `browser.headless`       | Run without GUI                                                      | `false`                                                            |
 | `AFORA_BROWSER_HEADLESS` | Per-process override for local managed browser headless mode         | unset                                                              |
-| `browser.noSandbox`         | Add `--no-sandbox` flag (needed for some Linux setups)               | `false`                                                            |
-| `browser.attachOnly`        | Do not launch a browser; only attach to an existing one              | `false`                                                            |
+| `browser.noSandbox`      | Add `--no-sandbox` flag (needed for some Linux setups)               | `false`                                                            |
+| `browser.attachOnly`     | Do not launch a browser; only attach to an existing one              | `false`                                                            |
 
 On Raspberry Pi, older VPS hosts, or slow storage, use a manually launched
 browser with `attachOnly` when Chrome needs more time to expose its CDP HTTP

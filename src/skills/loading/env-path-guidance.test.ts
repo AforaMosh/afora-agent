@@ -24,12 +24,12 @@ const CASES: GuidanceCase[] = [
   {
     file: "skills/gh-issues/SKILL.md",
     required: ["AFORA_CONFIG_PATH"],
-    forbidden: ["cat ~/.AforaMosh/afora-agent.json"],
+    forbidden: ["cat ~/.afora/afora.json"],
   },
   {
     file: "extensions/canvas/skills/canvas/SKILL.md",
     required: ["AFORA_CONFIG_PATH"],
-    forbidden: ["cat ~/.AforaMosh/afora-agent.json"],
+    forbidden: ["cat ~/.afora/afora.json"],
   },
   {
     file: "skills/openai-whisper-api/SKILL.md",

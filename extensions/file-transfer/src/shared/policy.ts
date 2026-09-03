@@ -1,7 +1,7 @@
 // Path policy for file-transfer node.invoke calls.
 //
 // Default behavior is DENY. The operator must explicitly opt in by adding
-// a config block to ~/.AforaMosh/afora-agent.json under
+// a config block to ~/.afora/afora.json under
 // `plugins.entries.file-transfer.config.nodes`. Without a matching block,
 // every file operation is rejected before reaching the node.
 //
@@ -47,10 +47,10 @@
 
 import os from "node:os";
 import path from "node:path";
-import { minimatch } from "minimatch";
 import { mutateConfigFile } from "afora-agent/plugin-sdk/config-mutation";
 import { getRuntimeConfig } from "afora-agent/plugin-sdk/runtime-config-snapshot";
 import { asNullableRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { minimatch } from "minimatch";
 
 export type FilePolicyKind = "read" | "write";
 type FilePolicyAskMode = "off" | "on-miss" | "always";

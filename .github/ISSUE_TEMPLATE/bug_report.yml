@@ -118,7 +118,7 @@ body:
       placeholder: |
         Default route is afora -> cloudflare-ai-gateway -> minimax.
         Previous setup was afora -> cloudflare-ai-gateway -> openrouter -> minimax.
-        Relevant config lives in ~/.AforaMosh/afora-agent.json under models.providers.minimax and models.providers.cloudflare-ai-gateway.
+        Relevant config lives in ~/.afora/afora.json under models.providers.minimax and models.providers.cloudflare-ai-gateway.
   - type: textarea
     id: logs
     attributes:

@@ -424,8 +424,7 @@ export const zh_CN = {
     },
     security: {
       askForHelp: "启用工具或暴露到互联网之前，请找有经验的人协助。",
-      attribution:
-        "Afora 是由 Afora 基金会（非营利组织）开发的开源助手，会与你一同学习成长。",
+      attribution: "Afora 是由 Afora 基金会（非营利组织）开发的开源助手，会与你一同学习成长。",
       baselineDmSessions:
         "共享收件箱：隔离 DM 会话（session.dmScope: per-channel-peer），并尽量减少工具访问权限。",
       baselinePairing: "使用配对或允许列表；在群聊中要求 @ 提及。",
@@ -1101,7 +1100,7 @@ export const zh_CN = {
       gatewayTokenGenerate: "生成令牌：{command}",
       gatewayTokenShared: "Gateway 令牌：Gateway 和 Control UI 的共享认证。",
       gatewayTokenStored:
-        "存储位置：$AFORA_CONFIG_PATH（默认 ~/.AforaMosh/afora-agent.json）中的 gateway.auth.token，或 AFORA_GATEWAY_TOKEN。",
+        "存储位置：$AFORA_CONFIG_PATH（默认 ~/.afora/afora.json）中的 gateway.auth.token，或 AFORA_GATEWAY_TOKEN。",
       gatewayTokenView: "查看令牌：{command}",
       gatewayWsUrl: "Gateway WS：{url}",
       hatchLater: "稍后启动",

@@ -18,7 +18,7 @@ Each agent uses a single workspace directory (`agents.defaults.workspace`, or
 `agents.entries.*.workspace` per agent) as its **only** working directory (`cwd`)
 for tools and context.
 
-Recommended: use `afora setup` to create `~/.AforaMosh/afora-agent.json` if missing and initialize the workspace files.
+Recommended: use `afora setup` to create `~/.afora/afora.json` if missing and initialize the workspace files.
 
 Full workspace layout + backup guide: [Agent workspace](/concepts/agent-workspace)
 

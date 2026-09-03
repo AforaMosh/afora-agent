@@ -668,7 +668,7 @@ Live tests discover credentials the same way the CLI does. Practical implication
 - If a live test says "no creds", debug the same way you'd debug `afora models list` / model selection.
 
 - Per-agent auth profiles: `~/.afora/agents/<agentId>/agent/auth-profiles.json` (this is what "profile keys" means in the live tests)
-- Config: `~/.AforaMosh/afora-agent.json` (or `AFORA_CONFIG_PATH`)
+- Config: `~/.afora/afora.json` (or `AFORA_CONFIG_PATH`)
 - Legacy OAuth dir: `~/.afora/credentials/` (copied into the staged live home when present, but not the main profile-key store)
 - Local live runs copy the active config (with `agents.*.workspace` / `agentDir` overrides stripped) and each agent's `auth-profiles.json` - not the rest of that agent's directory, so `workspace/` and `sandboxes/` data never reaches the staged home - plus the legacy `credentials/` dir and supported external CLI auth files/dirs (`.claude.json`, `.claude/.credentials.json`, `.claude/settings*.json`, `.claude/backups`, `.codex/auth.json`, `.codex/config.toml`, `.gemini`, `.minimax`) into a temp test home.
 

@@ -16,7 +16,7 @@ services:
       # imported from .env caused first-reply `mkdir '/Users'` EACCES failures
       # in Linux Docker (#77436).
       AFORA_STATE_DIR: /home/node/.afora
-      AFORA_CONFIG_PATH: /home/node/.AforaMosh/afora-agent.json
+      AFORA_CONFIG_PATH: /home/node/.afora/afora.json
       AFORA_CONFIG_DIR: /home/node/.afora
       AFORA_WORKSPACE_DIR: /home/node/.afora/workspace
       AFORA_GATEWAY_TOKEN: ${AFORA_GATEWAY_TOKEN:-}
@@ -109,7 +109,7 @@ services:
       # Pin container-side state, workspace, and config paths so host values written to
       # `.env` cannot leak into runtime code via the env_file import (#77436).
       AFORA_STATE_DIR: /home/node/.afora
-      AFORA_CONFIG_PATH: /home/node/.AforaMosh/afora-agent.json
+      AFORA_CONFIG_PATH: /home/node/.afora/afora.json
       AFORA_CONFIG_DIR: /home/node/.afora
       AFORA_WORKSPACE_DIR: /home/node/.afora/workspace
       AFORA_GATEWAY_TOKEN: ${AFORA_GATEWAY_TOKEN:-}

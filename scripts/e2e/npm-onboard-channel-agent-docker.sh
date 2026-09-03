@@ -176,7 +176,7 @@ dump_debug_logs() {
     /tmp/afora-agent.json \
     /tmp/afora-mock-openai.log \
     "$MOCK_REQUEST_LOG" \
-    "$AFORA_HOME/.AforaMosh/afora-agent.json" \
+    "$AFORA_HOME/.afora/afora.json" \
     "$AFORA_HOME/.afora/agents/main/agent/auth-profiles.json"
 }
 trap 'status=$?; dump_debug_logs "$status"; exit "$status"' ERR

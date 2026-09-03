@@ -75,7 +75,7 @@ vi.mock("@clack/prompts", () => ({
 }));
 
 vi.mock("../config/config.js", () => ({
-  CONFIG_PATH: "~/.AforaMosh/afora-agent.json",
+  CONFIG_PATH: "~/.afora/afora.json",
   createConfigIO: () => ({
     readConfigFileSnapshotForWrite: async () => ({
       snapshot: await mocks.readConfigFileSnapshot(),

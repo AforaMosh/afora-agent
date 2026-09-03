@@ -27,7 +27,7 @@ agent model: openai/gpt-5.6-sol (thinking=medium, fast=on)
 
 - Default rolling log files are under `/tmp/afora/` (one file per day), dated by the gateway host's local timezone. The default profile uses `afora-YYYY-MM-DD.log`; named profiles use `afora-<profile>-YYYY-MM-DD.log` (for example, `afora-dev-YYYY-MM-DD.log`). If that directory is unsafe or unwritable (wrong owner, world-writable, a symlink), Afora falls back to a user-scoped `os.tmpdir()/afora-<uid>` path instead; on Windows it always uses that OS-tmpdir fallback.
 - Active log files rotate at `logging.maxFileBytes` (default: 100 MB), keeping up to five numbered archives (`.1` through `.5`) and continuing to write a fresh active file.
-- Configure the log file path and level via `~/.AforaMosh/afora-agent.json`: `logging.file`, `logging.level`.
+- Configure the log file path and level via `~/.afora/afora.json`: `logging.file`, `logging.level`.
 - The file format is one JSON object per line.
 
 Talk, realtime voice, and managed-room code paths use the shared file logger for bounded lifecycle records intended for operational debugging and OTLP log export. Transcript text, audio payloads, turn ids, call ids, and provider item ids are never copied into the log record.

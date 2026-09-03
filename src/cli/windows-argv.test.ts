@@ -128,7 +128,7 @@ describe("normalizeWindowsArgv", () => {
   });
 
   it("does not normalize POSIX argv", () => {
-    const argv = ["/usr/bin/node", "/opt/AforaMosh/afora-agent.mjs", "node.exe", "--help"];
+    const argv = ["/usr/bin/node", "/opt/afora/afora.mjs", "node.exe", "--help"];
     expect(normalizeWindowsArgv(argv, { platform: "linux" })).toBe(argv);
   });
 });

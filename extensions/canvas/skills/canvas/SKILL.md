@@ -20,7 +20,7 @@ Use canvas to show HTML on connected Mac/iOS/Android nodes.
 
 ## Config
 
-Active config: `$AFORA_CONFIG_PATH` or `~/.AforaMosh/afora-agent.json`.
+Active config: `$AFORA_CONFIG_PATH` or `~/.afora/afora.json`.
 
 ```json
 {

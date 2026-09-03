@@ -184,7 +184,7 @@ Open the browser Control UI after the Gateway starts.
 
 ## Configuration (optional)
 
-Config lives at `~/.AforaMosh/afora-agent.json`.
+Config lives at `~/.afora/afora.json`.
 
 - If you **do nothing**, Afora uses the bundled Afora agent runtime; DMs share the agent's main session, and each group chat gets its own session.
 - If you want to lock it down, start with `channels.whatsapp.allowFrom` and (for groups) mention rules.

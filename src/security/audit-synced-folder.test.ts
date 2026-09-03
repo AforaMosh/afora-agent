@@ -6,7 +6,7 @@ describe("security audit synced folder findings", () => {
   it("warns when state/config look like a synced folder", () => {
     const findings = collectSyncedFolderFindings({
       stateDir: "/Users/test/Dropbox/.afora",
-      configPath: "/Users/test/Dropbox/.AforaMosh/afora-agent.json",
+      configPath: "/Users/test/Dropbox/.afora/afora.json",
     });
 
     expect(

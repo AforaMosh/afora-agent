@@ -197,8 +197,8 @@ reference, and configuration.
 `afora skills` commands for install and update, or the `clawhub` CLI for
 publish and sync.
 
-| Action                             | Command                                                |
-| ---------------------------------- | ------------------------------------------------------ |
+| Action                             | Command                                             |
+| ---------------------------------- | --------------------------------------------------- |
 | Install a skill into the workspace | `afora skills install @owner/<slug>`                |
 | Install an external skills.sh ref  | `afora skills install skills-sh:owner/repo/slug`    |
 | Install from a Git repository      | `afora skills install git:owner/repo@ref`           |
@@ -209,7 +209,7 @@ publish and sync.
 | Update all shared managed skills   | `afora skills update --all --global`                |
 | Verify a skill's trust envelope    | `afora skills verify @owner/<slug>`                 |
 | Print the generated Skill Card     | `afora skills verify @owner/<slug> --card`          |
-| Publish / sync via ClawHub CLI     | `clawhub sync --all`                                   |
+| Publish / sync via ClawHub CLI     | `clawhub sync --all`                                |
 
 <AccordionGroup>
   <Accordion title="Install details">
@@ -482,7 +482,7 @@ metadata:
 ## Config overrides
 
 Toggle and configure bundled or managed skills under `skills.entries` in
-`~/.AforaMosh/afora-agent.json`:
+`~/.afora/afora.json`:
 
 ```json5
 {

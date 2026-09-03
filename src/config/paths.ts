@@ -331,7 +331,7 @@ export let STATE_DIR = resolveStateDir();
 /**
  * Config file path (JSON or JSON5).
  * Can be overridden via AFORA_CONFIG_PATH.
- * Default: ~/.AforaMosh/afora-agent.json (or $AFORA_STATE_DIR/afora.json)
+ * Default: ~/.afora/afora.json (or $AFORA_STATE_DIR/afora.json)
  */
 export function resolveCanonicalConfigPath(
   env: NodeJS.ProcessEnv = process.env,

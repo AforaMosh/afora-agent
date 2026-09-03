@@ -91,7 +91,7 @@ Onboarding configures a gateway auth token. Print it any time from the
 sandbox:
 
 ```bash
-node -p "require(process.env.HOME + '/.AforaMosh/afora-agent.json').gateway.auth.token"
+node -p "require(process.env.HOME + '/.afora/afora.json').gateway.auth.token"
 ```
 
 `afora config get gateway.auth.token` returns `__AFORA_REDACTED__`

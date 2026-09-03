@@ -138,9 +138,7 @@ describe("scripts/docker/setup.sh", () => {
     expect(extraCompose).toContain("afora-home:");
     const log = await readDockerLog(activeSandbox);
     expect(log).toContain("--build-arg AFORA_IMAGE_APT_PACKAGES=curl wget");
-    expect(log).toContain(
-      "--build-arg AFORA_DOCKER_BUILD_NODE_OPTIONS=--max-old-space-size=8192",
-    );
+    expect(log).toContain("--build-arg AFORA_DOCKER_BUILD_NODE_OPTIONS=--max-old-space-size=8192");
     expect(log).toContain("--build-arg AFORA_DOCKER_BUILD_TSDOWN_MAX_OLD_SPACE_MB=");
     expect(log).toContain("--build-arg AFORA_DOCKER_BUILD_SKIP_DTS=1");
     expect(log).toMatch(
@@ -313,7 +311,7 @@ describe("scripts/docker/setup.sh", () => {
     const result = runDockerSetup(activeSandbox, {
       AFORA_HOME: "/mnt/c/Users/Trevor",
       AFORA_STATE_DIR: "/mnt/c/Users/Trevor/.afora",
-      AFORA_CONFIG_PATH: "/mnt/c/Users/Trevor/.AforaMosh/afora-agent.json",
+      AFORA_CONFIG_PATH: "/mnt/c/Users/Trevor/.afora/afora.json",
       AFORA_SKIP_ONBOARDING: "1",
     });
     expect(result.status).toBe(0);
@@ -789,9 +787,7 @@ describe("scripts/docker/setup.sh", () => {
         `compose compose -f ${join(activeSandbox.rootDir, "docker-compose.yml")} up -d --pull never --no-build --force-recreate afora-gateway`,
       );
       expect(forceRecreateLine).not.toContain("docker-compose.sandbox.yml");
-      expect(log).toContain(
-        `image inspect afora-sandbox:bookworm-slim host=unix://${socketPath}`,
-      );
+      expect(log).toContain(`image inspect afora-sandbox:bookworm-slim host=unix://${socketPath}`);
       expectOfflineComposePolicy(lines);
       await expectMissingPath(join(activeSandbox.rootDir, "docker-compose.sandbox.yml"));
     });
@@ -915,9 +911,7 @@ describe("scripts/docker/setup.sh", () => {
 
   it("keeps docker-compose gateway Bonjour advertising in auto mode by default", async () => {
     const compose = await readFile(join(repoRoot, "docker-compose.yml"), "utf8");
-    expect(
-      compose.match(/AFORA_DISABLE_BONJOUR: \$\{AFORA_DISABLE_BONJOUR:-\}/g),
-    ).toHaveLength(1);
+    expect(compose.match(/AFORA_DISABLE_BONJOUR: \$\{AFORA_DISABLE_BONJOUR:-\}/g)).toHaveLength(1);
   });
 
   it("keeps docker-compose CLI network namespace settings in sync", async () => {
@@ -928,9 +922,7 @@ describe("scripts/docker/setup.sh", () => {
 
   it("keeps docker-compose gateway token env defaults aligned across services", async () => {
     const compose = await readFile(join(repoRoot, "docker-compose.yml"), "utf8");
-    expect(compose.match(/AFORA_GATEWAY_TOKEN: \$\{AFORA_GATEWAY_TOKEN:-\}/g)).toHaveLength(
-      2,
-    );
+    expect(compose.match(/AFORA_GATEWAY_TOKEN: \$\{AFORA_GATEWAY_TOKEN:-\}/g)).toHaveLength(2);
   });
 
   it("keeps docker-compose auth profile secret key source durable outside state", async () => {
@@ -959,13 +951,13 @@ describe("scripts/docker/setup.sh", () => {
     // reach runtime code inside Linux Docker.
     expect(compose.match(/AFORA_HOME: \/home\/node$/gm)).toHaveLength(2);
     expect(compose.match(/AFORA_STATE_DIR: \/home\/node\/\.afora$/gm)).toHaveLength(2);
-    expect(
-      compose.match(/AFORA_CONFIG_PATH: \/home\/node\/\.afora\/afora\.json$/gm),
-    ).toHaveLength(2);
+    expect(compose.match(/AFORA_CONFIG_PATH: \/home\/node\/\.afora\/afora\.json$/gm)).toHaveLength(
+      2,
+    );
     expect(compose.match(/AFORA_CONFIG_DIR: \/home\/node\/\.afora$/gm)).toHaveLength(2);
-    expect(
-      compose.match(/AFORA_WORKSPACE_DIR: \/home\/node\/\.afora\/workspace$/gm),
-    ).toHaveLength(2);
+    expect(compose.match(/AFORA_WORKSPACE_DIR: \/home\/node\/\.afora\/workspace$/gm)).toHaveLength(
+      2,
+    );
   });
 
   it("Dockerfile ARG AFORA_IMAGE_APT_PACKAGES must not have a default value", async () => {

@@ -76,7 +76,7 @@ async function prepareConcurrentHandoffHelper(): Promise<{
     restartDelayMs: 0,
     parentPid: process.pid,
     execPath: "/usr/local/bin/node",
-    argv1: "/opt/AforaMosh/afora-agent.mjs",
+    argv1: "/opt/afora/afora.mjs",
     env: { AFORA_STATE_DIR: tmpDir },
     handoffId: "fixture-handoff",
     meta: { handoffId: "fixture-handoff" },
@@ -173,7 +173,7 @@ describe("managed service update handoff cross-process lease", () => {
       restartDrainTimeoutMs: 300_000,
       parentPid: 12345,
       execPath: "/usr/local/bin/node",
-      argv1: "/opt/AforaMosh/afora-agent.mjs",
+      argv1: "/opt/afora/afora.mjs",
       handoffId: "replacement-handoff",
       meta: { handoffId: "replacement-handoff" },
     });

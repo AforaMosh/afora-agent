@@ -31,7 +31,7 @@ describe("isGatewayArgv", () => {
   it("matches known entrypoints across slash and case variants", () => {
     expect(isGatewayArgv(["NODE", "C:\\Afora\\DIST\\ENTRY.JS", "gateway"])).toBe(true);
     expect(isGatewayArgv(["bun", "/srv/afora/scripts/run-node.mjs", "gateway"])).toBe(true);
-    expect(isGatewayArgv(["node", "/srv/AforaMosh/afora-agent.mjs", "gateway"])).toBe(true);
+    expect(isGatewayArgv(["node", "/srv/afora/afora.mjs", "gateway"])).toBe(true);
     expect(isGatewayArgv(["tsx", "/srv/afora/src/entry.ts", "gateway"])).toBe(true);
     expect(isGatewayArgv(["tsx", "/srv/afora/src/index.ts", "gateway"])).toBe(true);
   });
@@ -61,15 +61,11 @@ describe("isGatewayArgv", () => {
 
 describe("isAforaCommandArgv", () => {
   it("matches doctor across source, built, and installed entrypoints", () => {
-    expect(isAforaCommandArgv(["node", "/srv/AforaMosh/afora-agent.mjs", "doctor"], "doctor")).toBe(
+    expect(isAforaCommandArgv(["node", "/srv/afora/afora.mjs", "doctor"], "doctor")).toBe(true);
+    expect(isAforaCommandArgv(["NODE", "C:\\Afora\\DIST\\ENTRY.JS", "DOCTOR"], "doctor")).toBe(
       true,
     );
-    expect(
-      isAforaCommandArgv(["NODE", "C:\\Afora\\DIST\\ENTRY.JS", "DOCTOR"], "doctor"),
-    ).toBe(true);
-    expect(isAforaCommandArgv(["C:\\bin\\afora.cmd", "doctor", "--fix"], "doctor")).toBe(
-      true,
-    );
+    expect(isAforaCommandArgv(["C:\\bin\\afora.cmd", "doctor", "--fix"], "doctor")).toBe(true);
   });
 
   it("rejects other Afora commands and unrelated doctor processes", () => {
@@ -81,7 +77,7 @@ describe("isAforaCommandArgv", () => {
 describe("isAforaArgv", () => {
   it.each([
     ["agent exec", ["afora", "agent", "exec", "task"]],
-    ["local TUI", ["node", "/srv/AforaMosh/afora-agent.mjs", "tui", "--local"]],
+    ["local TUI", ["node", "/srv/afora/afora.mjs", "tui", "--local"]],
     ["models probe", ["afora", "models", "status", "--probe"]],
     ["bare local TUI", ["afora"]],
   ])("recognizes the %s embedded owner", (_label, argv) => {

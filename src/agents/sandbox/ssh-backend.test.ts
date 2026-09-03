@@ -110,10 +110,7 @@ function createBackendSandboxConfig(params?: { binds?: string[]; target?: string
       ...(params?.binds ? { binds: params.binds } : {}),
     },
     ssh: {
-      ...createSandboxSshConfig(
-        "/remote/afora",
-        params?.target ? { target: params.target } : {},
-      ),
+      ...createSandboxSshConfig("/remote/afora", params?.target ? { target: params.target } : {}),
     },
     browser: createSandboxBrowserConfig({
       image: "img",
@@ -184,8 +181,7 @@ describe("ssh sandbox backend", () => {
       "afora-ssh-shared-8198076c",
     );
     expect(
-      resolveSshRuntimePaths("/remote/afora", `agent:main:workspace:${"a".repeat(32)}`)
-        .runtimeId,
+      resolveSshRuntimePaths("/remote/afora", `agent:main:workspace:${"a".repeat(32)}`).runtimeId,
     ).toMatch(/^afora-ssh-workspace-[a-f0-9]{32}$/);
   });
 
@@ -217,7 +213,7 @@ describe("ssh sandbox backend", () => {
     expect(sessionSettings.target).toBe("peter@example.com:2222");
     expect(sessionSettings.workspaceRoot).toBe("/remote/afora");
     const commandParams = requireSshRunCommandParams();
-    expect(commandParams.remoteCommand).toContain("/remote/AforaMosh/afora-agent-ssh-agent-worker");
+    expect(commandParams.remoteCommand).toContain("/remote/afora/afora-ssh-agent-worker");
   });
 
   it("uses the derived registry agent for both validation and SSH settings", async () => {
@@ -458,7 +454,7 @@ describe("ssh sandbox backend", () => {
       "-T",
       createSession().host,
     ]);
-    expect(execSpec.argv.at(-1)).toContain("/remote/AforaMosh/afora-agent-ssh-agent-worker");
+    expect(execSpec.argv.at(-1)).toContain("/remote/afora/afora-ssh-agent-worker");
     expect(sshMocks.uploadDirectoryToSshTarget).toHaveBeenCalledTimes(3);
     const workspaceUploadParams = requireSshUploadParams(0, "workspace upload params");
     expect(workspaceUploadParams.localDir).toBe("/tmp/workspace");
@@ -518,9 +514,7 @@ describe("ssh sandbox backend", () => {
     expect(sshMocks.runSshSandboxCommand).not.toHaveBeenCalled();
     await backend.runShellCommand({ script: "pwd" });
     expect(sshMocks.uploadDirectoryToSshTarget).not.toHaveBeenCalled();
-    expect(String(requireSshRunCommandParams().remoteCommand)).not.toContain(
-      "afora-sandbox-clear",
-    );
+    expect(String(requireSshRunCommandParams().remoteCommand)).not.toContain("afora-sandbox-clear");
 
     await backend.finalizeExec?.({
       status: "completed",
@@ -538,7 +532,7 @@ describe("ssh sandbox backend", () => {
         code: 0,
       })
       .mockResolvedValueOnce({
-        stdout: Buffer.from("/remote/AforaMosh/afora-agent-ssh-agent-worker-abcd1234/workspace/src\n"),
+        stdout: Buffer.from("/remote/afora/afora-ssh-agent-worker-abcd1234/workspace/src\n"),
         stderr: Buffer.alloc(0),
         code: 0,
       })
@@ -548,7 +542,7 @@ describe("ssh sandbox backend", () => {
         code: 1,
       })
       .mockResolvedValueOnce({
-        stdout: Buffer.from("/remote/AforaMosh/afora-agent-ssh-agent-worker-abcd1234/agent/src\n"),
+        stdout: Buffer.from("/remote/afora/afora-ssh-agent-worker-abcd1234/agent/src\n"),
         stderr: Buffer.alloc(0),
         code: 0,
       });
@@ -564,26 +558,20 @@ describe("ssh sandbox backend", () => {
     });
 
     await expect(
-      backend.validateWorkdir?.(
-        "/remote/AforaMosh/afora-agent-ssh-agent-worker-abcd1234/workspace/src",
-      ),
-    ).resolves.toBe("/remote/AforaMosh/afora-agent-ssh-agent-worker-abcd1234/workspace/src");
+      backend.validateWorkdir?.("/remote/afora/afora-ssh-agent-worker-abcd1234/workspace/src"),
+    ).resolves.toBe("/remote/afora/afora-ssh-agent-worker-abcd1234/workspace/src");
     await expect(
-      backend.validateWorkdir?.(
-        "/remote/AforaMosh/afora-agent-ssh-agent-worker-abcd1234/workspace/missing",
-      ),
+      backend.validateWorkdir?.("/remote/afora/afora-ssh-agent-worker-abcd1234/workspace/missing"),
     ).resolves.toBeNull();
     await expect(
-      backend.validateWorkdir?.("/remote/AforaMosh/afora-agent-ssh-agent-worker-abcd1234/agent/src"),
-    ).resolves.toBe("/remote/AforaMosh/afora-agent-ssh-agent-worker-abcd1234/agent/src");
+      backend.validateWorkdir?.("/remote/afora/afora-ssh-agent-worker-abcd1234/agent/src"),
+    ).resolves.toBe("/remote/afora/afora-ssh-agent-worker-abcd1234/agent/src");
 
     const validationCommand = String(requireSshRunCommandParams(1).remoteCommand);
     expect(validationCommand).toContain("afora-validate-workdir");
     expect(validationCommand).toContain("remote directory must stay under root");
     const agentValidationCommand = String(requireSshRunCommandParams(3).remoteCommand);
-    expect(agentValidationCommand).toContain(
-      "/remote/AforaMosh/afora-agent-ssh-agent-worker-abcd1234/agent",
-    );
+    expect(agentValidationCommand).toContain("/remote/afora/afora-ssh-agent-worker-abcd1234/agent");
   });
 
   it("refreshes materialized skills before validating a skills workdir", async () => {

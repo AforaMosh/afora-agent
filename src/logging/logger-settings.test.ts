@@ -62,8 +62,6 @@ describe("getResolvedLoggerSettings", () => {
     expect(settings.level).toBe("info");
     expect(settings.file).toContain(path.join(".artifacts", "test-logs"));
     expect(path.basename(settings.file)).toMatch(/^afora-vitest-\d+-\d{4}-\d{2}-\d{2}\.log$/);
-    expect(settings.file).not.toBe(
-      `/tmp/AforaMosh/afora-agent-${new Date().toISOString().slice(0, 10)}.log`,
-    );
+    expect(settings.file).not.toBe(`/tmp/afora/afora-${new Date().toISOString().slice(0, 10)}.log`);
   });
 });

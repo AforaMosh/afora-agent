@@ -32,7 +32,7 @@ spec:
               # Seed-if-missing: the PVC copy owns config after first boot so edits made
               # through Afora (onboard, channels add, doctor --fix, Control UI) survive
               # restarts. ConfigMap edits need an explicit reseed (see docs/install/kubernetes.md).
-              [ -f /home/node/.AforaMosh/afora-agent.json ] || cp /config/afora.json /home/node/.AforaMosh/afora-agent.json
+              [ -f /home/node/.afora/afora.json ] || cp /config/afora.json /home/node/.afora/afora.json
               mkdir -p /home/node/.afora/workspace
               [ -f /home/node/.afora/workspace/AGENTS.md ] || cp /config/AGENTS.md /home/node/.afora/workspace/AGENTS.md
           securityContext:

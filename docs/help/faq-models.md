@@ -52,7 +52,7 @@ troubleshooting, see the main [FAQ](/help/faq).
     - direct owner/admin `/model <model>` (current session plus a best-effort configured-default update request)
     - `afora models set ...` (updates just model config)
     - `afora configure --section model` (interactive)
-    - edit `agents.defaults.model` in `~/.AforaMosh/afora-agent.json` directly
+    - edit `agents.defaults.model` in `~/.afora/afora.json` directly
 
     For RPC edits, inspect with `config.schema.lookup` first (normalized
     path, shallow schema docs, child summaries), then prefer `config.patch`

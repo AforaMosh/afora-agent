@@ -71,8 +71,8 @@ Prefer `afora sandbox recreate` over manual backend-specific cleanup. It uses th
 
 ## Common triggers
 
-| Change                                                                                                                                                         | Command                                                             |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Change                                                                                                                                                         | Command                                                          |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | Container sandbox image update (`agents.defaults.sandbox.docker.image`)                                                                                        | `afora sandbox recreate --all`                                   |
 | Sandbox config (`agents.defaults.sandbox.*`)                                                                                                                   | `afora sandbox recreate --all`                                   |
 | SSH target/auth (`agents.defaults.sandbox.ssh.{target,workspaceRoot,identityFile,certificateFile,knownHostsFile,identityData,certificateData,knownHostsData}`) | `afora sandbox recreate --all`                                   |
@@ -95,7 +95,7 @@ Run `afora doctor --fix` to migrate valid legacy entries into SQLite. Invalid le
 
 ## Configuration
 
-Sandbox settings live in `~/.AforaMosh/afora-agent.json` under `agents.defaults.sandbox` (per-agent overrides go in `agents.entries.*.sandbox`):
+Sandbox settings live in `~/.afora/afora.json` under `agents.defaults.sandbox` (per-agent overrides go in `agents.entries.*.sandbox`):
 
 ```jsonc
 {

@@ -87,7 +87,7 @@ Remote `imsg` v0.13.4 has two narrow RPC limits: poll votes must use `pollOption
 5. Snapshot your config:
 
    ```bash
-   cp ~/.AforaMosh/afora-agent.json ~/.AforaMosh/afora-agent.json.bak
+   cp ~/.afora/afora.json ~/.afora/afora.json.bak
    ```
 
 ## Config translation
@@ -113,7 +113,7 @@ iMessage and BlueBubbles share most channel-level behavior keys. What changes is
 | _(N/A)_                                                    | `channels.imessage.remoteAttachmentRoots` | Only used when `remoteHost` is set for SCP fetches.                                                                                                                                                                                                                                                    |
 | `channels.bluebubbles.mediaMaxMb`                          | `channels.imessage.mediaMaxMb`            | Default 16 MB on iMessage (BlueBubbles default was 8 MB). Set explicitly to keep the lower cap.                                                                                                                                                                                                        |
 | `channels.bluebubbles.textChunkLimit`                      | `channels.imessage.textChunkLimit`        | Default 4000 on both.                                                                                                                                                                                                                                                                                  |
-| `channels.bluebubbles.coalesceSameSenderDms`               | _(removed)_                               | Do not migrate this key. `imsg` 0.13.1 and newer coalesces Apple URL-preview split-sends before Afora receives them; `afora doctor --fix` removes a stale iMessage key.                                                                                                                          |
+| `channels.bluebubbles.coalesceSameSenderDms`               | _(removed)_                               | Do not migrate this key. `imsg` 0.13.1 and newer coalesces Apple URL-preview split-sends before Afora receives them; `afora doctor --fix` removes a stale iMessage key.                                                                                                                                |
 | `channels.bluebubbles.enrichGroupParticipantsFromContacts` | _(N/A)_                                   | `imsg` already surfaces sender display names from `chat.db`.                                                                                                                                                                                                                                           |
 | `channels.bluebubbles.actions.*`                           | `channels.imessage.actions.*`             | Same per-action toggles (`reactions`, `edit`, `unsend`, `reply`, `sendWithEffect`, `renameGroup`, `setGroupIcon`, `addParticipant`, `removeParticipant`, `leaveGroup`, `sendAttachment`) plus new `polls`. All default to enabled; private API actions still require the bridge.                       |
 
@@ -193,21 +193,21 @@ This admits the configured senders in any group. Add `groups` entries to scope a
 
 ## Action parity at a glance
 
-| Action                                              | legacy BlueBubbles | iMessage plugin                                                               |
-| --------------------------------------------------- | ------------------ | ----------------------------------------------------------------------------- |
-| Send text / SMS fallback                            | ✅                 | ✅                                                                            |
-| Send media (photo, video, file, voice)              | ✅                 | ✅                                                                            |
+| Action                                              | legacy BlueBubbles | iMessage plugin                                                                   |
+| --------------------------------------------------- | ------------------ | --------------------------------------------------------------------------------- |
+| Send text / SMS fallback                            | ✅                 | ✅                                                                                |
+| Send media (photo, video, file, voice)              | ✅                 | ✅                                                                                |
 | Threaded reply (`reply_to_guid`)                    | ✅                 | ✅ (closes [#51892](https://github.com/AforaMosh/afora-agent/issues/51892))       |
-| Tapback (`react`)                                   | ✅                 | ✅                                                                            |
-| Edit / unsend (macOS 13+ recipients)                | ✅                 | ✅                                                                            |
+| Tapback (`react`)                                   | ✅                 | ✅                                                                                |
+| Edit / unsend (macOS 13+ recipients)                | ✅                 | ✅                                                                                |
 | Send with screen effect                             | ✅                 | ✅ (closes part of [#9394](https://github.com/AforaMosh/afora-agent/issues/9394)) |
-| Rich text bold / italic / underline / strikethrough | ✅                 | ✅ (typed-run formatting via attributedBody)                                  |
-| Native Messages polls (create and vote)             | ❌                 | ✅ (`actions.polls`; recipients need iOS/macOS 26+ for native rendering)      |
-| Rename group / set group icon                       | ✅                 | ✅                                                                            |
-| Add / remove participant, leave group               | ✅                 | ✅                                                                            |
-| Read receipts and typing indicator                  | ✅                 | ✅ (gated on private API probe)                                               |
-| Apple URL-preview split-send coalescing             | ✅                 | ✅ (handled upstream by `imsg` 0.13.1 and newer; no Afora setting)         |
-| Inbound recovery after a restart                    | ✅                 | ✅ (automatic: `since_rowid` replay + GUID dedupe; wider window on local)     |
+| Rich text bold / italic / underline / strikethrough | ✅                 | ✅ (typed-run formatting via attributedBody)                                      |
+| Native Messages polls (create and vote)             | ❌                 | ✅ (`actions.polls`; recipients need iOS/macOS 26+ for native rendering)          |
+| Rename group / set group icon                       | ✅                 | ✅                                                                                |
+| Add / remove participant, leave group               | ✅                 | ✅                                                                                |
+| Read receipts and typing indicator                  | ✅                 | ✅ (gated on private API probe)                                                   |
+| Apple URL-preview split-send coalescing             | ✅                 | ✅ (handled upstream by `imsg` 0.13.1 and newer; no Afora setting)                |
+| Inbound recovery after a restart                    | ✅                 | ✅ (automatic: `since_rowid` replay + GUID dedupe; wider window on local)         |
 
 iMessage recovers messages missed while the gateway was down: on startup it replays from the last dispatched rowid via `imsg watch.subscribe` `since_rowid`, dedupes by GUID, and a stale-backlog age fence suppresses the Push-flush "backlog bomb". This runs over the `imsg` RPC connection, so it works for remote SSH `cliPath` setups too; local setups get a wider recovery window because they can read `chat.db`. See [Inbound recovery after a bridge or gateway restart](/channels/imessage#inbound-recovery-after-a-bridge-or-gateway-restart).
 

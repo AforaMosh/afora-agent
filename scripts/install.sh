@@ -3353,7 +3353,7 @@ has_afora_config() {
         return 1
     fi
 
-    if [[ -f "$effective_home/.AforaMosh/afora-agent.json" ||
+    if [[ -f "$effective_home/.afora/afora.json" ||
         -f "$effective_home/.afora/clawdbot.json" ||
         -f "$effective_home/.clawdbot/afora.json" ||
         -f "$effective_home/.clawdbot/clawdbot.json" ]]; then

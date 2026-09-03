@@ -208,7 +208,7 @@ Patches that touch more than one file start with a changed-files summary card: t
 
 ## Plugin defaults
 
-Set plugin-wide defaults in `~/.AforaMosh/afora-agent.json`:
+Set plugin-wide defaults in `~/.afora/afora.json`:
 
 ```json5
 {

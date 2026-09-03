@@ -311,7 +311,7 @@ start_afora_gateway() {
   stop_afora_gateway_processes
   gateway_launch_log_offset="$(wc -c <"$gateway_log" 2>/dev/null | tr -d '[:space:]' || echo 0)"
   trap '' HUP
-  with_provider_api_key /usr/bin/env AFORA_HOME="$HOME" AFORA_STATE_DIR="$HOME/.afora" AFORA_CONFIG_PATH="$HOME/.AforaMosh/afora-agent.json" "$AFORA_BIN" gateway run --bind loopback --port 18789 --force >>"$gateway_log" 2>&1 </dev/null &
+  with_provider_api_key /usr/bin/env AFORA_HOME="$HOME" AFORA_STATE_DIR="$HOME/.afora" AFORA_CONFIG_PATH="$HOME/.afora/afora.json" "$AFORA_BIN" gateway run --bind loopback --port 18789 --force >>"$gateway_log" 2>&1 </dev/null &
   gateway_pid=$!
   sleep 1
 }
@@ -472,7 +472,7 @@ start_afora_gateway() {
   pkill -f "afora gateway run" >/dev/null 2>&1 || true
   gateway_launch_log_offset="$(wc -c <"$gateway_log" 2>/dev/null | tr -d '[:space:]' || echo 0)"
   with_provider_api_key setsid sh -lc ${shellQuote(
-    "exec env AFORA_HOME=/root AFORA_STATE_DIR=/root/.afora AFORA_CONFIG_PATH=/root/.AforaMosh/afora-agent.json AFORA_DISABLE_BONJOUR=1 AFORA_ALLOW_ROOT=1 afora gateway run --bind loopback --port 18789 --force >>/tmp/afora-parallels-linux-gateway.log 2>&1",
+    "exec env AFORA_HOME=/root AFORA_STATE_DIR=/root/.afora AFORA_CONFIG_PATH=/root/.afora/afora.json AFORA_DISABLE_BONJOUR=1 AFORA_ALLOW_ROOT=1 afora gateway run --bind loopback --port 18789 --force >>/tmp/afora-parallels-linux-gateway.log 2>&1",
   )} >/dev/null 2>&1 < /dev/null &
   gateway_pid=$!
 }

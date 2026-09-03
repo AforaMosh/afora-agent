@@ -24705,7 +24705,7 @@
     },
     {
       "id": "native.apple.0ba973327cd8133b",
-      "source": "Config invalid; fix it in ~/.AforaMosh/afora-agent.json.",
+      "source": "Config invalid; fix it in ~/.afora/afora.json.",
       "surface": "apple",
       "sites": [
         {
@@ -28446,7 +28446,7 @@
     },
     {
       "id": "native.apple.d5067671c36b26f9",
-      "source": "Edit ~/.AforaMosh/afora-agent.json using the schema-driven form.",
+      "source": "Edit ~/.afora/afora.json using the schema-driven form.",
       "surface": "apple",
       "sites": [
         {
@@ -45206,7 +45206,7 @@
     },
     {
       "id": "native.apple.51af380bced29fa0",
-      "source": "Stored in ~/.AforaMosh/afora-agent.json. Prefer AFORA_GATEWAY_PASSWORD for production.",
+      "source": "Stored in ~/.afora/afora.json. Prefer AFORA_GATEWAY_PASSWORD for production.",
       "surface": "apple",
       "sites": [
         {
@@ -48526,7 +48526,7 @@
     },
     {
       "id": "native.apple.83cbe093fe0c6c9f",
-      "source": "Used by the CLI session loader; stored in ~/.AforaMosh/afora-agent.json.",
+      "source": "Used by the CLI session loader; stored in ~/.afora/afora.json.",
       "surface": "apple",
       "sites": [
         {

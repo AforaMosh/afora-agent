@@ -224,7 +224,7 @@ function assertPickerConfig(config: unknown) {
   }
   return {
     channelEnabled: true,
-    configPath: ".AforaMosh/afora-agent.json",
+    configPath: ".afora/afora.json",
     defaultGroupRequiresMention: true,
     pluginEnabled: true,
     selectedChannel: "telegram",

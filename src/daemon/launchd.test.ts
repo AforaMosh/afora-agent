@@ -1184,7 +1184,7 @@ describe("launchctl list detection", () => {
       setLaunchAgentPlist({
         env,
         label,
-        programArguments: ["/usr/local/bin/node", "/opt/AforaMosh/afora-agent.mjs", "update", "--yes"],
+        programArguments: ["/usr/local/bin/node", "/opt/afora/afora.mjs", "update", "--yes"],
       });
 
       await expect(
@@ -1317,21 +1317,16 @@ describe("launchctl list detection", () => {
   );
 
   it.runIf(process.platform === "darwin")("disables explicit legacy updater jobs", async () => {
-    await expect(disableAforaUpdateLaunchdJob("ai.afora.update.2026.5.12")).resolves.toBe(
-      true,
-    );
+    await expect(disableAforaUpdateLaunchdJob("ai.afora.update.2026.5.12")).resolves.toBe(true);
 
     const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
-    expect(state.launchctlCalls).toContainEqual([
-      "disable",
-      `${domain}/ai.afora.update.2026.5.12`,
-    ]);
+    expect(state.launchctlCalls).toContainEqual(["disable", `${domain}/ai.afora.update.2026.5.12`]);
   });
 
   it.runIf(process.platform === "darwin")("disables explicit manual updater jobs", async () => {
-    await expect(
-      disableAforaUpdateLaunchdJob("ai.afora.manual-update.1717168800"),
-    ).resolves.toBe(true);
+    await expect(disableAforaUpdateLaunchdJob("ai.afora.manual-update.1717168800")).resolves.toBe(
+      true,
+    );
 
     const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
     expect(state.launchctlCalls).toContainEqual([
@@ -2298,8 +2293,7 @@ describe("launchd install", () => {
     const wrapperPath =
       "/Users/test/service-env/custom-state/service-env/ai.afora.gateway-env-wrapper.sh";
     const callerEnvFilePath = "/Users/test/.afora/service-env/ai.afora.gateway.env";
-    const callerWrapperPath =
-      "/Users/test/.afora/service-env/ai.afora.gateway-env-wrapper.sh";
+    const callerWrapperPath = "/Users/test/.afora/service-env/ai.afora.gateway-env-wrapper.sh";
     const mangledEnvFilePath =
       "/Users/test/service-env/custom-state/service-env/[ai.afora.gateway.env](http:/ai.afora.gateway.env)";
     const mangledWrapperPath =
@@ -2333,9 +2327,7 @@ describe("launchd install", () => {
     expect(rewritten).not.toContain(mangledWrapperPath);
     const rewrittenEnv = state.files.get(callerEnvFilePath) ?? "";
     expect(rewrittenEnv).toContain("export AFORA_GATEWAY_PORT='18789'");
-    expect(rewrittenEnv).toContain(
-      "export AFORA_STATE_DIR='/Users/test/service-env/custom-state'",
-    );
+    expect(rewrittenEnv).toContain("export AFORA_STATE_DIR='/Users/test/service-env/custom-state'");
   });
 
   it("creates the LaunchAgent TMPDIR before bootstrap", async () => {

@@ -289,7 +289,7 @@ select it to open the owning Approvals page.
 
   </Accordion>
   <Accordion title="Config">
-    - View/edit `~/.AforaMosh/afora-agent.json` (`config.get`, `config.set`).
+    - View/edit `~/.afora/afora.json` (`config.get`, `config.set`).
     - Settings navigation starts with Ask Afora, Profile, Appearance, and Notifications up top; Connections (Connection, Channels, Communications, Talk, Devices); Agents & Tools (Agents, Labs, Models, MCP, Memory, Automation); Privacy & Security (Security, Secrets, Approvals); and System (Infrastructure, Advanced, Debug, Logs, About). Language leads the Appearance page, model defaults live on Models, and Gateway host details live on Connection.
     - Privacy & Security: curated rows for gateway auth, exec policy, browser enablement, tool profile, device auth, and mobile pairing, above the schema-backed `security`/`approvals` sections.
     - Secrets (`/settings/secrets`) manages team-scoped secret and environment entries through `secrets.store.*`. Environment values remain visible, secret values are never returned after saving, Bulk Add accepts quoted multiline dotenv values, and mutation actions are hidden when the connected Gateway does not advertise them.
@@ -573,10 +573,10 @@ See [Notifications](/web/notifications) for the browser and macOS setup steps.
 
 If the page shows **Protocol mismatch** right after an Afora update, first reopen the dashboard with `afora dashboard` and hard-refresh. If it still fails, clear site data for the dashboard origin or test in a private browser window; an old tab or browser service-worker cache can keep running a pre-update Control UI bundle against the newer Gateway.
 
-| Surface                                            | What it does                                                                 |
-| -------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `ui/public/manifest.webmanifest`                   | PWA manifest. Browsers offer "Install app" once it is reachable.             |
-| `ui/public/sw.js`                                  | Service worker that handles `push` events and notification clicks.           |
+| Surface                                         | What it does                                                                 |
+| ----------------------------------------------- | ---------------------------------------------------------------------------- |
+| `ui/public/manifest.webmanifest`                | PWA manifest. Browsers offer "Install app" once it is reachable.             |
+| `ui/public/sw.js`                               | Service worker that handles `push` events and notification clicks.           |
 | `state/afora.sqlite` → `web_push_vapid_keys`    | Auto-generated VAPID keypair used to sign Web Push payloads.                 |
 | `state/afora.sqlite` → `web_push_subscriptions` | Persisted browser subscription endpoints, keys, and registration timestamps. |
 

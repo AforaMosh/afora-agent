@@ -336,7 +336,7 @@ gh workflow run package-acceptance.yml --ref main \
 gh workflow run package-acceptance.yml --ref main \
   -f source=trusted-url \
   -f trusted_source_id=enterprise-artifactory \
-  -f package_url=https://packages.example.internal:8443/artifactory/AforaMosh/afora-agent-VERSION.tgz \
+  -f package_url=https://packages.example.internal:8443/artifactory/afora/afora-VERSION.tgz \
   -f package_sha256=<sha256> \
   -f suite_profile=package
 ```

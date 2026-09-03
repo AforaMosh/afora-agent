@@ -111,7 +111,7 @@ extension ChannelsStore {
         guard force || !self.configDirty else { return }
 
         self.configStatus = snap.valid == false
-            ? "Config invalid; fix it in ~/.AforaMosh/afora-agent.json."
+            ? "Config invalid; fix it in ~/.afora/afora.json."
             : nil
         self.configRoot = snap.config?.mapValues { $0.foundationValue } ?? [:]
         self.configDraft = cloneConfigValue(self.configRoot) as? [String: Any] ?? self.configRoot

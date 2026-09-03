@@ -27,7 +27,7 @@ The model:
   <Step title="One-time setup">
     From the repo root, run `./scripts/podman/setup.sh`.
 
-    This builds `afora:local` in your rootless Podman store (or pulls `AFORA_IMAGE` / `AFORA_PODMAN_IMAGE` if set), creates `~/.AforaMosh/afora-agent.json` with `gateway.mode: "local"` if missing, and creates `~/.afora/.env` with a generated `AFORA_GATEWAY_TOKEN` if missing.
+    This builds `afora:local` in your rootless Podman store (or pulls `AFORA_IMAGE` / `AFORA_PODMAN_IMAGE` if set), creates `~/.afora/afora.json` with `gateway.mode: "local"` if missing, and creates `~/.afora/.env` with a generated `AFORA_GATEWAY_TOKEN` if missing.
 
     Optional build-time env vars:
 
@@ -116,8 +116,8 @@ See [Tailscale](/gateway/tailscale) and [Control UI](/web/control-ui).
 
 If you ran `./scripts/podman/setup.sh --quadlet`, setup installs a Quadlet file at `~/.config/containers/systemd/afora.container`.
 
-| Action | Command                                    |
-| ------ | ------------------------------------------ |
+| Action | Command                                 |
+| ------ | --------------------------------------- |
 | Start  | `systemctl --user start afora.service`  |
 | Stop   | `systemctl --user stop afora.service`   |
 | Status | `systemctl --user status afora.service` |
@@ -149,15 +149,15 @@ The launch script and Quadlet bind-mount host state into the container: `AFORA_C
 
 Useful env vars for the manual launcher (persist these in `~/.afora/.env`; the launcher reads that file before finalizing container/image defaults):
 
-| Var                                        | Default          | Effect                                 |
-| ------------------------------------------ | ---------------- | -------------------------------------- |
-| `AFORA_PODMAN_CONTAINER`                | `afora`       | Container name                         |
+| Var                                  | Default       | Effect                                 |
+| ------------------------------------ | ------------- | -------------------------------------- |
+| `AFORA_PODMAN_CONTAINER`             | `afora`       | Container name                         |
 | `AFORA_PODMAN_IMAGE` / `AFORA_IMAGE` | `afora:local` | Image to run                           |
-| `AFORA_PODMAN_GATEWAY_HOST_PORT`        | `18789`          | Host port mapped to container `18789`  |
-| `AFORA_PODMAN_BRIDGE_HOST_PORT`         | `18790`          | Host port mapped to container `18790`  |
-| `AFORA_PODMAN_PUBLISH_HOST`             | `127.0.0.1`      | Host interface for published ports     |
-| `AFORA_GATEWAY_BIND`                    | `lan`            | Gateway bind mode inside the container |
-| `AFORA_PODMAN_USERNS`                   | `keep-id`        | `keep-id`, `auto`, or `host`           |
+| `AFORA_PODMAN_GATEWAY_HOST_PORT`     | `18789`       | Host port mapped to container `18789`  |
+| `AFORA_PODMAN_BRIDGE_HOST_PORT`      | `18790`       | Host port mapped to container `18790`  |
+| `AFORA_PODMAN_PUBLISH_HOST`          | `127.0.0.1`   | Host interface for published ports     |
+| `AFORA_GATEWAY_BIND`                 | `lan`         | Gateway bind mode inside the container |
+| `AFORA_PODMAN_USERNS`                | `keep-id`     | `keep-id`, `auto`, or `host`           |
 
 If you use a non-default `AFORA_CONFIG_DIR` or `AFORA_WORKSPACE_DIR`, set the same variables for both `./scripts/podman/setup.sh` and later `./scripts/run-afora-podman.sh launch` commands -- the repo-local launcher does not persist custom path overrides across shells.
 
@@ -209,7 +209,7 @@ afora doctor --json
 ## Troubleshooting
 
 - **Permission denied (EACCES) on config or workspace:** The container runs with `--userns=keep-id` and `--user <your uid>:<your gid>` by default. Ensure the host config/workspace paths are owned by your current user.
-- **Gateway start blocked (missing `gateway.mode=local`):** Ensure `~/.AforaMosh/afora-agent.json` exists and sets `gateway.mode="local"`. `scripts/podman/setup.sh` creates this if missing.
+- **Gateway start blocked (missing `gateway.mode=local`):** Ensure `~/.afora/afora.json` exists and sets `gateway.mode="local"`. `scripts/podman/setup.sh` creates this if missing.
 - **Container restarts after an image update:** Run the one-off `afora doctor --fix` command in [Upgrading images](#upgrading-images), then start the gateway again.
 - **Container CLI commands hit the wrong target:** Use `afora --container <name> ...` explicitly, or export `AFORA_CONTAINER=<name>` in your shell.
 - **`afora update` fails with `--container`:** Expected. Rebuild/pull the image, then restart the container or the Quadlet service.

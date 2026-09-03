@@ -32,7 +32,7 @@ function makeEaccesFs(configPath: string) {
 
 describe("config io EACCES handling", () => {
   it("returns a helpful error message when config file is not readable (EACCES)", async () => {
-    const configPath = "/data/.AforaMosh/afora-agent.json";
+    const configPath = "/data/.afora/afora.json";
     const errors: string[] = [];
     const io = createConfigIO({
       configPath,
@@ -59,7 +59,7 @@ describe("config io EACCES handling", () => {
   });
 
   it("includes configPath in the chown hint for the correct remediation command", async () => {
-    const configPath = "/home/myuser/.AforaMosh/afora-agent.json";
+    const configPath = "/home/myuser/.afora/afora.json";
     const io = createConfigIO({
       configPath,
       fs: makeEaccesFs(configPath),
@@ -76,7 +76,7 @@ describe("config io EACCES handling", () => {
   });
 
   it("marks the snapshot with the underlying read error code", async () => {
-    const configPath = "/data/.AforaMosh/afora-agent.json";
+    const configPath = "/data/.afora/afora.json";
     const io = createConfigIO({
       configPath,
       fs: makeEaccesFs(configPath),
@@ -186,17 +186,14 @@ describe("config write guard after unreadable config", () => {
       const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
       try {
         fsNode.chmodSync(configPath, 0o000);
-        await withEnvAsync(
-          { AFORA_CONFIG_PATH: configPath, AFORA_TEST_FAST: "1" },
-          async () => {
-            await expect(
-              writeConfigFile({ channels: { telegram: { enabled: true } } }),
-            ).rejects.toMatchObject({
-              code: "CONFIG_WRITE_REJECTED",
-              reasons: expect.arrayContaining(["unreadable-config-before-write"]),
-            });
-          },
-        );
+        await withEnvAsync({ AFORA_CONFIG_PATH: configPath, AFORA_TEST_FAST: "1" }, async () => {
+          await expect(
+            writeConfigFile({ channels: { telegram: { enabled: true } } }),
+          ).rejects.toMatchObject({
+            code: "CONFIG_WRITE_REJECTED",
+            reasons: expect.arrayContaining(["unreadable-config-before-write"]),
+          });
+        });
       } finally {
         resetConfigRuntimeState();
         errorSpy.mockRestore();
