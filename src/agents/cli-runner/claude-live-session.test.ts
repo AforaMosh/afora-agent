@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createReplyOperation } from "../../auto-reply/reply/reply-run-registry.js";
 import { testing as replyRunTesting } from "../../auto-reply/reply/reply-run-registry.test-support.js";
 import { onAgentEvent, resetAgentEventsForTest } from "../../infra/agent-events.js";
+import { normalizeEnv } from "../../infra/env.js";
 import type { CliBackendConfig } from "../../plugins/cli-backend.types.js";
 import type { getProcessSupervisor } from "../../process/supervisor/index.js";
 import {
@@ -449,64 +450,75 @@ describe("runClaudeTurn", () => {
     expect(supervisorSpawnMock).toHaveBeenCalledTimes(2);
   });
 
-  it("keeps a capture child warm across turns and moves the grant onto its bearer", async () => {
-    vi.stubEnv("OPENCLAW_CLAUDE_LIVE_KEEPALIVE", "1");
-    let turn = 0;
-    mockClaudeLiveRun(supervisorSpawnMock, {
-      onWrite: ({ emit }) => {
-        turn += 1;
-        emit([
-          { type: "system", subtype: "init", session_id: "live-capture" },
-          { type: "result", session_id: "live-capture", result: turn === 1 ? "one" : "two" },
-        ]);
-      },
-    });
-
-    const backend = {
-      resumeArgs: ["-p", "--output-format", "stream-json", "--resume={sessionId}"],
-      liveSession: "claude-stdio" as const,
-    };
-    const adopted: string[] = [];
-    // Each turn mints its own loopback bearer, exactly as prepare() does — and
-    // like prepare(), adopting the token this turn already speaks for is a no-op.
-    const buildContext = (prompt: string, transportToken: string) => {
-      let activeToken = transportToken;
-      return buildPreparedCliRunContext({
-        prompt,
-        backend,
-        mcpDeliveryCapture: true,
-        mcpConfigHash: "mcp-config-stable",
-        preparedEnv: { OPENCLAW_MCP_TOKEN: transportToken },
-        mcpClientGrantCapture: {
-          transportToken,
-          adoptProcessToken: (processToken: string) => {
-            if (activeToken === processToken) {
-              return;
-            }
-            adopted.push(processToken);
-            activeToken = processToken;
-          },
-          revokeProcessToken: () => {},
-          activate: () => {},
-          deactivate: () => {},
+  // The reader takes the canonical AFORA_ name only. A gateway that still exports the
+  // legacy OPENCLAW_ name reaches it through applyAforaEnvAliases, which normalizeEnv()
+  // runs at startup. Both are driven here because if that alias ever stops filling the
+  // canonical name the failure is silent: keep-alive simply reads as off and every turn
+  // goes back to paying a spawn plus a SIGTERM, with nothing to say why.
+  it.each(["AFORA_CLAUDE_LIVE_KEEPALIVE", "OPENCLAW_CLAUDE_LIVE_KEEPALIVE"])(
+    "keeps a capture child warm across turns via %s and moves the grant onto its bearer",
+    async (keepAliveEnvName) => {
+      vi.stubEnv("AFORA_CLAUDE_LIVE_KEEPALIVE", undefined);
+      vi.stubEnv("OPENCLAW_CLAUDE_LIVE_KEEPALIVE", undefined);
+      vi.stubEnv(keepAliveEnvName, "1");
+      normalizeEnv();
+      let turn = 0;
+      mockClaudeLiveRun(supervisorSpawnMock, {
+        onWrite: ({ emit }) => {
+          turn += 1;
+          emit([
+            { type: "system", subtype: "init", session_id: "live-capture" },
+            { type: "result", session_id: "live-capture", result: turn === 1 ? "one" : "two" },
+          ]);
         },
       });
-    };
 
-    const first = await executePreparedCliRun(buildContext("first", "bearer-one"));
-    const second = await executePreparedCliRun(
-      buildContext("second", "bearer-two"),
-      "live-capture",
-    );
+      const backend = {
+        resumeArgs: ["-p", "--output-format", "stream-json", "--resume={sessionId}"],
+        liveSession: "claude-stdio" as const,
+      };
+      const adopted: string[] = [];
+      // Each turn mints its own loopback bearer, exactly as prepare() does — and
+      // like prepare(), adopting the token this turn already speaks for is a no-op.
+      const buildContext = (prompt: string, transportToken: string) => {
+        let activeToken = transportToken;
+        return buildPreparedCliRunContext({
+          prompt,
+          backend,
+          mcpDeliveryCapture: true,
+          mcpConfigHash: "mcp-config-stable",
+          preparedEnv: { AFORA_MCP_TOKEN: transportToken },
+          mcpClientGrantCapture: {
+            transportToken,
+            adoptProcessToken: (processToken: string) => {
+              if (activeToken === processToken) {
+                return;
+              }
+              adopted.push(processToken);
+              activeToken = processToken;
+            },
+            revokeProcessToken: () => {},
+            activate: () => {},
+            deactivate: () => {},
+          },
+        });
+      };
 
-    expect(first.text).toBe("one");
-    expect(second.text).toBe("two");
-    // One child: the rotating bearer no longer changes the process fingerprint,
-    // and the capture turn no longer tears the child down on the way out.
-    expect(supervisorSpawnMock).toHaveBeenCalledOnce();
-    // The second turn spoke for the bearer the warm child was launched with.
-    expect(adopted).toEqual(["bearer-one"]);
-  });
+      const first = await executePreparedCliRun(buildContext("first", "bearer-one"));
+      const second = await executePreparedCliRun(
+        buildContext("second", "bearer-two"),
+        "live-capture",
+      );
+
+      expect(first.text).toBe("one");
+      expect(second.text).toBe("two");
+      // One child: the rotating bearer no longer changes the process fingerprint,
+      // and the capture turn no longer tears the child down on the way out.
+      expect(supervisorSpawnMock).toHaveBeenCalledOnce();
+      // The second turn spoke for the bearer the warm child was launched with.
+      expect(adopted).toEqual(["bearer-one"]);
+    },
+  );
 
   it("restarts the Claude live process after request abort", async () => {
     const abortController = new AbortController();

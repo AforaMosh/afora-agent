@@ -47,7 +47,10 @@ type ProcessSupervisor = ReturnType<
   typeof import("../../process/supervisor/index.js").getProcessSupervisor
 >;
 
-const CLAUDE_LIVE_KEEPALIVE_ENV = "OPENCLAW_CLAUDE_LIVE_KEEPALIVE";
+// Canonical name only. `normalizeEnv()` runs `applyAforaEnvAliases(process.env)` at
+// startup, which fills each missing counterpart in both directions, so a gateway that
+// still exports the legacy OPENCLAW_CLAUDE_LIVE_KEEPALIVE reaches this read unchanged.
+const CLAUDE_LIVE_KEEPALIVE_ENV = "AFORA_CLAUDE_LIVE_KEEPALIVE";
 
 /**
  * Retiring the child after every capture turn costs a spawn plus a SIGTERM on
@@ -186,7 +189,7 @@ function buildClaudeLiveFingerprint(params: {
   // The managed loopback bearer is minted per run, so hashing it makes every
   // turn a different process identity and no child is ever reusable. An
   // operator-supplied token is not managed and still fingerprints normally.
-  const normalizeGrantToken = params.env.OPENCLAW_MCP_TOKEN === managedGrant?.transportToken;
+  const normalizeGrantToken = params.env.AFORA_MCP_TOKEN === managedGrant?.transportToken;
   const normalizeMcpConfigPath = Boolean(params.context.preparedBackend.mcpConfigHash);
   const skillSnapshot = params.context.params.skillsSnapshot;
   const skillsFingerprint = skillSnapshot
@@ -261,10 +264,10 @@ function buildClaudeLiveFingerprint(params: {
     env: Object.keys(params.env)
       .toSorted()
       // The capture key rotates with the attempt, never with the process.
-      .filter((key) => key !== "OPENCLAW_MCP_CLI_CAPTURE_KEY")
+      .filter((key) => key !== "AFORA_MCP_CLI_CAPTURE_KEY")
       .map((key) => [
         key,
-        key === "OPENCLAW_MCP_TOKEN" && normalizeGrantToken
+        key === "AFORA_MCP_TOKEN" && normalizeGrantToken
           ? "<managed-mcp-grant>"
           : params.env[key]
             ? sha256Hex(params.env[key])

@@ -117,9 +117,7 @@ describe("logAcceptedEnvOption", () => {
     await vi.waitFor(() => {
       expect(loggerMocks.info).toHaveBeenCalledTimes(1);
     });
-    expect(loggerMocks.info).toHaveBeenCalledWith(
-      "env: AFORA_TEST_ENV=<redacted> (test option)",
-    );
+    expect(loggerMocks.info).toHaveBeenCalledWith("env: AFORA_TEST_ENV=<redacted> (test option)");
   });
 
   it("skips blank values and test-mode logging", () => {
@@ -183,6 +181,30 @@ describe("normalizeEnv", () => {
     withEnv({ ZAI_API_KEY: "", Z_AI_API_KEY: "zai-legacy" }, () => {
       normalizeEnv();
       expect(process.env.ZAI_API_KEY).toBe("zai-legacy");
+    });
+  });
+
+  // The code reads AFORA_* only, which is only safe because this alias runs first.
+  // A live gateway still exports the legacy names, so if this stops filling them the
+  // failure is silent: the flag simply reads as unset and the feature quietly stops.
+  it("fills a missing AFORA_* name from its legacy counterpart", () => {
+    withEnv({ AFORA_CLAUDE_LIVE_KEEPALIVE: undefined, OPENCLAW_CLAUDE_LIVE_KEEPALIVE: "1" }, () => {
+      normalizeEnv();
+      expect(process.env.AFORA_CLAUDE_LIVE_KEEPALIVE).toBe("1");
+    });
+  });
+
+  it("fills a missing legacy name from its AFORA_* counterpart", () => {
+    withEnv({ AFORA_CLAUDE_LIVE_KEEPALIVE: "1", OPENCLAW_CLAUDE_LIVE_KEEPALIVE: undefined }, () => {
+      normalizeEnv();
+      expect(process.env.OPENCLAW_CLAUDE_LIVE_KEEPALIVE).toBe("1");
+    });
+  });
+
+  it("lets an explicit AFORA_* value win over its legacy counterpart", () => {
+    withEnv({ AFORA_CLAUDE_LIVE_KEEPALIVE: "0", OPENCLAW_CLAUDE_LIVE_KEEPALIVE: "1" }, () => {
+      normalizeEnv();
+      expect(process.env.AFORA_CLAUDE_LIVE_KEEPALIVE).toBe("0");
     });
   });
 });

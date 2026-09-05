@@ -1,41 +1,35 @@
 #!/usr/bin/env node
-import { spawnSync } from "node:child_process";
 // afora: builds the tarball the friday-host image installs into /opt/fork.
 //
-// The branding commit renamed the package to `afora-agent` with a single `afora`
-// bin, but package-openclaw-for-docker only accepts an `openclaw-<version>.tgz`
-// filename and the host image resolves /opt/fork/bin/openclaw. So the docker
-// artifact keeps the upstream package name and ships both bin names. This shims
-// package.json for the pack and always puts it back, so the recipe lives here
-// instead of in somebody's shell history.
-import { readFileSync, writeFileSync } from "node:fs";
+// On the pre-debrand line this file existed to UNDO the branding: it rewrote
+// package.json back to name "openclaw" with both bin names, because the packer only
+// accepted an openclaw-<version>.tgz filename and the image resolved
+// /opt/fork/bin/openclaw. None of that is true here. The manifest is already
+// afora-agent with an `afora` bin and an `openclaw` bin kept as an alias (D3), and
+// scripts/package-afora-for-docker.mjs already produces and validates an
+// afora-<version>.tgz. So there is nothing left to shim, and rewriting the manifest
+// would now make the packer REJECT its own output.
+//
+// The file stays because host/fork/MANIFEST.json names it as the build recipe and
+// because the recipe belongs in the repo rather than in somebody's shell history. It
+// is now a passthrough that pins the one flag the docker pack needs: the fork ships
+// ahead of upstream's changelog.
+//
+// The host half is NOT done: the image must still resolve /opt/fork/bin/afora, and
+// MANIFEST.json's md5 pin must move with it. That is DB-PACK, and it is atomic across
+// both repos.
+import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
-const manifestPath = join(root, "package.json");
-const original = readFileSync(manifestPath, "utf8");
-const manifest = JSON.parse(original);
-const shimmed = {
-  ...manifest,
-  name: "openclaw",
-  bin: { openclaw: "openclaw.mjs", afora: "openclaw.mjs" },
-};
-
-writeFileSync(manifestPath, `${JSON.stringify(shimmed, null, 2)}\n`, "utf8");
-try {
-  const result = spawnSync(
-    process.execPath,
-    [
-      join(root, "scripts", "package-openclaw-for-docker.mjs"),
-      "--allow-unreleased-changelog",
-      ...process.argv.slice(2),
-    ],
-    { cwd: root, stdio: "inherit" },
-  );
-  if (result.status !== 0) {
-    process.exit(result.status ?? 1);
-  }
-} finally {
-  writeFileSync(manifestPath, original, "utf8");
-}
+const result = spawnSync(
+  process.execPath,
+  [
+    join(root, "scripts", "package-afora-for-docker.mjs"),
+    "--allow-unreleased-changelog",
+    ...process.argv.slice(2),
+  ],
+  { cwd: root, stdio: "inherit" },
+);
+process.exit(result.status ?? 1);
