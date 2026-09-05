@@ -124,9 +124,10 @@ export function resolveSubagentSpawnRequest(
   const hookRunner = getSubagentSpawnDeps().getGlobalHookRunner();
   const cfg = loadSubagentConfig();
 
-  // When agent omits runTimeoutSeconds, use the config default.
-  // Falls back to 0 (no timeout) if config key is also unset,
-  // preserving current behavior for existing deployments.
+  // Always 0. The resolver ignores both the per-call value and the config default,
+  // because a wall-clock cap kills a worker and discards its work; see
+  // resolveConfiguredSubagentRunTimeoutSeconds. The call stays so the one refusal
+  // and its warning live in one place for every spawn route.
   const runTimeoutSeconds = resolveConfiguredSubagentRunTimeoutSeconds({
     cfg,
     runTimeoutSeconds: params.runTimeoutSeconds,

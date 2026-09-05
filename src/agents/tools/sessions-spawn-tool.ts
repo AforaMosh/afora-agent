@@ -156,7 +156,7 @@ function createSessionsSpawnToolSchema(params: {
       Type.Integer({
         minimum: 0,
         description:
-          "Per-run timeout in seconds; overrides the configured subagent default. Zero disables the timeout.",
+          "Deprecated and ignored: subagent runs are never capped by a wall clock, because a timeout kills the worker and discards its work. Do not pass this. To stop a worker early, kill the run.",
       }),
     ),
     thinking: Type.Optional(

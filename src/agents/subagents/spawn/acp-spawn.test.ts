@@ -1177,12 +1177,12 @@ describe("spawnAcpDirect", () => {
     });
   });
 
-  it("applies ACP spawn run timeout to runtime options and dispatch", async () => {
+  it("drops an explicit ACP spawn run timeout", async () => {
     const result = await spawnAcpDirect(
       {
         task: "Investigate flaky tests",
         agentId: "codex",
-        runTimeoutSeconds: 45,
+        runTimeoutSeconds: 1_800,
       },
       {
         agentSessionKey: "agent:main:main",
@@ -1190,17 +1190,14 @@ describe("spawnAcpDirect", () => {
     );
 
     expectAcceptedSpawn(result);
-    expect(result).toHaveProperty("runTimeoutSeconds", 45);
-    const initInput = expectInitializeSessionFields({
-      agent: "codex",
-      runtimeOptions: {
-        timeoutSeconds: 45,
-      },
-    });
+    // Same shape as the explicit-zero case below: an ACP worker is uncapped too.
+    expect(result).toHaveProperty("runTimeoutSeconds", 0);
+    const initInput = expectInitializeSessionFields({ agent: "codex" });
+    expect(initInput.runtimeOptions).toBeUndefined();
     expect(initInput.sessionKey).toMatch(/^agent:codex:acp:/);
     const agentCall = findAgentGatewayCall();
     expect(agentCall?.params?.lane).toBe("subagent");
-    expect(agentCall?.params?.timeout).toBe(45);
+    expect(agentCall?.params?.timeout).toBe(0);
   });
 
   it("passes zero timeout through to the gateway no-timeout path", async () => {
@@ -1223,7 +1220,7 @@ describe("spawnAcpDirect", () => {
     expect(agentCall?.params?.timeout).toBe(0);
   });
 
-  it("uses configured subagent timeout for ACP spawns", async () => {
+  it("drops a configured subagent timeout for ACP spawns", async () => {
     replaceSpawnConfig({
       ...createDefaultSpawnConfig(),
       agents: {
@@ -1231,7 +1228,7 @@ describe("spawnAcpDirect", () => {
           subagents: {
             allowAgents: ["codex"],
             maxSpawnDepth: 2,
-            runTimeoutSeconds: 120,
+            runTimeoutSeconds: 1_200,
           },
         },
       },
@@ -1248,18 +1245,16 @@ describe("spawnAcpDirect", () => {
     );
 
     expectAcceptedSpawn(result);
-    expect(result).toHaveProperty("runTimeoutSeconds", 120);
-    expectInitializeSessionFields({
-      agent: "codex",
-      runtimeOptions: {
-        timeoutSeconds: 120,
-      },
-    });
+    // A configured default is refused the same as a per-call one, so a tenant
+    // seeded with a timeout cannot reintroduce capped runs.
+    expect(result).toHaveProperty("runTimeoutSeconds", 0);
+    const initInput = expectInitializeSessionFields({ agent: "codex" });
+    expect(initInput.runtimeOptions).toBeUndefined();
     const agentCall = findAgentGatewayCall();
-    expect(agentCall?.params?.timeout).toBe(120);
+    expect(agentCall?.params?.timeout).toBe(0);
   });
 
-  it("caps configured ACP runtime timeout without shortening spawn tracking", async () => {
+  it("drops a very long configured ACP timeout instead of capping it", async () => {
     replaceSpawnConfig({
       ...createDefaultSpawnConfig(),
       agents: {
@@ -1284,15 +1279,13 @@ describe("spawnAcpDirect", () => {
     );
 
     expectAcceptedSpawn(result);
-    expect(result).toHaveProperty("runTimeoutSeconds", 172_800);
-    expectInitializeSessionFields({
-      agent: "codex",
-      runtimeOptions: {
-        timeoutSeconds: 86_400,
-      },
-    });
+    // The old behaviour clamped this to the 86_400s ACP runtime ceiling and kept
+    // 172_800s for tracking. There is no ceiling to reach now: the value is gone.
+    expect(result).toHaveProperty("runTimeoutSeconds", 0);
+    const initInput = expectInitializeSessionFields({ agent: "codex" });
+    expect(initInput.runtimeOptions).toBeUndefined();
     const agentCall = findAgentGatewayCall();
-    expect(agentCall?.params?.timeout).toBe(172_800);
+    expect(agentCall?.params?.timeout).toBe(0);
   });
 
   it("rejects Afora config agent ids when runtime=acp targets a native agent", async () => {

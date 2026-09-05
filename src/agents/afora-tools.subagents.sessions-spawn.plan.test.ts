@@ -197,23 +197,59 @@ describe("subagent spawn model + thinking plan", () => {
     expect(plan.initialSessionPatch.modelOverrideFallbackOriginModel).toBe(row.expectedOriginModel);
   });
 
+  // Every row resolves to 0. A run timeout kills a worker and discards its work,
+  // so there is no cap left to negotiate: not a per-call one, not a configured
+  // default, and not a floor. 0 is what the stack already reads as "no deadline".
   it.each([
     {
-      name: "uses config default timeout when agent omits runTimeoutSeconds",
-      configured: 120,
+      name: "drops a configured default timeout",
+      configured: 1_200,
       explicit: undefined,
-      expected: 120,
+      expected: 0,
     },
     {
-      name: "explicit runTimeoutSeconds wins over config default",
+      name: "drops an explicit runTimeoutSeconds",
       configured: 120,
-      explicit: 2,
-      expected: 2,
+      explicit: 1_800,
+      expected: 0,
     },
     {
-      name: "falls back to 0 when config omits the timeout",
+      name: "stays uncapped when neither is set",
       configured: undefined,
       explicit: undefined,
+      expected: 0,
+    },
+    {
+      // The case that was killing workers: a cap too short to outlive bootstrap.
+      // 1.1.3 raised it to a 900s floor; a floor is still a cap, so now it is dropped.
+      name: "drops a short explicit timeout instead of flooring it",
+      configured: undefined,
+      explicit: 240,
+      expected: 0,
+    },
+    {
+      name: "drops a short configured timeout instead of flooring it",
+      configured: 120,
+      explicit: undefined,
+      expected: 0,
+    },
+    {
+      name: "leaves an explicit zero uncapped",
+      configured: undefined,
+      explicit: 0,
+      expected: 0,
+    },
+    {
+      // A new account seeded with a timeout cannot reintroduce the failure.
+      name: "drops a configured timeout a new tenant was seeded with",
+      configured: 900,
+      explicit: undefined,
+      expected: 0,
+    },
+    {
+      name: "drops a long explicit timeout too, not just a short one",
+      configured: undefined,
+      explicit: 86_400,
       expected: 0,
     },
   ])("$name", ({ configured, explicit, expected }) => {

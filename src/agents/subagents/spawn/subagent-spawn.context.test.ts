@@ -1,5 +1,4 @@
 import { expectDefined } from "@afora/normalization-core";
-import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   loadSubagentSpawnModuleForTest,
@@ -264,7 +263,13 @@ describe("sessions_spawn context modes", () => {
     expect(agentRequest.params?.bootstrapContextMode).toBe("lightweight");
   });
 
-  it("caps oversized context engine subagent TTLs at the timer-safe ceiling", async () => {
+  // This used to assert the timer-safe ceiling, because an oversized runTimeoutSeconds
+  // was clamped rather than refused. Subagent runs are no longer capped by a wall clock
+  // at all (see resolveConfiguredSubagentRunTimeoutSeconds), so every request resolves to
+  // 0 and finiteSecondsToTimerSafeMilliseconds returns undefined for it. There is no
+  // ceiling left to reach; what has to hold now is that no TTL is handed to the context
+  // engine, because a TTL here is the same wall clock under another name.
+  it("hands the context engine no TTL, because a subagent run is never capped", async () => {
     const store: SessionStore = {
       main: { sessionId: "parent-session-id", updatedAt: 1 },
     };
@@ -282,7 +287,7 @@ describe("sessions_spawn context modes", () => {
 
     expect(result.status).toBe("accepted");
     const prepareContext = requireFirstMockArg(prepareSubagentSpawn);
-    expect(prepareContext.ttlMs).toBe(MAX_TIMER_TIMEOUT_MS);
+    expect(prepareContext.ttlMs).toBeUndefined();
   });
 
   it("falls back to isolated context when requested fork is too large", async () => {
