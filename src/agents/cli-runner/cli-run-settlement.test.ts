@@ -1,10 +1,18 @@
-/** Tests bounded transcript-flush probing before reusing CLI bindings. */
+/**
+ * Tests bounded transcript-flush probing before reusing CLI bindings, and the
+ * stop reason a delivered CLI failure settles on.
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { buildAgentRunTerminalOutcomeFromLifecycleEvent } from "../agent-run-terminal-outcome.js";
 import {
   isCliBindingFlushed,
   restoreCliRunnerTestDeps,
   setCliRunnerTestDeps,
 } from "../cli-runner.js";
+import { buildCliDeliveredFailure } from "./cli-run-settlement.js";
+import { attachCliMessagingDeliveryEvidence } from "./delivery-evidence.js";
+import { createCliTimeoutError } from "./no-output-timeout-policy.js";
+import type { PreparedCliRunContext } from "./types.js";
 
 describe("isCliBindingFlushed", () => {
   const workspaceDir = "/tmp/afora-workspace";
@@ -129,5 +137,125 @@ describe("isCliBindingFlushed", () => {
       }),
     ).toBe(true);
     expect(probe).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("buildCliDeliveredFailure", () => {
+  const timeoutContext = {
+    mode: "no-output" as const,
+    timeoutSeconds: 600,
+    observedActivity: true,
+    activeToolCount: 1,
+    backgroundTaskCount: 0,
+  };
+
+  function buildContext(): PreparedCliRunContext {
+    return {
+      params: {
+        provider: "claude-cli",
+        model: "sonnet-4.6",
+        runId: "run-timeout",
+        agentId: "main",
+        sessionKey: "agent:main:subagent:child",
+        prompt: "run the long job",
+      },
+      started: Date.now() - 1_000,
+      modelId: "sonnet-4.6",
+      systemPromptReport: undefined,
+    } as unknown as PreparedCliRunContext;
+  }
+
+  function settle(error: unknown, evidence: Record<string, unknown>) {
+    return buildCliDeliveredFailure({
+      error,
+      evidence: evidence as never,
+      context: buildContext(),
+      preparedContextAgentMeta: {},
+      sessionBindingDisabled: false,
+    });
+  }
+
+  const progressEvidence = {
+    didSendViaMessagingTool: true,
+    messagingToolSentTexts: ["Ran 12 lanes; 3 still failing."],
+    messagingToolSourceReplyPayloads: [
+      { text: "Ran 12 lanes; 3 still failing.", sourceReplyFinal: false },
+    ],
+  };
+
+  it("settles a no-output watchdog kill that already delivered progress as a timeout", () => {
+    const error = createCliTimeoutError(
+      { provider: "claude-cli", model: "sonnet-4.6" },
+      timeoutContext,
+      "cli_no_output_timeout",
+    );
+
+    const result = settle(error, progressEvidence);
+
+    expect(result.meta.stopReason).toBe("timeout");
+    expect(result.meta.completion?.stopReason).toBe("timeout");
+    // The brief keeps finishReason out of scope: it only feeds the trace block.
+    expect(result.meta.completion?.finishReason).toBe("error");
+    expect(result.payloads?.map((payload) => payload.text)).toContain(
+      "Ran 12 lanes; 3 still failing.",
+    );
+  });
+
+  it("settles a watchdog kill with no delivered progress as a timeout too", () => {
+    const error = createCliTimeoutError(
+      { provider: "claude-cli", model: "sonnet-4.6" },
+      { ...timeoutContext, mode: "overall" },
+    );
+
+    const result = settle(error, { didSendViaMessagingTool: true });
+
+    expect(result.meta.stopReason).toBe("timeout");
+    expect(result.meta.completion?.stopReason).toBe("timeout");
+    expect(result.meta.completion?.finishReason).toBe("error");
+  });
+
+  it("sees the timeout through the non-extensible delivery-evidence wrapper", () => {
+    const frozen = Object.freeze(
+      createCliTimeoutError({ provider: "claude-cli", model: "sonnet-4.6" }, timeoutContext),
+    );
+    const wrapped = attachCliMessagingDeliveryEvidence(frozen, {
+      didSendViaMessagingTool: true,
+      messagingToolSentTexts: ["Ran 12 lanes; 3 still failing."],
+    });
+    // The wrapper is a plain Error, so only a cause walk can still classify it.
+    expect(wrapped).not.toBe(frozen);
+
+    expect(settle(wrapped, progressEvidence).meta.stopReason).toBe("timeout");
+  });
+
+  it("still settles a genuine crash as an error", () => {
+    const result = settle(new Error("boom"), progressEvidence);
+
+    expect(result.meta.stopReason).toBe("error");
+    expect(result.meta.completion?.stopReason).toBe("error");
+    expect(result.meta.completion?.finishReason).toBe("error");
+  });
+
+  it("carries the settled stop reason into the terminal status agent.wait reports", () => {
+    const timedOut = settle(
+      createCliTimeoutError({ provider: "claude-cli", model: "sonnet-4.6" }, timeoutContext),
+      progressEvidence,
+    );
+    const crashed = settle(new Error("boom"), progressEvidence);
+
+    // agent-job feeds meta.stopReason into this builder to answer agent.wait,
+    // and the subagent announce path only preserves partial output on "timeout".
+    expect(
+      buildAgentRunTerminalOutcomeFromLifecycleEvent({
+        phase: "end",
+        data: { stopReason: timedOut.meta.stopReason },
+      }).status,
+    ).toBe("timeout");
+    expect(
+      buildAgentRunTerminalOutcomeFromLifecycleEvent({
+        phase: "end",
+        data: { stopReason: crashed.meta.stopReason },
+      }).status,
+    ).toBe("error");
   });
 });

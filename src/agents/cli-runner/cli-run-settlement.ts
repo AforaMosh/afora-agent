@@ -20,7 +20,7 @@ import { resolveExplicitFinalSourceReplyDeliveryEvidence } from "../embedded-age
 import { resolveAuthProfileFailureReason } from "../embedded-agent-runner/run/auth-profile-failure-policy.js";
 import { buildEmbeddedRunPayloads } from "../embedded-agent-runner/run/payloads.js";
 import { mergeAttemptToolMediaPayloads } from "../embedded-agent-runner/run/tool-media-payloads.js";
-import { coerceToFailoverError, isFailoverError } from "../failover-error.js";
+import { coerceToFailoverError, findCliTimeoutError, isFailoverError } from "../failover-error.js";
 import { CliAuthProfilePreparationError } from "./auth-profile-preparation-error.js";
 import { hashCliReseedPrompt } from "./reseed-envelope.js";
 import type { ClaudeCliRunDiagnosticLifecycle } from "./run-diagnostics.js";
@@ -353,6 +353,11 @@ export function buildCliDeliveredFailure(params: {
   } = params;
   const runParams = context.params;
   const message = formatErrorMessage(error);
+  // A watchdog kill is a timeout, not a crash, and only that classification keeps
+  // partial output alive downstream (announce renders it, the OpenAI bridge returns
+  // it instead of 500). findCliTimeoutError walks cause/error/errors so the frozen
+  // delivery-evidence wrapper cannot hide the timeout.
+  const stopReason = findCliTimeoutError(error) ? "timeout" : "error";
   const { payloads } = resolveCliSourceReplyMirror({
     evidence,
     runParams,
@@ -369,7 +374,7 @@ export function buildCliDeliveredFailure(params: {
     meta: {
       durationMs: Date.now() - context.started,
       systemPromptReport: context.systemPromptReport,
-      stopReason: "error",
+      stopReason,
       executionTrace: {
         winnerProvider: runParams.provider,
         winnerModel: context.modelId,
@@ -389,8 +394,9 @@ export function buildCliDeliveredFailure(params: {
         ...(context.effectiveAuthProfileId ? { authMode: "auth-profile" } : {}),
       },
       completion: {
+        // finishReason feeds only the human-readable trace block; out of scope here.
         finishReason: "error",
-        stopReason: "error",
+        stopReason,
         refusal: false,
       },
       agentMeta: {

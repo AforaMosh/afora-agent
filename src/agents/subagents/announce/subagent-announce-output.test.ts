@@ -340,6 +340,48 @@ describe("readSubagentOutput", () => {
     ).resolves.toBe("1 tool call(s) made without visible output.");
   });
 
+  it("renders a timed-out child's partial progress instead of reporting no output", async () => {
+    // The settled stop reason reaches announce as the agent.wait status, so a
+    // watchdog kill must arrive here as "timeout", not "error". Drive the
+    // outcome through the producer so a regression at the settlement site,
+    // which is what issue #34 was, cannot pass this test.
+    const messages = [
+      {
+        role: "assistant",
+        content: [
+          { type: "toolCall", id: "call-read", name: "read", arguments: {} },
+          { type: "toolCall", id: "call-exec", name: "exec", arguments: {} },
+        ],
+      },
+    ];
+    const row = {
+      childSessionKey: "agent:main:subagent:child",
+      task: "run the long job",
+      createdAt: 1,
+    };
+
+    installOutputDeps({ messages });
+    const timedOut = applySubagentWaitOutcome({ wait: { status: "timeout" }, outcome: undefined });
+    expect(timedOut.outcome).toMatchObject({ status: "timeout" });
+    const preserved = await readSubagentOutput("agent:main:subagent:child", timedOut.outcome);
+    expect(preserved).toBe("2 tool call(s) made without visible output.");
+    const preservedFindings = buildChildCompletionFindings([
+      { ...row, completion: { resultText: preserved }, execution: { outcome: timedOut.outcome } },
+    ]);
+    expect(preservedFindings).toContain("2 tool call(s) made without visible output.");
+    expect(preservedFindings).not.toContain("(no output)");
+
+    installOutputDeps({ messages });
+    const failed = applySubagentWaitOutcome({ wait: { status: "error" }, outcome: undefined });
+    expect(failed.outcome).toMatchObject({ status: "error" });
+    const discarded = await readSubagentOutput("agent:main:subagent:child", failed.outcome);
+    expect(discarded).toBeUndefined();
+    const discardedFindings = buildChildCompletionFindings([
+      { ...row, completion: { resultText: discarded }, execution: { outcome: failed.outcome } },
+    ]);
+    expect(discardedFindings).toContain("(no output)");
+  });
+
   it("does not fall back to tool output when the last assistant turn is empty", async () => {
     installOutputDeps({
       messages: [

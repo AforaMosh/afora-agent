@@ -2029,6 +2029,29 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     expect(res.status).toBe(500);
   });
 
+  it("returns the partial reply of a timed-out run instead of failing the turn", async () => {
+    // A watchdog kill settles as "timeout", so this non-streaming turn must
+    // deliver the text the run had already produced. Before the CLI settlement
+    // fix it arrived as "error" and the console transport got a 500 with the
+    // payloads dropped.
+    agentCommandMock.mockClear();
+    agentCommandMock.mockResolvedValueOnce({
+      payloads: [{ text: "Ran 12 lanes; 3 still failing." }],
+      meta: { stopReason: "timeout" },
+    } as never);
+
+    const res = await postChatCompletions(enabledPort, {
+      model: "afora",
+      messages: [{ role: "user", content: "hi" }],
+    });
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as {
+      choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
+    };
+    expect(json.choices?.[0]?.message?.content).toContain("Ran 12 lanes; 3 still failing.");
+    expect(json.choices?.[0]?.finish_reason).toBe("stop");
+  });
+
   it("forwards response_format into streamParams", async () => {
     const port = enabledPort;
     const mockAgentOnce = (payloads: Array<{ text: string }>) => {
