@@ -22,9 +22,17 @@ export function applyAforaEnvAliases(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv 
         env[canonical] = value;
         if (!warnedLegacy && env.AFORA_DEBUG_ENV_ALIAS !== "0") {
           warnedLegacy = true;
-          if (env.DEBUG || env.AFORA_LOG_LEVEL === "debug" || env.OPENCLAW_LOG_LEVEL === "debug") {
+          // Read the legacy key directly rather than through its canonical twin: this runs
+          // mid-loop, and the alias for AFORA_LOG_LEVEL is only filled once the loop reaches
+          // that key, which may be after this one. An operator who set only the legacy spelling
+          // would otherwise never see the warning that tells them it is the legacy spelling.
+          const legacyDebug = env.OPENCLAW_LOG_LEVEL === "debug"; // afora-compat: OPENCLAW_LOG_LEVEL
+          if (env.DEBUG || env.AFORA_LOG_LEVEL === "debug" || legacyDebug) {
             console.error(
-              "afora: legacy OPENCLAW_* environment variables detected; they still work but AFORA_* is canonical.",
+              // The prefix is named on purpose. This is the one line that tells an operator
+              // which of their variables is the legacy one; a message that withheld the name
+              // would be advice nobody can act on, which is the failure D8 records.
+              "afora: legacy OPENCLAW_* environment variables detected; they still work but AFORA_* is canonical.", // afora-compat: OPENCLAW_* prefix
             );
           }
         }
