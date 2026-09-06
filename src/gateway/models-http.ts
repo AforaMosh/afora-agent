@@ -14,6 +14,7 @@ import {
   AFORA_DEFAULT_MODEL_ID,
   AFORA_MODEL_ID,
   authorizeGatewayHttpRequestOrReply,
+  canonicalizeAgentModelId,
   isAforaAgentModelId,
   resolveAgentIdFromModel,
   type AuthorizedGatewayHttpRequest,
@@ -134,14 +135,20 @@ export async function handleOpenAiModelsHttpRequest(
     return true;
   }
 
-  const normalizedModelId = decodedId.trim().toLowerCase();
+  // A caller that predates the rename may still ask by the pre-rename spelling, and the
+  // resolver answers it. This route is the one that speaks the id back: both the 404 message
+  // and the 200 body carry it. Canonicalize once, here, so the catalogue only ever answers in
+  // Afora's name whichever spelling was asked for.
+  const modelId = canonicalizeAgentModelId(decodedId);
+
+  const normalizedModelId = modelId.toLowerCase();
   if (normalizedModelId !== AFORA_MODEL_ID && normalizedModelId !== AFORA_DEFAULT_MODEL_ID) {
     const cfg = getRuntimeConfig();
-    const agentId = resolveAgentIdFromModel(decodedId, cfg);
+    const agentId = resolveAgentIdFromModel(modelId, cfg);
     if (!agentId || !listAgentIds(cfg).includes(agentId)) {
       sendJson(res, 404, {
         error: {
-          message: `Model '${decodedId}' not found.`,
+          message: `Model '${modelId}' not found.`,
           type: "invalid_request_error",
         },
       });
@@ -149,16 +156,16 @@ export async function handleOpenAiModelsHttpRequest(
     }
   }
 
-  if (!ids.includes(decodedId)) {
+  if (!ids.includes(modelId)) {
     sendJson(res, 404, {
       error: {
-        message: `Model '${decodedId}' not found.`,
+        message: `Model '${modelId}' not found.`,
         type: "invalid_request_error",
       },
     });
     return true;
   }
 
-  sendJson(res, 200, toOpenAiModel(decodedId));
+  sendJson(res, 200, toOpenAiModel(modelId));
   return true;
 }

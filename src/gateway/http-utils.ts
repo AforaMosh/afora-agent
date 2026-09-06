@@ -60,11 +60,27 @@ export const AFORA_DEFAULT_MODEL_ID = "afora/default";
  * predates the rename sends `openclaw/default` on every turn, and an operator pins a side
  * agent with `openclaw/<agentId>`; rejecting those is not a degraded reply but no reply at
  * all, since an unresolvable model id throws before an agent is ever chosen. Both spellings
- * therefore land on the same agent. Neither is ever displayed or advertised: the model
- * catalogue lists the Afora ids and every error string names them.
+ * therefore land on the same agent. Accepting a spelling is not the same as speaking it:
+ * the catalogue lists only the Afora ids, every fixed error string names them, and any route
+ * that echoes the caller's own id back must run it through canonicalizeAgentModelId first.
  */
 const LEGACY_MODEL_ID = "openclaw"; // afora-compat: wire alias for AFORA_MODEL_ID
+// afora-compat: wire alias for AFORA_DEFAULT_MODEL_ID, composed so the two cannot drift apart.
 const LEGACY_DEFAULT_MODEL_ID = `${LEGACY_MODEL_ID}/default`;
+// afora-compat: leading LEGACY_MODEL_ID, anchored so `openclaw-gateway` and `openclawish/x`
+// are left alone exactly as the resolver leaves them.
+const LEGACY_MODEL_ID_PREFIX = /^openclaw(?=$|[:/])/i;
+
+/**
+ * Rewrite a legacy-spelled model id onto its Afora spelling, leaving every other id untouched.
+ * Both spellings resolve to the same agent, so a caller may send either; but a response body
+ * that interpolates the caller's id would otherwise put the pre-rename name in front of a
+ * tenant, in text no scanner can see because it is assembled at runtime. The separator is
+ * preserved, so a legacy id behaves exactly as its Afora twin does and nothing else moves.
+ */
+export function canonicalizeAgentModelId(model: string): string {
+  return model.trim().replace(LEGACY_MODEL_ID_PREFIX, AFORA_MODEL_ID);
+}
 
 class UnknownGatewayAgentError extends Error {
   constructor(readonly agentId: string) {

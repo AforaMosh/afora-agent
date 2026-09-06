@@ -107,6 +107,45 @@ describe("OpenAI-compatible models HTTP API (e2e)", () => {
     });
   });
 
+  // The resolver accepts the pre-rename spelling because the model id is a wire contract
+  // (see LEGACY_MODEL_ID in http-utils.ts). This route is the one that speaks an id back to
+  // the caller, in both its 200 body and its 404 message, so accepting that spelling must not
+  // become repeating it: the catalogue answers in Afora's name whichever name was asked for.
+  describe("legacy openclaw model ids (afora-compat)", () => {
+    it("answers /v1/models/{legacy} with the Afora id and never the pre-rename one", async () => {
+      const res = await getModels("/v1/models/openclaw%2Fdefault");
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as { id?: string; object?: string };
+      expect(json.object).toBe("model");
+      expect(json.id).toBe("afora/default");
+      expect(JSON.stringify(json)).not.toMatch(/openclaw/iu);
+    });
+
+    it("answers the bare legacy alias with the bare Afora id", async () => {
+      const res = await getModels("/v1/models/openclaw");
+      expect(res.status).toBe(200);
+      await expect(res.json()).resolves.toMatchObject({ id: "afora" });
+    });
+
+    it("reports an unknown legacy-spelled agent under its Afora spelling", async () => {
+      const res = await getModels("/v1/models/openclaw%2Fnonexistent");
+      expect(res.status).toBe(404);
+      await expect(res.json()).resolves.toEqual({
+        error: {
+          message: "Model 'afora/nonexistent' not found.",
+          type: "invalid_request_error",
+        },
+      });
+    });
+
+    it("still rejects an id that only looks legacy, without echoing it", async () => {
+      const res = await getModels("/v1/models/openclaw-gateway");
+      expect(res.status).toBe(400);
+      const body = await res.text();
+      expect(body).not.toMatch(/openclaw/iu);
+    });
+  });
+
   it("keeps generic aliases available for ownerless explicit fleets", async () => {
     try {
       testState.agentsConfig = {
