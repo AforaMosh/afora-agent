@@ -6,6 +6,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveHttpSenderIsOwner } from "./http-auth-utils.js";
 import {
   authorizeOpenAiCompatibleHttpModelOverride,
+  isAforaAgentModelId,
+  resolveAgentIdFromModel,
   resolveOpenAiCompatibleHttpOperatorScopes,
   resolveOpenAiCompatibleHttpSenderIsOwner,
   resolveGatewayRequestContext,
@@ -171,6 +173,67 @@ describe("resolveGatewayRequestContext", () => {
         defaultMessageChannel: "webchat",
       }),
     ).toThrow("Invalid `model`. Use `afora` or `afora/<agentId>`.");
+  });
+});
+
+// The gateway's model id is a wire contract with callers this repo does not deploy in
+// lockstep. The rename to `afora` changed it, so a host still sending the pre-rename
+// spelling was answered with "Invalid `model`" on EVERY turn. Both spellings must route to
+// the same agent for as long as an un-migrated caller can exist.
+describe("legacy openclaw model ids (afora-compat)", () => {
+  const context = (model: string) =>
+    resolveGatewayRequestContext({
+      req: createReq(),
+      model,
+      sessionPrefix: "openai",
+      defaultMessageChannel: "webchat",
+    });
+
+  it("routes the host's openclaw/default to the same agent as afora/default", () => {
+    const current = context("afora/default").agentId;
+    expect(current).toBeTruthy();
+    expect(context("openclaw/default").agentId).toBe(current);
+    expect(context("openclaw").agentId).toBe(current);
+    expect(context("OpenClaw/Default").agentId).toBe(current);
+  });
+
+  it("routes openclaw/<agentId> to the same agent as afora/<agentId>", () => {
+    const current = context("afora/main").agentId;
+    expect(current).toBe("main");
+    expect(context("openclaw/main").agentId).toBe(current);
+    expect(context("openclaw:main").agentId).toBe(current);
+  });
+
+  it("still resolves every afora spelling", () => {
+    const current = context("afora").agentId;
+    expect(current).toBeTruthy();
+    expect(context("afora/default").agentId).toBe(current);
+    expect(context("agent:main").agentId).toBe("main");
+  });
+
+  it("does not widen the model grammar beyond the two spellings", () => {
+    for (const model of ["gpt-4o", "openclaw-gateway", "openclawish/default", "claw/default"]) {
+      expect(() => context(model)).toThrow("Invalid `model`. Use `afora` or `afora/<agentId>`.");
+    }
+  });
+
+  it("reports an unknown legacy-spelled agent as unknown, not as invalid syntax", () => {
+    expect(() => context("openclaw/missing-agent")).toThrow(/Unknown agent/u);
+  });
+
+  it("accepts both spellings through the leaf predicates", () => {
+    for (const model of [
+      "afora",
+      "afora/default",
+      "openclaw",
+      "openclaw/default",
+      "openclaw:main",
+    ]) {
+      expect(isAforaAgentModelId(model)).toBe(true);
+      expect(resolveAgentIdFromModel(model)).toBeTruthy();
+    }
+    expect(isAforaAgentModelId("gpt-4o")).toBe(false);
+    expect(resolveAgentIdFromModel("gpt-4o")).toBeUndefined();
   });
 });
 

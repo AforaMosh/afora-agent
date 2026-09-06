@@ -54,6 +54,17 @@ export {
 export const AFORA_MODEL_ID = "afora";
 /** Default OpenAI-compatible model alias that targets the default Afora agent. */
 export const AFORA_DEFAULT_MODEL_ID = "afora/default";
+/**
+ * Pre-rename spelling of the two aliases above, kept resolvable because the model id is a wire
+ * contract with callers that are not deployed in lockstep with this gateway. A console that
+ * predates the rename sends `openclaw/default` on every turn, and an operator pins a side
+ * agent with `openclaw/<agentId>`; rejecting those is not a degraded reply but no reply at
+ * all, since an unresolvable model id throws before an agent is ever chosen. Both spellings
+ * therefore land on the same agent. Neither is ever displayed or advertised: the model
+ * catalogue lists the Afora ids and every error string names them.
+ */
+const LEGACY_MODEL_ID = "openclaw"; // afora-compat: wire alias for AFORA_MODEL_ID
+const LEGACY_DEFAULT_MODEL_ID = `${LEGACY_MODEL_ID}/default`;
 
 class UnknownGatewayAgentError extends Error {
   constructor(readonly agentId: string) {
@@ -124,12 +135,18 @@ export function resolveAgentIdFromModel(
     return undefined;
   }
   const lowered = normalizeLowercaseStringOrEmpty(raw);
-  if (lowered === AFORA_MODEL_ID || lowered === AFORA_DEFAULT_MODEL_ID) {
+  if (
+    lowered === AFORA_MODEL_ID ||
+    lowered === AFORA_DEFAULT_MODEL_ID ||
+    lowered === LEGACY_MODEL_ID ||
+    lowered === LEGACY_DEFAULT_MODEL_ID
+  ) {
     return resolveDefaultAgentId(cfg);
   }
 
   const m =
     raw.match(/^afora[:/](?<agentId>[a-z0-9][a-z0-9_-]{0,63})$/i) ??
+    raw.match(/^openclaw[:/](?<agentId>[a-z0-9][a-z0-9_-]{0,63})$/i) ?? // afora-compat: LEGACY_MODEL_ID
     raw.match(/^agent:(?<agentId>[a-z0-9][a-z0-9_-]{0,63})$/i);
   const agentId = m?.groups?.agentId;
   if (!agentId) {
@@ -145,11 +162,17 @@ export function isAforaAgentModelId(model: string | undefined): boolean {
     return false;
   }
   const lowered = normalizeLowercaseStringOrEmpty(raw);
-  if (lowered === AFORA_MODEL_ID || lowered === AFORA_DEFAULT_MODEL_ID) {
+  if (
+    lowered === AFORA_MODEL_ID ||
+    lowered === AFORA_DEFAULT_MODEL_ID ||
+    lowered === LEGACY_MODEL_ID ||
+    lowered === LEGACY_DEFAULT_MODEL_ID
+  ) {
     return true;
   }
   return (
     /^afora[:/][a-z0-9][a-z0-9_-]{0,63}$/i.test(raw) ||
+    /^openclaw[:/][a-z0-9][a-z0-9_-]{0,63}$/i.test(raw) || // afora-compat: LEGACY_MODEL_ID
     /^agent:[a-z0-9][a-z0-9_-]{0,63}$/i.test(raw)
   );
 }
