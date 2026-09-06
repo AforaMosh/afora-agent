@@ -81,7 +81,9 @@ export {
 } from "./afora-agent-db-registry.js";
 export { ensureAforaAgentDatabaseSchema } from "./afora-agent-db-schema.js";
 export {
+  AGENT_SQLITE_BASENAMES,
   isIncognitoAforaAgentSqlitePath,
+  resolveAgentSqlitePathInDir,
   resolveIncognitoAforaAgentSqlitePath,
   resolveAforaAgentSqlitePath,
 } from "./afora-agent-db.paths.js";
@@ -126,9 +128,7 @@ const terminalOpenLatch = createSqliteTerminalOpenLatch({
 });
 
 /** Reconfirm an advisory worker failure on the live owner connection. */
-export function confirmAforaAgentDatabaseIntegrity(
-  pathname: string,
-): SqliteIntegrityConfirmation {
+export function confirmAforaAgentDatabaseIntegrity(pathname: string): SqliteIntegrityConfirmation {
   const resolvedPath = path.resolve(pathname);
   closeAforaAgentDatabaseByPath(resolvedPath);
   // Closing breaks process ownership of the pathname. A replacement must
@@ -215,9 +215,7 @@ export function inspectAforaAgentDatabaseOwner(
 }
 
 /** Open or return a cached per-agent database after schema and owner validation. */
-export function openAforaAgentDatabase(
-  options: AforaAgentDatabaseOptions,
-): AforaAgentDatabase {
+export function openAforaAgentDatabase(options: AforaAgentDatabaseOptions): AforaAgentDatabase {
   const agentId = normalizeAgentId(options.agentId);
   const databaseOptions = { ...options, agentId };
   const pathname = resolveAforaAgentSqlitePath(databaseOptions);
@@ -279,11 +277,7 @@ export function openAforaAgentDatabase(
   try {
     const quarantine = readAforaDatabaseQuarantine(pathname, { env: databaseOptions.env });
     if (quarantine) {
-      persistedFailure = createAforaDatabaseVerificationError(
-        "agent",
-        pathname,
-        quarantine.reason,
-      );
+      persistedFailure = createAforaDatabaseVerificationError("agent", pathname, quarantine.reason);
     }
   } catch {
     // A broken quarantine store must not brick every agent open.

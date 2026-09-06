@@ -7,10 +7,7 @@ import {
 import { runSqliteDeferredTransactionSync } from "../../infra/sqlite-transaction.js";
 import { extractAssistantPhaseText } from "../../shared/chat-message-content.js";
 import { isTranscriptOnlyAforaAssistantModel } from "../../shared/transcript-only-afora-assistant.js";
-import {
-  openAforaAgentDatabase,
-  type AforaAgentDatabase,
-} from "../../state/afora-agent-db.js";
+import { openAforaAgentDatabase, type AforaAgentDatabase } from "../../state/afora-agent-db.js";
 import type {
   LatestTranscriptAssistantMessage,
   LatestTranscriptAssistantText,
@@ -28,6 +25,7 @@ import {
   toDatabaseOptions,
 } from "./session-accessor.sqlite-scope.js";
 import { resolveSqliteSessionTranscriptReadFence } from "./session-transcript-read-fence.js";
+import { parseTranscriptEventJson } from "./transcript-event-parse.js";
 
 export type SqliteTranscriptSnapshotRow = {
   eventJson: string;
@@ -96,7 +94,7 @@ export function loadTranscriptHeaderSync(scope: SessionTranscriptReadScope): unk
       .orderBy("seq", "asc")
       .limit(1),
   );
-  return row ? (JSON.parse(row.event_json) as TranscriptEvent) : undefined;
+  return row ? parseTranscriptEventJson(row.event_json) : undefined;
 }
 
 /** Loads a bounded newest tail in storage order for hot-path accounting. */
@@ -121,7 +119,7 @@ export function loadTranscriptTailEventsSync(
       .limit(limit),
   )
     .rows.toReversed()
-    .map((row) => JSON.parse(row.event_json) as TranscriptEvent);
+    .map((row) => parseTranscriptEventJson(row.event_json));
 }
 
 /** Loads additive transcript rows after one durable sequence checkpoint. */
@@ -142,7 +140,7 @@ export function loadTranscriptEventRowsAfterSeqSync(
     query = query.where("seq", "<=", throughSeq);
   }
   return executeSqliteQuerySync(database.db, query.orderBy("seq", "asc")).rows.map((row) => ({
-    event: JSON.parse(row.event_json) as TranscriptEvent,
+    event: parseTranscriptEventJson(row.event_json),
     seq: coerceSqliteNumber(row.seq),
   }));
 }
@@ -165,7 +163,7 @@ export function readTranscriptEventAtSeqSync(
   );
   return row
     ? {
-        event: JSON.parse(row.event_json) as TranscriptEvent,
+        event: parseTranscriptEventJson(row.event_json),
         seq: coerceSqliteNumber(row.seq),
       }
     : undefined;
@@ -186,7 +184,7 @@ export function loadTranscriptEventsFromDatabase(
       .$if(beforeEventSeq !== undefined, (query) => query.where("seq", "<", beforeEventSeq!))
       .orderBy("seq", "asc"),
   ).rows;
-  return rows.map((row) => JSON.parse(row.event_json) as TranscriptEvent);
+  return rows.map((row) => parseTranscriptEventJson(row.event_json));
 }
 
 export function readTranscriptSnapshot(
@@ -195,7 +193,7 @@ export function readTranscriptSnapshot(
 ): { events: TranscriptEvent[]; rows: SqliteTranscriptSnapshotRow[] } {
   const rows = readTranscriptEventRows(database, sessionId);
   return {
-    events: rows.map((row) => JSON.parse(row.eventJson) as TranscriptEvent),
+    events: rows.map((row) => parseTranscriptEventJson(row.eventJson)),
     rows,
   };
 }
@@ -413,7 +411,7 @@ export function findTranscriptEventInDatabase(
   ).rows;
   for (const row of rows) {
     try {
-      const event = JSON.parse(row.event_json) as TranscriptEvent;
+      const event = parseTranscriptEventJson(row.event_json);
       if (match(event)) {
         return { event };
       }

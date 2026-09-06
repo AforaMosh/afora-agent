@@ -2,10 +2,7 @@ import { sql } from "kysely";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../../infra/kysely-sync.js";
 import { runSqliteDeferredTransactionSync } from "../../infra/sqlite-transaction.js";
 import type { DB as AforaAgentKyselyDatabase } from "../../state/afora-agent-db.generated.js";
-import {
-  openAforaAgentDatabase,
-  type AforaAgentDatabase,
-} from "../../state/afora-agent-db.js";
+import { openAforaAgentDatabase, type AforaAgentDatabase } from "../../state/afora-agent-db.js";
 import type {
   SessionTranscriptReadScope,
   TranscriptEvent,
@@ -15,6 +12,7 @@ import {
   toDatabaseOptions,
   type SessionSqliteTargetResolutionCache,
 } from "./session-accessor.sqlite-scope.js";
+import { parseTranscriptEventJson } from "./transcript-event-parse.js";
 
 type TitleProbeDatabase = Pick<
   AforaAgentKyselyDatabase,
@@ -155,7 +153,7 @@ function readTitleProbeChunk(
     };
     if (row.event_json !== null && row.message_position !== null) {
       const event = {
-        event: JSON.parse(row.event_json) as TranscriptEvent,
+        event: parseTranscriptEventJson(row.event_json),
         seq: row.message_position + 1,
       };
       if (row.message_position < SESSION_TITLE_PROBE_MESSAGES) {

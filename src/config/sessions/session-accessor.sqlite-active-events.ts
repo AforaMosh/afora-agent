@@ -34,6 +34,7 @@ import {
   resolveSqliteSessionTranscriptReadFence,
   SessionTranscriptReadFenceError,
 } from "./session-transcript-read-fence.js";
+import { parseTranscriptEventJson } from "./transcript-event-parse.js";
 export { waitForSessionTranscriptProjection } from "./session-transcript-reconcile.js";
 export {
   isSessionTranscriptProjectionUnavailableError,
@@ -74,7 +75,7 @@ function parseMessageEventRow(row: {
     throw new Error("Active transcript message row is missing its message position");
   }
   return {
-    event: JSON.parse(row.event_json) as TranscriptEvent,
+    event: parseTranscriptEventJson(row.event_json),
     // Gateway cursors use the visible-message ordinal, matching the JSONL index.
     // Raw event seq includes headers/control rows and would make pages overlap.
     seq: row.message_position + 1,
@@ -145,7 +146,7 @@ export function readRecentSessionTranscriptActiveEvents(
         .limit(limit),
     )
       .rows.toReversed()
-      .map((row) => JSON.parse(row.event_json) as TranscriptEvent);
+      .map((row) => parseTranscriptEventJson(row.event_json));
   });
 }
 
@@ -322,7 +323,7 @@ export function readSessionTranscriptVisibleMessageDeltaCore(
               throw new Error("Active transcript message row is missing its message position");
             }
             return {
-              event: JSON.parse(row.event_json) as TranscriptEvent,
+              event: parseTranscriptEventJson(row.event_json),
               eventSeq: row.event_seq,
               parentId: row.parent_id,
               seq: row.message_position + 1,

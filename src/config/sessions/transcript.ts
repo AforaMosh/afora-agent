@@ -45,6 +45,7 @@ import {
   applyBeforeMessageWriteToAssistant,
   type AssistantBeforeMessageWrite,
 } from "./transcript-assistant-message.js";
+import { adoptLegacyMessageMetadata } from "./transcript-event-parse.js";
 import { resolveMirroredTranscriptText } from "./transcript-mirror.js";
 import {
   isWithinTranscriptWindow,
@@ -198,10 +199,14 @@ function parseRecentConversationText(
   line: string,
   options: ReadRecentSessionConversationTextOptions = {},
 ): SessionRecentConversationText | undefined {
-  const parsed = JSON.parse(line) as {
-    id?: unknown;
-    message?: unknown;
-  };
+  // readPreferredUpstreamUserText below reads the message metadata sidecar, so this line has
+  // to arrive under the current key even when the tenant wrote it before the rename.
+  const parsed = adoptLegacyMessageMetadata(
+    JSON.parse(line) as {
+      id?: unknown;
+      message?: unknown;
+    },
+  );
   const message = parsed.message as
     | {
         role?: unknown;

@@ -10,6 +10,7 @@ import {
 import { getSessionKysely } from "../config/sessions/session-accessor.sqlite-scope.js";
 import { replaceSqliteTranscriptEventsInTransaction } from "../config/sessions/session-accessor.sqlite-transcript-store.js";
 import { resolveAllAgentSessionStoreTargetsSync } from "../config/sessions/targets.js";
+import { parseTranscriptEventJson } from "../config/sessions/transcript-event-parse.js";
 import { createSessionTranscriptHeader } from "../config/sessions/transcript-header.js";
 import {
   isCanonicalSessionTranscriptEntry,
@@ -19,10 +20,7 @@ import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { executeSqliteQueryTakeFirstSync } from "../infra/kysely-sync.js";
 import { parseAgentSessionKey } from "../routing/session-key.js";
-import {
-  runAforaAgentWriteTransaction,
-  type AforaAgentDatabase,
-} from "../state/afora-agent-db.js";
+import { runAforaAgentWriteTransaction, type AforaAgentDatabase } from "../state/afora-agent-db.js";
 import {
   readOnlySqliteTranscriptSessionIds,
   readOnlySqliteTranscriptStorageSnapshot,
@@ -54,7 +52,7 @@ function parseCanonicalHeaderlessEvents(
   for (const row of rows) {
     let event: TranscriptEvent;
     try {
-      event = JSON.parse(row.eventJson) as TranscriptEvent;
+      event = parseTranscriptEventJson(row.eventJson);
     } catch {
       return undefined;
     }

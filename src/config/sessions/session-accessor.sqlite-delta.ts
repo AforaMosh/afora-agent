@@ -9,7 +9,6 @@ import type {
   SessionTranscriptRawDeltaLimits,
   SessionTranscriptRawDeltaResult,
   SessionTranscriptReadScope,
-  TranscriptEvent,
 } from "./session-accessor.sqlite-contract.js";
 import { coerceSqliteNumber } from "./session-accessor.sqlite-normalize.js";
 import {
@@ -21,6 +20,7 @@ import {
   resolveSqliteSessionTranscriptReadFence,
   SessionTranscriptReadFenceError,
 } from "./session-transcript-read-fence.js";
+import { parseTranscriptEventJson } from "./transcript-event-parse.js";
 
 const RAW_TRANSCRIPT_CURSOR_VERSION = 1;
 const DEFAULT_RAW_TRANSCRIPT_MAX_EVENTS = 1_000;
@@ -238,7 +238,7 @@ function readRawDeltaInTransaction(
             .where("seq", "<=", lastSeq)
             .orderBy("seq", "asc"),
         ).rows.map((row) => ({
-          event: JSON.parse(row.event_json) as TranscriptEvent,
+          event: parseTranscriptEventJson(row.event_json),
           seq: coerceSqliteNumber(row.seq),
         }));
   const nextCursor = encodeRawTranscriptCursor({ ...cursor, lastSeq });

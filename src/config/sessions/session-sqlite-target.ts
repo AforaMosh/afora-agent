@@ -7,6 +7,7 @@ import {
   listAforaRegisteredAgentDatabases,
 } from "../../state/afora-agent-db-registry.js";
 import {
+  AGENT_SQLITE_BASENAMES,
   inspectAforaAgentDatabaseOwner,
   isIncognitoAforaAgentSqlitePath,
 } from "../../state/afora-agent-db.js";
@@ -345,7 +346,9 @@ export function listDurableSqliteTargetPathsForSessionStorePath(storePath: strin
 
 /** Extracts the agent id from the canonical per-agent SQLite database path. */
 function resolveAgentIdFromSqliteDatabasePath(databasePath: string): string | undefined {
-  if (path.basename(databasePath) !== "afora-agent.sqlite") {
+  // afora-compat: an unmigrated tenant's agent database is still openclaw-agent.sqlite,
+  // and a config that names it must still resolve to the agent that owns it.
+  if (!AGENT_SQLITE_BASENAMES.has(path.basename(databasePath))) {
     return undefined;
   }
   const agentDbDir = path.dirname(databasePath);

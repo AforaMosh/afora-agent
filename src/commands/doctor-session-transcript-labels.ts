@@ -8,6 +8,7 @@ import {
 } from "../config/sessions/session-accessor.sqlite-read.js";
 import { updateSqliteTranscriptEventJsonInTransaction } from "../config/sessions/session-accessor.sqlite-transcript-store.js";
 import { resolveAllAgentSessionStoreTargetsSync } from "../config/sessions/targets.js";
+import { parseTranscriptEventJson } from "../config/sessions/transcript-event-parse.js";
 import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { runAforaAgentWriteTransaction } from "../state/afora-agent-db.js";
@@ -229,7 +230,7 @@ export async function noteSessionTranscriptLabelHealth(params: {
         for (const row of readResult.rows) {
           let event: TranscriptEvent;
           try {
-            event = JSON.parse(row.eventJson) as TranscriptEvent;
+            event = parseTranscriptEventJson(row.eventJson);
           } catch {
             // Skip rows with unparseable eventJson (corrupted data).
             continue;

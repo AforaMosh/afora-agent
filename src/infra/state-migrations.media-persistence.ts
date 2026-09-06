@@ -13,6 +13,7 @@ import { isSessionArchiveArtifactName } from "../config/sessions/artifacts.js";
 import type { TranscriptEvent } from "../config/sessions/session-accessor.sqlite-contract.js";
 import { resolveSqliteTranscriptArchiveDirectory } from "../config/sessions/session-accessor.sqlite-scope.js";
 import { rewriteSqliteTranscriptEventRowsInTransaction } from "../config/sessions/session-accessor.sqlite-transcript-store.js";
+import { parseTranscriptEventJson } from "../config/sessions/transcript-event-parse.js";
 import {
   canonicalizePersistedUserMessageMedia,
   hasMeaningfulRetiredMediaCarrier,
@@ -25,10 +26,7 @@ import {
   migrateAforaAgentDatabaseToMediaPrerequisiteSchema,
 } from "../state/afora-agent-db-schema.js";
 import type { DB as AforaAgentKyselyDatabase } from "../state/afora-agent-db.generated.js";
-import {
-  AFORA_AGENT_SCHEMA_VERSION,
-  type AforaAgentDatabase,
-} from "../state/afora-agent-db.js";
+import { AFORA_AGENT_SCHEMA_VERSION, type AforaAgentDatabase } from "../state/afora-agent-db.js";
 import { AFORA_AGENT_SCHEMA_SQL } from "../state/afora-agent-schema.js";
 import { AFORA_SQLITE_BUSY_TIMEOUT_MS } from "../state/afora-state-db.js";
 import { VERSION } from "../version.js";
@@ -100,7 +98,7 @@ function transformTranscriptEvent(event: TranscriptEvent): {
 
 function parseTranscriptEvent(raw: string, owner: string): TranscriptEvent {
   try {
-    return JSON.parse(raw) as TranscriptEvent;
+    return parseTranscriptEventJson(raw);
   } catch (error) {
     throw new Error(`${owner} contains invalid transcript JSON: ${String(error)}`, {
       cause: error,

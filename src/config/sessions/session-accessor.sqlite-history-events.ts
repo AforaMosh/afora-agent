@@ -23,6 +23,7 @@ import {
   resolveVisibleMessagePositions,
 } from "./session-accessor.sqlite-reset-window.js";
 import { MAX_VISIBLE_MESSAGE_MAX_MESSAGES } from "./session-accessor.sqlite-visible-cursor.js";
+import { parseTranscriptEventJson } from "./transcript-event-parse.js";
 
 type VisibleHistoryBoundary = {
   displayPosition: number;
@@ -154,7 +155,7 @@ function readBoundaryEvents(
         .where("identity.event_type", "in", ["compaction", "reset"])
         .where("identity.seq", ">=", firstSeq)
         .where("identity.seq", "<=", lastSeq),
-    ).rows.map((row) => [row.seq, JSON.parse(row.event_json) as TranscriptEvent]),
+    ).rows.map((row) => [row.seq, parseTranscriptEventJson(row.event_json)]),
   );
 }
 
@@ -294,7 +295,7 @@ function readVisibleMessageById(
       : visible.kept.indexOf(row.message_position);
   return logicalPosition < 0
     ? undefined
-    : { event: JSON.parse(row.event_json) as TranscriptEvent, seq: logicalPosition + 1 };
+    : { event: parseTranscriptEventJson(row.event_json), seq: logicalPosition + 1 };
 }
 
 function resolveHistoryEventById(

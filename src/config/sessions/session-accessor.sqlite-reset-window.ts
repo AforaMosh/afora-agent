@@ -13,6 +13,7 @@ import type { AforaAgentDatabase } from "../../state/afora-agent-db.js";
 import type { TranscriptEvent } from "./session-accessor.sqlite-contract.js";
 import { resolveSqliteTranscriptReadScope } from "./session-accessor.sqlite-scope.js";
 import type { SessionTranscriptProjectionState } from "./session-transcript-index.js";
+import { parseTranscriptEventJson } from "./transcript-event-parse.js";
 
 type ResetWindowDatabase = Pick<
   AforaAgentKyselyDatabase,
@@ -71,7 +72,7 @@ function parseMessageEventRow(row: {
     throw new Error("Active transcript message row is missing its message position");
   }
   return {
-    event: JSON.parse(row.event_json) as TranscriptEvent,
+    event: parseTranscriptEventJson(row.event_json),
     seq: row.message_position + 1,
   };
 }

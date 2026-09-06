@@ -5,8 +5,9 @@
 import path from "node:path";
 import { isRecord } from "@afora/normalization-core/record-coerce";
 import { resolveStateDir } from "../../config/paths.js";
-import { readConfigMachineState } from "../../state/config-machine-state.js";
+import { resolveAgentSqlitePathInDir } from "../../state/afora-agent-db.paths.js";
 import { resolveAforaStateSqlitePath } from "../../state/afora-state-db.paths.js";
+import { readConfigMachineState } from "../../state/config-machine-state.js";
 import { resolveUserPath } from "../../utils.js";
 import { resolveSharedMainAuthAgentDir } from "./shared-main-dir.js";
 
@@ -81,13 +82,15 @@ export function resolveSharedAuthStorePath(env: NodeJS.ProcessEnv = process.env)
   if (resolveSharedAuthStoreOwnership(env).location === "state-db") {
     return resolveAforaStateSqlitePath(env);
   }
-  return path.join(resolveSharedMainAuthAgentDir(env), "afora-agent.sqlite");
+  // afora-compat: the shared-main auth store is the same physical file as agent
+  // main's database, so it has to resolve the legacy basename identically.
+  return resolveAgentSqlitePathInDir(resolveSharedMainAuthAgentDir(env));
 }
 
 /** Resolve the user-facing auth profile database path. */
 export function resolveAuthStorePathForDisplay(agentDir?: string): string {
   const pathname = agentDir
-    ? path.join(resolveUserPath(agentDir), "afora-agent.sqlite")
+    ? resolveAgentSqlitePathInDir(resolveUserPath(agentDir))
     : resolveSharedAuthStorePath();
   return pathname.startsWith("~") ? pathname : resolveUserPath(pathname);
 }
@@ -95,7 +98,7 @@ export function resolveAuthStorePathForDisplay(agentDir?: string): string {
 /** Resolve the user-facing auth state database path. */
 export function resolveAuthStatePathForDisplay(agentDir?: string): string {
   const pathname = agentDir
-    ? path.join(resolveUserPath(agentDir), "afora-agent.sqlite")
+    ? resolveAgentSqlitePathInDir(resolveUserPath(agentDir))
     : resolveSharedAuthStorePath();
   return pathname.startsWith("~") ? pathname : resolveUserPath(pathname);
 }

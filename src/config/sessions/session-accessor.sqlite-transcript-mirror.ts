@@ -13,6 +13,7 @@ import { getSessionKysely, type ResolvedTranscriptScope } from "./session-access
 import { readActiveTranscriptEntryAnchorInTransaction } from "./session-accessor.sqlite-transcript-anchor.js";
 import { readMessageIdempotencyKey } from "./session-accessor.sqlite-transcript-store.js";
 import type { TranscriptEntryAnchor } from "./transcript-entry-anchor.js";
+import { parseTranscriptEventJson } from "./transcript-event-parse.js";
 
 // Keep supplied-key probes below SQLite's conservative variable ceiling.
 const TRANSCRIPT_MIRROR_KEY_QUERY_BATCH_SIZE = 900;
@@ -127,7 +128,7 @@ function readTranscriptMirrorFactsInSnapshot(
       if (anchor) {
         facts.anchorsByIdempotencyKey.set(idempotencyKey, anchor);
       }
-      const message = readTranscriptEventMessage(JSON.parse(row.event_json) as TranscriptEvent);
+      const message = readTranscriptEventMessage(parseTranscriptEventJson(row.event_json));
       if (message !== undefined) {
         facts.messagesByIdempotencyKey.set(idempotencyKey, message);
       }

@@ -26,6 +26,7 @@ import {
   appendTranscriptEventsInTransaction,
   readTranscriptIdentityByEventId,
 } from "./session-accessor.sqlite-transcript-store.js";
+import { parseTranscriptEventJson } from "./transcript-event-parse.js";
 import { createSessionTranscriptHeader } from "./transcript-header.js";
 import {
   SESSION_TOTAL_TOKENS_VERSION,
@@ -418,7 +419,7 @@ function readSqliteTranscriptRowsForFork(
   try {
     return {
       status: "created",
-      events: rows.map((row) => JSON.parse(row.event_json) as TranscriptEvent),
+      events: rows.map((row) => parseTranscriptEventJson(row.event_json)),
     };
   } catch {
     return { status: "failed" };

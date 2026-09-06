@@ -4,7 +4,6 @@
  * Selects models, wires built-in/custom tools, loads resources, and creates AgentSession instances.
  */
 import { randomUUID } from "node:crypto";
-import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { clampThinkingLevel } from "@afora/ai/internal/runtime";
 import {
@@ -14,6 +13,7 @@ import {
 import { createSessionEntryWithTranscript } from "../../config/sessions/session-accessor.js";
 import { bindStreamLlmRuntime } from "../../llm/model-runtime-binding.js";
 import type { Message, Model } from "../../llm/types.js";
+import { resolveAgentSqlitePathInDir } from "../../state/afora-agent-db.paths.js";
 import { sanitizeCompactionReplayMessages } from "../compaction-replay.js";
 import { getAgentDir } from "../config.js";
 import {
@@ -591,17 +591,13 @@ async function createDefaultSdkSessionManager(
   agentDir: string,
 ): Promise<SessionManager> {
   const sessionId = randomUUID();
-  // afora-compat: unmigrated agent dirs still carry the legacy basename.
-  const resolveAgentStorePath = (dir: string): string => {
-    const canonical = join(dir, "afora-agent.sqlite");
-    const legacy = join(dir, "openclaw-agent.sqlite"); // afora-compat: legacy basename
-    return !existsSync(canonical) && existsSync(legacy) ? legacy : canonical;
-  };
   const target = {
     agentId: "main",
     sessionId,
     sessionKey: `agent:main:sdk:${sessionId}`,
-    storePath: resolveAgentStorePath(agentDir),
+    // afora-compat: unmigrated agent dirs still carry the legacy basename. One rule, stated
+    // once, so this cannot drift away from what every other reader of the file resolves.
+    storePath: resolveAgentSqlitePathInDir(agentDir),
   };
   const created = await createSessionEntryWithTranscript(
     target,

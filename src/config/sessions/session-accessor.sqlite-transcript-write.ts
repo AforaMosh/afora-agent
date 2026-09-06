@@ -62,6 +62,7 @@ import {
   sessionMatchesExpectedTranscriptTurn,
 } from "./session-transcript-turn-state.js";
 import type { TranscriptEntryAnchor } from "./transcript-entry-anchor.js";
+import { parseTranscriptEventJson } from "./transcript-event-parse.js";
 import {
   SessionTranscriptWriterClaimReboundError,
   withOwnedSessionTranscriptWriterFence,
@@ -203,7 +204,7 @@ export async function trimTranscriptForManualCompact(
         `Cannot compact SQLite transcript ${resolved.sessionId} without its current session entry`,
       );
     }
-    const retainedEvents = retainedLines.map((line) => JSON.parse(line) as TranscriptEvent);
+    const retainedEvents = retainedLines.map((line) => parseTranscriptEventJson(line));
     let previousIdentity = new Map<string, SessionEntry>();
     let currentIdentity = new Map<string, SessionEntry>();
     runAforaAgentWriteTransaction((writeDatabase) => {

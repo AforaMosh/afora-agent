@@ -24,6 +24,7 @@ import type { DB as AforaAgentKyselyDatabase } from "../../state/afora-agent-db.
 import {
   deferAforaAgentPostCommitPublication,
   AFORA_AGENT_SCHEMA_VERSION,
+  resolveAgentSqlitePathInDir,
   runAforaAgentWriteTransaction,
   type AforaAgentDatabase,
 } from "../../state/afora-agent-db.js";
@@ -116,7 +117,7 @@ function resolveAuthProfileDatabaseOptions(
   return {
     kind: "agent",
     agentId: resolveRegisteredAgentIdForDir(dir) ?? inferAgentIdFromDir(dir),
-    path: path.join(dir, "afora-agent.sqlite"),
+    path: resolveAgentSqlitePathInDir(dir),
     env,
   };
 }
