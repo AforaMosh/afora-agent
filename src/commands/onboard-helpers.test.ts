@@ -53,7 +53,7 @@ describe("printWizardHeader", () => {
     const rows = output.split("\n");
     // Claw rows stand above the wordmark; its first row shares the mascot body line.
     expect(rows[0]).toBe(" •●●:.        .:●●•");
-    expect(rows[3]).toContain("█▀▀▀█ █▀▀▀█ █▀▀▀▀ █▄  █ █▀▀▀▀ █     █▀▀▀█ █   █");
+    expect(rows[3]).toContain("█▀▀▀█ █▀▀▀▀ █▀▀▀█ █▀▀▀█ █▀▀▀█");
     expect(rows[3]).toContain(" .●●●: •●●●●• :●●●.");
   });
 

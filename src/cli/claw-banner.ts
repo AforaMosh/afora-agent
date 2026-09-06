@@ -30,13 +30,16 @@ const MASCOT_OPEN_ROWS = ["•●•.:.        .:.•●•", ":●●●•:   
 const MASCOT_WIDTH = 20;
 const WORDMARK_ROW_OFFSET = 3;
 
+// Five glyphs, six columns each (five drawn, one blank between), spelling AFORA.
+// The art is the one place the product name is drawn rather than written, so no
+// text scanner can see it: claw-banner.test.ts pins these rows byte for byte.
 const WORDMARK_ART = [
-  "█▀▀▀█ █▀▀▀█ █▀▀▀▀ █▄  █ █▀▀▀▀ █     █▀▀▀█ █   █",
-  "█   █ █▀▀▀▀ █▀▀▀  █ ▀▄█ █     █     █▀▀▀█ █▄▀▄█",
-  "▀▀▀▀▀ ▀     ▀▀▀▀▀ ▀   ▀ ▀▀▀▀▀ ▀▀▀▀▀ ▀   ▀ ▀   ▀",
+  "█▀▀▀█ █▀▀▀▀ █▀▀▀█ █▀▀▀█ █▀▀▀█",
+  "█▀▀▀█ █▀▀▀  █   █ █▀▀▀▄ █▀▀▀█",
+  "▀   ▀ ▀     ▀▀▀▀▀ ▀   ▀ ▀   ▀",
 ] as const;
 const GAP = 3;
-const BANNER_WIDTH = MASCOT_WIDTH + GAP + 48;
+const BANNER_WIDTH = MASCOT_WIDTH + GAP + 30;
 const ROWS = MASCOT_ART.length;
 
 type ClawBannerOptions = {
