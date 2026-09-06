@@ -10,6 +10,30 @@ const LEGACY_PREFIX = "OPENCLAW_";
 
 let warnedLegacy = false;
 
+// afora-compat: the legacy twins this shim wrote ITSELF, per env object, with the value it
+// wrote. A twin we mirrored is bookkeeping; an OPENCLAW_* the operator exported is an input.
+// Only the record tells them apart, and without it the mirror outlives the canonical value it
+// shadows: delete AFORA_X and the next pass fills it straight back in from our own copy. The
+// gateway restart path relies on deleting a canonical key to drop a setting between passes
+// (pre-bootstrap.ts restoreGatewayEnvChanges), so that resurrection is a live defect, not a
+// tidiness one. Keyed on the env object so a caller passing a fresh object gets no history.
+const mirroredLegacy = new WeakMap<NodeJS.ProcessEnv, Map<string, string>>();
+
+/** True when `legacy` currently holds the exact value this shim last mirrored into it. */
+function isOwnMirror(env: NodeJS.ProcessEnv, legacy: string): boolean {
+  const written = mirroredLegacy.get(env)?.get(legacy);
+  return written !== undefined && written === env[legacy];
+}
+
+function rememberMirror(env: NodeJS.ProcessEnv, legacy: string, value: string): void {
+  let written = mirroredLegacy.get(env);
+  if (!written) {
+    written = new Map();
+    mirroredLegacy.set(env, written);
+  }
+  written.set(legacy, value);
+}
+
 export function applyAforaEnvAliases(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   for (const key of Object.keys(env)) {
     const value = env[key];
@@ -19,6 +43,13 @@ export function applyAforaEnvAliases(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv 
     if (key.startsWith(LEGACY_PREFIX)) {
       const canonical = `${CANONICAL_PREFIX}${key.slice(LEGACY_PREFIX.length)}`;
       if (env[canonical] === undefined) {
+        if (isOwnMirror(env, key)) {
+          // The canonical name was deliberately cleared and this twin is only our shadow of
+          // it. Drop the shadow rather than reviving a value nothing asked for any more.
+          delete env[key];
+          mirroredLegacy.get(env)?.delete(key);
+          continue;
+        }
         env[canonical] = value;
         if (!warnedLegacy && env.AFORA_DEBUG_ENV_ALIAS !== "0") {
           warnedLegacy = true;
@@ -39,8 +70,12 @@ export function applyAforaEnvAliases(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv 
       }
     } else if (key.startsWith(CANONICAL_PREFIX)) {
       const legacy = `${LEGACY_PREFIX}${key.slice(CANONICAL_PREFIX.length)}`;
-      if (env[legacy] === undefined) {
+      // A twin we wrote is refreshed when the canonical value moves on, so a child reading the
+      // legacy name is never handed a rotated secret's previous value. One the operator set is
+      // theirs and is left exactly as it is, which is what lets the canonical win above.
+      if (env[legacy] === undefined || (isOwnMirror(env, legacy) && env[legacy] !== value)) {
         env[legacy] = value;
+        rememberMirror(env, legacy, value);
       }
     }
   }

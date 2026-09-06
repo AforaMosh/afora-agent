@@ -11,10 +11,28 @@ export function deleteTestEnvValue(key: string): void {
   Reflect.deleteProperty(process.env, key);
 }
 
-/** Captures selected process.env keys so tests can restore exact prior state. */
+// afora-compat: the debrand gave every AFORA_* variable an OPENCLAW_* twin
+// (infra/afora-env-alias.ts), and normalizeEnv() fills whichever one is missing. A scope that
+// names one spelling therefore only half-scopes the variable: code under test creates the twin,
+// the twin outlives the scope, and the next normalizeEnv() reads the value straight back into
+// the name the test just restored. Scoping the pair keeps "restore exact prior state" true.
+function withAliasTwins(keys: readonly string[]): string[] {
+  const scoped = new Set<string>();
+  for (const key of keys) {
+    scoped.add(key);
+    if (key.startsWith("AFORA_")) {
+      scoped.add(`OPENCLAW_${key.slice("AFORA_".length)}`); // afora-compat: OPENCLAW_* twin
+    } else if (key.startsWith("OPENCLAW_")) {
+      scoped.add(`AFORA_${key.slice("OPENCLAW_".length)}`);
+    }
+  }
+  return [...scoped];
+}
+
+/** Captures selected process.env keys, and their alias twins, so tests can restore exact prior state. */
 export function captureEnv(keys: string[]) {
   const snapshot = new Map<string, string | undefined>();
-  for (const key of keys) {
+  for (const key of withAliasTwins(keys)) {
     snapshot.set(key, process.env[key]);
   }
 

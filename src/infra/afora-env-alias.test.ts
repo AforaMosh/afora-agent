@@ -87,4 +87,50 @@ describe("applyAforaEnvAliases", () => {
       errors.mockRestore();
     }
   });
+
+  // The mirror is bookkeeping, and bookkeeping must not outlive what it shadows. Every
+  // AFORA_* now has an OPENCLAW_* twin, so code that drops a setting by deleting the
+  // canonical name leaves the twin behind, and the next pass reads it straight back in.
+  // The gateway restart path drops settings exactly that way between passes.
+  it("does not resurrect a canonical value the caller deleted, from the twin it mirrored", async () => {
+    const apply = await freshApply();
+    const env: NodeJS.ProcessEnv = { AFORA_STATE_DIR: "/selected" };
+    apply(env);
+    expect(env.OPENCLAW_STATE_DIR).toBe("/selected");
+
+    delete env.AFORA_STATE_DIR;
+    apply(env);
+    expect(env.AFORA_STATE_DIR).toBeUndefined();
+    expect(env.OPENCLAW_STATE_DIR).toBeUndefined();
+  });
+
+  // The other half of the same rule: a twin the OPERATOR exported is an input, not our
+  // shadow, so dropping the canonical name must still read it back. That is the dual-read
+  // D5 asks for, and it is what stops the fix above from quietly deleting a tenant's export.
+  it("still reads back a legacy name the operator exported, after the canonical is deleted", async () => {
+    const apply = await freshApply();
+    const env: NodeJS.ProcessEnv = { OPENCLAW_STATE_DIR: "/exported" };
+    apply(env);
+    expect(env.AFORA_STATE_DIR).toBe("/exported");
+
+    delete env.AFORA_STATE_DIR;
+    apply(env);
+    expect(env.AFORA_STATE_DIR).toBe("/exported");
+    expect(env.OPENCLAW_STATE_DIR).toBe("/exported");
+  });
+
+  // A stale twin is as wrong as a resurrected one, in the other direction: a child that
+  // reads the legacy name would be handed the value the canonical one used to have.
+  it("refreshes a twin it wrote when the canonical value moves on, and never one it did not", async () => {
+    const apply = await freshApply();
+    const env: NodeJS.ProcessEnv = { AFORA_GATEWAY_TOKEN: "old" };
+    apply(env);
+    env.AFORA_GATEWAY_TOKEN = "rotated";
+    apply(env);
+    expect(env.OPENCLAW_GATEWAY_TOKEN).toBe("rotated");
+
+    const operator: NodeJS.ProcessEnv = { AFORA_STATE_DIR: "/new", OPENCLAW_STATE_DIR: "/theirs" };
+    apply(operator);
+    expect(operator.OPENCLAW_STATE_DIR).toBe("/theirs");
+  });
 });
