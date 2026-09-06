@@ -449,7 +449,7 @@ describe("resolveExtendedStablePackage", () => {
       status: "resolved",
       selector: "extended-stable",
       version: "2026.6.33",
-      packageSpec: "openclaw@2026.6.33",
+      packageSpec: "afora@2026.6.33",
     });
   });
 
@@ -503,7 +503,7 @@ describe("resolveExtendedStablePackage", () => {
       }),
     ).resolves.toMatchObject({
       status: "resolved",
-      packageSpec: "openclaw@2026.6.33",
+      packageSpec: "afora@2026.6.33",
     });
   });
 

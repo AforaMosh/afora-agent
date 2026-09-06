@@ -1389,7 +1389,7 @@ describe("update-cli", () => {
       status: "resolved",
       selector: "extended-stable",
       version: "2026.6.33",
-      packageSpec: "openclaw@2026.6.33",
+      packageSpec: "afora@2026.6.33",
     });
     primeNpmChannelTag("latest", "9999.0.0");
     nodeVersionSatisfiesEngine.mockReturnValue(true);
@@ -3940,7 +3940,7 @@ describe("update-cli", () => {
       timeoutMs: undefined,
       packageName: "afora",
     });
-    expectPackageInstallSpec("openclaw@2026.6.33");
+    expectPackageInstallSpec("afora@2026.6.33");
     expect(lastReplaceConfigCall()?.nextConfig?.update?.channel).toBe("extended-stable");
     expect(syncPluginCall()?.channel).toBe("extended-stable");
     expect(syncPluginCall()?.coreVersion).toBe("2026.6.33");
@@ -3962,7 +3962,7 @@ describe("update-cli", () => {
       timeoutMs: undefined,
       packageName: "afora",
     });
-    expectPackageInstallSpec("openclaw@2026.6.33");
+    expectPackageInstallSpec("afora@2026.6.33");
     expect(syncPluginCall()?.channel).toBe("extended-stable");
     expect(syncPluginCall()?.coreVersion).toBe("2026.6.33");
   });
@@ -4057,7 +4057,7 @@ describe("update-cli", () => {
       status: "resolved",
       selector: "extended-stable",
       version: "2026.6.33",
-      packageSpec: "openclaw@2026.6.33",
+      packageSpec: "afora@2026.6.33",
     });
 
     await updateCommand({ channel: "extended-stable", yes, restart: false });
@@ -5552,7 +5552,7 @@ describe("update-cli", () => {
 
     await updateCommand({ yes: true, restart: false });
 
-    expectPackageInstallSpec("openclaw@2026.4.23");
+    expectPackageInstallSpec("afora@2026.4.23");
     const doctorCall = doctorCommandCall();
     expect(doctorCall?.[0][0]).toContain("node");
     expect(doctorCall?.[0].slice(1)).toEqual([entryPath, "doctor", "--non-interactive"]);

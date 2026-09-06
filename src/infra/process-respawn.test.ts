@@ -376,7 +376,7 @@ describe("respawnGatewayProcessForUpdate", () => {
     process.execArgv = [];
     process.argv = [
       "C:\\Program Files\\node.exe",
-      "C:\\afora\\node_modules\\.pnpm\\openclaw@2026.6.5\\node_modules\\afora\\dist\\index.js",
+      "C:\\afora\\node_modules\\.pnpm\\afora@2026.6.5\\node_modules\\afora\\dist\\index.js",
       "gateway",
       "run",
     ];
@@ -415,7 +415,7 @@ describe("respawnGatewayProcessForUpdate", () => {
     process.execArgv = [];
     process.argv = [
       "/usr/local/bin/node",
-      "/app/node_modules/.pnpm/openclaw@2026.6.5/node_modules/afora/dist/entry.js",
+      "/app/node_modules/.pnpm/afora@2026.6.5/node_modules/afora/dist/entry.js",
       "gateway",
       "run",
     ];
@@ -426,7 +426,7 @@ describe("respawnGatewayProcessForUpdate", () => {
     expect(result.mode).toBe("spawned");
     expect(spawnMock).toHaveBeenCalledWith(
       process.execPath,
-      ["/app/node_modules/afora-agent/afora.mjs", "gateway", "run"],
+      ["/app/node_modules/afora/afora.mjs", "gateway", "run"],
       {
         detached: true,
         env: process.env,

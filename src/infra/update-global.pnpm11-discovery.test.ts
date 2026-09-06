@@ -137,7 +137,14 @@ describe("pnpm 11 global install discovery", () => {
         }),
       ).resolves.toEqual([
         { packageRoot: otherPackageRoot, packageNames: ["afora"] },
-        { packageRoot: invokingPackageRoot, packageNames: ["cowsay", "afora"] },
+        // packageNames is Object.keys(dependencies).toSorted(localeCompare), so the core
+        // package's position moved with its name: "afora" sorts before "cowsay" where the
+        // pre-rename "openclaw" sorted after it. Sort with the same comparator rather than
+        // writing the order out a second time.
+        {
+          packageRoot: invokingPackageRoot,
+          packageNames: ["cowsay", "afora"].toSorted((a, b) => a.localeCompare(b)),
+        },
       ]);
       await expect(
         resolveGlobalInstallTarget({

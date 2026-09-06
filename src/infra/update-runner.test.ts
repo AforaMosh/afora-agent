@@ -3066,7 +3066,7 @@ describe("runGatewayUpdate", () => {
 
   it("fails global npm update when the installed version misses the requested correction", async () => {
     const { calls, result } = await runNpmGlobalUpdateCase({
-      expectedInstallCommand: npmGlobalInstallCommand("openclaw@2026.3.23-2"),
+      expectedInstallCommand: npmGlobalInstallCommand("afora@2026.3.23-2"),
       tag: "2026.3.23-2",
     });
 
@@ -3076,7 +3076,7 @@ describe("runGatewayUpdate", () => {
     expect(result.steps.at(-1)?.stderrTail).toContain(
       "expected installed version 2026.3.23-2, found 2.0.0",
     );
-    expect(calls).toContain(npmGlobalInstallCommand("openclaw@2026.3.23-2"));
+    expect(calls).toContain(npmGlobalInstallCommand("afora@2026.3.23-2"));
   });
 
   it("fails global npm update when bundled runtime sidecars are missing after install", async () => {

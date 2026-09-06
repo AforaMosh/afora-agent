@@ -3787,20 +3787,28 @@ describe("state migrations", () => {
     expect(result.warnings).toStrictEqual([]);
     expect(result.changes).toContain("Migrated 1 config health entry → shared SQLite state");
     expect(result.changes).toContain("Reconciled 1 config health entry → shared SQLite state");
-    expect(readConfigHealthRows(env)).toEqual([
-      {
-        config_path: importedConfigPath,
-        last_known_good_json: JSON.stringify(legacyFingerprint),
-        last_promoted_good_json: JSON.stringify(legacyFingerprint),
-        last_observed_suspicious_signature: null,
-      },
-      {
-        config_path: configPath,
-        last_known_good_json: JSON.stringify(currentFingerprint),
-        last_promoted_good_json: JSON.stringify(legacyFingerprint),
-        last_observed_suspicious_signature: null,
-      },
-    ]);
+    // readConfigHealthRows orders by config_path asc, so which row comes first depends on the
+    // config file's own name: "afora.json" sorts before "imported.json" where the pre-rename
+    // "openclaw.json" sorted after it. Sort the expectation by the same key instead of writing
+    // the order out a second time.
+    expect(readConfigHealthRows(env)).toEqual(
+      [
+        {
+          config_path: importedConfigPath,
+          last_known_good_json: JSON.stringify(legacyFingerprint),
+          last_promoted_good_json: JSON.stringify(legacyFingerprint),
+          last_observed_suspicious_signature: null,
+        },
+        {
+          config_path: configPath,
+          last_known_good_json: JSON.stringify(currentFingerprint),
+          last_promoted_good_json: JSON.stringify(legacyFingerprint),
+          last_observed_suspicious_signature: null,
+        },
+      ].toSorted((a, b) =>
+        a.config_path < b.config_path ? -1 : a.config_path > b.config_path ? 1 : 0,
+      ),
+    );
     await expectMissingPath(sourcePath);
     await expect(fs.readFile(`${sourcePath}.migrated`, "utf8")).resolves.toContain("legacy");
   });

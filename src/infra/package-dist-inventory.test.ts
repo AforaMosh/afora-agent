@@ -52,10 +52,13 @@ describe("package dist inventory", () => {
       await expect(writePackageDistInventoryForPublish(packageRoot)).resolves.toEqual([
         "dist/current.js",
       ]);
-      await expect(collectPackageDistInventory(packageRoot)).resolves.toEqual([
-        "dist/current.js",
-        PACKAGE_INSTALL_GUARD_RELATIVE_PATH,
-      ]);
+      // collectPackageDistInventory returns sortUniqueStrings output, so where the guard lands
+      // depends on its own filename: "dist/afora-install-guard" sorts BEFORE "dist/current.js"
+      // where the pre-rename "dist/openclaw-install-guard" sorted after it. Derive the order
+      // from the same rule the implementation uses instead of writing it out again.
+      await expect(collectPackageDistInventory(packageRoot)).resolves.toEqual(
+        ["dist/current.js", PACKAGE_INSTALL_GUARD_RELATIVE_PATH].toSorted(),
+      );
       await expect(readPackageDistInventoryIfPresent(packageRoot)).resolves.toEqual([
         "dist/current.js",
       ]);
@@ -415,9 +418,9 @@ describe("package dist inventory", () => {
         "dist/extensions/browser/.afora-runtime-deps-copy-AbC123/package.json",
       ),
     ).toBe(false);
-    expect(
-      isLegacyPluginDependencyInstallStagePath("dist/extensions/.afora-install-stage"),
-    ).toBe(false);
+    expect(isLegacyPluginDependencyInstallStagePath("dist/extensions/.afora-install-stage")).toBe(
+      false,
+    );
   });
 
   it("rejects pre-populated install-stage debris before writing an inventory", async () => {
