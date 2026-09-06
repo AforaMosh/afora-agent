@@ -72,6 +72,29 @@ const LEGACY_DEFAULT_MODEL_ID = `${LEGACY_MODEL_ID}/default`;
 const LEGACY_MODEL_ID_PREFIX = /^openclaw(?=$|[:/])/i;
 
 /**
+ * Session routing header. A turn is pinned to one on-disk agent session by this header, and
+ * the debrand renamed it: `x-openclaw-session-key` became `x-afora-session-key`. Unlike the
+ * model id above, the old spelling has no retry channel to fall back through. An
+ * unrecognised header is not an error and draws no reply a caller could react to; it is
+ * simply ignored, so a console or watchdog that predates the rename would land every turn on
+ * a fresh session instead of the tenant's own, and the tenant would watch their history stop
+ * carrying over with nothing in any log to say why. Both spellings are therefore read. The
+ * canonical one wins, and a blank value counts as absent so a proxy that fills the header in
+ * empty cannot mask the one actually carrying the key.
+ */
+const SESSION_KEY_HEADER = "x-afora-session-key";
+const LEGACY_SESSION_KEY_HEADER = "x-openclaw-session-key"; // afora-compat: pre-rename header name
+
+/** The session key the caller asked for, under either spelling of the routing header. */
+export function readRequestedSessionKeyHeader(req: IncomingMessage): string | undefined {
+  return (
+    getHeader(req, SESSION_KEY_HEADER)?.trim() ||
+    getHeader(req, LEGACY_SESSION_KEY_HEADER)?.trim() ||
+    undefined
+  );
+}
+
+/**
  * Rewrite a legacy-spelled model id onto its Afora spelling, leaving every other id untouched.
  * Both spellings resolve to the same agent, so a caller may send either; but a response body
  * that interpolates the caller's id would otherwise put the pre-rename name in front of a
@@ -285,7 +308,7 @@ function resolveSessionKey(params: {
   user?: string | undefined;
   prefix: string;
 }): string {
-  const explicit = getHeader(params.req, "x-afora-session-key")?.trim();
+  const explicit = readRequestedSessionKeyHeader(params.req);
   if (explicit) {
     if (isReservedSessionKeyOverride(explicit, params.agentId)) {
       throw new GatewaySessionKeyOverrideError();

@@ -55,11 +55,11 @@ import {
   type AuthorizedGatewayHttpRequest,
   authorizeOpenAiCompatibleHttpModelOverride,
   getBearerToken,
-  getHeader,
   isAgentSelectionRequiredError,
   isGatewaySessionKeyOverrideError,
   isInvalidGatewayModelError,
   isUnknownGatewayAgentError,
+  readRequestedSessionKeyHeader,
   resolveAgentIdForRequest,
   resolveGatewayRequestContext,
   resolveOpenAiCompatModelOverride,
@@ -151,7 +151,7 @@ function createResponseSessionScope(params: {
   return normalizeResponseSessionScope({
     authSubject: resolveResponseSessionAuthSubject(params),
     agentId: params.agentId,
-    requestedSessionKey: getHeader(params.req, "x-afora-session-key"),
+    requestedSessionKey: readRequestedSessionKeyHeader(params.req),
   });
 }
 

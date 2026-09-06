@@ -651,3 +651,43 @@ describe("formatCliCommand", () => {
     ).toBe("pnpm afora update --channel beta");
   });
 });
+
+/**
+ * The host's tenant state contract (afora-compat).
+ *
+ * The control plane spawns every tenant's gateway as `afora --profile <instance id>`, and it
+ * has always owned and seeded that tenant's state at `$HOME/.openclaw-<id>` with its config
+ * in `openclaw.json`. The debrand renamed what this function DERIVES to `.afora-<id>` and
+ * `afora.json`, and a derived path is not a migration: it silently points the gateway at an
+ * empty directory, so a live tenant loses their history, their sessions and their keys with
+ * nothing raised anywhere. D6 forbids moving that directory, so the host pins both names in
+ * the spawn env instead (control-plane.mjs, forkStateEnv) and nothing on disk is touched.
+ *
+ * That only works while an explicit pin outranks the derivation. These two cases are the
+ * contract: pinned wins, unpinned still derives the Afora name for everything else.
+ */
+describe("applyCliProfileEnv and the host's pinned tenant state", () => {
+  it("keeps a pinned legacy state dir and config path under --profile <id>", () => {
+    const legacyDir = "/data/u/u-abc/home/.openclaw-u-abc";
+    const env: Record<string, string | undefined> = {
+      AFORA_STATE_DIR: legacyDir,
+      AFORA_CONFIG_PATH: path.join(legacyDir, "openclaw.json"),
+    };
+
+    applyCliProfileEnv({ profile: "u-abc", env, homedir: () => "/data/u/u-abc/home" });
+
+    expect(env.AFORA_PROFILE).toBe("u-abc");
+    expect(env.AFORA_STATE_DIR).toBe(legacyDir);
+    expect(env.AFORA_CONFIG_PATH).toBe(path.join(legacyDir, "openclaw.json"));
+  });
+
+  it("derives the Afora state dir and config name for a profile that pins nothing", () => {
+    const env: Record<string, string | undefined> = {};
+
+    applyCliProfileEnv({ profile: "u-abc", env, homedir: () => "/data/u/u-abc/home" });
+
+    const derived = path.join(path.resolve("/data/u/u-abc/home"), ".afora-u-abc");
+    expect(env.AFORA_STATE_DIR).toBe(derived);
+    expect(env.AFORA_CONFIG_PATH).toBe(path.join(derived, "afora.json"));
+  });
+});
