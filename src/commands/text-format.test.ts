@@ -8,7 +8,7 @@ describe("shortenText", () => {
   });
 
   it("truncates and appends ellipsis when over limit", () => {
-    expect(shortenText("afora-status-output", 10)).toBe("afora-…");
+    expect(shortenText("afora-status-output", 10)).toBe("afora-sta…");
   });
 
   it("returns an empty string for non-positive limits", () => {

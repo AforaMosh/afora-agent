@@ -8,7 +8,7 @@ describe("parseGitUrl", () => {
     expect(parseGitUrl("git:github.com/afora/example-plugin")).toMatchObject({
       type: "git",
       host: "github.com",
-      path: "afora-agent/example-plugin",
+      path: "afora/example-plugin",
     });
     expect(parseGitUrl("git:https://example.com/@team/example-plugin")).toMatchObject({
       host: "example.com",
@@ -22,7 +22,7 @@ describe("parseGitUrl", () => {
     ["git:example.com/afora/example-plugin@main", "example.com"],
     ["git:gitlab.com/afora/example-plugin@feature/foo", "gitlab.com"],
     ["git:https://example.com/@team/example-plugin@main", "example.com", "@team/example-plugin"],
-  ])("ignores refs in the identity for %s", (source, host, path = "afora-agent/example-plugin") => {
+  ])("ignores refs in the identity for %s", (source, host, path = "afora/example-plugin") => {
     expect(parseGitUrl(source)).toMatchObject({ host, path });
   });
 

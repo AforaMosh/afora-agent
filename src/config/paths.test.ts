@@ -1,7 +1,7 @@
 // Covers config path resolution across env, home, and agent roots.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { resolveLegacyOAuthPath } from "../agents/auth-profiles/legacy-source-diagnostic.js";
 import { withTestDir } from "../test-helpers/temp-dir.js";
 import {
@@ -37,9 +37,7 @@ describe("default state directory", () => {
       await fs.mkdir(defaultStateDir, { recursive: true });
       await fs.symlink(defaultStateDir, stateAlias, "dir");
 
-      expect(isDefaultStateDir({ HOME: home, AFORA_STATE_DIR: stateAlias }, () => home)).toBe(
-        true,
-      );
+      expect(isDefaultStateDir({ HOME: home, AFORA_STATE_DIR: stateAlias }, () => home)).toBe(true);
     });
   });
 });
@@ -280,9 +278,7 @@ describe("default install identity", () => {
       expect(resolveNativeServiceProfileConflict({ AFORA_PROFILE: profile }, "darwin")).toBe(
         profile,
       );
-      expect(
-        resolveNativeServiceProfileConflict({ AFORA_PROFILE: profile }, "linux"),
-      ).toBeNull();
+      expect(resolveNativeServiceProfileConflict({ AFORA_PROFILE: profile }, "linux")).toBeNull();
     },
   );
 
@@ -295,9 +291,7 @@ describe("default install identity", () => {
       expect(resolveNativeServiceProfileConflict({ AFORA_PROFILE: profile }, "win32")).toBe(
         profile,
       );
-      expect(
-        resolveNativeServiceProfileConflict({ AFORA_PROFILE: profile }, "linux"),
-      ).toBeNull();
+      expect(resolveNativeServiceProfileConflict({ AFORA_PROFILE: profile }, "linux")).toBeNull();
     },
   );
 
@@ -530,10 +524,17 @@ describe("state + config path candidates", () => {
     const home = "/home/test";
     const resolvedHome = path.resolve(home);
     const candidates = resolveDefaultConfigCandidates({} as NodeJS.ProcessEnv, () => home);
+    // Every legacy state dir crossed with every legacy config filename, canonical name
+    // first in each dir. afora-compat: .openclaw and openclaw.json are read, never written.
     const expected = [
       path.join(resolvedHome, ".afora", "afora.json"),
+      path.join(resolvedHome, ".afora", "openclaw.json"),
       path.join(resolvedHome, ".afora", "clawdbot.json"),
+      path.join(resolvedHome, ".openclaw", "afora.json"),
+      path.join(resolvedHome, ".openclaw", "openclaw.json"),
+      path.join(resolvedHome, ".openclaw", "clawdbot.json"),
       path.join(resolvedHome, ".clawdbot", "afora.json"),
+      path.join(resolvedHome, ".clawdbot", "openclaw.json"),
       path.join(resolvedHome, ".clawdbot", "clawdbot.json"),
     ];
     expect(candidates).toEqual(expected);
@@ -584,17 +585,84 @@ describe("state + config path candidates", () => {
   });
 });
 
+// The one-time ~/.openclaw -> ~/.afora copy is the compatibility path live tenants land on,
+// and it was the only part of paths.ts with no coverage at all. It is marked afora-compat
+// because it must keep naming the legacy directory: D6 leaves that directory on disk, so an
+// operator sent to find it needs its real name. A marker comment cannot hold that down; these
+// can. See docs/BRIEF.md D6 and D8.
+describe("legacy state dir migration", () => {
+  it("copies ~/.openclaw into ~/.afora once and renames the brand-named state files", async () => {
+    await withTestDir({ prefix: "afora-state-migrate-" }, async (root) => {
+      const legacyDir = path.join(root, ".openclaw");
+      await fs.mkdir(path.join(legacyDir, "agents"), { recursive: true });
+      await fs.writeFile(path.join(legacyDir, "openclaw.sqlite"), "db", "utf-8");
+      await fs.writeFile(path.join(legacyDir, "openclaw.json"), "{}", "utf-8");
+      await fs.writeFile(path.join(legacyDir, "agents", "keep.txt"), "keep", "utf-8");
+
+      const resolved = resolveStateDir({} as NodeJS.ProcessEnv, () => root);
+
+      const newDir = path.join(root, ".afora");
+      expect(resolved).toBe(newDir);
+      expect(await fs.readFile(path.join(newDir, "afora.sqlite"), "utf-8")).toBe("db");
+      expect(await fs.readFile(path.join(newDir, "afora.json"), "utf-8")).toBe("{}");
+      expect(await fs.readFile(path.join(newDir, "agents", "keep.txt"), "utf-8")).toBe("keep");
+      await expect(fs.access(path.join(newDir, "openclaw.sqlite"))).rejects.toThrow();
+      // Copy, never move: the tenant's original tree stays exactly where it was (D6).
+      expect(await fs.readFile(path.join(legacyDir, "openclaw.sqlite"), "utf-8")).toBe("db");
+      expect(await fs.readFile(path.join(legacyDir, ".migrated-to-afora"), "utf-8")).toContain(
+        newDir,
+      );
+    });
+  });
+
+  it("names the legacy directory in the message, because an operator has to go find it", async () => {
+    await withTestDir({ prefix: "afora-state-migrate-msg-" }, async (root) => {
+      const legacyDir = path.join(root, ".openclaw");
+      await fs.mkdir(legacyDir, { recursive: true });
+      const errors: string[] = [];
+      const spy = vi.spyOn(console, "error").mockImplementation((...args: unknown[]) => {
+        errors.push(args.map((arg) => String(arg)).join(" "));
+      });
+      try {
+        resolveStateDir({} as NodeJS.ProcessEnv, () => root);
+      } finally {
+        spy.mockRestore();
+      }
+
+      const migration = errors.find((line) => line.includes("migrated legacy state dir"));
+      expect(migration).toBeDefined();
+      // afora-compat: the legacy path is the actionable part of the message and must survive.
+      expect(migration).toContain(legacyDir);
+      expect(migration).toContain(path.join(root, ".afora"));
+      // Everything the message says about itself is still Afora's (D2).
+      expect(migration?.startsWith("afora: ")).toBe(true);
+    });
+  });
+
+  it("does not re-copy once the marker exists, and keeps using the legacy dir", async () => {
+    await withTestDir({ prefix: "afora-state-migrated-" }, async (root) => {
+      const legacyDir = path.join(root, ".openclaw");
+      await fs.mkdir(legacyDir, { recursive: true });
+      await fs.writeFile(path.join(legacyDir, ".migrated-to-afora"), "migrated\n", "utf-8");
+      await fs.writeFile(path.join(legacyDir, "openclaw.sqlite"), "stale", "utf-8");
+
+      const resolved = resolveStateDir({} as NodeJS.ProcessEnv, () => root);
+
+      expect(resolved).toBe(legacyDir);
+      await expect(fs.access(path.join(root, ".afora"))).rejects.toThrow();
+    });
+  });
+});
+
 describe("resolveIncludeRoots", () => {
   const HOME = path.parse(process.cwd()).root + "fakehome";
 
   it("returns an empty list when AFORA_INCLUDE_ROOTS is unset or blank", () => {
     expect(resolveIncludeRoots(envWith({}), () => HOME)).toStrictEqual([]);
-    expect(resolveIncludeRoots(envWith({ AFORA_INCLUDE_ROOTS: "" }), () => HOME)).toStrictEqual(
+    expect(resolveIncludeRoots(envWith({ AFORA_INCLUDE_ROOTS: "" }), () => HOME)).toStrictEqual([]);
+    expect(resolveIncludeRoots(envWith({ AFORA_INCLUDE_ROOTS: "   " }), () => HOME)).toStrictEqual(
       [],
     );
-    expect(
-      resolveIncludeRoots(envWith({ AFORA_INCLUDE_ROOTS: "   " }), () => HOME),
-    ).toStrictEqual([]);
   });
 
   it("splits on the platform path delimiter and resolves each entry to an absolute path", () => {

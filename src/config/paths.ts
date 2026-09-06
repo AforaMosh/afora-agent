@@ -149,11 +149,16 @@ function migrateLegacyStateDir(legacyDir: string, newDir: string): boolean {
       `migrated to ${newDir} at ${new Date().toISOString()}\n`,
     );
     console.error(
+      // afora-compat: prints the tenant's real legacy dir name (.openclaw). D6 keeps that
+      // directory where it is, so an operator who has to go find it needs the true path.
+      // Blanking it would leave a message that cannot be acted on (D8).
       `afora: migrated legacy state dir ${legacyDir} to ${newDir} (original left in place)`,
     );
     return true;
   } catch (error) {
     console.error(
+      // afora-compat: same legacy dir name (.openclaw) on the failure path, and here it is
+      // load-bearing twice over: this is the directory the process is about to keep using.
       `afora: legacy state dir migration failed, using ${legacyDir} as-is: ${String(error)}`,
     );
     return false;
