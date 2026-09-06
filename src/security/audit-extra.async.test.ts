@@ -260,6 +260,28 @@ Read the requested file and summarize it.
     );
   });
 
+  // afora-compat: the loader accepts the legacy `openclaw` manifest key, so the deep scan must
+  // read it too. Reading only the canonical key let a pre-rename package load its declared
+  // entrypoints while this scanner reported nothing to scan.
+  it("reads declared entrypoints from the legacy manifest key", async () => {
+    const tmpDir = await makeTmpDir("audit-scanner-legacy-manifest-key");
+    const pluginDir = path.join(tmpDir, "extensions", "legacy-key-plugin");
+    await fs.mkdir(pluginDir, { recursive: true });
+    await fs.writeFile(
+      path.join(pluginDir, "package.json"),
+      JSON.stringify({
+        name: "legacy-key-plugin",
+        openclaw: { extensions: ["../outside.js"] },
+      }),
+    );
+    await fs.writeFile(path.join(pluginDir, "index.js"), "export {};");
+
+    const findings = await collectPluginsCodeSafetyFindings({ stateDir: tmpDir });
+    expect(findings.map((finding) => finding.checkId)).toContain(
+      "plugins.code_safety.entry_escape",
+    );
+  });
+
   it("ignores install backup and debris dirs when scanning installed plugin roots", async () => {
     const scanSpy = vi
       .spyOn(skillScanner, "scanDirectoryWithSummary")

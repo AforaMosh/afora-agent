@@ -1,6 +1,6 @@
 import { normalizeOptionalString } from "../../packages/normalization-core/src/string-coerce.js";
 import type { ChannelSetupMetadata } from "../channels/plugins/setup-contract.js";
-import { MANIFEST_KEY } from "../compat/legacy-names.js";
+import { LEGACY_MANIFEST_KEYS, MANIFEST_KEY } from "../compat/legacy-names.js";
 import { isRecord } from "../utils.js";
 import type { PluginManifestChannelCommandDefaults } from "./manifest-types.js";
 
@@ -131,7 +131,9 @@ export type PackageExtensionResolution =
   | { status: "empty"; entries: [] }
   | { status: "invalid"; entries: []; error: string };
 
-type ManifestKey = typeof MANIFEST_KEY;
+type ManifestKey = typeof MANIFEST_KEY | (typeof LEGACY_MANIFEST_KEYS)[number];
+
+const MANIFEST_KEYS = [MANIFEST_KEY, ...LEGACY_MANIFEST_KEYS] as const;
 
 export type PackageManifest = {
   name?: string;
@@ -141,19 +143,32 @@ export type PackageManifest = {
   optionalDependencies?: Record<string, string>;
 } & Partial<Record<ManifestKey, AforaPackageManifest>>;
 
+// afora-compat: read `afora` first, then the legacy `openclaw` spelling that every plugin
+// package published before the rename still declares. Canonical-first keeps anything this
+// repository authors authoritative; without the fallback an external plugin resolves to
+// "missing" and `plugins install` rejects it as having no extensions at all.
+function readPackageManifestSection(
+  manifest: PackageManifest | undefined,
+): AforaPackageManifest | undefined {
+  for (const key of MANIFEST_KEYS) {
+    const candidate = manifest?.[key];
+    if (candidate !== undefined) {
+      return candidate;
+    }
+  }
+  return undefined;
+}
+
 export function getPackageManifestMetadata(
   manifest: PackageManifest | undefined,
 ): AforaPackageManifest | undefined {
-  if (!manifest) {
-    return undefined;
-  }
-  return manifest[MANIFEST_KEY];
+  return readPackageManifestSection(manifest);
 }
 
 export function resolvePackageExtensionEntries(
   manifest: PackageManifest | undefined,
 ): PackageExtensionResolution {
-  const rawAfora = manifest?.[MANIFEST_KEY] as unknown;
+  const rawAfora = readPackageManifestSection(manifest) as unknown;
   if (rawAfora === undefined || rawAfora === null) {
     return { status: "missing", entries: [] };
   }

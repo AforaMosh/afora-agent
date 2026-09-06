@@ -124,6 +124,42 @@ describe("plugin package authoring metadata", () => {
     });
   });
 
+  // afora-compat: every plugin published before the rename declares `openclaw`, not `afora`.
+  // Without the fallback `plugins install` rejects all of them as declaring no extensions.
+  it("reads plugin metadata from the legacy manifest key", () => {
+    const manifest = {
+      name: "legacy-example",
+      openclaw: { extensions: ["./dist/index.js"], plugin: { id: "legacy-example" } },
+    } as PackageManifest;
+
+    expect(getPackageManifestMetadata(manifest)).toEqual(manifest.openclaw);
+    expect(resolvePackageExtensionEntries(manifest)).toEqual({
+      status: "ok",
+      entries: ["./dist/index.js"],
+    });
+  });
+
+  it("prefers the canonical manifest key when a package declares both", () => {
+    const manifest = {
+      name: "both-example",
+      afora: { extensions: ["./dist/current.js"] },
+      openclaw: { extensions: ["./dist/legacy.js"] },
+    } as PackageManifest;
+
+    expect(getPackageManifestMetadata(manifest)).toEqual(manifest.afora);
+    expect(resolvePackageExtensionEntries(manifest)).toEqual({
+      status: "ok",
+      entries: ["./dist/current.js"],
+    });
+  });
+
+  it("reports missing when a package declares no manifest key at all", () => {
+    const manifest = { name: "bare-example" } as PackageManifest;
+
+    expect(getPackageManifestMetadata(manifest)).toBeUndefined();
+    expect(resolvePackageExtensionEntries(manifest)).toEqual({ status: "missing", entries: [] });
+  });
+
   it.each([
     {
       name: "non-object afora metadata",

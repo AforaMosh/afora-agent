@@ -16,7 +16,7 @@ import {
 } from "@afora/normalization-core/string-normalization";
 import { resolveAuthProfileDatabaseFilePaths } from "../agents/auth-profiles/sqlite.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import { MANIFEST_KEY } from "../compat/legacy-names.js";
+import { LEGACY_MANIFEST_KEYS, MANIFEST_KEY } from "../compat/legacy-names.js";
 import type { AforaConfig, ConfigFileSnapshot } from "../config/config.js";
 import { collectIncludePathsRecursive } from "../config/includes-scan.js";
 import { resolveOAuthDir } from "../config/paths.js";
@@ -124,11 +124,12 @@ async function readPluginManifestExtensions(pluginPath: string): Promise<string[
     return [];
   }
 
-  let parsed: Partial<Record<typeof MANIFEST_KEY, { extensions?: unknown }>> | null;
+  type ManifestSections = Partial<
+    Record<typeof MANIFEST_KEY | (typeof LEGACY_MANIFEST_KEYS)[number], { extensions?: unknown }>
+  >;
+  let parsed: ManifestSections | null;
   try {
-    parsed = JSON.parse(raw) as Partial<
-      Record<typeof MANIFEST_KEY, { extensions?: unknown }>
-    > | null;
+    parsed = JSON.parse(raw) as ManifestSections | null;
   } catch (err) {
     // Re-throw so callers can surface a security finding for malformed manifests.
     // A malicious plugin could use a malformed package.json to hide declared
@@ -137,11 +138,16 @@ async function readPluginManifestExtensions(pluginPath: string): Promise<string[
       cause: err,
     });
   }
-  const extensions = parsed?.[MANIFEST_KEY]?.extensions;
-  if (!Array.isArray(extensions)) {
-    return [];
+  // afora-compat: the loader accepts the legacy `openclaw` manifest key, so the deep scan has to
+  // read it too. Scanning only the canonical key would let a pre-rename package load its declared
+  // entrypoints while the code-safety scanner reported nothing to scan.
+  for (const key of [MANIFEST_KEY, ...LEGACY_MANIFEST_KEYS]) {
+    const extensions = parsed?.[key]?.extensions;
+    if (Array.isArray(extensions)) {
+      return normalizeTrimmedStringList(extensions);
+    }
   }
-  return normalizeTrimmedStringList(extensions);
+  return [];
 }
 
 function formatCodeSafetyDetails(findings: SkillScanFinding[], rootDir: string): string {
