@@ -512,10 +512,7 @@ export async function prepareCliRunContext(
           .map((toolName) => normalizeToolPolicyName(toolName))
           .filter(Boolean),
       );
-      if (
-        fallbackAforaTools.includes("write") &&
-        !fallbackAforaTools.includes("apply_patch")
-      ) {
+      if (fallbackAforaTools.includes("write") && !fallbackAforaTools.includes("apply_patch")) {
         fallbackAforaTools.push("apply_patch");
       }
       params = {
@@ -1003,8 +1000,7 @@ export async function prepareCliRunContext(
         store: authStore ?? loadScopedAuthStore(),
       }
     : undefined;
-  const requestedLoopbackToolsAllow =
-    runtimeToolsAllowPolicy ?? params.cliToolAvailability?.afora;
+  const requestedLoopbackToolsAllow = runtimeToolsAllowPolicy ?? params.cliToolAvailability?.afora;
   const mcpProjectionContext =
     mcpContextBase && requestedLoopbackToolsAllow !== undefined
       ? { ...mcpContextBase, toolsAllow: [...requestedLoopbackToolsAllow] }
@@ -1070,10 +1066,7 @@ export async function prepareCliRunContext(
     };
   }
   const projectedTools = params.cliToolAvailability
-    ? applyEmbeddedAttemptToolsAllow(
-        hookFilteredProjectedTools,
-        params.cliToolAvailability.afora,
-      )
+    ? applyEmbeddedAttemptToolsAllow(hookFilteredProjectedTools, params.cliToolAvailability.afora)
     : hookFilteredProjectedTools;
   const promptTools = bundleMcpEnabled ? projectedTools : [];
   const messageToolAvailable = promptTools.some(
@@ -1121,6 +1114,9 @@ export async function prepareCliRunContext(
             runtimeOwnerToken: mcpLoopbackRuntime.ownerToken,
             admittedRunContext: params.admittedRunContext,
             ...(mcpToolAuth ? { toolAuth: mcpToolAuth } : {}),
+            // Same signal that kills the CLI child, so interrupting the run also
+            // cancels the tools that child is running back through the loopback.
+            ...(params.abortSignal ? { runAbortSignal: params.abortSignal } : {}),
           })
         : undefined;
     const bindMcpClientGrantAdmission = (

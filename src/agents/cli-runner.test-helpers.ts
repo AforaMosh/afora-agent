@@ -3,7 +3,6 @@ import os from "node:os";
 import path from "node:path";
 import { expect, vi } from "vitest";
 import { CURRENT_SESSION_VERSION } from "../config/sessions/version.js";
-import type { McpLoopbackRequestContext } from "../gateway/mcp-grant-store.js";
 import {
   onTrustedInternalDiagnosticEvent,
   type DiagnosticEventPayload,
@@ -23,6 +22,9 @@ type CliProvider = "claude-cli" | "codex-cli" | "google-gemini-cli";
 type McpLoopbackClientGrant = ReturnType<
   (typeof import("../gateway/mcp-grant-store.js"))["mintMcpLoopbackClientGrant"]
 >;
+type McpLoopbackClientGrantParams = Parameters<
+  (typeof import("../gateway/mcp-grant-store.js"))["mintMcpLoopbackClientGrant"]
+>[0];
 type ModelCallLifecycleEvent = Extract<
   DiagnosticEventPayload,
   { type: "model.call.started" | "model.call.completed" | "model.call.error" }
@@ -86,9 +88,11 @@ export function createClaudeInputStartedEvent(data: string) {
     : undefined;
 }
 
-export function createTestMcpLoopbackClientGrant(params: {
-  context: McpLoopbackRequestContext;
-}): McpLoopbackClientGrant {
+// Mirrors the real mint signature so a spy on this stub still reports every
+// argument prepare passes, including ones added after this helper was written.
+export function createTestMcpLoopbackClientGrant(
+  params: McpLoopbackClientGrantParams,
+): McpLoopbackClientGrant {
   return { token: "loopback-token", context: structuredClone(params.context) };
 }
 

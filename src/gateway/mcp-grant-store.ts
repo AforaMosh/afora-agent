@@ -104,6 +104,12 @@ type StoredMcpLoopbackClientGrant = McpLoopbackClientGrant & {
   admittedRunContext?: AdmittedRunContext;
   activeCaptureKey?: string;
   toolAuth?: McpLoopbackToolAuth;
+  /**
+   * The enclosing run's abort signal. Loopback tools execute inside the Gateway
+   * on behalf of a CLI child, so interrupting the run must reach them; the grant
+   * is the only per-run object the request handler can already see.
+   */
+  runAbortSignal?: AbortSignal;
 };
 
 type McpLoopbackClientGrantRevocation = {
@@ -205,6 +211,7 @@ export function mintMcpLoopbackClientGrant(params: {
   runtimeOwnerToken: string;
   admittedRunContext?: AdmittedRunContext;
   toolAuth?: McpLoopbackToolAuth;
+  runAbortSignal?: AbortSignal;
 }): McpLoopbackClientGrant {
   const sessionKey = params.context.sessionKey.trim();
   if (!sessionKey) {
@@ -220,6 +227,11 @@ export function mintMcpLoopbackClientGrant(params: {
     runtimeOwnerToken,
     ...(params.admittedRunContext ? { admittedRunContext: params.admittedRunContext } : {}),
     ...(params.toolAuth ? { toolAuth: structuredClone(params.toolAuth) } : {}),
+    // Held by reference and deliberately outside every structuredClone.
+    // structuredClone does not reject an AbortSignal: it returns a detached
+    // object whose `aborted` is undefined and which never fires, so a clone
+    // here would silently disarm every interrupt.
+    ...(params.runAbortSignal ? { runAbortSignal: params.runAbortSignal } : {}),
   };
   clientGrantsByToken.set(grant.token, grant);
   return structuredClone({
@@ -337,6 +349,7 @@ export function resolveMcpLoopbackClientGrant(params: {
       captureKey: string;
       admittedRunContext?: AdmittedRunContext;
       toolAuth?: McpLoopbackToolAuth;
+      runAbortSignal?: AbortSignal;
     }
   | undefined {
   const grant = clientGrantsByToken.get(params.token);
@@ -351,12 +364,15 @@ export function resolveMcpLoopbackClientGrant(params: {
     return undefined;
   }
   // Cached tools and OAuth refreshes must share the prepared store for this
-  // grant; cloning on each request would discard refreshed credentials.
+  // grant; cloning on each request would discard refreshed credentials. The run
+  // abort signal is returned by reference for the same reason, and because a
+  // cloned signal silently stops carrying the run's abort.
   return {
     context: structuredClone(grant.context),
     captureKey: grant.activeCaptureKey,
     ...(grant.admittedRunContext ? { admittedRunContext: grant.admittedRunContext } : {}),
     ...(grant.toolAuth ? { toolAuth: grant.toolAuth } : {}),
+    ...(grant.runAbortSignal ? { runAbortSignal: grant.runAbortSignal } : {}),
   };
 }
 

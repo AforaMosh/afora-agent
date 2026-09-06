@@ -797,6 +797,69 @@ describe("claudeCliSessionTranscriptHasOrphanedToolUse", () => {
     ).toBe(true);
   });
 
+  it("returns false when an interrupted loopback tool call was answered with its error result", async () => {
+    // Interrupting a run kills the loopback tool, but the Gateway still answers
+    // the JSON-RPC call with an isError result rather than dropping it, so the
+    // child records a tool_result and the next turn resumes instead of wedging.
+    await writeJsonlSession("loopback-interrupted-answered", [
+      {
+        type: "assistant",
+        message: {
+          role: "assistant",
+          content: [
+            { type: "tool_use", id: "toolu_loopback", name: "mcp__afora__exec", input: {} },
+          ],
+        },
+      },
+      {
+        type: "user",
+        message: {
+          role: "user",
+          content: [
+            {
+              type: "tool_result",
+              tool_use_id: "toolu_loopback",
+              content: "Tool execution was aborted",
+              is_error: true,
+            },
+          ],
+        },
+      },
+    ]);
+    expect(
+      await claudeCliSessionTranscriptHasOrphanedToolUse({
+        sessionId: "loopback-interrupted-answered",
+        workspaceDir,
+        homeDir: tmpDir,
+      }),
+    ).toBe(false);
+  });
+
+  it("returns true when an interrupted loopback tool call never reached the child", async () => {
+    // The SIGTERM to the CLI child and the loopback error response race. If the
+    // child dies first the tool_use is orphaned, and this is what makes prepare
+    // invalidate the CLI session instead of resuming a transcript that waits on
+    // a tool_result that will never arrive.
+    await writeJsonlSession("loopback-interrupted-orphan", [
+      {
+        type: "assistant",
+        message: {
+          role: "assistant",
+          content: [
+            { type: "tool_use", id: "toolu_loopback", name: "mcp__afora__exec", input: {} },
+          ],
+        },
+      },
+    ]);
+    expect(
+      await claudeCliSessionTranscriptHasOrphanedToolUse({
+        sessionId: "loopback-interrupted-orphan",
+        workspaceDir,
+        homeDir: tmpDir,
+      }),
+    ).toBe(true);
+  });
+
   it("returns true when a Claude server tool use is unanswered", async () => {
     await writeJsonlSession("server-tool-orphan", [
       {

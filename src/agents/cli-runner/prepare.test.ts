@@ -2842,6 +2842,56 @@ describe("prepareCliRunContext", () => {
     });
   });
 
+  it("carries the run abort signal onto the CLI MCP grant by reference", async () => {
+    const getActiveMcpLoopbackRuntime = vi.fn(() => ({
+      port: 31783,
+      ownerToken: "loopback-owner-token",
+      nonOwnerToken: "loopback-non-owner-token",
+    }));
+    const mintMcpLoopbackClientGrant = vi.fn(createTestMcpLoopbackClientGrant);
+    setCliRunnerPrepareTestDeps({
+      getActiveMcpLoopbackRuntime,
+      ensureMcpLoopbackServer: vi.fn(createTestMcpLoopbackServer),
+      createMcpLoopbackServerConfig: vi.fn(createTestMcpLoopbackServerConfig),
+      mintMcpLoopbackClientGrant,
+    });
+    const abortController = new AbortController();
+
+    await fixture.prepare({
+      runId: "run-abort-signal-grant",
+      abortSignal: abortController.signal,
+      config: createCliBackendConfig({ bundleMcp: true }),
+    });
+
+    // Loopback tools run inside the Gateway, so the grant is the only per-run
+    // object the request handler can reach. Identity matters: any copy of the
+    // signal would never observe this run's abort.
+    expect(mintMcpLoopbackClientGrant.mock.calls.at(-1)?.[0]?.runAbortSignal).toBe(
+      abortController.signal,
+    );
+  });
+
+  it("omits the run abort signal from the CLI MCP grant when the run has none", async () => {
+    const mintMcpLoopbackClientGrant = vi.fn(createTestMcpLoopbackClientGrant);
+    setCliRunnerPrepareTestDeps({
+      getActiveMcpLoopbackRuntime: vi.fn(() => ({
+        port: 31783,
+        ownerToken: "loopback-owner-token",
+        nonOwnerToken: "loopback-non-owner-token",
+      })),
+      ensureMcpLoopbackServer: vi.fn(createTestMcpLoopbackServer),
+      createMcpLoopbackServerConfig: vi.fn(createTestMcpLoopbackServerConfig),
+      mintMcpLoopbackClientGrant,
+    });
+
+    await fixture.prepare({
+      runId: "run-without-abort-signal-grant",
+      config: createCliBackendConfig({ bundleMcp: true }),
+    });
+
+    expect(mintMcpLoopbackClientGrant.mock.calls.at(-1)?.[0]).not.toHaveProperty("runAbortSignal");
+  });
+
   it("uses loopback-scoped tools when building bundled MCP CLI prompts", async () => {
     registerTestMemoryPromptBuilder(({ availableTools }) =>
       availableTools.has("memory_search")
@@ -4510,9 +4560,7 @@ describe("prepareCliRunContext", () => {
       sessionKey: "agent:main:sandboxed-user",
       workspaceDir: dir,
     });
-    expect(context.systemPrompt).toContain(
-      "/workspace/.afora/sandbox-skills/skills/gog/SKILL.md",
-    );
+    expect(context.systemPrompt).toContain("/workspace/.afora/sandbox-skills/skills/gog/SKILL.md");
     expect(context.systemPrompt).not.toContain(hostSkillPath);
     expect(context.systemPromptReport.skills.promptChars).toBeGreaterThan(0);
     expect(context.systemPromptReport.skills.entries).toEqual([

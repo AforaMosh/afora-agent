@@ -373,6 +373,13 @@ async function startMcpLoopbackServer(port = 0): Promise<{
           toolCount: scopedTools.toolSchema.length,
           cronVisible: scopedTools.toolSchema.some((tool) => isAutomationsToolName(tool.name)),
         });
+        // The request socket alone only reports that the CLI child hung up, which
+        // happens after the child is already dead and the tool has already run to
+        // completion inside this process. Composing the run's own signal is what
+        // makes an interrupt reach a tool call the child had in flight.
+        const toolCallSignal = activeBoundGrant?.runAbortSignal
+          ? AbortSignal.any([requestAbort.signal, activeBoundGrant.runAbortSignal])
+          : requestAbort.signal;
         const responses: object[] = [];
         for (const [messageIndex, message] of messages.entries()) {
           if (!isJsonRpcRequest(message)) {
@@ -405,7 +412,7 @@ async function startMcpLoopbackServer(port = 0): Promise<{
                     agentId: scopedTools.agentId,
                   }),
                 },
-                signal: requestAbort.signal,
+                signal: toolCallSignal,
                 authorizeToolCall,
                 onToolCallPrepared: cliCaptureHandle
                   ? ({ toolName: preparedToolName, args }) => {

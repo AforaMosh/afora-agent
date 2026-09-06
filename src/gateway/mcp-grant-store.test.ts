@@ -255,6 +255,104 @@ describe("mcp-grant-store", () => {
     expect(grant.context).not.toHaveProperty("admittedRunContext");
   });
 
+  it("carries the run abort signal by reference, never as a clone", async () => {
+    const runAbort = new AbortController();
+    const grant = mintMcpLoopbackClientGrant({
+      context: { sessionKey: "agent:main:first", senderIsOwner: false },
+      runtimeOwnerToken: "runtime-one",
+      admittedRunContext: await admitted("run-abort-signal"),
+      runAbortSignal: runAbort.signal,
+    });
+    activateMcpLoopbackClientGrantCapture({
+      token: grant.token,
+      runtimeOwnerToken: "runtime-one",
+      captureKey: "capture-a",
+    });
+
+    const resolve = () =>
+      resolveMcpLoopbackClientGrant({
+        token: grant.token,
+        runtimeOwnerToken: "runtime-one",
+        captureKey: "capture-a",
+      });
+
+    // Identity is the whole point. structuredClone accepts an AbortSignal and
+    // returns a detached object that never fires, so a copy anywhere on this
+    // path disarms every interrupt without failing anything.
+    expect(resolve()?.runAbortSignal).toBe(runAbort.signal);
+    expect(resolve()?.runAbortSignal?.aborted).toBe(false);
+    runAbort.abort();
+    expect(resolve()?.runAbortSignal?.aborted).toBe(true);
+    // The child sees the token and the context, never the run's control channel.
+    expect(grant).not.toHaveProperty("runAbortSignal");
+    expect(grant.context).not.toHaveProperty("runAbortSignal");
+  });
+
+  it("keeps the run abort signal across admission binding and capture rotation", async () => {
+    const runAbort = new AbortController();
+    const grant = mintMcpLoopbackClientGrant({
+      context: { sessionKey: "agent:main:first", senderIsOwner: false },
+      runtimeOwnerToken: "runtime-one",
+      runAbortSignal: runAbort.signal,
+    });
+    expect(
+      bindMcpLoopbackClientGrantAdmission({
+        token: grant.token,
+        runtimeOwnerToken: "runtime-one",
+        admittedRunContext: await admitted("run-abort-signal-rebind"),
+      }),
+    ).toBe(true);
+    activateMcpLoopbackClientGrantCapture({
+      token: grant.token,
+      runtimeOwnerToken: "runtime-one",
+      captureKey: "capture-a",
+    });
+    activateMcpLoopbackClientGrantCapture({
+      token: grant.token,
+      runtimeOwnerToken: "runtime-one",
+      captureKey: "capture-b",
+    });
+    deactivateMcpLoopbackClientGrantCapture({
+      token: grant.token,
+      runtimeOwnerToken: "runtime-one",
+      captureKey: "capture-b",
+    });
+    activateMcpLoopbackClientGrantCapture({
+      token: grant.token,
+      runtimeOwnerToken: "runtime-one",
+      captureKey: "capture-c",
+    });
+
+    expect(
+      resolveMcpLoopbackClientGrant({
+        token: grant.token,
+        runtimeOwnerToken: "runtime-one",
+        captureKey: "capture-c",
+      })?.runAbortSignal,
+    ).toBe(runAbort.signal);
+  });
+
+  it("omits the run abort signal when the run has none", async () => {
+    const grant = mintMcpLoopbackClientGrant({
+      context: { sessionKey: "agent:main:first", senderIsOwner: false },
+      runtimeOwnerToken: "runtime-one",
+      admittedRunContext: await admitted("run-without-abort-signal"),
+    });
+    activateMcpLoopbackClientGrantCapture({
+      token: grant.token,
+      runtimeOwnerToken: "runtime-one",
+      captureKey: "capture-a",
+    });
+
+    const resolved = resolveMcpLoopbackClientGrant({
+      token: grant.token,
+      runtimeOwnerToken: "runtime-one",
+      captureKey: "capture-a",
+    });
+    expect(resolved).toBeDefined();
+    expect(resolved).not.toHaveProperty("runAbortSignal");
+  });
+
   it("rejects an active bearer and capture after its admitted authority closes", async () => {
     const admittedRunContext = await admitted("run-closed-grant");
     const grant = mintMcpLoopbackClientGrant({
@@ -448,6 +546,91 @@ describe("mcp-grant-store", () => {
         captureKey: "capture-stale",
       }),
     ).toBeUndefined();
+  });
+
+  it("hands the warm bearer the new turn's abort signal, by reference", async () => {
+    // Keepalive means one child serves many turns, so the interrupt fix only
+    // reaches a warm child through the transfer. The signal must move with the
+    // grant, and it must be the CURRENT turn's: a previous turn's signal is
+    // already aborted and would kill the first tool call of every later turn.
+    const firstRun = new AbortController();
+    const processToken = mintMcpLoopbackClientGrant({
+      context: { sessionKey: "agent:main:warm-signal", senderIsOwner: false },
+      runtimeOwnerToken: "runtime-one",
+      admittedRunContext: await admitted("run-warm-signal-first"),
+      runAbortSignal: firstRun.signal,
+    }).token;
+    firstRun.abort();
+
+    const secondRun = new AbortController();
+    const next = mintMcpLoopbackClientGrant({
+      context: { sessionKey: "agent:main:warm-signal", senderIsOwner: false },
+      runtimeOwnerToken: "runtime-one",
+      admittedRunContext: await admitted("run-warm-signal-second"),
+      runAbortSignal: secondRun.signal,
+    });
+    expect(
+      transferMcpLoopbackClientGrant({
+        sourceToken: next.token,
+        targetToken: processToken,
+        runtimeOwnerToken: "runtime-one",
+      }),
+    ).toBe(true);
+    expect(
+      activateMcpLoopbackClientGrantCapture({
+        token: processToken,
+        runtimeOwnerToken: "runtime-one",
+        captureKey: "capture-warm-signal",
+      }),
+    ).toBe(true);
+
+    const resolved = resolveMcpLoopbackClientGrant({
+      token: processToken,
+      runtimeOwnerToken: "runtime-one",
+      captureKey: "capture-warm-signal",
+    });
+    expect(resolved?.runAbortSignal).toBe(secondRun.signal);
+    expect(resolved?.runAbortSignal?.aborted).toBe(false);
+    secondRun.abort();
+    expect(resolved?.runAbortSignal?.aborted).toBe(true);
+  });
+
+  it("leaves a warm bearer with no signal when the new turn has none", async () => {
+    const firstRun = new AbortController();
+    const processToken = mintMcpLoopbackClientGrant({
+      context: { sessionKey: "agent:main:warm-unsigned", senderIsOwner: false },
+      runtimeOwnerToken: "runtime-one",
+      admittedRunContext: await admitted("run-warm-unsigned-first"),
+      runAbortSignal: firstRun.signal,
+    }).token;
+    const next = mintMcpLoopbackClientGrant({
+      context: { sessionKey: "agent:main:warm-unsigned", senderIsOwner: false },
+      runtimeOwnerToken: "runtime-one",
+      admittedRunContext: await admitted("run-warm-unsigned-second"),
+    });
+    expect(
+      transferMcpLoopbackClientGrant({
+        sourceToken: next.token,
+        targetToken: processToken,
+        runtimeOwnerToken: "runtime-one",
+      }),
+    ).toBe(true);
+    expect(
+      activateMcpLoopbackClientGrantCapture({
+        token: processToken,
+        runtimeOwnerToken: "runtime-one",
+        captureKey: "capture-warm-unsigned",
+      }),
+    ).toBe(true);
+
+    // The retired turn's signal must not linger on the bearer the child holds.
+    expect(
+      resolveMcpLoopbackClientGrant({
+        token: processToken,
+        runtimeOwnerToken: "runtime-one",
+        captureKey: "capture-warm-unsigned",
+      }),
+    ).not.toHaveProperty("runAbortSignal");
   });
 
   it("refuses a transfer across Gateway runtimes", async () => {
