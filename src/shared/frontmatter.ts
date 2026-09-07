@@ -5,7 +5,7 @@ import {
 } from "@afora/normalization-core/string-coerce";
 import { normalizeCsvOrLooseStringList } from "@afora/normalization-core/string-normalization";
 import JSON5 from "json5";
-import { LEGACY_MANIFEST_KEYS, MANIFEST_KEY } from "../compat/legacy-names.js";
+import { isManifestSection, readManifestSection } from "../compat/legacy-names.js";
 import { parseBooleanValue } from "../utils/boolean.js";
 
 /** Normalizes comma-delimited or loose array metadata fields into string lists. */
@@ -43,15 +43,11 @@ export function resolveAforaManifestBlock(params: {
       return undefined;
     }
 
-    const manifestKeys = [MANIFEST_KEY, ...LEGACY_MANIFEST_KEYS];
     // Prefer the current manifest key, but still read legacy names for existing skill/hook files.
-    for (const key of manifestKeys) {
-      const candidate = (parsed as Record<string, unknown>)[key];
-      if (candidate && typeof candidate === "object") {
-        return candidate as Record<string, unknown>;
-      }
-    }
-    return undefined;
+    // Same resolver as the plugin loader and the deep scanner, so all three agree on which
+    // section of a half-migrated manifest is the one that counts.
+    const section = readManifestSection(parsed);
+    return isManifestSection(section) ? section : undefined;
   } catch {
     return undefined;
   }

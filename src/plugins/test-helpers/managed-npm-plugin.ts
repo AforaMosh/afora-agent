@@ -12,6 +12,10 @@ export function writeManagedNpmPlugin(params: {
   name?: string;
   dependencySpec?: string;
   layout?: "project" | "legacy";
+  /** package.json key the fixture declares its extensions under. Defaults to the canonical one. */
+  manifestKey?: string;
+  /** Plugin manifest filename the fixture ships. Defaults to the canonical one. */
+  pluginManifestFilename?: string;
 }): string {
   const npmBaseDir = path.join(params.stateDir, "npm");
   const npmRoot =
@@ -52,12 +56,12 @@ export function writeManagedNpmPlugin(params: {
     JSON.stringify({
       name: params.packageName,
       version: params.version,
-      afora: { extensions: ["./dist/index.js"] },
+      [params.manifestKey ?? "afora"]: { extensions: ["./dist/index.js"] },
     }),
     "utf8",
   );
   fs.writeFileSync(
-    path.join(packageDir, "afora.plugin.json"),
+    path.join(packageDir, params.pluginManifestFilename ?? "afora.plugin.json"),
     JSON.stringify({
       id: params.pluginId,
       ...(params.name ? { name: params.name } : {}),

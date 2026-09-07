@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { AforaConfig } from "../config/config.js";
+import { resolvePackageExtensionEntries } from "../plugins/package-manifest.js";
 import * as skillScanner from "../skills/security/scanner.js";
 import {
   collectInstalledSkillsCodeSafetyFindings,
@@ -276,6 +277,35 @@ Read the requested file and summarize it.
     );
     await fs.writeFile(path.join(pluginDir, "index.js"), "export {};");
 
+    const findings = await collectPluginsCodeSafetyFindings({ stateDir: tmpDir });
+    expect(findings.map((finding) => finding.checkId)).toContain(
+      "plugins.code_safety.entry_escape",
+    );
+  });
+
+  // The scanner must select the SAME section the loader will run, not merely "a section with an
+  // array". A half-migrated package.json is where those two answers used to diverge: the loader
+  // took `afora` because it was defined, and the scanner took `openclaw` because that was the
+  // one with an array. They now share one resolver and one predicate, so the loader cannot run
+  // an entrypoint this scan never looked at.
+  it("scans the same section the loader resolves for a half-migrated manifest", async () => {
+    const tmpDir = await makeTmpDir("audit-scanner-half-migrated-manifest");
+    const pluginDir = path.join(tmpDir, "extensions", "half-migrated-plugin");
+    await fs.mkdir(pluginDir, { recursive: true });
+    const manifest = {
+      name: "half-migrated-plugin",
+      afora: { plugin: { id: "half-migrated-plugin" } },
+      openclaw: { extensions: ["../outside.js"] },
+    };
+    await fs.writeFile(path.join(pluginDir, "package.json"), JSON.stringify(manifest));
+    await fs.writeFile(path.join(pluginDir, "index.js"), "export {};");
+
+    // The loader resolves the legacy entrypoint for this exact manifest ...
+    expect(resolvePackageExtensionEntries(manifest as never)).toEqual({
+      status: "ok",
+      entries: ["../outside.js"],
+    });
+    // ... so the deep scan has to see it escape the plugin root.
     const findings = await collectPluginsCodeSafetyFindings({ stateDir: tmpDir });
     expect(findings.map((finding) => finding.checkId)).toContain(
       "plugins.code_safety.entry_escape",

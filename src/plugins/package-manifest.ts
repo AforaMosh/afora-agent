@@ -1,6 +1,11 @@
 import { normalizeOptionalString } from "../../packages/normalization-core/src/string-coerce.js";
 import type { ChannelSetupMetadata } from "../channels/plugins/setup-contract.js";
-import { LEGACY_MANIFEST_KEYS, MANIFEST_KEY } from "../compat/legacy-names.js";
+import {
+  LEGACY_MANIFEST_KEYS,
+  MANIFEST_KEY,
+  manifestSectionDeclares,
+  readManifestSection,
+} from "../compat/legacy-names.js";
 import { isRecord } from "../utils.js";
 import type { PluginManifestChannelCommandDefaults } from "./manifest-types.js";
 
@@ -133,8 +138,6 @@ export type PackageExtensionResolution =
 
 type ManifestKey = typeof MANIFEST_KEY | (typeof LEGACY_MANIFEST_KEYS)[number];
 
-const MANIFEST_KEYS = [MANIFEST_KEY, ...LEGACY_MANIFEST_KEYS] as const;
-
 export type PackageManifest = {
   name?: string;
   version?: string;
@@ -147,28 +150,21 @@ export type PackageManifest = {
 // package published before the rename still declares. Canonical-first keeps anything this
 // repository authors authoritative; without the fallback an external plugin resolves to
 // "missing" and `plugins install` rejects it as having no extensions at all.
-function readPackageManifestSection(
-  manifest: PackageManifest | undefined,
-): AforaPackageManifest | undefined {
-  for (const key of MANIFEST_KEYS) {
-    const candidate = manifest?.[key];
-    if (candidate !== undefined) {
-      return candidate;
-    }
-  }
-  return undefined;
-}
+// `readManifestSection` also owns the shadowing rule: a canonical section that does not declare
+// the field being read must not hide a legacy one that does, which is the difference between
+// loading a half-migrated package and telling its author to go and edit their package.json.
+const DECLARES_EXTENSIONS = manifestSectionDeclares("extensions");
 
 export function getPackageManifestMetadata(
   manifest: PackageManifest | undefined,
 ): AforaPackageManifest | undefined {
-  return readPackageManifestSection(manifest);
+  return readManifestSection(manifest) as AforaPackageManifest | undefined;
 }
 
 export function resolvePackageExtensionEntries(
   manifest: PackageManifest | undefined,
 ): PackageExtensionResolution {
-  const rawAfora = readPackageManifestSection(manifest) as unknown;
+  const rawAfora = readManifestSection(manifest, DECLARES_EXTENSIONS);
   if (rawAfora === undefined || rawAfora === null) {
     return { status: "missing", entries: [] };
   }

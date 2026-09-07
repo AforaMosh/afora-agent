@@ -3,6 +3,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { isRecord } from "@afora/normalization-core/record-coerce";
 import {
+  isManifestSection,
+  manifestSectionDeclares,
+  readManifestSection,
+} from "../compat/legacy-names.js";
+import {
   copyPluginInstallRecordMap,
   createPluginInstallRecordMap,
   getPluginInstallRecordMapEntry,
@@ -32,6 +37,7 @@ import {
   hasRetainedManagedNpmInstallMarker,
   resolveRetainedManagedNpmInstallPackageInfo,
 } from "./managed-npm-retention.js";
+import { LEGACY_PLUGIN_MANIFEST_FILENAME, PLUGIN_MANIFEST_FILENAME } from "./manifest.js";
 import { listManagedPluginNpmProjectRootsSync } from "./npm-project-roots.js";
 
 export { clearLoadInstalledPluginIndexInstallRecordsCache } from "./installed-plugin-index-record-cache.js";
@@ -70,19 +76,31 @@ function readStringRecord(value: unknown): Record<string, string> {
   return record;
 }
 
+// afora-compat: this is the path that rebuilds the installed-plugin index from the managed npm
+// root after the index file is lost, so it has to recognise the same packages the loader does.
+// Both reads below were hardcoded to the canonical spellings while their neighbours
+// (`package-manifest.ts`, `manifest.ts`) already dual-read, which meant a pre-rename package that
+// installs fine could never be recovered.
+const DECLARES_EXTENSIONS = manifestSectionDeclares("extensions");
+
 function hasPackagePluginMetadata(manifest: Record<string, unknown>): boolean {
-  const afora = manifest.afora;
-  if (!isRecord(afora)) {
+  const section = readManifestSection(manifest, DECLARES_EXTENSIONS);
+  if (!isManifestSection(section)) {
     return false;
   }
-  const extensions = afora.extensions;
+  const extensions = section.extensions;
   return Array.isArray(extensions) && extensions.some((entry) => typeof entry === "string");
 }
 
 function readManifestPluginId(packageDir: string): string | undefined {
-  const manifest = readJsonObjectFileSync(path.join(packageDir, "afora.plugin.json"));
-  const id = typeof manifest?.id === "string" ? manifest.id.trim() : "";
-  return id || undefined;
+  for (const filename of [PLUGIN_MANIFEST_FILENAME, LEGACY_PLUGIN_MANIFEST_FILENAME]) {
+    const manifest = readJsonObjectFileSync(path.join(packageDir, filename));
+    const id = typeof manifest?.id === "string" ? manifest.id.trim() : "";
+    if (id) {
+      return id;
+    }
+  }
+  return undefined;
 }
 
 function resolveRecoveredManagedNpmRoot(options: InstalledPluginIndexStoreOptions = {}): string {

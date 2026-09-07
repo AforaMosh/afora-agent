@@ -16,7 +16,11 @@ import {
 } from "@afora/normalization-core/string-normalization";
 import { resolveAuthProfileDatabaseFilePaths } from "../agents/auth-profiles/sqlite.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import { LEGACY_MANIFEST_KEYS, MANIFEST_KEY } from "../compat/legacy-names.js";
+import {
+  isManifestSection,
+  manifestSectionDeclares,
+  readManifestSection,
+} from "../compat/legacy-names.js";
 import type { AforaConfig, ConfigFileSnapshot } from "../config/config.js";
 import { collectIncludePathsRecursive } from "../config/includes-scan.js";
 import { resolveOAuthDir } from "../config/paths.js";
@@ -102,6 +106,7 @@ const MAX_PLUGIN_MANIFEST_BYTES = 1024 * 1024;
 // workspace loader's DEFAULT_MAX_SKILL_FILE_BYTES so oversized SKILL.md files
 // cannot force an unbounded read during the code-safety scan.
 const MAX_SKILL_AUDIT_FILE_BYTES = 256_000;
+const DECLARES_EXTENSIONS = manifestSectionDeclares("extensions");
 
 async function readPluginManifestExtensions(pluginPath: string): Promise<string[]> {
   const manifestPath = path.join(pluginPath, "package.json");
@@ -124,12 +129,9 @@ async function readPluginManifestExtensions(pluginPath: string): Promise<string[
     return [];
   }
 
-  type ManifestSections = Partial<
-    Record<typeof MANIFEST_KEY | (typeof LEGACY_MANIFEST_KEYS)[number], { extensions?: unknown }>
-  >;
-  let parsed: ManifestSections | null;
+  let parsed: unknown;
   try {
-    parsed = JSON.parse(raw) as ManifestSections | null;
+    parsed = JSON.parse(raw) as unknown;
   } catch (err) {
     // Re-throw so callers can surface a security finding for malformed manifests.
     // A malicious plugin could use a malformed package.json to hide declared
@@ -140,14 +142,13 @@ async function readPluginManifestExtensions(pluginPath: string): Promise<string[
   }
   // afora-compat: the loader accepts the legacy `openclaw` manifest key, so the deep scan has to
   // read it too. Scanning only the canonical key would let a pre-rename package load its declared
-  // entrypoints while the code-safety scanner reported nothing to scan.
-  for (const key of [MANIFEST_KEY, ...LEGACY_MANIFEST_KEYS]) {
-    const extensions = parsed?.[key]?.extensions;
-    if (Array.isArray(extensions)) {
-      return normalizeTrimmedStringList(extensions);
-    }
-  }
-  return [];
+  // entrypoints while the code-safety scanner reported nothing to scan. Selecting the section
+  // with `readManifestSection` and the loader's own predicate is what makes that structural: the
+  // scanner cannot pick a different section from the one the loader will run, whatever shape of
+  // half-migrated manifest a package ships.
+  const section = readManifestSection(parsed, DECLARES_EXTENSIONS);
+  const extensions = isManifestSection(section) ? section.extensions : undefined;
+  return Array.isArray(extensions) ? normalizeTrimmedStringList(extensions) : [];
 }
 
 function formatCodeSafetyDetails(findings: SkillScanFinding[], rootDir: string): string {

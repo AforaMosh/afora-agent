@@ -2,7 +2,12 @@
 
 import path from "node:path";
 import { normalizeTrimmedStringList } from "@afora/normalization-core/string-normalization";
-import { MANIFEST_KEY } from "../compat/legacy-names.js";
+import {
+  LEGACY_MANIFEST_KEYS,
+  MANIFEST_KEY,
+  manifestSectionDeclares,
+  readManifestSection,
+} from "../compat/legacy-names.js";
 import { resolveSafeInstallDir, unscopedPackageName } from "../infra/install-safe-path.js";
 import type { NpmIntegrityDrift, NpmSpecResolution } from "../infra/install-source-utils.js";
 import { readRegularFile } from "../infra/regular-file.js";
@@ -34,7 +39,12 @@ type HookPackageManifest = {
   name?: string;
   version?: string;
   dependencies?: Record<string, string>;
-} & Partial<Record<typeof MANIFEST_KEY, { extensions?: string[]; hooks?: string[] }>>;
+} & Partial<
+  Record<
+    typeof MANIFEST_KEY | (typeof LEGACY_MANIFEST_KEYS)[number],
+    { extensions?: string[]; hooks?: string[] }
+  >
+>;
 
 export type InstallHooksResult =
   | {
@@ -233,10 +243,19 @@ export function resolveHookInstallDir(hookId: string, hooksDir?: string): string
   return targetDirResult.path;
 }
 
+// afora-compat: a hook pack published before the rename declares `openclaw`, so both reads below
+// take the legacy key too. They have to move together: widening the hooks read alone would make a
+// legacy plugin-capable pack installable and then classify it `hook-only`, dropping its
+// extensions. `plugins-command-helpers.ts` swallows MISSING_AFORA_HOOKS, so the half-widened
+// version of this would have been invisible to the tenant rather than merely wrong.
+const DECLARES_HOOKS = manifestSectionDeclares("hooks");
+const DECLARES_EXTENSIONS = manifestSectionDeclares("extensions");
+
 function resolveAforaHooks(
   manifest: HookPackageManifest,
 ): { ok: true; entries: string[] } | { ok: false; error: string; code: HookInstallErrorCode } {
-  const hooks = manifest[MANIFEST_KEY]?.hooks;
+  const section = readManifestSection(manifest, DECLARES_HOOKS) as { hooks?: unknown } | undefined;
+  const hooks = section?.hooks;
   if (!Array.isArray(hooks)) {
     return {
       ok: false,
@@ -262,7 +281,10 @@ function resolveHookPackageKind(
   if (packageKind) {
     return packageKind;
   }
-  const extensions = manifest[MANIFEST_KEY]?.extensions;
+  const section = readManifestSection(manifest, DECLARES_EXTENSIONS) as
+    | { extensions?: unknown }
+    | undefined;
+  const extensions = section?.extensions;
   if (extensions === undefined) {
     return "hook-only";
   }

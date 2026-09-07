@@ -3,7 +3,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { safeParseJson } from "@afora/normalization-core";
 import { normalizeTrimmedStringList } from "@afora/normalization-core/string-normalization";
-import { MANIFEST_KEY } from "../compat/legacy-names.js";
+import {
+  LEGACY_MANIFEST_KEYS,
+  MANIFEST_KEY,
+  manifestSectionDeclares,
+  readManifestSection,
+} from "../compat/legacy-names.js";
 import type { AforaConfig } from "../config/types.afora.js";
 import { openRootFileSync, readFileDescriptorBoundedSync } from "../infra/boundary-file-read.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
@@ -25,7 +30,9 @@ const HOOK_METADATA_MAX_BYTES = 1024 * 1024;
 
 type HookPackageManifest = {
   name?: string;
-} & Partial<Record<typeof MANIFEST_KEY, { hooks?: string[] }>>;
+} & Partial<
+  Record<typeof MANIFEST_KEY | (typeof LEGACY_MANIFEST_KEYS)[number], { hooks?: string[] }>
+>;
 const log = createSubsystemLogger("hooks/workspace");
 
 type LoadedHook = {
@@ -47,8 +54,15 @@ function readHookPackageManifest(dir: string): HookPackageManifest | null {
   return (safeParseJson(raw) as HookPackageManifest | undefined) ?? null;
 }
 
+// afora-compat: a hook pack published before the rename declares `openclaw.hooks`. Reading only
+// the canonical key does not error here, it returns an empty list, and the caller then falls
+// through to the single-HOOK.md path and registers nothing at all. Silent, so the tenant's hooks
+// simply stop firing.
+const DECLARES_HOOKS = manifestSectionDeclares("hooks");
+
 function resolvePackageHooks(manifest: HookPackageManifest): string[] {
-  return normalizeTrimmedStringList(manifest[MANIFEST_KEY]?.hooks);
+  const section = readManifestSection(manifest, DECLARES_HOOKS);
+  return normalizeTrimmedStringList((section as { hooks?: unknown } | undefined)?.hooks);
 }
 
 function resolveContainedDir(baseDir: string, targetDir: string): string | null {

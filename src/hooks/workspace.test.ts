@@ -319,4 +319,73 @@ describe("hooks workspace", () => {
     expect(entries[0]?.hook.name).toBe("shared-hook");
     expect(entries[0]?.hook.source).toBe("afora-managed");
   });
+
+  // afora-compat: a hook pack published before the rename declares `openclaw.hooks`. Reading only
+  // the canonical key returns an empty list rather than an error, so the loader falls through to
+  // the single-HOOK.md path and the pack's hooks silently stop existing.
+  it("loads every hook a package declares under the legacy manifest key", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-hooks-workspace-legacy-"));
+    const hooksRoot = path.join(root, "hooks");
+    const pkgDir = path.join(hooksRoot, "pkg");
+    for (const name of ["a", "b"]) {
+      const nested = path.join(pkgDir, "hooks", name);
+      fs.mkdirSync(nested, { recursive: true });
+      fs.writeFileSync(path.join(nested, "HOOK.md"), `---\nname: legacy-${name}\n---\n`);
+      fs.writeFileSync(path.join(nested, "handler.js"), "export default async () => {};\n");
+    }
+    fs.writeFileSync(
+      path.join(pkgDir, "package.json"),
+      JSON.stringify({ name: "pkg", openclaw: { hooks: ["./hooks/a", "./hooks/b"] } }),
+    );
+
+    const entries = loadWorkspaceEntriesFromHooksRoot(hooksRoot);
+    expect(hookNames(entries).toSorted()).toEqual(["legacy-a", "legacy-b"]);
+  });
+
+  it("prefers the canonical manifest key when a package declares both", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-hooks-workspace-both-"));
+    const hooksRoot = path.join(root, "hooks");
+    const pkgDir = path.join(hooksRoot, "pkg");
+    for (const name of ["current", "legacy"]) {
+      const nested = path.join(pkgDir, name);
+      fs.mkdirSync(nested, { recursive: true });
+      fs.writeFileSync(path.join(nested, "HOOK.md"), `---\nname: ${name}\n---\n`);
+      fs.writeFileSync(path.join(nested, "handler.js"), "export default async () => {};\n");
+    }
+    fs.writeFileSync(
+      path.join(pkgDir, "package.json"),
+      JSON.stringify({
+        name: "pkg",
+        [MANIFEST_KEY]: { hooks: ["./current"] },
+        openclaw: { hooks: ["./legacy"] },
+      }),
+    );
+
+    const entries = loadWorkspaceEntriesFromHooksRoot(hooksRoot);
+    expect(hookNames(entries)).toEqual(["current"]);
+  });
+
+  // The half-migrated shape: the package has been given an `afora` section for something else and
+  // still declares its hooks under the old key. Returning on the first defined key reads
+  // `afora.hooks` as absent and loads nothing.
+  it("does not let a canonical section without hooks shadow a legacy one that has them", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-hooks-workspace-shadow-"));
+    const hooksRoot = path.join(root, "hooks");
+    const pkgDir = path.join(hooksRoot, "pkg");
+    const nested = path.join(pkgDir, "nested");
+    fs.mkdirSync(nested, { recursive: true });
+    fs.writeFileSync(path.join(nested, "HOOK.md"), "---\nname: nested\n---\n");
+    fs.writeFileSync(path.join(nested, "handler.js"), "export default async () => {};\n");
+    fs.writeFileSync(
+      path.join(pkgDir, "package.json"),
+      JSON.stringify({
+        name: "pkg",
+        [MANIFEST_KEY]: { plugin: { id: "pkg" } },
+        openclaw: { hooks: ["./nested"] },
+      }),
+    );
+
+    const entries = loadWorkspaceEntriesFromHooksRoot(hooksRoot);
+    expect(hookNames(entries)).toEqual(["nested"]);
+  });
 });

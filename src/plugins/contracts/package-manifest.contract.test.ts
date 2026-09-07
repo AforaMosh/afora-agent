@@ -153,6 +153,41 @@ describe("plugin package authoring metadata", () => {
     });
   });
 
+  // The half-migrated shapes. A package that has been given an `afora` section for something
+  // else, or an empty one, or a null one, still declares its entrypoints under the old key.
+  // Returning on the first DEFINED key read all three as "no extensions" and answered
+  // `package.json missing afora.extensions`, which tells an operator to go and edit a third
+  // party's package.json to fix a problem this repository created.
+  it.each([
+    { name: "a canonical section carrying something else", afora: { plugin: { id: "half" } } },
+    { name: "an empty canonical section", afora: {} },
+    { name: "a null canonical section", afora: null },
+  ])("does not let $name shadow the legacy entrypoints", ({ afora }) => {
+    const manifest = {
+      name: "half-migrated",
+      afora,
+      openclaw: { extensions: ["./dist/legacy.js"] },
+    } as unknown as PackageManifest;
+
+    expect(resolvePackageExtensionEntries(manifest)).toEqual({
+      status: "ok",
+      entries: ["./dist/legacy.js"],
+    });
+  });
+
+  it("keeps an explicitly empty canonical extensions list authoritative", () => {
+    // An empty array is the package saying "no entrypoints", not the key being absent, so the
+    // legacy section must NOT be reached. Without this the shadowing fix would quietly resurrect
+    // entrypoints a package deliberately removed when it migrated.
+    const manifest = {
+      name: "deliberately-empty",
+      afora: { extensions: [] },
+      openclaw: { extensions: ["./dist/legacy.js"] },
+    } as PackageManifest;
+
+    expect(resolvePackageExtensionEntries(manifest)).toEqual({ status: "empty", entries: [] });
+  });
+
   it("reports missing when a package declares no manifest key at all", () => {
     const manifest = { name: "bare-example" } as PackageManifest;
 

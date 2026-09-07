@@ -26,6 +26,7 @@ import {
 } from "../test-support/home-env.test-support.js";
 import type { SkillEntry, SkillSnapshot } from "../types.js";
 import { shouldIncludeSkill } from "./config.js";
+import { resolveSkillManifestMetadata } from "./frontmatter.js";
 import { buildSkillSnapshot } from "./workspace-skill-prompt.js";
 
 vi.mock("./plugin-skills.js", () => ({
@@ -563,6 +564,23 @@ describe("shouldIncludeSkill", () => {
           bundledAllowlist: undefined,
         }),
       ).toBe(true);
+    });
+  });
+
+  // afora-compat: a skill authored before the rename declares its metadata under `openclaw`.
+  // The metadata below is not hand-written: it is parsed from a legacy block, so this asserts
+  // the whole chain from frontmatter to eligibility rather than restating the parse's output.
+  it("gates a skill on requirements declared in a legacy metadata block", () => {
+    const metadata = resolveSkillManifestMetadata({
+      metadata: `{ openclaw: { primaryEnv: '${envName}', requires: { env: ['${envName}'] } } }`,
+    });
+    expect(metadata?.primaryEnv).toBe(envName);
+    const legacyEntry = makeSkillEntry("legacy-env-skill", metadata);
+
+    withClearedEnv([envName], () => {
+      expect(shouldIncludeSkill({ entry: legacyEntry, bundledAllowlist: undefined })).toBe(false);
+      process.env[envName] = " example ";
+      expect(shouldIncludeSkill({ entry: legacyEntry, bundledAllowlist: undefined })).toBe(true);
     });
   });
 

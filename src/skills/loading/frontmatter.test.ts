@@ -2,8 +2,9 @@
 import { describe, expect, it } from "vitest";
 import {
   parseSkillFrontmatter,
-  resolveSkillManifestMetadata,
   resolveSkillInvocationPolicy,
+  resolveSkillKey,
+  resolveSkillManifestMetadata,
 } from "./frontmatter.js";
 
 describe("resolveSkillInvocationPolicy", () => {
@@ -249,5 +250,69 @@ user-invocable: true
         },
       ],
     });
+  });
+});
+
+// afora-compat: skills authored before the rename declare their metadata block under `openclaw`.
+// This is the read path that turns that block into the fields the loader acts on, and every one
+// of them changes what a tenant sees: `os` and `requires` gate whether the skill is offered at
+// all, `always` forces it into the prompt, and `skillKey` is the id config and the workshop's
+// on-disk rows are keyed by. The widening restores behaviour rather than changing it, so pin it.
+describe("resolveSkillManifestMetadata legacy manifest block", () => {
+  const LEGACY_BLOCK = [
+    "{ openclaw: {",
+    "  always: true,",
+    "  skillKey: 'legacy-key',",
+    "  os: ['darwin', 'linux'],",
+    "  primaryEnv: 'LEGACY_TOKEN',",
+    "  requires: { bins: ['legacy-cli'], env: ['LEGACY_TOKEN'] },",
+    "} }",
+  ].join("\n");
+
+  it("reads every acted-on field off a legacy block", () => {
+    const metadata = resolveSkillManifestMetadata({ metadata: LEGACY_BLOCK });
+
+    expect(metadata?.always).toBe(true);
+    expect(metadata?.skillKey).toBe("legacy-key");
+    expect(metadata?.os).toEqual(["darwin", "linux"]);
+    expect(metadata?.primaryEnv).toBe("LEGACY_TOKEN");
+    expect(metadata?.requires).toEqual({
+      bins: ["legacy-cli"],
+      anyBins: [],
+      env: ["LEGACY_TOKEN"],
+      config: [],
+    });
+  });
+
+  it("keeps a canonical block authoritative when a skill carries both", () => {
+    const metadata = resolveSkillManifestMetadata({
+      metadata: "{ afora: { skillKey: 'current-key' }, openclaw: { skillKey: 'legacy-key' } }",
+    });
+
+    expect(metadata?.skillKey).toBe("current-key");
+  });
+
+  // resolveSkillKey feeds shouldIncludeSkill and keys the workshop's persisted rows, so a legacy
+  // block that stops being read silently re-keys a skill from its declared id to its directory
+  // name and every row written under the old key becomes unreachable.
+  it("keys the skill by the legacy block's skillKey", () => {
+    const metadata = resolveSkillManifestMetadata({ metadata: LEGACY_BLOCK });
+    const filePath = "/virtual/legacy-skill/SKILL.md";
+    const skill = {
+      name: "legacy-skill",
+      description: "d",
+      filePath,
+      baseDir: "/virtual/legacy-skill",
+      source: "test" as const,
+      sourceInfo: {
+        path: filePath,
+        source: "test" as const,
+        scope: "temporary" as const,
+        origin: "top-level" as const,
+      },
+      disableModelInvocation: false,
+    };
+
+    expect(resolveSkillKey(skill, { skill, frontmatter: {}, metadata })).toBe("legacy-key");
   });
 });
