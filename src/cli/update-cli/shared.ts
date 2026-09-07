@@ -6,9 +6,10 @@ import path from "node:path";
 import { parseStrictPositiveInteger } from "@afora/normalization-core/number-coercion";
 import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { theme } from "../../../packages/terminal-core/src/theme.js";
+import { resolveAforaPackageRoot } from "../../infra/afora-root.js";
+import { isCorePackageName } from "../../infra/core-package-names.js";
 import { hasErrnoCode } from "../../infra/errors.js";
 import { resolveRequiredHomeDir } from "../../infra/home-dir.js";
-import { resolveAforaPackageRoot } from "../../infra/afora-root.js";
 import { readPackageName, readPackageVersion } from "../../infra/package-json.js";
 import { normalizePackageTagInput } from "../../infra/package-tag.js";
 import { trimLogTail } from "../../infra/restart-sentinel.js";
@@ -85,8 +86,10 @@ const AFORA_REPO_URL = "https://github.com/AforaMosh/afora-agent.git";
 const GIT_CLONE_BLOB_FILTER = "--filter=blob:none";
 const MAX_LOG_CHARS = 8000;
 
+// The name `afora update` asks the registry for. This is the PUBLISH identity, and it is
+// deliberately not the same question as "does this directory on disk hold my own package";
+// see isCorePackageName.
 export const DEFAULT_PACKAGE_NAME = "afora";
-const CORE_PACKAGE_NAMES = new Set([DEFAULT_PACKAGE_NAME]);
 
 /** Normalize a CLI tag/version/spec into the npm target form accepted by update flows. */
 export function normalizeTag(value?: string | null): string | null {
@@ -139,8 +142,7 @@ export async function isGitCheckout(root: string): Promise<boolean> {
 }
 
 async function isCorePackage(root: string): Promise<boolean> {
-  const name = await readPackageName(root);
-  return Boolean(name && CORE_PACKAGE_NAMES.has(name));
+  return isCorePackageName(await readPackageName(root));
 }
 
 /** Return true only for existing directories with no entries. */

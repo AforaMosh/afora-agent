@@ -214,6 +214,41 @@ describe("update CLI shared helpers", () => {
     });
   });
 
+  it("accepts an existing checkout under every name a core checkout presents", async () => {
+    // AFORA_GIT_DIR points at a checkout of this repository, whose manifest says afora-agent.
+    // A guard that accepts only the published name rejects the fork's own source tree with
+    // "does not look like a core checkout".
+    for (const name of ["afora-agent", "afora", "openclaw"]) {
+      await withTestDir({ prefix: "afora-update-core-name-" }, async (base) => {
+        const checkoutDir = path.join(base, "afora");
+        await fs.mkdir(path.join(checkoutDir, ".git"), { recursive: true });
+        await fs.writeFile(
+          path.join(checkoutDir, "package.json"),
+          JSON.stringify({ name, version: "1.0.0" }),
+          "utf8",
+        );
+        await expect(
+          ensureGitCheckout({ dir: checkoutDir, timeoutMs: 1_000, env: process.env }),
+        ).resolves.toMatchObject({ checkoutDir: await fs.realpath(checkoutDir), step: null });
+      });
+    }
+  });
+
+  it("rejects an existing checkout that belongs to an unrelated package", async () => {
+    await withTestDir({ prefix: "afora-update-core-name-foreign-" }, async (base) => {
+      const checkoutDir = path.join(base, "afora");
+      await fs.mkdir(path.join(checkoutDir, ".git"), { recursive: true });
+      await fs.writeFile(
+        path.join(checkoutDir, "package.json"),
+        JSON.stringify({ name: "some-other-package", version: "1.0.0" }),
+        "utf8",
+      );
+      await expect(
+        ensureGitCheckout({ dir: checkoutDir, timeoutMs: 1_000, env: process.env }),
+      ).rejects.toThrow("does not look like a core checkout");
+    });
+  });
+
   it("keeps an existing empty checkout destination retryable after clone failure", async () => {
     await withTestDir({ prefix: "afora-update-clone-existing-" }, async (base) => {
       const checkoutDir = path.join(base, "afora");

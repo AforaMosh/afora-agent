@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { uniqueStrings } from "@afora/normalization-core/string-normalization";
+import { isCorePackageName } from "./core-package-names.js";
 import { detectGlobalInstallManagerForRoot } from "./update-global.js";
 import { resolveUpdateInstallRoot, updateInstallRootsMatch } from "./update-install-root.js";
 import { buildUpdateCommandRunner, UPDATE_RUNNER_TIMEOUT_MS } from "./update-runner-command.js";
@@ -9,9 +10,6 @@ import type {
   UpdateInstallSurface,
   UpdateRunnerOptions,
 } from "./update-runner-types.js";
-
-const DEFAULT_PACKAGE_NAME = "afora";
-const CORE_PACKAGE_NAMES = new Set([DEFAULT_PACKAGE_NAME]);
 
 export function normalizeDir(value?: string | null) {
   if (!value) {
@@ -87,7 +85,7 @@ export async function findPackageRoot(candidates: string[]) {
       try {
         const raw = await fs.readFile(path.join(current, "package.json"), "utf-8");
         const name = (JSON.parse(raw) as { name?: string }).name?.trim();
-        if (name && CORE_PACKAGE_NAMES.has(name)) {
+        if (isCorePackageName(name)) {
           return current;
         }
       } catch {

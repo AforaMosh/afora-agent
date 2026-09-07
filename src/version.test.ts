@@ -112,6 +112,19 @@ describe("version resolution", () => {
     });
   });
 
+  it("resolves a package root under every name a core install presents", async () => {
+    // The manifest says afora-agent, the published package says afora, and a root installed
+    // before the rename still says openclaw. All three are this package; none may be skipped
+    // as an unrelated package.json found while walking up.
+    for (const name of ["afora-agent", "afora", "openclaw"]) {
+      await withVersionFixtureDir(async (root) => {
+        await writeJsonFixture(root, "package.json", { name, version: "3.4.5" });
+        const moduleUrl = await ensureModuleFixture(root);
+        expect(readVersionFromPackageJsonForModuleUrl(moduleUrl)).toBe("3.4.5");
+      });
+    }
+  });
+
   it("returns null for malformed module URLs", () => {
     expect(readVersionFromPackageJsonForModuleUrl("not-a-valid-url")).toBeNull();
     expect(readVersionFromBuildInfoForModuleUrl("not-a-valid-url")).toBeNull();

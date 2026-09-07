@@ -337,6 +337,58 @@ describe("runGatewayUpdate", () => {
     expect(calls).toContain(`git -C ${sourceRoot} rev-parse --show-toplevel`);
   });
 
+  it("finds the install root under every name a core install presents", async () => {
+    // Nothing this fork ships is named plain "afora": the repository manifest and the packed
+    // tarball both say afora-agent, and a root installed before the rename says openclaw. A
+    // predicate that accepts only the published name resolves no root at all, and the gateway
+    // update path then reports kind "missing" for a perfectly ordinary install.
+    for (const name of ["afora-agent", "afora", "openclaw"]) {
+      const packageRoot = path.join(tempDir, `root-${name}`);
+      await fs.mkdir(packageRoot, { recursive: true });
+      await fs.writeFile(
+        path.join(packageRoot, "package.json"),
+        JSON.stringify({ name, version: "1.0.0" }),
+        "utf8",
+      );
+      const { runner } = createRunner({});
+      await expect(
+        resolveUpdateInstallSurface({
+          cwd: packageRoot,
+          argv1: path.join(packageRoot, "afora.mjs"),
+          timeoutMs: 1000,
+          runCommand: runner,
+        }),
+      ).resolves.toMatchObject({ kind: "package-root", root: packageRoot, packageRoot });
+    }
+  });
+
+  it("does not claim an unrelated package as the install root", async () => {
+    const foreignRoot = path.join(tempDir, "root-foreign");
+    await fs.mkdir(foreignRoot, { recursive: true });
+    await fs.writeFile(
+      path.join(foreignRoot, "package.json"),
+      JSON.stringify({ name: "some-other-package", version: "1.0.0" }),
+      "utf8",
+    );
+    const { runner } = createRunner({});
+    // buildStartDirs always appends process.cwd(), and this suite runs from the fork checkout,
+    // whose own manifest is a legitimate core root. Point it at the fixture so the assertion is
+    // about the foreign package rather than about where Vitest happens to be.
+    const cwdSpy = vi.spyOn(process, "cwd").mockReturnValue(tempDir);
+    try {
+      await expect(
+        resolveUpdateInstallSurface({
+          cwd: foreignRoot,
+          argv1: path.join(foreignRoot, "afora.mjs"),
+          timeoutMs: 1000,
+          runCommand: runner,
+        }),
+      ).resolves.toMatchObject({ kind: "missing", mode: "unknown" });
+    } finally {
+      cwdSpy.mockRestore();
+    }
+  });
+
   async function setupUiIndex() {
     const uiIndexPath = path.join(tempDir, "dist", "control-ui", "index.html");
     await fs.mkdir(path.dirname(uiIndexPath), { recursive: true });
