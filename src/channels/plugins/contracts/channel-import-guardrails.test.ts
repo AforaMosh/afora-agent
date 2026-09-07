@@ -80,13 +80,22 @@ function createGuardedSource(
   return { path: bundledPluginFile(pluginId, relativePath), forbiddenPatterns };
 }
 
+const SAME_CHANNEL_SDK_GUARD_PLUGIN_IDS = [
+  "discord",
+  "slack",
+  "telegram",
+  "imessage",
+  "whatsapp",
+  "signal",
+] as const;
+
 const SAME_CHANNEL_SDK_GUARDS: GuardedSource[] = [
-  ...["discord", "slack", "telegram", "imessage", "whatsapp", "signal"].flatMap((pluginId) => {
+  ...SAME_CHANNEL_SDK_GUARD_PLUGIN_IDS.flatMap((pluginId) => {
     const relativePaths =
       pluginId === "signal" ? ["src/shared.ts", "src/runtime-api.ts"] : ["src/shared.ts"];
     return relativePaths.map((relativePath) =>
       createGuardedSource(pluginId, relativePath, [
-        new RegExp(`["']afora/plugin-sdk/${pluginId}["']`),
+        new RegExp(`["']afora-agent/plugin-sdk/${pluginId}["']`),
         new RegExp(`plugin-sdk-internal/${pluginId}`),
       ]),
     );
@@ -192,6 +201,12 @@ const LOCAL_EXTENSION_API_BARREL_EXCEPTIONS = [
   // Config schema stays on the public SDK seam and is covered by dedicated config guardrails.
   bundledPluginFile("msteams", "src/config-schema.ts"),
 ] as const;
+
+// One definition, so the guard and the test that proves the guard still bites cannot drift apart
+// the way the guard and the package name did.
+function localApiBarrelGuardPattern(extensionId: string): RegExp {
+  return new RegExp(`["']afora-agent/plugin-sdk/${extensionId}(?:["'/])`, "u");
+}
 
 const sourceTextCache = new Map<string, string>();
 type SourceAnalysis = {
@@ -706,8 +721,38 @@ describe("channel import guardrails", () => {
         expect(
           text,
           `${normalized} should import ${extensionId} helpers via the local api barrel`,
-        ).not.toMatch(new RegExp(`["']afora/plugin-sdk/${extensionId}(?:["'/])`, "u"));
+        ).not.toMatch(localApiBarrelGuardPattern(extensionId));
       }
+    }
+  });
+
+  // Both guards above forbid a specifier spelled out by hand. A specifier only bites while it
+  // names the package an extension can actually import this repo by, and that name is
+  // package.json's, which is exactly what moved underneath them once already. Derive the name
+  // rather than repeating it, so the next rename turns THIS test red by name instead of turning
+  // the guards silently inert.
+  it("keeps the same-channel and local-barrel sdk guards on a specifier extensions can import", () => {
+    const hostManifest = JSON.parse(fs.readFileSync(resolve(REPO_ROOT, "package.json"), "utf8"));
+    const hostPackageName = hostManifest.name as string;
+    for (const pluginId of SAME_CHANNEL_SDK_GUARD_PLUGIN_IDS) {
+      const violation = `import { thing } from "${hostPackageName}/plugin-sdk/${pluginId}";`;
+      const guard = expectDefined(
+        SAME_CHANNEL_SDK_GUARDS.find(
+          (candidate) => candidate.path === bundledPluginFile(pluginId, "src/shared.ts"),
+        ),
+        `the ${pluginId} shared.ts same-channel sdk guard`,
+      );
+      expect(
+        guard.forbiddenPatterns.some((pattern) => pattern.test(violation)),
+        `the ${pluginId} shared.ts same-channel sdk guard no longer matches ${violation}`,
+      ).toBe(true);
+    }
+    for (const extensionId of LOCAL_EXTENSION_API_BARREL_GUARDS) {
+      const violation = `import { thing } from "${hostPackageName}/plugin-sdk/${extensionId}";`;
+      expect(
+        localApiBarrelGuardPattern(extensionId).test(violation),
+        `the ${extensionId} local api barrel guard no longer matches ${violation}`,
+      ).toBe(true);
     }
   });
 });
