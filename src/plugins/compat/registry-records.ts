@@ -184,11 +184,7 @@ export const PLUGIN_COMPAT_RECORDS = [
     owner: "plugin-execution",
     introduced: "2026-04-29",
     docsPath: "/plugins/architecture-internals",
-    surfaces: [
-      "createCapturedPluginRegistration",
-      "capturePluginRegistration",
-      "AforaPluginApi",
-    ],
+    surfaces: ["createCapturedPluginRegistration", "capturePluginRegistration", "AforaPluginApi"],
     diagnostics: ["runtime registration capture contract probe"],
     tests: ["src/plugins/captured-registration.test.ts"],
   },
@@ -309,7 +305,7 @@ export const PLUGIN_COMPAT_RECORDS = [
     status: "removed",
     owner: "sdk",
     introduced: "2026-04-28",
-    replacement: "`afora/plugin-sdk/channel-targets`",
+    replacement: "`afora-agent/plugin-sdk/channel-targets`",
     docsPath: "/plugins/sdk-migration",
     surfaces: ["afora-agent/plugin-sdk/messaging-targets"],
     diagnostics: ["plugin SDK compatibility warning"],
@@ -318,7 +314,7 @@ export const PLUGIN_COMPAT_RECORDS = [
       "src/plugins/contracts/plugin-sdk-subpaths.test.ts",
     ],
     releaseNote:
-      "The deprecated `afora/plugin-sdk/messaging-targets` subpath was removed; import target helpers from `afora/plugin-sdk/channel-targets`.",
+      "The deprecated `afora-agent/plugin-sdk/messaging-targets` subpath was removed; import target helpers from `afora-agent/plugin-sdk/channel-targets`.",
   },
   {
     code: "bundled-plugin-allowlist",
@@ -429,7 +425,10 @@ export const PLUGIN_COMPAT_RECORDS = [
     warningStarts: "2026-04-25",
     replacement: "none yet; retain until a harness subpath ships and external migration is proven",
     docsPath: "/plugins/sdk-agent-harness",
-    surfaces: ["afora-agent/plugin-sdk/agent-harness", "afora-agent/plugin-sdk/agent-harness-runtime"],
+    surfaces: [
+      "afora-agent/plugin-sdk/agent-harness",
+      "afora-agent/plugin-sdk/agent-harness-runtime",
+    ],
     diagnostics: ["plugin SDK compatibility warning"],
     tests: ["src/plugins/contracts/plugin-sdk-subpaths.test.ts"],
   },
@@ -459,7 +458,7 @@ export const PLUGIN_COMPAT_RECORDS = [
     owner: "channel",
     introduced: "2026-07-23",
     replacement:
-      "plugin-owned config schemas plus generic `afora/plugin-sdk/channel-config-schema` and `afora/plugin-sdk/setup-runtime` primitives",
+      "plugin-owned config schemas plus generic `afora-agent/plugin-sdk/channel-config-schema` and `afora-agent/plugin-sdk/setup-runtime` primitives",
     docsPath: "/plugins/sdk-migration#published-channel-setup-compatibility",
     surfaces: [
       "afora-agent/plugin-sdk/bundled-channel-config-schema SlackConfigSchema",

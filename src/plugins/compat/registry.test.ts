@@ -1,6 +1,7 @@
 // Plugin compatibility registry tests cover compatibility metadata loading and validation.
 import fs from "node:fs";
 import { describe, expect, it } from "vitest";
+import { PLUGIN_SDK_PACKAGE_NAMES } from "../sdk-alias.js";
 import { listPluginCompatRecords, type PluginCompatCode } from "./registry.js";
 
 const datePattern = /^\d{4}-\d{2}-\d{2}$/u;
@@ -223,7 +224,7 @@ describe("plugin compatibility registry", () => {
     expect(record).toMatchObject({
       status: "removed",
       replacement:
-        "plugin-owned config schemas plus generic `afora/plugin-sdk/channel-config-schema` and `afora/plugin-sdk/setup-runtime` primitives",
+        "plugin-owned config schemas plus generic `afora-agent/plugin-sdk/channel-config-schema` and `afora-agent/plugin-sdk/setup-runtime` primitives",
     });
     expect(record?.removeAfter).toBeUndefined();
   });
@@ -253,6 +254,39 @@ describe("plugin compatibility registry", () => {
       });
       expect(records.get(code)?.removeAfter).toBeUndefined();
     }
+  });
+
+  it("names Plugin SDK subpaths under a package the alias map is minted under", () => {
+    // Every `<package>/plugin-sdk/<subpath>` in this registry is migration guidance a plugin
+    // author pastes into an import, so the package half has to be one the loader can resolve.
+    // The rename split that pair: the records said `afora/plugin-sdk/...` while the manifest
+    // publishes `afora-agent`, and `afora/plugin-sdk/core` is MODULE_NOT_FOUND. Read the allowed
+    // names from the same constant `resolvePluginSdkScopedAliasMap` mints its alias keys from, so
+    // a later rename moves the records and this assertion together instead of splitting them.
+    const pluginSdkPackageNames = new Set(
+      PLUGIN_SDK_PACKAGE_NAMES.map((name) => name.slice(0, name.lastIndexOf("/plugin-sdk"))),
+    );
+    const specifierPattern = /(@?[A-Za-z0-9._-]+)\/plugin-sdk\//gu;
+    const offenders: string[] = [];
+
+    for (const record of listPluginCompatRecords()) {
+      const texts = [
+        ...record.surfaces,
+        ...record.diagnostics,
+        record.replacement ?? "",
+        record.releaseNote ?? "",
+      ];
+      for (const text of texts) {
+        for (const match of text.matchAll(specifierPattern)) {
+          const packageName = match[1] ?? "";
+          if (!pluginSdkPackageNames.has(packageName)) {
+            offenders.push(`${record.code}: ${packageName}/plugin-sdk/...`);
+          }
+        }
+      }
+    }
+
+    expect(offenders).toEqual([]);
   });
 
   it("keeps removed channel target compatibility as migration tombstones", () => {
