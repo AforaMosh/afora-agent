@@ -323,13 +323,9 @@ describe("plugin authoring commands", () => {
 
       expect(writeJson).toHaveBeenCalledWith({
         valid: false,
-        errors: [
-          "plugin manifest not found: $AFORA_HOME/plugins/invalid-json/afora.plugin.json",
-        ],
+        errors: ["plugin manifest not found: $AFORA_HOME/plugins/invalid-json/afora.plugin.json"],
       });
-      expect(error).toHaveBeenCalledWith(
-        `plugin manifest not found: ${rootDir}/afora.plugin.json`,
-      );
+      expect(error).toHaveBeenCalledWith(`plugin manifest not found: ${rootDir}/afora.plugin.json`);
       expect(log).not.toHaveBeenCalled();
       expect(exit).toHaveBeenCalledWith(1, { resetStream: process.stderr });
     } finally {
@@ -506,9 +502,7 @@ describe("plugin authoring commands", () => {
         packageManifest,
       }),
     ).toEqual(
-      stale
-        ? ["afora.plugin.json generated metadata is stale. Run afora plugins build."]
-        : [],
+      stale ? ["afora.plugin.json generated metadata is stale. Run afora plugins build."] : [],
     );
   });
 
@@ -842,7 +836,7 @@ describe("plugin authoring commands", () => {
     expect(workflow).not.toContain("secrets: inherit");
     expect(workflow).toContain("workflow_dispatch:");
     expect(workflow).toContain(
-      "afora-agent/clawhub/.github/workflows/package-publish.yml@9d49df109d4ad3dc8a6ecf05d26b39f46d294721",
+      "afora/clawhub/.github/workflows/package-publish.yml@9d49df109d4ad3dc8a6ecf05d26b39f46d294721",
     );
   });
 });

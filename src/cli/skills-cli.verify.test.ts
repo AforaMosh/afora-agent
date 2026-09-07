@@ -444,7 +444,7 @@ describe("skills verify CLI", () => {
         source: "server-resolved-github-import",
         kind: "github",
         url: sourceUrl,
-        repo: "afora-agent/skills",
+        repo: "afora/skills",
         ref: "main",
         commit: "0123456789abcdef0123456789abcdef01234567",
         path: "agentreceipt",

@@ -363,8 +363,7 @@ describe("skills-clawhub", () => {
       status: 404,
       path: "/api/v1/skills/missing-skill/install",
       body: "remote not-found detail",
-      expected:
-        'Skill "missing-skill" not found. Run `afora skills list` to see available skills.',
+      expected: 'Skill "missing-skill" not found. Run `afora skills list` to see available skills.',
     },
     {
       name: "maps missing versioned skills to the skills-info recovery message",
@@ -372,8 +371,7 @@ describe("skills-clawhub", () => {
       status: 404,
       path: "/custom-clawhub/api/v1/skills/missing-skill",
       body: "remote versioned not-found detail",
-      expected:
-        'Skill "missing-skill" not found. Run `afora skills list` to see available skills.',
+      expected: 'Skill "missing-skill" not found. Run `afora skills list` to see available skills.',
     },
     {
       name: "keeps server failures distinct from missing skills",
@@ -413,7 +411,7 @@ describe("skills-clawhub", () => {
       installKind: "github",
       trust: { state: trustState },
       github: {
-        repo: "afora-agent/skills",
+        repo: "afora/skills",
         path: "skills/weather",
         commit,
         trustState,
@@ -441,7 +439,7 @@ describe("skills-clawhub", () => {
       requestedReference: reference,
     });
     expect(downloadClawHubGitHubSkillArchiveMock).toHaveBeenCalledWith({
-      repo: "afora-agent/skills",
+      repo: "afora/skills",
       commit,
     });
     expect(fetchClawHubSkillVerificationMock).toHaveBeenCalledWith({
@@ -455,7 +453,7 @@ describe("skills-clawhub", () => {
       origin: {
         slug: "weather",
         version: commit,
-        repo: "afora-agent/skills",
+        repo: "afora/skills",
         path: "skills/weather",
         commit,
       },
@@ -482,7 +480,7 @@ describe("skills-clawhub", () => {
       installKind: "github",
       trust: { state: "not-scanned-by-clawhub" },
       github: {
-        repo: "afora-agent/skills",
+        repo: "afora/skills",
         path: "skills/weather",
         commit: "main",
         contentHash: "sha256:approved",
@@ -572,7 +570,7 @@ describe("skills-clawhub", () => {
         installKind: "github",
         ...(trust ? { trust } : {}),
         github: {
-          repo: "afora-agent/skills",
+          repo: "afora/skills",
           path: "skills/weather",
           commit: "a".repeat(40),
           contentHash: "sha256:approved",
@@ -1474,7 +1472,7 @@ describe("skills-clawhub", () => {
         source: "server-resolved-github-import",
         kind: "github",
         url: sourceUrl,
-        repo: "afora-agent/skills",
+        repo: "afora/skills",
         ref: "main",
         commit: "0123456789abcdef0123456789abcdef01234567",
         path: "agentreceipt",
@@ -1511,7 +1509,7 @@ describe("skills-clawhub", () => {
             source: "server-resolved-github-import",
             kind: "github",
             url: sourceUrl,
-            repo: "afora-agent/skills",
+            repo: "afora/skills",
             ref: "main",
             commit: "0123456789abcdef0123456789abcdef01234567",
             path: "agentreceipt",
@@ -1534,7 +1532,7 @@ describe("skills-clawhub", () => {
   it("requires a full commit SHA before promoting verified source provenance", () => {
     const baseProvenance = {
       source: "server-resolved-github-import",
-      repo: "afora-agent/skills",
+      repo: "afora/skills",
       path: "agentreceipt",
     };
 
@@ -1884,7 +1882,7 @@ describe("skills-clawhub", () => {
       installKind: "github",
       trust: { state: "not-scanned-by-clawhub" },
       github: {
-        repo: "afora-agent/skills",
+        repo: "afora/skills",
         path: "skills/weather",
         commit,
         contentHash: "sha256:approved",
@@ -1960,8 +1958,7 @@ describe("skills-clawhub", () => {
     expect(results).toEqual([
       {
         ok: false,
-        error:
-          'Skill "missing-skill" not found. Run `afora skills list` to see available skills.',
+        error: 'Skill "missing-skill" not found. Run `afora skills list` to see available skills.',
       },
     ]);
     expect(results[0]?.ok ? "" : results[0]?.error).not.toContain(body);
