@@ -36,9 +36,17 @@ function makeTempDir() {
   return makeTrackedTempDir("afora-manifest-registry", tempDirs);
 }
 
+// A real source checkout's package.json says "afora-agent"; only the published package says
+// "afora", and AFORA_DEV_SOURCE_ROOT can only ever be pointed at a checkout. Seeding the
+// published name here described a tree that does not exist, so the validator could reject every
+// real checkout and this test still passed.
 function makeAforaDevSourceRoot() {
   const root = makeTempDir();
-  fs.writeFileSync(path.join(root, "package.json"), JSON.stringify({ name: "afora" }), "utf-8");
+  fs.writeFileSync(
+    path.join(root, "package.json"),
+    JSON.stringify({ name: "afora-agent" }),
+    "utf-8",
+  );
   mkdirSafe(path.join(root, "src"));
   mkdirSafe(path.join(root, "extensions"));
   return root;
@@ -873,6 +881,10 @@ describe("loadPluginManifestRegistry", () => {
           idHint: "codex",
           rootDir: globalDir,
           origin: "global",
+          // Without this the global candidate does not match its own installRecords entry and
+          // loses on origin alone, so the assertion below would hold even with the dev source
+          // root rejected. It has to be the real installed plugin for "prefers" to mean anything.
+          installOwner: "codex",
         }),
       ],
     });

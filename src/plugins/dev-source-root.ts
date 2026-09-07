@@ -1,6 +1,7 @@
 // Resolves development source roots for local plugin installs.
 import fs from "node:fs";
 import path from "node:path";
+import { isCorePackageName } from "../infra/core-package-names.js";
 import { resolveUserPath } from "../utils.js";
 import { isPathInside, safeRealpathSync } from "./path-safety.js";
 
@@ -27,7 +28,10 @@ export function resolveAforaDevSourceRoot(env: NodeJS.ProcessEnv = process.env):
   if (!realRoot) {
     return null;
   }
-  if (readPackageName(path.join(realRoot, "package.json")) !== "afora") {
+  // The two checks below require src/ and extensions/, so this is validating a source checkout,
+  // and a source checkout's manifest name is "afora-agent" rather than the published "afora".
+  // Pinning one name made the check reject the only tree it can be pointed at.
+  if (!isCorePackageName(readPackageName(path.join(realRoot, "package.json")))) {
     return null;
   }
   if (!fs.existsSync(path.join(realRoot, "src"))) {
