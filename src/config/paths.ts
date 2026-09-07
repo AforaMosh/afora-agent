@@ -23,7 +23,9 @@ export function resolveIsNixMode(env: NodeJS.ProcessEnv = process.env): boolean 
 export let isNixMode = resolveIsNixMode();
 
 // Support the legacy pre-rebrand state dirs. Live tenants still have
-// ~/.afora on disk; resolveStateDir migrates it to ~/.afora once.
+// ~/.openclaw on disk; resolveStateDir migrates it to ~/.afora once. (The codemod
+// rewrote the first name as well, leaving a sentence that migrated a directory to
+// itself.) afora-compat: the names below are what is actually on tenant disks.
 const LEGACY_STATE_DIRNAMES = [".openclaw", ".clawdbot"] as const; // afora-compat: legacy dir names
 const MIGRATABLE_STATE_DIRNAME = ".openclaw"; // afora-compat: only this one auto-migrates
 const MIGRATED_MARKER = ".migrated-to-afora";

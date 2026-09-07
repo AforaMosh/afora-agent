@@ -157,9 +157,20 @@ export function listMissingPluginNpmRuntimeHostExports(plan: { repoRoot: string;
 
   const hostPackageJson = readJsonFile(path.join(plan.repoRoot, "package.json"));
   const hostExports = new Set(Object.keys(hostPackageJson.exports ?? {}));
-  return [...hostImports]
-    .filter((specifier) => !hostExports.has(specifier.replace(/^afora/u, ".")))
-    .toSorted((left, right) => left.localeCompare(right));
+  const hostNamePrefix = new RegExp(
+    `^${String(hostPackageJson.name).replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}`,
+    "u",
+  );
+  return (
+    [...hostImports]
+      // Strip the host package's OWN name, read from the manifest rather than spelled out. The
+      // debrand renamed this package to `afora-agent`, and the literal left behind was /^afora/u,
+      // which turns `afora-agent/plugin-sdk/core` into `.-agent/plugin-sdk/core`. That is never in
+      // hostExports, so nothing is filtered and the build throws in phase 5 of 16. Deriving the
+      // prefix from the manifest means the next rename cannot reintroduce this.
+      .filter((specifier) => !hostExports.has(specifier.replace(hostNamePrefix, ".")))
+      .toSorted((left, right) => left.localeCompare(right))
+  );
 }
 
 function packageEntryKey(entry: string) {
