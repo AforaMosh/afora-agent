@@ -36,8 +36,11 @@ vi.mock("../lib/sessions/cloud-recovery-migration.runtime.ts", () => {
 });
 
 const DEFAULT_GATEWAY_URL = "ws://127.0.0.1:18789";
-const LEGACY_DEVICE_AUTH_STORAGE_KEY = "afora.device.auth.v1";
-const DEFAULT_DEVICE_AUTH_STORAGE_KEY = `${LEGACY_DEVICE_AUTH_STORAGE_KEY}:${DEFAULT_GATEWAY_URL}`;
+const DEVICE_AUTH_STORAGE_KEY_PREFIX = "afora.device.auth.v1:";
+const DEFAULT_DEVICE_AUTH_STORAGE_KEY = `${DEVICE_AUTH_STORAGE_KEY_PREFIX}${DEFAULT_GATEWAY_URL}`;
+// The pre-scoping key is spelled the way the builds that wrote it spelled it, and is deliberately
+// not derived from the canonical prefix: deriving it is how the rename moved both at once.
+const LEGACY_DEVICE_AUTH_STORAGE_KEY = "openclaw.device.auth.v1";
 const STORED_CRED = "stored-device-token";
 const ROSITA_CRED = "rosita-device-token";
 const WILFRED_CRED = "wilfred-device-token";

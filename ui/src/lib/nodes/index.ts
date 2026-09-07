@@ -1,9 +1,9 @@
+import { gatewayCredentialScope } from "@afora/gateway-client/browser";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 // Presentation-free by contract: confirmations and secret reveals belong to the owning
 // page, because native window.confirm/window.prompt silently answer in webviews with no
 // dialog bridge and would end the action with no outcome and no recorded reason.
 import { getPublicKeyAsync, hashes, signAsync, utils } from "@noble/ed25519";
-import { gatewayCredentialScope } from "@afora/gateway-client/browser";
-import { isRecord } from "@afora/normalization-core/record-coerce";
 import {
   type DeviceAuthEntry,
   type DeviceAuthStore,
@@ -193,9 +193,17 @@ type DeviceIdentity = {
   privateKey: string;
 };
 
-const LEGACY_DEVICE_AUTH_STORAGE_KEY = "afora.device.auth.v1";
-const DEVICE_AUTH_STORAGE_KEY_PREFIX = `${LEGACY_DEVICE_AUTH_STORAGE_KEY}:`;
+// The two keys this build writes. Both are spelled independently of the legacy ones below so a
+// rename of the canonical name cannot silently carry the recognizers with it.
+const DEVICE_AUTH_STORAGE_KEY_PREFIX = "afora.device.auth.v1:";
 const DEVICE_IDENTITY_STORAGE_KEY = "afora-device-identity-v1";
+// Read-only recognizers, never written. A browser paired before per-gateway scoping holds one
+// origin-wide device-auth entry, and a browser paired before the rename holds the earlier spelling
+// of either shape plus the earlier identity key. Their spellings are frozen at what those builds
+// wrote, so a browser that keeps its pairing across the upgrade is not asked to pair again.
+const LEGACY_DEVICE_AUTH_STORAGE_KEY = "openclaw.device.auth.v1"; // afora-compat: unscoped key
+const LEGACY_DEVICE_AUTH_STORAGE_KEY_PREFIX = `${LEGACY_DEVICE_AUTH_STORAGE_KEY}:`;
+const LEGACY_DEVICE_IDENTITY_STORAGE_KEY = "openclaw-device-identity-v1"; // afora-compat: identity
 
 export function createInitialDevicesState(
   snapshot: Partial<NodesGatewaySnapshot> = {},
@@ -740,11 +748,23 @@ function deviceAuthStorageKey(gatewayUrl: string): string {
   return `${DEVICE_AUTH_STORAGE_KEY_PREFIX}${gatewayCredentialScope(gatewayUrl)}`;
 }
 
-function removeLegacyDeviceAuthStore(storage: Storage | null) {
-  try {
-    storage?.removeItem(LEGACY_DEVICE_AUTH_STORAGE_KEY);
-  } catch {
-    // Legacy cleanup must not make an otherwise usable device token unreadable.
+// Ordered most specific first: a pre-rename scoped entry was written for this exact gateway, while
+// the unscoped one is origin-wide and is only claimed when no scoped entry is readable.
+function legacyDeviceAuthStorageKeys(gatewayUrl: string): string[] {
+  return [
+    `${LEGACY_DEVICE_AUTH_STORAGE_KEY_PREFIX}${gatewayCredentialScope(gatewayUrl)}`,
+    LEGACY_DEVICE_AUTH_STORAGE_KEY,
+  ];
+}
+
+function removeLegacyDeviceAuthStores(storage: Storage | null, gatewayUrl: string) {
+  for (const key of legacyDeviceAuthStorageKeys(gatewayUrl)) {
+    try {
+      storage?.removeItem(key);
+    } catch {
+      // Legacy cleanup must not make an otherwise usable device token unreadable, and one
+      // rejected key must not leave the rest of the superseded entries behind.
+    }
   }
 }
 
@@ -775,26 +795,27 @@ function readStore(gatewayUrl: string): DeviceAuthStore | null {
     const scopedKey = deviceAuthStorageKey(gatewayUrl);
     const scopedStore = parseDeviceAuthStore(storage?.getItem(scopedKey) ?? null);
     if (scopedStore) {
-      removeLegacyDeviceAuthStore(storage);
+      removeLegacyDeviceAuthStores(storage, gatewayUrl);
       return scopedStore;
     }
 
-    const legacyStore = parseDeviceAuthStore(
-      storage?.getItem(LEGACY_DEVICE_AUTH_STORAGE_KEY) ?? null,
-    );
-    if (!legacyStore) {
-      return null;
+    for (const legacyKey of legacyDeviceAuthStorageKeys(gatewayUrl)) {
+      const legacyStore = parseDeviceAuthStore(storage?.getItem(legacyKey) ?? null);
+      if (!legacyStore) {
+        continue;
+      }
+      // Older releases stored one origin-wide token, and releases before the rename stored either
+      // shape under the earlier name. Claim the first readable one for the gateway opened after
+      // upgrade, then remove the superseded keys before sibling routes use them.
+      try {
+        storage?.setItem(scopedKey, JSON.stringify(legacyStore));
+        removeLegacyDeviceAuthStores(storage, gatewayUrl);
+      } catch {
+        // Keep the usable in-memory result when browser storage rejects the migration.
+      }
+      return legacyStore;
     }
-
-    // Older releases stored one origin-wide token. Claim it for the first gateway
-    // opened after upgrade, then remove the ambiguous key before sibling routes use it.
-    try {
-      storage?.setItem(scopedKey, JSON.stringify(legacyStore));
-      removeLegacyDeviceAuthStore(storage);
-    } catch {
-      // Keep the usable in-memory result when browser storage rejects the migration.
-    }
-    return legacyStore;
+    return null;
   } catch {
     return null;
   }
@@ -804,7 +825,7 @@ function writeStore(gatewayUrl: string, store: DeviceAuthStore) {
   try {
     const storage = getSafeLocalStorage();
     storage?.setItem(deviceAuthStorageKey(gatewayUrl), JSON.stringify(store));
-    removeLegacyDeviceAuthStore(storage);
+    removeLegacyDeviceAuthStores(storage, gatewayUrl);
   } catch {
     // localStorage can be unavailable in private or embedded contexts.
   }
@@ -936,12 +957,41 @@ async function generateIdentity(): Promise<DeviceIdentity> {
 // would raise a new unpaired request each time and never retain approval.
 let sessionDeviceIdentity: DeviceIdentity | null = null;
 
+function readStoredDeviceIdentity(
+  storage: Storage | null,
+): { raw: string; fromLegacyKey: boolean } | null {
+  const raw = storage?.getItem(DEVICE_IDENTITY_STORAGE_KEY);
+  if (raw) {
+    return { raw, fromLegacyKey: false };
+  }
+  const legacyRaw = storage?.getItem(LEGACY_DEVICE_IDENTITY_STORAGE_KEY);
+  return legacyRaw ? { raw: legacyRaw, fromLegacyKey: true } : null;
+}
+
+// A rejected write must not cost the caller an identity it can already use: falling through to
+// generation would mint a new key pair and raise a fresh unpaired request for a device the
+// Gateway has already approved.
+function persistDeviceIdentity(
+  storage: Storage | null,
+  stored: StoredIdentity,
+  dropLegacyKey: boolean,
+) {
+  try {
+    storage?.setItem(DEVICE_IDENTITY_STORAGE_KEY, JSON.stringify(stored));
+    if (dropLegacyKey) {
+      storage?.removeItem(LEGACY_DEVICE_IDENTITY_STORAGE_KEY);
+    }
+  } catch {
+    // Browser storage can reject writes in private or embedded contexts.
+  }
+}
+
 export async function loadOrCreateDeviceIdentity(): Promise<DeviceIdentity> {
   const storage = getSafeLocalStorage();
   try {
-    const raw = storage?.getItem(DEVICE_IDENTITY_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as StoredIdentity;
+    const found = readStoredDeviceIdentity(storage);
+    if (found) {
+      const parsed = JSON.parse(found.raw) as StoredIdentity;
       if (
         parsed?.version === 1 &&
         typeof parsed.deviceId === "string" &&
@@ -954,12 +1004,15 @@ export async function loadOrCreateDeviceIdentity(): Promise<DeviceIdentity> {
             ...parsed,
             deviceId: derivedId,
           };
-          storage?.setItem(DEVICE_IDENTITY_STORAGE_KEY, JSON.stringify(updated));
+          persistDeviceIdentity(storage, updated, found.fromLegacyKey);
           return {
             deviceId: derivedId,
             publicKey: parsed.publicKey,
             privateKey: parsed.privateKey,
           };
+        }
+        if (found.fromLegacyKey) {
+          persistDeviceIdentity(storage, parsed, true);
         }
         return {
           deviceId: parsed.deviceId,
