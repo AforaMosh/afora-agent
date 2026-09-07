@@ -56,13 +56,16 @@ const MEMORY_HOST_SDK_EXPORTS = [
   "./secret",
   "./status",
 ] as const;
+// collectCoreReferenceFiles returns its files sorted, so this list is compared in sort order.
+// The rename moved the sort key: these siblings were openclaw-runtime-* when the list was
+// written, and "error-utils" sorted before "openclaw-". As afora-runtime-* they sort before it.
 const MEMORY_HOST_SDK_ALLOWED_CORE_BRIDGE_FILES = [
-  "packages/memory-host-sdk/src/host/error-utils.ts",
   "packages/memory-host-sdk/src/host/afora-runtime-auth.ts",
   "packages/memory-host-sdk/src/host/afora-runtime-kysely.ts",
   "packages/memory-host-sdk/src/host/afora-runtime-network.ts",
   "packages/memory-host-sdk/src/host/afora-runtime-sqlite.ts",
   "packages/memory-host-sdk/src/host/afora-runtime.ts",
+  "packages/memory-host-sdk/src/host/error-utils.ts",
 ] as const;
 const MEMORY_HOST_SDK_RUNTIME_ADAPTER_FILES = [
   "packages/memory-host-sdk/src/host/afora-runtime-agent.ts",
