@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { builtinModules } from "node:module";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { isCorePackageName } from "../../infra/core-package-names.js";
 import { expectNoReaddirSyncDuring } from "../../test-utils/fs-scan-assertions.js";
 import {
   listGitTrackedFiles,
@@ -69,6 +70,7 @@ const COMPUTED_RUNTIME_DEPENDENCIES = new Map<string, Set<string>>([
 ]);
 
 type PackageManifest = {
+  name?: string;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
   optionalDependencies?: Record<string, string>;
@@ -314,6 +316,29 @@ describe("extension runtime dependency manifests", () => {
     });
   });
 
+  it("exempts the host package under the name extensions can actually resolve it by", () => {
+    // An extension imports the host as `<hostName>/plugin-sdk/...`, and the only specifier that
+    // resolves is the root manifest's own `name`: both Node's self-reference and the workspace
+    // self-link in node_modules are derived from it. When the exemption below names some other
+    // spelling it matches nothing, and every extension is reported as importing an undeclared
+    // package. That is what happened when the manifest became "afora-agent" and the exemption
+    // stayed "afora".
+    const hostName = readPackageManifest("package.json").name;
+
+    expect(hostName).toBeTypeOf("string");
+    expect(isCorePackageName(hostName)).toBe(true);
+  });
+
+  it("sees extensions importing the host under that same name", () => {
+    // Guards the other direction: the exemption is only load-bearing while something uses it.
+    const hostName = readPackageManifest("package.json").name;
+    const imports = listRuntimeFiles("extensions/zai").flatMap((filePath) =>
+      collectRuntimeImports(filePath),
+    );
+
+    expect(imports).toContain(hostName);
+  });
+
   it("keeps json5 in memory-core for packaged runtime config parsing", () => {
     const manifest = readPackageManifest("extensions/memory-core/package.json");
 
@@ -348,7 +373,7 @@ describe("extension runtime dependency manifests", () => {
       for (const filePath of listRuntimeFiles(extensionDir)) {
         for (const packageName of collectRuntimeImports(filePath)) {
           if (
-            packageName === "afora" ||
+            isCorePackageName(packageName) ||
             packageName.startsWith("@afora/") ||
             BUILTIN_MODULES.has(packageName) ||
             declared.has(packageName) ||
