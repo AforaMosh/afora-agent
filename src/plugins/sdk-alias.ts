@@ -4,10 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
+import { resolveAforaPackageRootSync } from "../infra/afora-root.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { tryReadJsonSync } from "../infra/json-files.js";
-import { resolveAforaPackageRootSync } from "../infra/afora-root.js";
 import { resolveAforaDevSourceRoot } from "./dev-source-root.js";
 import { PluginLruCache } from "./plugin-cache-primitives.js";
 
@@ -416,7 +416,10 @@ const cachedBundledPluginPublicSurfaceAliasMaps = new PluginLruCache<Record<stri
 const cachedWorkspacePackageAliasMaps = new PluginLruCache<Record<string, string>>(
   MAX_PLUGIN_LOADER_ALIAS_CACHE_ENTRIES,
 );
-const PLUGIN_SDK_PACKAGE_NAMES = ["afora-agent/plugin-sdk", "@afora/plugin-sdk"] as const;
+// The package names every plugin-sdk alias key is minted under. The candidate-kind
+// loop below both MINTS and PROBES keys from this list; a probe spelled as a literal
+// instead goes permanently false and silently disables source preference.
+export const PLUGIN_SDK_PACKAGE_NAMES = ["afora-agent/plugin-sdk", "@afora/plugin-sdk"] as const;
 const CODEX_MCP_PROJECTION_PLUGIN_SDK_SUBPATH = "codex-mcp-projection";
 const CODEX_SESSION_TRANSCRIPT_PLUGIN_SDK_SUBPATH = "codex-session-transcript-runtime";
 const NATIVE_HOOK_RELAY_RUNTIME_PLUGIN_SDK_SUBPATH = "native-hook-relay-runtime";
@@ -1235,7 +1238,7 @@ function resolvePluginSdkScopedAliasMap(
         }
         break;
       }
-      if (Object.hasOwn(aliasMap, `afora/plugin-sdk/${subpath}`)) {
+      if (PLUGIN_SDK_PACKAGE_NAMES.some((name) => Object.hasOwn(aliasMap, `${name}/${subpath}`))) {
         break;
       }
     }

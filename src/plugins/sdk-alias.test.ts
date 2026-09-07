@@ -17,6 +17,7 @@ import {
   resolvePluginLoaderModuleConfig,
   resolvePluginLoaderTryNative,
   resolvePluginRuntimeModulePathWithDiagnostics,
+  PLUGIN_SDK_PACKAGE_NAMES,
   type PluginSdkResolutionPreference,
 } from "./sdk-alias.js";
 import {
@@ -577,9 +578,8 @@ describe("plugin sdk alias helpers", () => {
     const subpaths = withEnv({ AFORA_ENABLE_PRIVATE_QA_CLI: undefined }, () =>
       listPluginSdkExportedSubpaths({ modulePath: sourcePluginEntry }),
     );
-    const aliases = withEnv(
-      { AFORA_ENABLE_PRIVATE_QA_CLI: undefined, NODE_ENV: undefined },
-      () => buildPluginLoaderAliasMap(sourcePluginEntry),
+    const aliases = withEnv({ AFORA_ENABLE_PRIVATE_QA_CLI: undefined, NODE_ENV: undefined }, () =>
+      buildPluginLoaderAliasMap(sourcePluginEntry),
     );
 
     expect(subpaths).toEqual(["core", "qa-runner-runtime"]);
@@ -967,9 +967,8 @@ describe("plugin sdk alias helpers", () => {
     );
     fs.writeFileSync(shadowCodexEntry, 'export const plugin = "shadow";\n', "utf-8");
 
-    const aliases = withEnv(
-      { AFORA_ENABLE_PRIVATE_QA_CLI: undefined, NODE_ENV: undefined },
-      () => buildPluginLoaderAliasMap(sourcePluginEntry),
+    const aliases = withEnv({ AFORA_ENABLE_PRIVATE_QA_CLI: undefined, NODE_ENV: undefined }, () =>
+      buildPluginLoaderAliasMap(sourcePluginEntry),
     );
     const otherAliases = withEnv(
       { AFORA_ENABLE_PRIVATE_QA_CLI: undefined, NODE_ENV: undefined },
@@ -1023,9 +1022,9 @@ describe("plugin sdk alias helpers", () => {
     expect(
       fs.realpathSync(installedAliases["afora-agent/plugin-sdk/codex-mcp-projection"] ?? ""),
     ).toBe(fs.realpathSync(distCodexMcpProjectionPath));
-    expect(fs.realpathSync(devRootAliases["afora-agent/plugin-sdk/codex-mcp-projection"] ?? "")).toBe(
-      fs.realpathSync(devCodexMcpProjectionPath),
-    );
+    expect(
+      fs.realpathSync(devRootAliases["afora-agent/plugin-sdk/codex-mcp-projection"] ?? ""),
+    ).toBe(fs.realpathSync(devCodexMcpProjectionPath));
     expect(fs.realpathSync(aliases["afora-agent/plugin-sdk/native-hook-relay-runtime"] ?? "")).toBe(
       fs.realpathSync(sourceNativeHookRelayRuntimePath),
     );
@@ -1039,7 +1038,9 @@ describe("plugin sdk alias helpers", () => {
     expect(otherAliases["afora-agent/plugin-sdk/codex-mcp-projection"]).toBeUndefined();
     expect(otherAliases["afora-agent/plugin-sdk/native-hook-relay-runtime"]).toBeUndefined();
     expect(installedOtherAliases["afora-agent/plugin-sdk/codex-mcp-projection"]).toBeUndefined();
-    expect(installedOtherAliases["afora-agent/plugin-sdk/native-hook-relay-runtime"]).toBeUndefined();
+    expect(
+      installedOtherAliases["afora-agent/plugin-sdk/native-hook-relay-runtime"],
+    ).toBeUndefined();
     expect(shadowCodexAliases["afora-agent/plugin-sdk/codex-mcp-projection"]).toBeUndefined();
     expect(shadowCodexAliases["afora-agent/plugin-sdk/native-hook-relay-runtime"]).toBeUndefined();
   });
@@ -1737,6 +1738,46 @@ describe("plugin sdk alias helpers", () => {
     });
 
     expect(second).toBe(first);
+  });
+
+  it("prefers source under every package name the alias map is minted under", () => {
+    // The candidate-kind loop mints one alias key per PLUGIN_SDK_PACKAGE_NAMES entry and
+    // then probes the map to decide whether source resolution already won. Minting and
+    // probing must address the same key space: a probe that names a package the loop never
+    // mints cannot fail loudly, it just leaves the dist pass free to overwrite the source
+    // alias, which reads downstream as a source-versus-dist preference rather than a bug.
+    // Asserting the whole minted family, rather than one spelling of it, is what couples
+    // the two halves together.
+    const { fixture, sourceChannelRuntimePath, distChannelRuntimePath } =
+      createPluginSdkAliasTargetFixture();
+    const sourcePluginEntry = writePluginEntry(
+      fixture.root,
+      bundledPluginFile("demo", "src/index.ts"),
+    );
+    const buildAliasMap = (pluginSdkResolution: PluginSdkResolutionPreference) =>
+      resolvePluginLoaderModuleConfig({
+        modulePath: sourcePluginEntry,
+        argv1: path.join(fixture.root, "afora.mjs"),
+        moduleUrl: pathToFileURL(path.join(fixture.root, "src/plugins/loader.ts")).href,
+        pluginSdkResolution,
+      }).aliasMap;
+
+    const { src, dist } = withEnv({ NODE_ENV: undefined }, () => ({
+      src: buildAliasMap("src"),
+      dist: buildAliasMap("dist"),
+    }));
+
+    // Both candidates exist on disk, so the preference is the only thing deciding.
+    expect(fs.existsSync(sourceChannelRuntimePath)).toBe(true);
+    expect(fs.existsSync(distChannelRuntimePath)).toBe(true);
+    expect(PLUGIN_SDK_PACKAGE_NAMES.length).toBeGreaterThan(0);
+
+    for (const packageName of PLUGIN_SDK_PACKAGE_NAMES) {
+      const aliasKey = `${packageName}/channel-runtime-context`;
+      expect(src[aliasKey], `${aliasKey} is never minted`).toBeDefined();
+      expect(fs.realpathSync(src[aliasKey] ?? "")).toBe(fs.realpathSync(sourceChannelRuntimePath));
+      expect(fs.realpathSync(dist[aliasKey] ?? "")).toBe(fs.realpathSync(distChannelRuntimePath));
+    }
   });
 
   it("scopes plugin loader module config by plugin-sdk resolution", () => {
