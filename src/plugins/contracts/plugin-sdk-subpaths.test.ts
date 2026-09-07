@@ -1,5 +1,6 @@
 // Plugin SDK subpath tests cover documented SDK subpath exports and package aliases.
 import fs, { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type {
@@ -317,10 +318,12 @@ function topLevelVitestModuleMockLines(filePath: string): number[] {
 function expectNamedExportParity(params: BrowserHelperExportParityContract) {
   const coreExports = collectNamedExportsFromRepoFile(params.corePath);
   const extensionExports = collectNamedExportsFromRepoFile(params.extensionPath);
-  expect(coreExports, `${params.corePath} exports changed`).toEqual([...params.expectedExports]);
-  expect(extensionExports, `${params.extensionPath} exports changed`).toEqual([
-    ...params.expectedExports,
-  ]);
+  // collectNamedExportsFromSource always returns its names sorted, so the order the
+  // contract happens to list them in is not part of the contract: renaming an export
+  // moves it in the sort without changing the surface. Compare the sets, not the order.
+  const expectedExports = [...params.expectedExports].toSorted();
+  expect(coreExports, `${params.corePath} exports changed`).toEqual(expectedExports);
+  expect(extensionExports, `${params.extensionPath} exports changed`).toEqual(expectedExports);
 }
 
 function listTrackedRepoTsFiles(dir: string): string[] | null {
@@ -1357,6 +1360,32 @@ describe("plugin-sdk subpath exports", () => {
     );
   });
 
+  it("addresses the host plugin-sdk by the one package name this checkout resolves", () => {
+    const manifest = JSON.parse(readRepoSource("package.json")) as { name: string };
+    const source = readRepoSource("src/plugins/contracts/plugin-sdk-subpaths.test.ts");
+    const bareSpecifierNames = [
+      ...new Set(
+        [
+          ...Array.from(source.matchAll(/from\s+["']([^"'`]+)\/plugin-sdk\//gu), (m) => m[1]),
+          ...Array.from(
+            source.matchAll(/importResolvedPluginSdkSubpath\(\s*[`"']([^`"'$]+)\/plugin-sdk\//gu),
+            (m) => m[1],
+          ),
+        ].filter((name): name is string => name !== undefined && !name.startsWith(".")),
+      ),
+    ].toSorted();
+
+    // node_modules/<name> is the workspace self-link and it is minted from package.json
+    // name, so that is the only spelling an in-tree plugin-sdk import can resolve by.
+    // Carrying two spellings in one file is not a style question: the second throws
+    // MODULE_NOT_FOUND at import time, which is how the dynamic imports in this file
+    // stopped running while the static ones above kept passing.
+    expect(bareSpecifierNames).toEqual([manifest.name]);
+    expect(() =>
+      createRequire(import.meta.url).resolve(`${manifest.name}/plugin-sdk/core`),
+    ).not.toThrow();
+  });
+
   it("keeps focused SDK subpaths importable", async () => {
     const channelActionsSdk = await importResolvedPluginSdkSubpath(
       "afora-agent/plugin-sdk/channel-actions",
@@ -1375,7 +1404,9 @@ describe("plugin-sdk subpath exports", () => {
     );
     const representativeModules = [];
     for (const id of representativeRuntimeSmokeSubpaths) {
-      representativeModules.push(await importResolvedPluginSdkSubpath(`afora/plugin-sdk/${id}`));
+      representativeModules.push(
+        await importResolvedPluginSdkSubpath(`afora-agent/plugin-sdk/${id}`),
+      );
     }
 
     expect(pluginEntrySdk.definePluginEntry).toBe(coreDirectSdk.definePluginEntry);
@@ -1448,7 +1479,7 @@ describe("plugin-sdk subpath exports", () => {
     expect(deprecatedPublicPluginSdkEntrypoints.length).toBeGreaterThan(0);
 
     for (const subpath of deprecatedPublicPluginSdkEntrypoints) {
-      const mod = await importResolvedPluginSdkSubpath(`afora/plugin-sdk/${subpath}`);
+      const mod = await importResolvedPluginSdkSubpath(`afora-agent/plugin-sdk/${subpath}`);
       expect(typeof mod, `deprecated subpath ${subpath} should resolve`).toBe("object");
     }
   });

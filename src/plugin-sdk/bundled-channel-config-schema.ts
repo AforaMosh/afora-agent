@@ -2,7 +2,7 @@
  * Bundled-channel config schemas for Afora-maintained plugins.
  *
  * Third-party plugins should define plugin-local schemas and import primitives
- * from afora/plugin-sdk/channel-config-schema instead of depending on these
+ * from afora-agent/plugin-sdk/channel-config-schema instead of depending on these
  * bundled channel schemas. Internal callers use this subpath only for the
  * bundled provider schemas; generic primitives come from channel-config-schema.
  */
