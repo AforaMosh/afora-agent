@@ -2,10 +2,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
+import { resolveAforaPackageRootSync } from "../infra/afora-root.js";
+import { isCorePackageName } from "../infra/core-package-names.js";
 import { hasErrnoCode } from "../infra/errors.js";
 import { resolveUserPath } from "../infra/home-dir.js";
 import { readRootJsonObjectSync } from "../infra/json-files.js";
-import { resolveAforaPackageRootSync } from "../infra/afora-root.js";
 import { isPathInside } from "../infra/path-guards.js";
 import { resolvePluginInstallDir } from "./install-paths.js";
 
@@ -312,8 +313,12 @@ async function linkAforaPeerDependency(params: {
     if (existing) {
       if (!existing.isSymbolicLink()) {
         if (params.peerName === "afora" && existing.isDirectory()) {
+          // Deleting a directory is only safe once it is known to be a stale copy of this package,
+          // and a core root legitimately presents any of several names (repo manifest, published
+          // package, pre-rename legacy). Defer to the shared set rather than spelling one here:
+          // a private second copy silently narrows to "never matches", which disables the repair.
           const existingPackageName = await readPackageName(linkPath);
-          if (existingPackageName === "afora") {
+          if (isCorePackageName(existingPackageName)) {
             await fs.rm(linkPath, { recursive: true, force: true });
             await fs.symlink(params.hostRoot, linkPath, "junction");
             params.logger.info?.(

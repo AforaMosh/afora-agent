@@ -1853,7 +1853,7 @@ describe("installPluginFromClawHub", () => {
     const success = expectInstallSuccess(result);
     expect(success.pluginId).toBe("demo");
     expect(logger.warn).toHaveBeenCalledWith(
-      'ClawHub package "demo@2026.3.22" is missing sha256hash; falling back to files[] verification. Validated files: dist/index.js, afora.plugin.json. Validated generated metadata files present in archive: _meta.json (JSON parse plus slug/version match only).',
+      'ClawHub package "demo@2026.3.22" is missing sha256hash; falling back to files[] verification. Validated files: afora.plugin.json, dist/index.js. Validated generated metadata files present in archive: _meta.json (JSON parse plus slug/version match only).',
     );
   });
 

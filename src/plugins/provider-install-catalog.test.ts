@@ -1,8 +1,7 @@
 // Covers provider install catalog entries from plugin metadata.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-type LoadAforaProviderIndex =
-  typeof import("../model-catalog/index.js").loadAforaProviderIndex;
+type LoadAforaProviderIndex = typeof import("../model-catalog/index.js").loadAforaProviderIndex;
 type LoadPluginRegistrySnapshot = typeof import("./plugin-registry.js").loadPluginRegistrySnapshot;
 type ResolveManifestProviderAuthChoices =
   typeof import("./provider-auth-choices.js").resolveManifestProviderAuthChoices;
@@ -322,7 +321,7 @@ describe("provider install catalog", () => {
         defaultChoice: "clawhub",
         clawhub: {
           spec: "clawhub:afora/vllm@2026.5.2",
-          packageName: "afora-agent/vllm",
+          packageName: "afora/vllm",
           version: "2026.5.2",
           exactVersion: true,
         },
@@ -739,7 +738,7 @@ describe("provider install catalog", () => {
         defaultChoice: "clawhub",
         clawhub: {
           spec: "clawhub:afora/moonshot@2026.5.2",
-          packageName: "afora-agent/moonshot",
+          packageName: "afora/moonshot",
           version: "2026.5.2",
           exactVersion: true,
         },
@@ -925,7 +924,7 @@ describe("provider install catalog", () => {
         defaultChoice: "clawhub",
         clawhub: {
           spec: "clawhub:afora/vllm@2026.5.2",
-          packageName: "afora-agent/vllm",
+          packageName: "afora/vllm",
           version: "2026.5.2",
           exactVersion: true,
         },
