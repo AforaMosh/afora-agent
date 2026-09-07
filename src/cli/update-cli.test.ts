@@ -551,7 +551,10 @@ describe("update-cli", () => {
   };
 
   const createTrackedTempDir = async (prefix: string) => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), prefix));
+    // Realpath'd for the same reason as fixtureRoot above: these dirs are compared against
+    // service/package roots that production resolves through fs.realpath, so a raw mkdtemp path
+    // matches on Linux and never on macOS, where os.tmpdir() is a /var -> /private/var symlink.
+    const dir = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), prefix)));
     tempDirsToCleanup.add(dir);
     return dir;
   };

@@ -1,6 +1,7 @@
 /** Summarizes installed service command paths and Afora package layout. */
 import fs from "node:fs/promises";
 import path from "node:path";
+import { isCorePackageName } from "../infra/core-package-names.js";
 import { pathExists } from "../infra/fs-safe.js";
 import { readPackageName, readPackageVersion } from "../infra/package-json.js";
 import type { GatewayServiceCommandConfig } from "./service-types.js";
@@ -105,7 +106,11 @@ async function resolveAforaPackageRoot(entrypoint: string): Promise<string | und
     const packageJson = path.join(current, "package.json");
     if (await pathExists(packageJson)) {
       const name = await readPackageName(current);
-      if (name === "afora") {
+      // A single literal here matched nothing: this repository's manifest is
+      // "afora-agent", the installed package can present "afora", and a service
+      // installed before the rename still presents "openclaw". Ownership that
+      // fails closed is silent, so share the one set rather than respell it.
+      if (isCorePackageName(name)) {
         return current;
       }
     }

@@ -2,11 +2,8 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { aforaRootFs, aforaRootFsSync } from "./afora-root.fs.runtime.js";
+import { isCorePackageName } from "./core-package-names.js";
 
-// Two live names, not a rename in progress: "afora-agent" is this repository's
-// manifest name, "afora" is the published/installed package and the bin entry.
-// A core root can legitimately present either, so both resolve.
-const CORE_PACKAGE_NAMES = new Set(["afora-agent", "afora", "openclaw"]); // afora-compat: legacy npm package name still resolves as the core root
 const packageNameCache = new Map<string, string | null>();
 const packageRootCache = new Map<string, string | null>();
 const packageRootsCache = new Map<string, string[]>();
@@ -50,7 +47,7 @@ function readPackageNameSync(dir: string): string | null {
 async function findPackageRoot(startDir: string, maxDepth = 12): Promise<string | null> {
   for (const current of iterAncestorDirs(startDir, maxDepth)) {
     const name = await readPackageName(current);
-    if (name && CORE_PACKAGE_NAMES.has(name)) {
+    if (isCorePackageName(name)) {
       return current;
     }
   }
@@ -60,7 +57,7 @@ async function findPackageRoot(startDir: string, maxDepth = 12): Promise<string 
 function findPackageRootSync(startDir: string, maxDepth = 12): string | null {
   for (const current of iterAncestorDirs(startDir, maxDepth)) {
     const name = readPackageNameSync(current);
-    if (name && CORE_PACKAGE_NAMES.has(name)) {
+    if (isCorePackageName(name)) {
       return current;
     }
   }
