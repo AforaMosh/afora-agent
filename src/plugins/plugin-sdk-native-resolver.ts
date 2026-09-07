@@ -4,6 +4,7 @@ import Module from "node:module";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { resolveRealpathOrAbsolute } from "../infra/boundary-path.js";
+import { isCorePackageName } from "../infra/core-package-names.js";
 import { isPathInside, isPathStrictlyInside } from "../infra/path-guards.js";
 import { PluginLruCache } from "./plugin-cache-primitives.js";
 import { registerPluginMetadataProcessMemoLifecycleClear } from "./plugin-metadata-lifecycle.js";
@@ -187,7 +188,7 @@ function resolveLoaderPackageRootFromModulePath(modulePath: string): string {
           name?: unknown;
         };
         if (
-          packageJson.name === "afora" ||
+          isCorePackageName(packageJson.name) ||
           (typeof packageJson.bin === "object" &&
             packageJson.bin !== null &&
             typeof (packageJson.bin as { afora?: unknown }).afora === "string")
@@ -224,9 +225,7 @@ function resolveAllowedParentRoot(modulePath: string): string {
   return findBundledPluginRoot(modulePath) ?? findNearestPackageRoot(modulePath);
 }
 
-function resolveAllowedParentRoots(
-  options: InstallAforaPluginSdkNativeResolverOptions,
-): string[] {
+function resolveAllowedParentRoots(options: InstallAforaPluginSdkNativeResolverOptions): string[] {
   const roots = new Set<string>();
   if (options.pluginModulePath) {
     roots.add(normalizePathForBoundary(resolveAllowedParentRoot(options.pluginModulePath)));

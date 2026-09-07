@@ -459,22 +459,31 @@ describe("checkUpdateStatus", () => {
     });
   });
 
+  // packageName varies because npm names the install directory after the manifest, and the
+  // manifest is not always the published "afora": `npm install -g --prefix /opt/fork <tgz>`
+  // installs this line as "afora-agent", and a box installed before the rename has "openclaw".
+  // Missing one makes checkUpdateStatus read a packed npm root as a pnpm install and then hunt
+  // for a pnpm-lock.yaml that an npm install never writes. Only npm rows vary the name: a
+  // bun-owned root is identified by topology before the manifest name is ever consulted.
   it.each([
-    { manager: "npm", expectedLockfile: "package-lock.json" },
-    { manager: "bun", expectedLockfile: "bun.lockb" },
+    { manager: "npm", packageName: "afora", expectedLockfile: "package-lock.json" },
+    { manager: "npm", packageName: "afora-agent", expectedLockfile: "package-lock.json" },
+    { manager: "npm", packageName: "openclaw", expectedLockfile: "package-lock.json" },
+    { manager: "bun", packageName: "afora", expectedLockfile: "bun.lockb" },
   ])(
-    "detects lockless Afora $manager installs despite packed pnpm metadata",
-    async ({ manager, expectedLockfile }) => {
-      await withTestDir({ prefix: `afora-update-check-lockless-${manager}-` }, async (base) => {
+    "detects lockless Afora $manager installs of $packageName despite packed pnpm metadata",
+    async ({ manager, packageName, expectedLockfile }) => {
+      const prefix = `afora-update-check-lockless-${manager}-${packageName}-`;
+      await withTestDir({ prefix }, async (base) => {
         const bunInstall = path.join(base, "custom-bun-home");
         const root =
           manager === "bun"
-            ? path.join(bunInstall, "install", "global", "node_modules", "afora")
-            : path.join(base, "prefix", "node_modules", "afora");
+            ? path.join(bunInstall, "install", "global", "node_modules", packageName)
+            : path.join(base, "prefix", "node_modules", packageName);
         await fs.mkdir(root, { recursive: true });
         await fs.writeFile(
           path.join(root, "package.json"),
-          JSON.stringify({ name: "afora", packageManager: "pnpm@11.2.2" }),
+          JSON.stringify({ name: packageName, packageManager: "pnpm@11.2.2" }),
           "utf8",
         );
 

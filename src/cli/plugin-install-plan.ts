@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { resolveArchiveKind } from "../infra/archive.js";
 import { parseClawHubPluginSpec } from "../infra/clawhub-spec.js";
+import { isCorePackageName } from "../infra/core-package-names.js";
 import { parseRegistryNpmSpec } from "../infra/npm-registry-spec.js";
 import { findBundledPluginSource, type BundledPluginSource } from "../plugins/bundled-sources.js";
 import { parseGitPluginSpec } from "../plugins/git-install.js";
@@ -195,7 +196,7 @@ function isSourceCheckoutBundledPath(localPath: string): boolean {
       fs.readFileSync(path.join(packageRoot, "package.json"), "utf8"),
     ) as { name?: unknown };
     return (
-      packageJson.name === "afora" &&
+      isCorePackageName(packageJson.name) &&
       fs.existsSync(path.join(packageRoot, ".git")) &&
       fs.existsSync(path.join(packageRoot, "pnpm-workspace.yaml")) &&
       fs.existsSync(path.join(packageRoot, "src")) &&

@@ -28,4 +28,16 @@ describe("isCorePackageName", () => {
   it.each([null, undefined, ""])("rejects %s rather than assuming a core root", (name) => {
     expect(isCorePackageName(name)).toBe(false);
   });
+
+  // Callers pass a field parsed straight out of a package.json, where `name` is only claimed to
+  // be a string. The narrowing lives here so no caller writes its own typeof check, so a
+  // non-string has to be rejected here rather than thrown from a caller that skipped one.
+  // The last two hold an accepted name inside a wrapper: a Set membership test that reached them
+  // would be answering "does this look related to us?" instead of "is this our own root?".
+  it.each([42, true, ["afora"], { name: "afora" }])(
+    "rejects %s without throwing",
+    (name: unknown) => {
+      expect(isCorePackageName(name)).toBe(false);
+    },
+  );
 });

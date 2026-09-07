@@ -123,6 +123,41 @@ describe("control UI assets helpers (fs-mocked)", () => {
     });
   });
 
+  // The last-resort walk is what a global install falls back to when neither the entrypoint
+  // path nor resolveAforaPackageRoot names a root. `npm install -g --prefix /opt/fork <tgz>`
+  // names the install directory after the manifest, so the root a tenant actually has on disk
+  // is "afora-agent" on this line and "openclaw" on a box installed before the rename. Pinning
+  // only the published "afora" left the fallback dead on every artifact this host ships.
+  it.each([
+    ["afora-agent", "the manifest name the packed tarball installs under"],
+    ["afora", "the published package name"],
+    ["openclaw", "a core root installed before the rename"],
+  ])("falls back to a core package root named %s (%s)", async (packageName) => {
+    const root = abs(`fixtures/control-ui-fallback-${packageName}`);
+    const indexPath = path.join(root, "dist", "control-ui", "index.html");
+    setFile(path.join(root, "package.json"), `{"name":"${packageName}"}\n`);
+    setFile(indexPath, "<html></html>\n");
+
+    await expect(
+      resolveControlUiDistIndexHealth({ argv1: path.join(root, "bin", "afora.mjs") }),
+    ).resolves.toEqual({ indexPath, exists: true });
+  });
+
+  // The set is membership, not a prefix: a neighbouring checkout that merely starts with our
+  // name is somebody else's package, and serving its dist/control-ui would be a cross-package read.
+  it.each(["afora-fork", "afora-agent-extra", "not-afora"])(
+    "stops at a package boundary named %s rather than claiming it",
+    async (packageName) => {
+      const root = abs(`fixtures/control-ui-fallback-${packageName}`);
+      setFile(path.join(root, "package.json"), `{"name":"${packageName}"}\n`);
+      setFile(path.join(root, "dist", "control-ui", "index.html"), "<html></html>\n");
+
+      await expect(
+        resolveControlUiDistIndexHealth({ argv1: path.join(root, "bin", "afora.mjs") }),
+      ).resolves.toEqual({ indexPath: null, exists: false });
+    },
+  );
+
   it("checks startup integrity against the actual effective first-party root", () => {
     const root = abs("fixtures/effective-resources");
     const indexPath = path.join(root, "index.html");

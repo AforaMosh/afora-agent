@@ -15,7 +15,13 @@ import {
   resolvePluginInstallSourcePlan,
 } from "./plugin-install-plan.js";
 
-function createSourceCheckoutPlugin(pluginId: string): {
+// A real source checkout's package.json says "afora-agent"; only the published package says
+// "afora". Seeding one name here made this fixture describe a tree that does not exist, so the
+// checkout guard could be pinned to the wrong name and still look covered.
+function createSourceCheckoutPlugin(
+  pluginId: string,
+  packageName = "afora-agent",
+): {
   packageRoot: string;
   pluginRoot: string;
 } {
@@ -25,7 +31,7 @@ function createSourceCheckoutPlugin(pluginId: string): {
   fs.mkdirSync(path.join(packageRoot, "extensions"));
   const pluginRoot = path.join(packageRoot, "dist", "extensions", pluginId);
   fs.mkdirSync(pluginRoot, { recursive: true });
-  fs.writeFileSync(path.join(packageRoot, "package.json"), JSON.stringify({ name: "afora" }));
+  fs.writeFileSync(path.join(packageRoot, "package.json"), JSON.stringify({ name: packageName }));
   fs.writeFileSync(path.join(packageRoot, "pnpm-workspace.yaml"), "packages: []\n");
   return { packageRoot, pluginRoot };
 }
@@ -211,8 +217,34 @@ describe("plugin install plan helpers", () => {
     expect(result?.warning).toContain("npm package unavailable");
   });
 
-  it("does not fall back to source checkout bundles after npm package-not-found", () => {
-    const { packageRoot, pluginRoot } = createSourceCheckoutPlugin("codex");
+  it.each(["afora-agent", "afora", "openclaw"])(
+    "does not fall back to source checkout bundles after npm package-not-found (root named %s)",
+    (packageName) => {
+      const { packageRoot, pluginRoot } = createSourceCheckoutPlugin("codex", packageName);
+      try {
+        const findBundledSource = vi.fn().mockReturnValue({
+          pluginId: "codex",
+          localPath: pluginRoot,
+          npmSpec: "@afora/codex",
+        });
+
+        const result = resolveBundledInstallPlanForNpmFailure({
+          rawSpec: "@afora/codex",
+          code: PLUGIN_INSTALL_ERROR_CODE.NPM_PACKAGE_NOT_FOUND,
+          findBundledSource,
+        });
+
+        expect(result).toBeNull();
+      } finally {
+        fs.rmSync(packageRoot, { recursive: true, force: true });
+      }
+    },
+  );
+
+  // The guard claims a checkout as ours by exact name. A package that merely starts with one of
+  // our names is a different project, and its dist/extensions is a legitimate bundled source.
+  it("still uses a bundle from a checkout whose package name is not one of ours", () => {
+    const { packageRoot, pluginRoot } = createSourceCheckoutPlugin("codex", "afora-fork");
     try {
       const findBundledSource = vi.fn().mockReturnValue({
         pluginId: "codex",
@@ -226,7 +258,7 @@ describe("plugin install plan helpers", () => {
         findBundledSource,
       });
 
-      expect(result).toBeNull();
+      expect(result?.bundledSource.pluginId).toBe("codex");
     } finally {
       fs.rmSync(packageRoot, { recursive: true, force: true });
     }

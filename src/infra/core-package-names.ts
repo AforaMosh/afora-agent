@@ -11,7 +11,13 @@
  */
 const CORE_PACKAGE_NAMES = new Set(["afora-agent", "afora", "openclaw"]); // afora-compat: legacy npm package name still resolves as the core root
 
-/** True when a package.json `name` identifies an Afora core package root. */
-export function isCorePackageName(name: string | null | undefined): boolean {
+/**
+ * True when a package.json `name` identifies an Afora core package root.
+ *
+ * The parameter is `unknown` because every caller feeds it a field parsed straight out of a
+ * package.json on disk, where the type is a claim rather than a guarantee. Narrowing here means
+ * a caller never has to write its own `typeof` check, which is the seam a private copy grows in.
+ */
+export function isCorePackageName(name: unknown): boolean {
   return typeof name === "string" && CORE_PACKAGE_NAMES.has(name);
 }

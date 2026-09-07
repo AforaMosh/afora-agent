@@ -2,6 +2,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { runCommandWithTimeout } from "../process/exec.js";
+import { isCorePackageName } from "./core-package-names.js";
 import {
   detectPackageManager as detectPackageManagerImpl,
   isBunOwnedPackageRoot,
@@ -209,7 +210,7 @@ async function isLocklessAforaNpmInstall(params: {
   }
   try {
     const manifest = JSON.parse(await fs.readFile(path.join(params.root, "package.json"), "utf8"));
-    if (manifest?.name !== "afora") {
+    if (!isCorePackageName(manifest?.name)) {
       return false;
     }
     if (
