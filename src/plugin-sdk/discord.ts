@@ -18,7 +18,7 @@ import {
 import { getRuntimeConfig, getRuntimeConfigSnapshot } from "./runtime-config-snapshot.js";
 
 /**
- * @deprecated Compatibility facade for the `afora/plugin-sdk/discord` subpath.
+ * @deprecated Compatibility facade for the `afora-agent/plugin-sdk/discord` subpath.
  * New channel plugins should use generic channel SDK subpaths.
  */
 export type { ChannelMessageActionAdapter, ChannelMessageActionName } from "./channel-contract.js";

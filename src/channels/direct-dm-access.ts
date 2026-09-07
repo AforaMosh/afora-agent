@@ -30,7 +30,7 @@ export type DirectDmCommandAuthorizationRuntime = {
 
 /**
  * Legacy direct-DM ingress decision with command-authorization compatibility fields.
- * @deprecated Use `resolveChannelMessageIngress` from `afora/plugin-sdk/channel-ingress-runtime`.
+ * @deprecated Use `resolveChannelMessageIngress` from `afora-agent/plugin-sdk/channel-ingress-runtime`.
  */
 export type ResolvedInboundDirectDmAccess = {
   access: {
@@ -59,7 +59,7 @@ function toLegacyDmReasonCode(reasonCode: string): DmGroupAccessReasonCode {
 
 /**
  * Resolves legacy direct-DM access lists, pairing-store entries, and command authorization.
- * @deprecated Use `resolveChannelMessageIngress` from `afora/plugin-sdk/channel-ingress-runtime`.
+ * @deprecated Use `resolveChannelMessageIngress` from `afora-agent/plugin-sdk/channel-ingress-runtime`.
  */
 export async function resolveInboundDirectDmAccessWithRuntime(params: {
   cfg: AforaConfig;
@@ -154,7 +154,7 @@ export async function resolveInboundDirectDmAccessWithRuntime(params: {
 
 /**
  * Creates a pre-crypto authorizer that can issue pairing challenges before payload decryption.
- * @deprecated Use `resolveChannelMessageIngress` from `afora/plugin-sdk/channel-ingress-runtime`.
+ * @deprecated Use `resolveChannelMessageIngress` from `afora-agent/plugin-sdk/channel-ingress-runtime`.
  */
 export function createPreCryptoDirectDmAuthorizer(params: {
   resolveAccess: (

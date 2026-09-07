@@ -11,8 +11,8 @@ import {
 } from "../channels/plugins/group-policy-warnings.js";
 import type { ChannelSecurityAdapter } from "../channels/plugins/types.adapters.js";
 import { collectProviderDangerousNameMatchingScopes } from "../config/dangerous-name-matching.js";
-import type { GroupPolicy } from "../config/types.base.js";
 import type { AforaConfig } from "../config/types.afora.js";
+import type { GroupPolicy } from "../config/types.base.js";
 import { createScopedDmSecurityResolver } from "./channel-config-helpers.js";
 /** Shared policy warnings and DM/group policy helpers for channel plugins. */
 export type {
@@ -86,7 +86,7 @@ type SenderGroupAccessDecision = {
   reason: "allowed" | "disabled" | "empty_allowlist" | "sender_not_allowlisted";
 };
 
-/** @deprecated Use `resolveChannelMessageIngress` from `afora/plugin-sdk/channel-ingress-runtime`. */
+/** @deprecated Use `resolveChannelMessageIngress` from `afora-agent/plugin-sdk/channel-ingress-runtime`. */
 export function resolveSenderScopedGroupPolicy(params: {
   groupPolicy: GroupPolicy;
   groupAllowFrom: string[];
@@ -97,7 +97,7 @@ export function resolveSenderScopedGroupPolicy(params: {
   return params.groupAllowFrom.length > 0 ? "allowlist" : "open";
 }
 
-/** @deprecated Use route descriptors with `resolveChannelMessageIngress` from `afora/plugin-sdk/channel-ingress-runtime`. */
+/** @deprecated Use route descriptors with `resolveChannelMessageIngress` from `afora-agent/plugin-sdk/channel-ingress-runtime`. */
 export function evaluateGroupRouteAccessForPolicy(params: {
   groupPolicy: GroupPolicy;
   routeAllowlistConfigured: boolean;
@@ -121,7 +121,7 @@ export function evaluateGroupRouteAccessForPolicy(params: {
   return { allowed: true, groupPolicy: params.groupPolicy, reason: "allowed" };
 }
 
-/** @deprecated Use `resolveChannelMessageIngress` from `afora/plugin-sdk/channel-ingress-runtime`. */
+/** @deprecated Use `resolveChannelMessageIngress` from `afora-agent/plugin-sdk/channel-ingress-runtime`. */
 export function evaluateSenderGroupAccessForPolicy(params: {
   groupPolicy: GroupPolicy;
   providerMissingFallbackApplied?: boolean;

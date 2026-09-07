@@ -10,12 +10,12 @@ import {
 } from "./message/live.js";
 
 /**
- * @deprecated Use `LivePreviewFinalizerDraft` from `afora/plugin-sdk/channel-outbound`.
+ * @deprecated Use `LivePreviewFinalizerDraft` from `afora-agent/plugin-sdk/channel-outbound`.
  */
 export type DraftPreviewFinalizerDraft<TId> = LivePreviewFinalizerDraft<TId>;
 
 /**
- * @deprecated Use `LivePreviewFinalizerResult` from `afora/plugin-sdk/channel-outbound`.
+ * @deprecated Use `LivePreviewFinalizerResult` from `afora-agent/plugin-sdk/channel-outbound`.
  */
 export type DraftPreviewFinalizerResult = Exclude<
   LivePreviewFinalizerResultKind,
@@ -23,7 +23,7 @@ export type DraftPreviewFinalizerResult = Exclude<
 >;
 
 /**
- * @deprecated Use `deliverFinalizableLivePreview` from `afora/plugin-sdk/channel-outbound`.
+ * @deprecated Use `deliverFinalizableLivePreview` from `afora-agent/plugin-sdk/channel-outbound`.
  */
 export async function deliverFinalizableDraftPreview<TPayload, TId, TEdit>(params: {
   kind: "tool" | "block" | "final";

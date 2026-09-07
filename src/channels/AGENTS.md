@@ -18,7 +18,7 @@ import from this tree directly.
 
 ## Boundary Rules
 
-- Keep extension-facing channel surfaces flowing through `afora/plugin-sdk/*`
+- Keep extension-facing channel surfaces flowing through `afora-agent/plugin-sdk/*`
   instead of direct imports from `src/channels/**`.
 - When a bundled or third-party channel needs a new seam, add a typed SDK
   contract or facade first.

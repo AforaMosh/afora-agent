@@ -13,7 +13,7 @@ export { isTransientNetworkError } from "./retryable-network-errors.js";
 type UnhandledRejectionHandler = (reason: unknown) => boolean;
 type UncaughtExceptionHandler = (error: unknown) => boolean;
 
-// Plugins resolve `afora/plugin-sdk/runtime` through their own staged
+// Plugins resolve `afora-agent/plugin-sdk/runtime` through their own staged
 // `node_modules`, which loads a separate copy of this module. To keep registry
 // state shared across instances, anchor the handlers Set on globalThis.
 const HANDLERS_GLOBAL_KEY = Symbol.for("afora.unhandledRejection.handlers");

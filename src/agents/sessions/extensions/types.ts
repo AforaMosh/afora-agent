@@ -277,7 +277,7 @@ export interface ExtensionUIContext {
    * - `keybindings`: KeybindingsManager for app-level keybindings
    *
    * For full app keybinding support (escape, ctrl+d, model switching, etc.),
-   * extend `CustomEditor` from `afora/plugin-sdk/agent-sessions` and call
+   * extend `CustomEditor` from `afora-agent/plugin-sdk/agent-sessions` and call
    * `super.handleInput(data)` for keys you don't handle.
    *
    * @example

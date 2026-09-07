@@ -90,7 +90,7 @@ Skills own workflows; root owns hard policy and routing. Product direction and m
 ## Architecture
 
 - Core stays plugin-agnostic. No bundled ids/defaults/policy in core when manifest/registry/capability contracts work.
-- Plugins cross into core only via `afora/plugin-sdk/*`, manifest metadata, injected runtime helpers, documented barrels (`api.ts`, `runtime-api.ts`).
+- Plugins cross into core only via `afora-agent/plugin-sdk/*`, manifest metadata, injected runtime helpers, documented barrels (`api.ts`, `runtime-api.ts`).
 - Plugin prod code: no core `src/**`, `src/plugin-sdk-internal/**`, other plugin `src/**`, or relative outside package.
 - Core/tests: no deep plugin internals (`extensions/*/src/**`, `onboard.js`). Use public barrels, SDK facade, generic contracts.
 - Owner boundary: owner-specific repair/detection/onboarding/auth/defaults/provider behavior lives in owner plugin. Shared/core gets generic seams only.
@@ -107,7 +107,7 @@ Skills own workflows; root owns hard policy and routing. Product direction and m
 - Tests may use observed examples, but prod literals need a short contract reason.
 - Compatibility is opt-in. "Shipped" means reachable from a stable release Git tag; betas, nightlies, main/GitHub/PR/unreleased code are not shipped. Plugin SDK surface in beta-only tags carries no compat obligation — remove, don't deprecate.
 - Refactor default: one canonical path — delete the old one. Keep old behavior only when the user explicitly asks or for an explicit public API/config/plugin SDK/data contract, tagged upgrade path, security/migration boundary, dependency contract, or observed prod state; cite it.
-- Reuse canonical coercion guards (`@afora/normalization-core/record-coerce`; plugins: `afora/plugin-sdk/string-coerce-runtime`) — no local `isRecord` copies. CI guard `pnpm check:coercion-helpers` owns the carve-outs; intentionally different semantics or a file that cannot use workspace resolution gets a reasoned carve-out entry there.
+- Reuse canonical coercion guards (`@afora/normalization-core/record-coerce`; plugins: `afora-agent/plugin-sdk/string-coerce-runtime`) — no local `isRecord` copies. CI guard `pnpm check:coercion-helpers` owns the carve-outs; intentionally different semantics or a file that cannot use workspace resolution gets a reasoned carve-out entry there.
 - Core runtime consumes only current canonical shapes/config/data. Legacy or retired shapes normalize only in doctor/migration code before runtime; no runtime shims, aliases, or fallback readers.
 - State/storage migrations are database-first. Runtime reads/writes the canonical store only. Old file stores, sidecars, aliases, and fallback readers belong in `afora doctor --fix` migration code only, never steady-state runtime.
 - Storage default: SQLite only. Do not add JSON/JSONL/TXT/sidecar files for Afora-owned runtime state, caches, queues, registries, indexes, cursors, checkpoints, or plugin scratch data. File storage is only for named product artifacts: import/export, user attachment, log, backup, or external tool contract. Doctrine: `docs/refactor/database-first.md`.
@@ -300,7 +300,7 @@ Mechanics only; policy lives above.
 - Clean timers/env/globals/mocks/sockets/temp dirs/module state; `--isolate=false` safe.
 - Tests asserting resolver/root-containment paths: `fs.realpath` mkdtemp/tmp roots first. macOS `os.tmpdir()` is a `/var` -> `/private/var` symlink; prod resolvers return canonical paths, so raw mkdtemp assertions pass on Linux CI but fail on Mac.
 - Explicit `vi.mock` factories must export every binding prod touches, including error classes used in `instanceof` checks; `vi.importActual` the defining module for those instead of stub classes.
-- Prefer injection and narrow `*.runtime.ts` mocks over broad barrels or `afora/plugin-sdk/*`.
+- Prefer injection and narrow `*.runtime.ts` mocks over broad barrels or `afora-agent/plugin-sdk/*`.
 - Do not edit baseline/inventory/ignore/snapshot/expected-failure files to silence checks without explicit approval. Shrink-only ratchet updates that exactly record removed violations are required maintenance and need no separate approval.
 - Never edit source/test files while a Vitest run is in flight in the same checkout; mid-collection reads produce phantom failures and 120s timeouts. Wait for the run to finish, then edit.
 - Vitest rejects Jest `--runInBand`; use `AFORA_VITEST_MAX_WORKERS=1 pnpm test` for serial proof. Test workers max 16.

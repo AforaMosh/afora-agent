@@ -221,7 +221,7 @@ type DefinedPluginEntry = Omit<DefinePluginEntryOptions, "configSchema"> & {
  *
  * Use this for provider, tool, command, service, memory, and context-engine
  * plugins. Channel plugins should use `defineChannelPluginEntry(...)` from
- * `afora/plugin-sdk/core` so they inherit the channel capability wiring.
+ * `afora-agent/plugin-sdk/core` so they inherit the channel capability wiring.
  */
 export function definePluginEntry({
   id,

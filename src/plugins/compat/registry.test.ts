@@ -259,9 +259,9 @@ describe("plugin compatibility registry", () => {
   it("names Plugin SDK subpaths under a package the alias map is minted under", () => {
     // Every `<package>/plugin-sdk/<subpath>` in this registry is migration guidance a plugin
     // author pastes into an import, so the package half has to be one the loader can resolve.
-    // The rename split that pair: the records said `afora/plugin-sdk/...` while the manifest
-    // publishes `afora-agent`, and `afora/plugin-sdk/core` is MODULE_NOT_FOUND. Read the allowed
-    // names from the same constant `resolvePluginSdkScopedAliasMap` mints its alias keys from, so
+    // The rename split that pair: the records named the bare brand while the manifest publishes
+    // `afora-agent`, so the spelling they carried was MODULE_NOT_FOUND. Read the allowed names
+    // from the same constant `resolvePluginSdkScopedAliasMap` mints its alias keys from, so
     // a later rename moves the records and this assertion together instead of splitting them.
     const pluginSdkPackageNames = new Set(
       PLUGIN_SDK_PACKAGE_NAMES.map((name) => name.slice(0, name.lastIndexOf("/plugin-sdk"))),

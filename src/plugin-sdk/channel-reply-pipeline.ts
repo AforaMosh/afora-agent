@@ -1,6 +1,6 @@
 /**
  * @deprecated Legacy reply-pipeline subpath. New channel message code should
- * use `afora/plugin-sdk/channel-outbound`.
+ * use `afora-agent/plugin-sdk/channel-outbound`.
  */
 
 export {

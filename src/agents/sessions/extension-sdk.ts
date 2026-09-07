@@ -2,7 +2,7 @@
  * Extension-safe session SDK surface.
  *
  * Keep this barrel free of the session runtime and resource loader. The
- * extension loader imports it to virtualize `afora/plugin-sdk/agent-sessions`,
+ * extension loader imports it to virtualize `afora-agent/plugin-sdk/agent-sessions`,
  * so importing loader-owned modules here creates runtime cycles.
  */
 

@@ -21,7 +21,7 @@ const FORBIDDEN_SPECIFIER_RULES = new Map<string, { reason: string; kinds: Set<C
     {
       reason:
         "the deprecated broad barrel makes doctor enumeration cold-load the core agents graph; " +
-        "use afora/plugin-sdk/agent-scope-runtime or another focused subpath",
+        "use afora-agent/plugin-sdk/agent-scope-runtime or another focused subpath",
       kinds: new Set(["doctor-contract", "legacy-setup"]),
     },
   ],
@@ -30,7 +30,7 @@ const FORBIDDEN_SPECIFIER_RULES = new Map<string, { reason: string; kinds: Set<C
     {
       reason:
         "install-path, uninstall, and state-db schema repair cold-load the state-db/kysely graph; " +
-        "use afora/plugin-sdk/runtime-doctor-migrations, or defer the repair behind a dynamic import",
+        "use afora-agent/plugin-sdk/runtime-doctor-migrations, or defer the repair behind a dynamic import",
       kinds: new Set(["doctor-contract", "legacy-setup"]),
     },
   ],
@@ -39,7 +39,7 @@ const FORBIDDEN_SPECIFIER_RULES = new Map<string, { reason: string; kinds: Set<C
     {
       reason:
         "the retired package path exists only for shipped plugin artifacts; " +
-        "current source must use afora/plugin-sdk/runtime-doctor-migrations",
+        "current source must use afora-agent/plugin-sdk/runtime-doctor-migrations",
       kinds: new Set(["doctor-contract", "legacy-setup"]),
     },
   ],
@@ -48,7 +48,7 @@ const FORBIDDEN_SPECIFIER_RULES = new Map<string, { reason: string; kinds: Set<C
     {
       reason:
         "the SSRF runtime barrel cold-loads DNS, proxy state, and logging; " +
-        "legacy private-network config migration lives in afora/plugin-sdk/runtime-doctor-migrations",
+        "legacy private-network config migration lives in afora-agent/plugin-sdk/runtime-doctor-migrations",
       kinds: new Set(["doctor-contract", "legacy-setup"]),
     },
   ],
@@ -57,7 +57,7 @@ const FORBIDDEN_SPECIFIER_RULES = new Map<string, { reason: string; kinds: Set<C
     {
       reason:
         "the provider-model barrel cold-loads replay/endpoint/catalog helpers; " +
-        "use afora/plugin-sdk/model-ref-parse for provider/model reference parsing",
+        "use afora-agent/plugin-sdk/model-ref-parse for provider/model reference parsing",
       kinds: new Set(["doctor-contract"]),
     },
   ],
@@ -84,7 +84,7 @@ const FORBIDDEN_SPECIFIER_RULES = new Map<string, { reason: string; kinds: Set<C
     {
       reason:
         "the provider-auth barrel cold-loads the auth-profile store, provider runtime, and plugin " +
-        "install graph (execa, kysely, commander); use afora/plugin-sdk/secret-provider-alias " +
+        "install graph (execa, kysely, commander); use afora-agent/plugin-sdk/secret-provider-alias " +
         "for the default secret provider alias",
       kinds: new Set(["doctor-contract"]),
     },
@@ -94,7 +94,7 @@ const FORBIDDEN_SPECIFIER_RULES = new Map<string, { reason: string; kinds: Set<C
     {
       reason:
         "the channel-secret barrel cold-loads secret-ref/account-routing modules; " +
-        "the canonical record guard is afora/plugin-sdk/string-coerce-runtime",
+        "the canonical record guard is afora-agent/plugin-sdk/string-coerce-runtime",
       kinds: new Set(["doctor-contract"]),
     },
   ],
@@ -121,7 +121,7 @@ const FORBIDDEN_SPECIFIER_RULES = new Map<string, { reason: string; kinds: Set<C
     {
       reason:
         "the logging barrel makes doctor enumeration cold-load the diagnostic/config graph; " +
-        "use afora/plugin-sdk/security-runtime for redaction helpers",
+        "use afora-agent/plugin-sdk/security-runtime for redaction helpers",
       kinds: new Set(["doctor-contract", "legacy-setup"]),
     },
   ],
@@ -130,7 +130,7 @@ const FORBIDDEN_SPECIFIER_RULES = new Map<string, { reason: string; kinds: Set<C
     {
       reason:
         "the realtime-voice barrel makes doctor enumeration cold-load the agent-consult/session graph; " +
-        "use afora/plugin-sdk/realtime-voice-activation for activation-name helpers",
+        "use afora-agent/plugin-sdk/realtime-voice-activation for activation-name helpers",
       kinds: new Set(["doctor-contract", "legacy-setup"]),
     },
   ],
@@ -139,7 +139,7 @@ const FORBIDDEN_SPECIFIER_RULES = new Map<string, { reason: string; kinds: Set<C
     {
       reason:
         "the channel-outbound barrel makes doctor enumeration cold-load the reply-pipeline/channel-registry graph; " +
-        "use afora/plugin-sdk/channel-streaming-config for streaming config helpers",
+        "use afora-agent/plugin-sdk/channel-streaming-config for streaming config helpers",
       kinds: new Set(["doctor-contract"]),
     },
   ],
@@ -148,7 +148,7 @@ const FORBIDDEN_SPECIFIER_RULES = new Map<string, { reason: string; kinds: Set<C
     {
       reason:
         "the memory-host barrel makes doctor enumeration cold-load the event-store/kysely graph; " +
-        "use afora/plugin-sdk/agent-scope-runtime for agent scope resolvers",
+        "use afora-agent/plugin-sdk/agent-scope-runtime for agent scope resolvers",
       kinds: new Set(["doctor-contract", "legacy-setup"]),
     },
   ],
@@ -407,7 +407,7 @@ function isKyselySpecifier(specifier: string): boolean {
 }
 
 // The transitive walk follows relative imports (plugin-local, core src, and the
-// deep-relative package bridges) plus afora/plugin-sdk/* subpaths. Other bare
+// deep-relative package bridges) plus afora-agent/plugin-sdk/* subpaths. Other bare
 // specifiers are node builtins or npm/workspace packages; only the repo root
 // depends on kysely, so every kysely edge is reachable through this resolution.
 function collectTraversalValueReferences(filePath: string, source: string): ModuleReference[] {

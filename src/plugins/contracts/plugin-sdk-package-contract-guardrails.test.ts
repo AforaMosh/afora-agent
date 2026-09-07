@@ -505,7 +505,7 @@ function collectExtensionProductionSdkSubpathImports(subpaths: ReadonlySet<strin
       for (const match of source.matchAll(importPattern)) {
         const subpath = match[1];
         if (subpath && subpaths.has(subpath)) {
-          imports.add(`${repoRelativePath}: afora/plugin-sdk/${subpath}`);
+          imports.add(`${repoRelativePath}: afora-agent/plugin-sdk/${subpath}`);
         }
       }
     }
@@ -661,7 +661,7 @@ describe("plugin-sdk package contract guardrails", () => {
         continue;
       }
       failures.push(
-        `${reference.file} references afora/plugin-sdk/${reference.subpath}, but ${reference.subpath} is missing from ${missingFrom.join(" and ")}`,
+        `${reference.file} references afora-agent/plugin-sdk/${reference.subpath}, but ${reference.subpath} is missing from ${missingFrom.join(" and ")}`,
       );
     }
 
@@ -681,7 +681,7 @@ describe("plugin-sdk package contract guardrails", () => {
       )
       .map(
         ({ file, subpath }) =>
-          `${file} references afora/plugin-sdk/${subpath}, but its declaration is not included in the typed public package`,
+          `${file} references afora-agent/plugin-sdk/${subpath}, but its declaration is not included in the typed public package`,
       );
 
     expect(failures).toStrictEqual([]);

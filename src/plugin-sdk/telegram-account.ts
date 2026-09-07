@@ -3,15 +3,13 @@ import type { AforaConfig } from "./config-contracts.js";
 import { loadBundledPluginPublicSurfaceModuleSyncCore } from "./facade-loader.js";
 
 /**
- * @deprecated Compatibility type for the `afora/plugin-sdk/telegram-account` facade.
+ * @deprecated Compatibility type for the `afora-agent/plugin-sdk/telegram-account` facade.
  * New channel plugins should prefer injected runtime helpers and generic SDK subpaths.
  */
-export type TelegramAccountConfig = NonNullable<
-  NonNullable<AforaConfig["channels"]>["telegram"]
->;
+export type TelegramAccountConfig = NonNullable<NonNullable<AforaConfig["channels"]>["telegram"]>;
 
 /**
- * @deprecated Compatibility type for the `afora/plugin-sdk/telegram-account` facade.
+ * @deprecated Compatibility type for the `afora-agent/plugin-sdk/telegram-account` facade.
  * New channel plugins should prefer injected runtime helpers and generic SDK subpaths.
  */
 export type ResolvedTelegramAccount = {
