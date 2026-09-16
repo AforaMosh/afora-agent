@@ -730,4 +730,108 @@ describe("session lifecycle state", () => {
       requireWriteSuccess: true,
     });
   });
+  describe("a cancellation that lands after the run already finished", () => {
+    async function runThenCancel(cancelData: Record<string, unknown>) {
+      const started = await persistLifecycle(
+        { sessionId: "session-id", updatedAt: 900 },
+        {
+          ts: 1_000,
+          sessionId: "session-id",
+          runId: "run-a",
+          data: { phase: "start", startedAt: 1_000 },
+        },
+      );
+      const completed = await persistLifecycle(started, {
+        ts: 3_000,
+        sessionId: "session-id",
+        runId: "run-a",
+        data: { phase: "end", startedAt: 1_000, endedAt: 3_000 },
+      });
+      expect(completed).toMatchObject({ status: "done", endedAt: 3_000 });
+      return persistLifecycle(completed, {
+        ts: 3_008,
+        sessionId: "session-id",
+        runId: "run-a",
+        data: { phase: "end", startedAt: 1_000, endedAt: 3_008, ...cancelData },
+      });
+    }
+
+    it("keeps the completion rather than downgrading it to a kill", async () => {
+      const afterCancel = await runThenCancel({ stopReason: "aborted" });
+
+      // Teardown of an already finished run, not an operator stopping live work.
+      // resolveCompletionFromSessionEntry reads only this status, so a downgrade
+      // here is what files a finished subagent as a kill and drops its result.
+      expect(afterCancel).toMatchObject({
+        status: "done",
+        startedAt: 1_000,
+        endedAt: 3_000,
+        abortedLastRun: false,
+      });
+      expect(afterCancel.lastRunError).toBeUndefined();
+    });
+
+    it("keeps the completion for a signal-only cancellation too", async () => {
+      const afterCancel = await runThenCancel({ aborted: true });
+
+      expect(afterCancel).toMatchObject({ status: "done", endedAt: 3_000 });
+    });
+
+    it("still records a kill when the run had not finished", async () => {
+      const started = await persistLifecycle(
+        { sessionId: "session-id", updatedAt: 900 },
+        {
+          ts: 1_000,
+          sessionId: "session-id",
+          runId: "run-a",
+          data: { phase: "start", startedAt: 1_000 },
+        },
+      );
+      const killed = await persistLifecycle(started, {
+        ts: 2_000,
+        sessionId: "session-id",
+        runId: "run-a",
+        data: { phase: "end", startedAt: 1_000, endedAt: 2_000, stopReason: "aborted" },
+      });
+
+      expect(killed).toMatchObject({
+        status: "killed",
+        endedAt: 2_000,
+        abortedLastRun: true,
+      });
+    });
+
+    it("still records a kill for a later run after an earlier run completed", async () => {
+      const completed = await persistLifecycle(
+        { sessionId: "session-id", updatedAt: 900 },
+        {
+          ts: 3_000,
+          sessionId: "session-id",
+          runId: "run-a",
+          data: { phase: "end", startedAt: 1_000, endedAt: 3_000 },
+        },
+      );
+      expect(completed).toMatchObject({ status: "done" });
+
+      const startedAgain = await persistLifecycle(completed, {
+        ts: 4_000,
+        sessionId: "session-id",
+        runId: "run-b",
+        data: { phase: "start", startedAt: 4_000 },
+      });
+      const killed = await persistLifecycle(startedAgain, {
+        ts: 5_000,
+        sessionId: "session-id",
+        runId: "run-b",
+        data: { phase: "end", startedAt: 4_000, endedAt: 5_000, stopReason: "aborted" },
+      });
+
+      expect(killed).toMatchObject({
+        status: "killed",
+        startedAt: 4_000,
+        endedAt: 5_000,
+        abortedLastRun: true,
+      });
+    });
+  });
 });

@@ -141,6 +141,37 @@ function resolveRuntimeMs(params: {
   return undefined;
 }
 
+/**
+ * Returns whether the stored entry already holds a successful terminal end for
+ * the same run generation the incoming event describes.
+ *
+ * Generation identity is the run start time: a later run clears terminal fields
+ * through the "start" branch above, so a stored endedAt paired with a matching
+ * startedAt can only belong to the run this event is about. The stored end must
+ * not be newer than the incoming one, so a genuine kill of live work (which has
+ * no stored successful end) is never mistaken for teardown.
+ */
+function isSameRunAlreadyCompleted(params: {
+  existing?: Partial<LifecycleSessionShape>;
+  startedAt?: number;
+  endedAt?: number;
+}): boolean {
+  const existing = params.existing;
+  if (!existing || existing.status !== "done") {
+    return false;
+  }
+  if (!isFiniteTimestamp(existing.endedAt)) {
+    return false;
+  }
+  if (!isFiniteTimestamp(params.startedAt) || existing.startedAt !== params.startedAt) {
+    return false;
+  }
+  if (isFiniteTimestamp(params.endedAt) && params.endedAt < existing.endedAt) {
+    return false;
+  }
+  return true;
+}
+
 function deriveGatewaySessionLifecycleSnapshot(params: {
   session?: Partial<LifecycleSessionShape> | null;
   event: LifecycleEventLike;
@@ -184,6 +215,23 @@ function deriveGatewaySessionLifecycleSnapshot(params: {
   const status = terminal
     ? SESSION_STATUS_BY_TERMINAL_CLASSIFICATION[classifyAgentRunTerminalOutcome(terminal)]
     : "running";
+  if (status === "killed" && isSameRunAlreadyCompleted({ existing, startedAt, endedAt })) {
+    // The run reached its own successful end before this cancellation arrived,
+    // so the cancellation is teardown of an already finished run rather than an
+    // operator stopping live work. Downgrading "done" to "killed" here is what
+    // makes the registry file a finished subagent as a kill and discard its
+    // result, because resolveCompletionFromSessionEntry reads only this status.
+    // Keep the completion and let the cancellation pass without clobbering it.
+    return {
+      updatedAt: updatedAt ?? existing?.updatedAt,
+      status: "done",
+      lastRunError: undefined,
+      startedAt,
+      endedAt: existing?.endedAt,
+      runtimeMs: existing?.runtimeMs,
+      abortedLastRun: false,
+    };
+  }
   return {
     updatedAt,
     status,
