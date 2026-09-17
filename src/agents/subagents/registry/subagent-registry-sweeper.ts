@@ -19,7 +19,9 @@ import type { createSubagentRunManager } from "./subagent-registry-run-manager.j
 import {
   discardSuspendedPendingFinalDelivery,
   isSuspendedPendingFinalDelivery,
+  redriveSuspendedPendingFinalDelivery,
   resolveSuspendedDeliveryExpiryMs,
+  resolveSuspendedDeliveryRedriveDueAt,
   SUBAGENT_SUSPENDED_DELIVERY_HARD_CAP,
   SUBAGENT_SUSPENDED_DELIVERY_WARNING_COUNT,
 } from "./subagent-registry-suspended-delivery.js";
@@ -95,6 +97,7 @@ export function createSubagentRegistrySweeper(params: {
   startSubagentAnnounceCleanupFlow: SubagentLifecycleController["startSubagentAnnounceCleanupFlow"];
   completeCleanupBookkeeping: SubagentLifecycleController["completeCleanupBookkeeping"];
   discardTerminalDelivery: typeof SubagentLifecycleController.discardTerminalDelivery;
+  resumeRun: (runId: string) => void;
   shouldEmitEndedHookForRun: SubagentLifecycleOptions["shouldEmitEndedHookForRun"];
   emitSubagentEndedHookForRun: SubagentLifecycleOptions["emitSubagentEndedHookForRun"];
   callGateway: typeof callGateway;
@@ -299,6 +302,8 @@ export function createSubagentRegistrySweeper(params: {
           const expired =
             now - (entry.delivery?.suspendedAt ?? now) >= resolveSuspendedDeliveryExpiryMs();
           if (expired) {
+            // Expiry is the retention bound and stays the final step; redrive
+            // only gets its generations while the row is still retained.
             await discardSuspendedPendingFinalDelivery({
               runId,
               entry,
@@ -315,6 +320,15 @@ export function createSubagentRegistrySweeper(params: {
             });
             mutated = true;
             mutatedRunIds.add(runId);
+            continue;
+          }
+          const redriveDueAt = resolveSuspendedDeliveryRedriveDueAt(entry);
+          if (redriveDueAt !== undefined && now >= redriveDueAt) {
+            redriveSuspendedPendingFinalDelivery({ runId, entry, now, warn: params.warn });
+            // Persist before resuming so a crash cannot replay the same
+            // generation and the announce flow reads durable state.
+            params.persist(runId);
+            params.resumeRun(runId);
           }
           continue;
         }

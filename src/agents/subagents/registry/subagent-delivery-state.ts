@@ -5,6 +5,9 @@ import type {
   SubagentRunRecord,
 } from "./subagent-registry.types.js";
 
+/** Logical delivery generations a completion may be reopened for, operator or automatic. */
+export const MAX_DELIVERY_GENERATION = 10;
+
 export function normalizeSubagentRunState(entry: SubagentRunRecord): SubagentRunRecord {
   const taskRunId = typeof entry.taskRunId === "string" ? entry.taskRunId.trim() : "";
   entry.taskRunId = taskRunId || undefined;
