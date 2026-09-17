@@ -203,10 +203,17 @@ export function resolveCompletionFromSessionEntry(
     if (!isFreshForRun(sessionEntry, opts?.notBeforeMs)) {
       return null;
     }
+    // Carry the persisted failure reason instead of replacing it: the session
+    // entry knows why the run failed, and any output the child produced is
+    // captured from its transcript when the completion freezes.
+    const lastRunError = sessionEntry?.lastRunError?.trim();
     return {
       startedAt,
       endedAt,
-      outcome: { status: "error", error: "session completed before registry settled" },
+      outcome: {
+        status: "error",
+        error: lastRunError || "session completed before registry settled",
+      },
       reason: SUBAGENT_ENDED_REASON_ERROR,
     };
   }

@@ -297,12 +297,8 @@ export const freezeRunResultAtCompletion = async (
   if (ensureCompletionState(entry).resultText !== undefined) {
     return false;
   }
-  if (outcome.status === "error") {
-    const completion = ensureCompletionState(entry);
-    completion.resultText = null;
-    completion.capturedAt = Date.now();
-    return true;
-  }
+  // Capture regardless of terminal outcome: an error-classified run can still
+  // have written its report, and this freeze is the only read of it.
   let resultText: string | null;
   try {
     const transcriptTarget = entry.execution.transcriptTarget;
@@ -392,9 +388,9 @@ export const refreshFrozenResultFromSession = async (
   sessionKey: string,
 ): Promise<boolean> => {
   const params = context.options;
-  const candidates = listPendingCompletionRunsForSession(params, sessionKey).filter(
-    (entry) => entry.execution.outcome?.status !== "error",
-  );
+  // Error-classified runs are candidates too: their transcript can hold the
+  // report that was never delivered, and refreshing fills it in late.
+  const candidates = listPendingCompletionRunsForSession(params, sessionKey);
   const entry = candidates.toSorted(compareSubagentRunGeneration).at(-1);
   if (!entry || context.newerGenerationOwnsSession(entry)) {
     return false;

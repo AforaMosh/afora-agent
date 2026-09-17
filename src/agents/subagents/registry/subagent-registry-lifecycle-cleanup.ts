@@ -9,11 +9,7 @@ import { emitSessionLifecycleEvent } from "../../../sessions/session-lifecycle-e
 import { recordSubagentTerminalState } from "../../../sessions/session-state-events.js";
 import { retireSessionMcpRuntimeForSessionKey } from "../../agent-bundle-mcp-tools.js";
 import { releaseSwarmRun } from "../swarm/swarm-scheduler.js";
-import {
-  ensureCompletionState,
-  ensureDeliveryState,
-  getDeliveryLastError,
-} from "./subagent-delivery-state.js";
+import { ensureDeliveryState, getDeliveryLastError } from "./subagent-delivery-state.js";
 import {
   SUBAGENT_ENDED_REASON_KILLED,
   type SubagentLifecycleEndedReason,
@@ -179,9 +175,9 @@ export function suspendPendingFinalDelivery(
   delivery.suspendedReason = args.reason;
   args.entry.cleanupHandled = false;
   args.entry.wakeOnDescendantSettle = undefined;
-  const completion = ensureCompletionState(args.entry);
-  completion.fallbackResultText = undefined;
-  completion.fallbackCapturedAt = undefined;
+  // Keep completion.fallbackResultText: suspension is a retention window, not
+  // a settlement, and the fallback can be the only surviving copy of the
+  // result until a redrive or the terminal discard resolves it.
   params.resumedRuns.delete(args.runId);
   safeSetSubagentTaskDeliveryStatus(params, {
     entry: args.entry,
