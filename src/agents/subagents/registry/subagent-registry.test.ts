@@ -6743,6 +6743,236 @@ describe("subagent registry seam flow", () => {
     expect(mod.getSubagentDeliveryBacklogPressure()).toEqual({ suspended: 51, blocked: true });
   });
 
+  it("redrives a suspended final delivery once the backoff elapses", async () => {
+    const now = Date.parse("2026-03-24T12:00:00Z");
+    const runId = "run-suspended-redrive";
+    const childSessionKey = "agent:main:subagent:suspended-redrive";
+    mocks.loadSessionStore.mockReturnValue(
+      createSessionStore({ lifecycleRevision: "revision-redrive" }, childSessionKey),
+    );
+    mod.addSubagentRunForTests(
+      makeSuspendedDeliveryRun({
+        runId,
+        childSessionKey,
+        controllerSessionKey: "agent:main:main",
+        requesterSessionKey: "agent:main:main",
+        requesterDisplayKey: "main",
+        task: "redrive suspended delivery",
+        spawnMode: "session",
+        createdAt: now - 20 * 60_000,
+        endedAt: now - 20 * 60_000,
+        completion: { required: true, resultText: "redriven result" },
+        delivery: {
+          generation: 1,
+          lastAttemptAt: now - 6 * 60_000,
+          suspendedAt: now - 6 * 60_000,
+        },
+      }),
+    );
+
+    await mod.testing.sweepOnceForTests();
+
+    // The redrive reopen is synchronous; the announce flow settles async.
+    const reopened = mod.getSubagentRunByChildSessionKey(childSessionKey);
+    expect(reopened?.delivery?.generation).toBe(2);
+    expect(reopened?.delivery?.suspendedAt).toBeUndefined();
+    expect(reopened?.delivery?.suspendedReason).toBeUndefined();
+    expect(reopened?.delivery?.status).not.toBe("suspended");
+    expect(mocks.persistSubagentRunsToDisk).toHaveBeenCalled();
+    await waitForFast(() => {
+      expect(mocks.runSubagentAnnounceFlow).toHaveBeenCalledTimes(1);
+    });
+    expectRecordFields(
+      getMockCallArg(mocks.runSubagentAnnounceFlow, 0, 0, "redrive announce"),
+      { childRunId: runId, roundOneReply: "redriven result" },
+      "redrive announce params",
+    );
+    await waitForFast(() => {
+      expect(mod.getSubagentRunByChildSessionKey(childSessionKey)?.delivery?.status).toBe(
+        "delivered",
+      );
+    });
+  });
+
+  it("respects the per-generation backoff before redriving suspended deliveries", async () => {
+    const now = Date.parse("2026-03-24T12:00:00Z");
+    const childSessionKey = "agent:main:subagent:suspended-backoff-due";
+    mocks.loadSessionStore.mockReturnValue({
+      ...createSessionStore({ lifecycleRevision: "revision-early" },
+        "agent:main:subagent:suspended-backoff-early"),
+      ...createSessionStore(
+        { lifecycleRevision: "revision-mid" },
+        "agent:main:subagent:suspended-backoff-mid",
+      ),
+      ...createSessionStore({ lifecycleRevision: "revision-due" }, childSessionKey),
+    });
+    // Generation 1 redrives after 5 minutes; 4 minutes is too early.
+    mod.addSubagentRunForTests(
+      makeSuspendedDeliveryRun({
+        runId: "run-suspended-backoff-early",
+        childSessionKey: "agent:main:subagent:suspended-backoff-early",
+        controllerSessionKey: "agent:main:main",
+        requesterSessionKey: "agent:main:main",
+        requesterDisplayKey: "main",
+        task: "suspended delivery inside backoff",
+        spawnMode: "session",
+        createdAt: now - 10 * 60_000,
+        endedAt: now - 10 * 60_000,
+        delivery: {
+          generation: 1,
+          lastAttemptAt: now - 4 * 60_000,
+          suspendedAt: now - 4 * 60_000,
+        },
+      }),
+    );
+    // Generation 2 waits 10 minutes; 6 minutes is too early.
+    mod.addSubagentRunForTests(
+      makeSuspendedDeliveryRun({
+        runId: "run-suspended-backoff-mid",
+        childSessionKey: "agent:main:subagent:suspended-backoff-mid",
+        controllerSessionKey: "agent:main:main",
+        requesterSessionKey: "agent:main:main",
+        requesterDisplayKey: "main",
+        task: "suspended delivery inside generation two backoff",
+        spawnMode: "session",
+        createdAt: now - 20 * 60_000,
+        endedAt: now - 20 * 60_000,
+        delivery: {
+          generation: 2,
+          lastAttemptAt: now - 6 * 60_000,
+          suspendedAt: now - 6 * 60_000,
+        },
+      }),
+    );
+    // Generation 2, 11 minutes suspended: past the 10 minute backoff.
+    mod.addSubagentRunForTests(
+      makeSuspendedDeliveryRun({
+        runId: "run-suspended-backoff-due",
+        childSessionKey,
+        controllerSessionKey: "agent:main:main",
+        requesterSessionKey: "agent:main:main",
+        requesterDisplayKey: "main",
+        task: "suspended delivery past backoff",
+        spawnMode: "session",
+        createdAt: now - 30 * 60_000,
+        endedAt: now - 30 * 60_000,
+        delivery: {
+          generation: 2,
+          lastAttemptAt: now - 11 * 60_000,
+          suspendedAt: now - 11 * 60_000,
+        },
+      }),
+    );
+
+    await mod.testing.sweepOnceForTests();
+
+    const early = mod.getSubagentRunByChildSessionKey("agent:main:subagent:suspended-backoff-early");
+    const mid = mod.getSubagentRunByChildSessionKey("agent:main:subagent:suspended-backoff-mid");
+    expect(early?.delivery).toMatchObject({
+      status: "suspended",
+      generation: 1,
+      suspendedAt: now - 4 * 60_000,
+    });
+    expect(mid?.delivery).toMatchObject({
+      status: "suspended",
+      generation: 2,
+      suspendedAt: now - 6 * 60_000,
+    });
+    const due = mod.getSubagentRunByChildSessionKey(childSessionKey);
+    expect(due?.delivery?.generation).toBe(3);
+    expect(due?.delivery?.status).not.toBe("suspended");
+    await waitForFast(() => {
+      expect(mocks.runSubagentAnnounceFlow).toHaveBeenCalledTimes(1);
+    });
+    expectRecordFields(
+      getMockCallArg(mocks.runSubagentAnnounceFlow, 0, 0, "backoff redrive announce"),
+      { childRunId: "run-suspended-backoff-due" },
+      "backoff redrive announce params",
+    );
+  });
+
+  it("never redrives a suspended delivery past the generation cap", async () => {
+    const now = Date.parse("2026-03-24T12:00:00Z");
+    const runId = "run-suspended-redrive-capped";
+    const childSessionKey = "agent:main:subagent:suspended-redrive-capped";
+    mod.addSubagentRunForTests(
+      makeSuspendedDeliveryRun({
+        runId,
+        childSessionKey,
+        controllerSessionKey: "agent:main:main",
+        requesterSessionKey: "agent:main:main",
+        requesterDisplayKey: "main",
+        task: "capped suspended delivery",
+        spawnMode: "session",
+        createdAt: now - 24 * 60 * 60_000,
+        endedAt: now - 24 * 60 * 60_000,
+        delivery: {
+          generation: 10,
+          lastAttemptAt: now - 6 * 60 * 60_000,
+          suspendedAt: now - 6 * 60 * 60_000,
+        },
+      }),
+    );
+
+    await mod.testing.sweepOnceForTests();
+
+    const run = mod.getSubagentRunByChildSessionKey(childSessionKey);
+    expect(run?.delivery).toMatchObject({
+      status: "suspended",
+      generation: 10,
+      suspendedAt: now - 6 * 60 * 60_000,
+    });
+    expect(mocks.runSubagentAnnounceFlow).not.toHaveBeenCalled();
+  });
+
+  it("discards a genuinely exhausted suspended delivery exactly once", async () => {
+    const now = Date.parse("2026-03-24T12:00:00Z");
+    const runId = "run-suspended-exhausted";
+    const childSessionKey = "agent:main:subagent:suspended-exhausted";
+    mod.addSubagentRunForTests(
+      makeSuspendedDeliveryRun({
+        runId,
+        childSessionKey,
+        controllerSessionKey: "agent:main:main",
+        requesterSessionKey: "agent:main:main",
+        requesterDisplayKey: "main",
+        task: "exhausted suspended delivery",
+        cleanup: "keep",
+        spawnMode: "run",
+        createdAt: now - 8 * 24 * 60 * 60_000,
+        endedAt: now - 8 * 24 * 60 * 60_000,
+        delivery: {
+          generation: 10,
+          lastAttemptAt: now - 7 * 24 * 60 * 60_000 - 1,
+          suspendedAt: now - 7 * 24 * 60 * 60_000 - 1,
+        },
+      }),
+    );
+
+    await mod.testing.sweepOnceForTests();
+
+    const discarded = mod.getSubagentRunByChildSessionKey(childSessionKey);
+    expect(discarded?.delivery).toMatchObject({
+      status: "discarded",
+      payload: undefined,
+      suspendedAt: undefined,
+      suspendedReason: undefined,
+      discardedAt: now,
+      discardReason: "expired",
+    });
+    expect(mocks.runSubagentAnnounceFlow).not.toHaveBeenCalled();
+
+    vi.setSystemTime(now + 60 * 60_000);
+    await mod.testing.sweepOnceForTests();
+
+    const afterSecondSweep = mod.getSubagentRunByChildSessionKey(childSessionKey);
+    expect(afterSecondSweep?.delivery).toMatchObject({
+      status: "discarded",
+      discardedAt: now,
+      discardReason: "expired",
+    });
+  });
+
   it("contains per-row and background sweeper failures", async () => {
     mod.registerSubagentRun({
       runId: "run-sweep-error",

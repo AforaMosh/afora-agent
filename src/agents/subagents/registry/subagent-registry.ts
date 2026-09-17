@@ -402,6 +402,7 @@ const subagentSweeper = createSubagentRegistrySweeper({
   startSubagentAnnounceCleanupFlow,
   completeCleanupBookkeeping,
   discardTerminalDelivery: SubagentLifecycleController.discardTerminalDelivery,
+  resumeRun: (runId) => resumeSubagentRun(runId),
   shouldEmitEndedHookForRun: contextCleanup.shouldEmitEndedHookForRun,
   emitSubagentEndedHookForRun: contextCleanup.emitSubagentEndedHookForRun,
   callGateway: (request) => subagentRegistryDeps.callGateway(request),

@@ -1,10 +1,17 @@
-import { isDeliverySuspended } from "./subagent-delivery-state.js";
+import {
+  ensureDeliveryState,
+  isDeliverySuspended,
+  MAX_DELIVERY_GENERATION,
+} from "./subagent-delivery-state.js";
 import {
   SUBAGENT_ENDED_REASON_COMPLETE,
   type SubagentLifecycleEndedReason,
 } from "./subagent-lifecycle-events.js";
 import { shouldSuppressSubagentRecoverySessionEffects } from "./subagent-recovery-state.js";
-import { safeRemoveAttachmentsDir } from "./subagent-registry-helpers.js";
+import {
+  ANNOUNCE_COMPLETION_HARD_EXPIRY_MS,
+  safeRemoveAttachmentsDir,
+} from "./subagent-registry-helpers.js";
 import type { SubagentLifecycleController } from "./subagent-registry-lifecycle.js";
 import type { SubagentRunRecord } from "./subagent-registry.types.js";
 
@@ -12,12 +19,82 @@ const SUBAGENT_SUSPENDED_DELIVERY_RETENTION_MS = 7 * 24 * 60 * 60_000;
 export const SUBAGENT_SUSPENDED_DELIVERY_WARNING_COUNT = 25;
 export const SUBAGENT_SUSPENDED_DELIVERY_HARD_CAP = 50;
 
+// Automatic redrive backoff for a suspended delivery, per logical generation:
+// 5m, 10m, 20m, … capped at 24h. Nine redrives (generations 2–10) span ~42.5h,
+// well inside the 7-day retention window, so exhaustion always precedes expiry.
+const SUSPENDED_DELIVERY_REDRIVE_BASE_DELAY_MS = 5 * 60_000;
+const SUSPENDED_DELIVERY_REDRIVE_MAX_DELAY_MS = 24 * 60 * 60_000;
+
 export function isSuspendedPendingFinalDelivery(entry: SubagentRunRecord): boolean {
   return typeof entry.execution.endedAt === "number" && isDeliverySuspended(entry);
 }
 
 export function resolveSuspendedDeliveryExpiryMs(): number {
   return SUBAGENT_SUSPENDED_DELIVERY_RETENTION_MS;
+}
+
+/** Deterministic delay before the sweeper redrives a delivery suspended at `generation`. */
+export function resolveSuspendedDeliveryRedriveDelayMs(generation: number): number {
+  const shift = Math.min(Math.max(0, Math.floor(generation) - 1), 10);
+  return Math.min(
+    SUSPENDED_DELIVERY_REDRIVE_BASE_DELAY_MS * 2 ** shift,
+    SUSPENDED_DELIVERY_REDRIVE_MAX_DELAY_MS,
+  );
+}
+
+/** Instant the next automatic redrive is due, or undefined once the generation cap is reached. */
+export function resolveSuspendedDeliveryRedriveDueAt(
+  entry: SubagentRunRecord,
+): number | undefined {
+  if (!isSuspendedPendingFinalDelivery(entry)) {
+    return undefined;
+  }
+  const delivery = entry.delivery;
+  const suspendedAt = delivery?.suspendedAt;
+  if (!delivery || typeof suspendedAt !== "number") {
+    return undefined;
+  }
+  const generation = delivery.generation ?? 1;
+  if (generation >= MAX_DELIVERY_GENERATION) {
+    return undefined;
+  }
+  return suspendedAt + resolveSuspendedDeliveryRedriveDelayMs(generation);
+}
+
+/**
+ * Reopens a suspended delivery for one automatic redrive generation, mirroring
+ * the operator retry in subagent-completion-delivery.ts. The caller persists
+ * the row and resumes the run after this returns.
+ */
+export function redriveSuspendedPendingFinalDelivery(params: {
+  runId: string;
+  entry: SubagentRunRecord;
+  now: number;
+  warn: (message: string, meta?: Record<string, unknown>) => void;
+}): void {
+  const { entry, now } = params;
+  const delivery = ensureDeliveryState(entry);
+  const generation = delivery.generation ?? 1;
+  Object.assign(delivery, {
+    status: "pending" as const,
+    disposition: "retryable" as const,
+    generation: generation + 1,
+    queueId: undefined,
+    windowStartedAt: now,
+    deadlineAt: now + ANNOUNCE_COMPLETION_HARD_EXPIRY_MS,
+    suspendedAt: undefined,
+    suspendedReason: undefined,
+    attemptCount: 0,
+    lastError: undefined,
+    nextAttemptAt: undefined,
+  });
+  entry.cleanupHandled = false;
+  params.warn("subagent suspended delivery redriven", {
+    runId: entry.runId,
+    childSessionKey: entry.childSessionKey,
+    requesterSessionKey: entry.requesterSessionKey,
+    generation: delivery.generation,
+  });
 }
 
 export async function discardSuspendedPendingFinalDelivery(params: {
