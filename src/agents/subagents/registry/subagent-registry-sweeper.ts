@@ -35,6 +35,7 @@ import type {
 import { isStaleUnendedSubagentRun } from "./subagent-run-liveness.js";
 import { deleteSubagentSessionForCleanup } from "./subagent-session-cleanup.js";
 import {
+  isExternalCliSubagentRuntime,
   loadSubagentSessionEntry,
   resolveCompletionFromSessionEntry,
   resolveSubagentRunOrphanReason,
@@ -44,6 +45,12 @@ export { retireSupersededSubagentRun } from "./subagent-registry-sweeper-retire.
 
 const SESSION_RUN_TTL_MS = 5 * 60_000;
 const STALE_ACTIVE_SUBAGENT_GRACE_MS = isFastTestRuntimeEnv() ? 1_000 : 60_000;
+// An external CLI child (kimi-cli on this fleet) can outlive a Gateway restart
+// and still be finishing when its registry row has no in-memory context, so
+// its lost-context grace is far longer than an embedded child's.
+const STALE_ACTIVE_EXTERNAL_CLI_SUBAGENT_GRACE_MS = isFastTestRuntimeEnv()
+  ? 1_000
+  : 15 * 60_000;
 const restartRecoveryLoader = createLazyImportLoader(
   () => import("./subagent-registry-restart-recovery.js"),
 );
@@ -366,26 +373,10 @@ export function createSubagentRegistrySweeper(params: {
         if (typeof entry.execution.endedAt !== "number") {
           // Queued collectors have no run context until FIFO dispatch; the scheduler owns them.
           const notStale = entry.execution.status === "queued" || getAgentRunContext(runId);
-          const activeAgeMs = now - (entry.execution.startedAt ?? entry.createdAt);
-          if (!notStale && activeAgeMs >= STALE_ACTIVE_SUBAGENT_GRACE_MS) {
-            const orphanReason = resolveSubagentRunOrphanReason({ entry });
-            if (orphanReason) {
-              if (
-                reconcileOrphanedRun({
-                  runId,
-                  entry,
-                  reason: orphanReason,
-                  source: "resume",
-                  runs,
-                  resumedRuns,
-                })
-              ) {
-                mutated = true;
-                mutatedRunIds.add(runId);
-              }
-              continue;
-            }
-
+          if (!notStale) {
+            // A landed terminal status is adopted on every sweep, before any
+            // lost-context grace: a proven completion must never wait for, or
+            // be overwritten by, the force-error below.
             const sessionEntry = loadSubagentSessionEntry({
               childSessionKey: entry.childSessionKey,
               storeCache,
@@ -409,23 +400,49 @@ export function createSubagentRegistrySweeper(params: {
               );
               continue;
             }
+            const activeAgeMs = now - (entry.execution.startedAt ?? entry.createdAt);
+            const graceMs = isExternalCliSubagentRuntime({
+              childSessionKey: entry.childSessionKey,
+              sessionEntry,
+            })
+              ? STALE_ACTIVE_EXTERNAL_CLI_SUBAGENT_GRACE_MS
+              : STALE_ACTIVE_SUBAGENT_GRACE_MS;
+            if (activeAgeMs >= graceMs) {
+              const orphanReason = resolveSubagentRunOrphanReason({ entry });
+              if (orphanReason) {
+                if (
+                  reconcileOrphanedRun({
+                    runId,
+                    entry,
+                    reason: orphanReason,
+                    source: "resume",
+                    runs,
+                    resumedRuns,
+                  })
+                ) {
+                  mutated = true;
+                  mutatedRunIds.add(runId);
+                }
+                continue;
+              }
 
-            await params.completeSubagentRunWithRecovery(
-              {
-                runId,
-                endedAt: now,
-                outcome: {
-                  status: "error",
-                  error: "subagent run lost active execution context",
+              await params.completeSubagentRunWithRecovery(
+                {
+                  runId,
+                  endedAt: now,
+                  outcome: {
+                    status: "error",
+                    error: "subagent run lost active execution context",
+                  },
+                  reason: SUBAGENT_ENDED_REASON_ERROR,
+                  sendFarewell: true,
+                  accountId: entry.requesterOrigin?.accountId,
+                  triggerCleanup: true,
                 },
-                reason: SUBAGENT_ENDED_REASON_ERROR,
-                sendFarewell: true,
-                accountId: entry.requesterOrigin?.accountId,
-                triggerCleanup: true,
-              },
-              "sweeper-lost-context",
-            );
-            continue;
+                "sweeper-lost-context",
+              );
+              continue;
+            }
           }
           // Retention starts after completion; a live run must never fall
           // through to archival because an older persisted deadline expired.

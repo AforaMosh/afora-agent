@@ -417,6 +417,100 @@ describe("agent run terminal outcome", () => {
       }
     },
   );
+
+  describe("a proven completion against later observations", () => {
+    const completion = () =>
+      buildAgentRunTerminalOutcome({
+        status: "ok",
+        endedAt: 200,
+      });
+
+    it.each([
+      {
+        name: "teardown failure",
+        incoming: buildAgentRunTerminalOutcome({
+          status: "error",
+          error: "teardown transport failed",
+          endedAt: 210,
+        }),
+      },
+      {
+        name: "blocked liveness",
+        incoming: buildAgentRunTerminalOutcome({
+          status: "error",
+          livenessState: "blocked",
+          endedAt: 210,
+        }),
+      },
+      {
+        name: "abandoned liveness",
+        incoming: buildAgentRunTerminalOutcome({
+          status: "error",
+          livenessState: "abandoned",
+          endedAt: 210,
+        }),
+      },
+      {
+        name: "soft timeout",
+        incoming: buildAgentRunTerminalOutcome({
+          status: "timeout",
+          timeoutPhase: "gateway_draining",
+          endedAt: 210,
+        }),
+      },
+      {
+        name: "teardown abort",
+        incoming: buildAgentRunTerminalOutcome({
+          status: "error",
+          stopReason: "aborted",
+          endedAt: 210,
+        }),
+      },
+      {
+        name: "teardown cancellation",
+        incoming: buildAgentRunTerminalOutcome({
+          status: "error",
+          stopReason: "rpc",
+          endedAt: 210,
+        }),
+      },
+      {
+        name: "supersession",
+        incoming: buildAgentRunTerminalOutcome({
+          status: "error",
+          stopReason: "superseded",
+          endedAt: 210,
+        }),
+      },
+    ])("is not overwritten by a later $name", ({ incoming }) => {
+      const proven = completion();
+
+      expect(mergeAgentRunTerminalOutcome(proven, incoming)).toBe(proven);
+    });
+
+    it("still yields to an earlier proven hard timeout", () => {
+      const proven = completion();
+      const earlierHardTimeout = buildAgentRunTerminalOutcome({
+        status: "timeout",
+        timeoutPhase: "provider",
+        providerStarted: true,
+        endedAt: 190,
+      });
+
+      expect(mergeAgentRunTerminalOutcome(proven, earlierHardTimeout)).toBe(earlierHardTimeout);
+    });
+
+    it("corrects a provisional failure when the real completion lands", () => {
+      const failure = buildAgentRunTerminalOutcome({
+        status: "error",
+        error: "premature failure",
+        endedAt: 190,
+      });
+      const proven = completion();
+
+      expect(mergeAgentRunTerminalOutcome(failure, proven)).toBe(proven);
+    });
+  });
 });
 
 describe("agent run attempt terminal", () => {

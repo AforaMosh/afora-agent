@@ -5,6 +5,11 @@ import {
 import { SUBAGENT_ENDED_REASON_ERROR } from "./subagent-lifecycle-events.js";
 import { createPendingLifecycleScheduler } from "./subagent-registry-pending-lifecycle.js";
 import type { SubagentCompletionRequest, SubagentRunRecord } from "./subagent-registry.types.js";
+import {
+  loadSubagentSessionEntry,
+  resolveCompletionFromSessionEntry,
+  type SubagentSessionCompletion,
+} from "./subagent-session-reconciliation.js";
 
 const GATEWAY_ADMISSION_RETRY_DELAY_MS = 1_000;
 
@@ -170,21 +175,48 @@ export function createSubagentRegistryCompletionRuntime(config: {
     ) {
       return hasCompleteSubagentTerminalState(entry) ? 1 : 0;
     }
-    const completionParams: SubagentCompletionRequest = {
-      runId,
-      expectedEntry: entry,
-      endedAt,
-      outcome: {
-        status: "error",
-        error: params.error,
-      },
-      reason: SUBAGENT_ENDED_REASON_ERROR,
-      sendFarewell: true,
-      accountId: entry.requesterOrigin?.accountId,
-      triggerCleanup: true,
-      recoverInterrupted: true,
-      suppressSessionEffects: params.suppressSessionEffects,
-    };
+    // Recovery never invents an error over a landed terminal status: if the
+    // child session already carries the run's real outcome (including a proven
+    // completion), adopt it instead of finalizing with the recovery error.
+    let sessionCompletion: SubagentSessionCompletion | null = null;
+    try {
+      sessionCompletion = resolveCompletionFromSessionEntry(
+        loadSubagentSessionEntry({ childSessionKey: entry.childSessionKey }),
+        endedAt,
+        { notBeforeMs: entry.execution.startedAt ?? entry.createdAt },
+      );
+    } catch {
+      sessionCompletion = null;
+    }
+    const completionParams: SubagentCompletionRequest = sessionCompletion
+      ? {
+          runId,
+          expectedEntry: entry,
+          startedAt: sessionCompletion.startedAt,
+          endedAt: sessionCompletion.endedAt,
+          outcome: sessionCompletion.outcome,
+          reason: sessionCompletion.reason,
+          sendFarewell: true,
+          accountId: entry.requesterOrigin?.accountId,
+          triggerCleanup: true,
+          recoverInterrupted: true,
+          suppressSessionEffects: params.suppressSessionEffects,
+        }
+      : {
+          runId,
+          expectedEntry: entry,
+          endedAt,
+          outcome: {
+            status: "error",
+            error: params.error,
+          },
+          reason: SUBAGENT_ENDED_REASON_ERROR,
+          sendFarewell: true,
+          accountId: entry.requesterOrigin?.accountId,
+          triggerCleanup: true,
+          recoverInterrupted: true,
+          suppressSessionEffects: params.suppressSessionEffects,
+        };
     try {
       await completeSubagentRun(completionParams);
       // A successfully finalized stale generation can be retired once a newer

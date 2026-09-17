@@ -5515,6 +5515,9 @@ describe("subagent registry seam flow", () => {
       data: { phase, startedAt: 10, endedAt: 20, ...event },
     });
 
+    // An abort-classified kill commits only after the pending-lifecycle kill
+    // grace, so an in-flight completion can still win the race.
+    await vi.advanceTimersByTimeAsync(15_000);
     await waitForFast(() => {
       const run = findRequesterRun(runId);
       expect(run?.endedReason).toBe("subagent-killed");
@@ -5587,6 +5590,8 @@ describe("subagent registry seam flow", () => {
       },
     });
 
+    // The kill commits after the pending-lifecycle kill grace.
+    await vi.advanceTimersByTimeAsync(15_000);
     await waitForFast(() => {
       const run = findRequesterRun("run-killed-recovery");
       expect(run?.execution.outcome?.status).toBe("error");

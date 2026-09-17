@@ -298,6 +298,27 @@ describe("subagent registry restart recovery", () => {
     expect(dispatchAgent).not.toHaveBeenCalled();
   });
 
+  it.each(["done", "timeout", "failed"] as const)(
+    "adopts a landed %s status instead of replaying the run",
+    async (status) => {
+      const now = Date.now();
+      // Shutdown marking can stamp abortedLastRun after the run's own terminal
+      // status was persisted; a replay would repeat the finished run's work.
+      mocks.entries[childSessionKey] = {
+        sessionId: "session-id",
+        updatedAt: now,
+        abortedLastRun: true,
+        status,
+        startedAt: now - 50_000,
+        endedAt: now - 1_000,
+      };
+
+      await expect(recover(run())).resolves.toEqual({ status: "ignored" });
+      expect(dispatchAgent).not.toHaveBeenCalled();
+      expect(mocks.readSessionMessages).not.toHaveBeenCalled();
+    },
+  );
+
   it("returns stale and durable terminal owners to the sweeper finalizer", async () => {
     const stale = run({
       createdAt: Date.now() - 3 * 60 * 60_000,

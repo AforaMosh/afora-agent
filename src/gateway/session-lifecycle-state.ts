@@ -215,13 +215,14 @@ function deriveGatewaySessionLifecycleSnapshot(params: {
   const status = terminal
     ? SESSION_STATUS_BY_TERMINAL_CLASSIFICATION[classifyAgentRunTerminalOutcome(terminal)]
     : "running";
-  if (status === "killed" && isSameRunAlreadyCompleted({ existing, startedAt, endedAt })) {
-    // The run reached its own successful end before this cancellation arrived,
-    // so the cancellation is teardown of an already finished run rather than an
-    // operator stopping live work. Downgrading "done" to "killed" here is what
-    // makes the registry file a finished subagent as a kill and discard its
-    // result, because resolveCompletionFromSessionEntry reads only this status.
-    // Keep the completion and let the cancellation pass without clobbering it.
+  if (status !== "done" && isSameRunAlreadyCompleted({ existing, startedAt, endedAt })) {
+    // The run reached its own successful end before this event arrived, so a
+    // later cancellation, failure, or timeout for the same run is teardown of
+    // an already finished run rather than a real outcome. Downgrading "done"
+    // here is what makes the registry file a finished subagent as a kill,
+    // failure, or timeout and discard its result, because
+    // resolveCompletionFromSessionEntry reads only this status. Keep the
+    // completion and let the late event pass without clobbering it.
     return {
       updatedAt: updatedAt ?? existing?.updatedAt,
       status: "done",

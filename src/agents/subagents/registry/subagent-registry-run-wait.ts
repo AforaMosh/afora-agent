@@ -419,6 +419,35 @@ export class SubagentWaitManager {
         return;
       }
       const endedAt = typeof wait.endedAt === "number" ? wait.endedAt : Date.now();
+      if (waitAborted) {
+        // Cross-check the persisted session entry before filing a kill: a
+        // proven completion outranks a teardown abort reported by the wait.
+        let completion: SubagentSessionCompletion | null = null;
+        try {
+          completion = this.options.resolveSubagentSessionCompletion({
+            childSessionKey: entry.childSessionKey,
+            fallbackEndedAt: endedAt,
+            notBeforeMs: observedStartedAt ?? entry.execution.startedAt ?? entry.createdAt,
+          });
+        } catch {
+          completion = null;
+        }
+        if (completion && completion.reason !== SUBAGENT_ENDED_REASON_KILLED) {
+          completionForRetry = {
+            runId,
+            endedAt: completion.endedAt,
+            outcome: completion.outcome,
+            reason: completion.reason,
+            sendFarewell: true,
+            accountId: entry.requesterOrigin?.accountId,
+            triggerCleanup: true,
+            startedAt: observedStartedAt ?? completion.startedAt,
+            terminalReply: wait.terminalReply,
+          };
+          await this.options.completeSubagentRun(completionForRetry);
+          return;
+        }
+      }
       const rawWaitError = typeof wait.error === "string" ? wait.error : undefined;
       const waitError = waitAborted
         ? "subagent run terminated"

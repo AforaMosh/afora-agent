@@ -251,6 +251,17 @@ export function shouldApplyRunScopedStatusUpdate(params: {
         params.currentError === SUBAGENT_KILL_TASK_ERROR)
     );
   }
+  if (params.currentRuntime === "subagent") {
+    // A proven subagent success is terminal in both directions: a later
+    // failure, timeout, cancellation, or loss for the same run scope must not
+    // overwrite it, and a premature failure or timeout (for example the
+    // registry-not-settled case) stays correctable back to succeeded when the
+    // real completion lands.
+    if (params.currentStatus === "succeeded") {
+      return false;
+    }
+    return params.nextStatus === "succeeded";
+  }
   return params.currentStatus === "succeeded" && params.nextStatus !== "lost";
 }
 

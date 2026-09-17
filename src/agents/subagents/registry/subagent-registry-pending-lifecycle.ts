@@ -1,13 +1,18 @@
+import { isFastTestRuntimeEnv } from "../../../infra/env.js";
 import {
   SUBAGENT_ENDED_REASON_COMPLETE,
   SUBAGENT_ENDED_REASON_ERROR,
+  SUBAGENT_ENDED_REASON_KILLED,
 } from "./subagent-lifecycle-events.js";
 import type { SubagentCompletionRequest, SubagentRunRecord } from "./subagent-registry.types.js";
 
 const LIFECYCLE_RETRY_GRACE_MS = 15_000;
+// The abort-classified kill grace matches the retry grace in production; fast
+// test runtimes shrink it the way other registry delays already are.
+const LIFECYCLE_KILL_GRACE_MS = isFastTestRuntimeEnv() ? 25 : LIFECYCLE_RETRY_GRACE_MS;
 const PENDING_LIFECYCLE_TERMINAL_TTL_MS = 5 * 60_000;
 
-type PendingLifecycleKind = "error" | "timeout";
+type PendingLifecycleKind = "error" | "timeout" | "kill";
 
 type PendingLifecycleTerminal = {
   kind: PendingLifecycleKind;
@@ -60,11 +65,13 @@ export function createPendingLifecycleScheduler(params: {
         return;
       }
       if (
-        kind === "error"
-          ? entry.endedReason === SUBAGENT_ENDED_REASON_COMPLETE ||
+        kind === "timeout"
+          ? entry.execution.outcome?.status === "ok" || entry.pauseReason === "sessions_yield"
+          : entry.endedReason === SUBAGENT_ENDED_REASON_COMPLETE ||
             entry.execution.outcome?.status === "ok"
-          : entry.execution.outcome?.status === "ok" || entry.pauseReason === "sessions_yield"
       ) {
+        // A completion landed during the grace window; a late error, timeout,
+        // or abort classification must not overwrite it.
         return;
       }
       params.completeInBackground(
@@ -72,8 +79,15 @@ export function createPendingLifecycleScheduler(params: {
           runId: scheduleParams.runId,
           endedAt: pending.endedAt,
           outcome:
-            kind === "error" ? { status: "error", error: pending.error } : { status: "timeout" },
-          reason: kind === "error" ? SUBAGENT_ENDED_REASON_ERROR : SUBAGENT_ENDED_REASON_COMPLETE,
+            kind === "timeout"
+              ? { status: "timeout" }
+              : { status: "error", error: pending.error },
+          reason:
+            kind === "timeout"
+              ? SUBAGENT_ENDED_REASON_COMPLETE
+              : kind === "kill"
+                ? SUBAGENT_ENDED_REASON_KILLED
+                : SUBAGENT_ENDED_REASON_ERROR,
           sendFarewell: true,
           accountId: entry.requesterOrigin?.accountId,
           triggerCleanup: true,
@@ -82,7 +96,7 @@ export function createPendingLifecycleScheduler(params: {
         },
         `lifecycle-${kind}-grace`,
       );
-    }, LIFECYCLE_RETRY_GRACE_MS);
+    }, kind === "kill" ? LIFECYCLE_KILL_GRACE_MS : LIFECYCLE_RETRY_GRACE_MS);
     timer.unref?.();
     pendingByRunId.set(scheduleParams.runId, { ...scheduleParams, kind, timer });
   }
@@ -96,6 +110,8 @@ export function createPendingLifecycleScheduler(params: {
       schedule("error", scheduleParams),
     scheduleTimeout: (scheduleParams: Parameters<typeof schedule>[1]) =>
       schedule("timeout", scheduleParams),
+    scheduleKill: (scheduleParams: Parameters<typeof schedule>[1]) =>
+      schedule("kill", scheduleParams),
     sweepExpired(now: number) {
       for (const [runId, pending] of pendingByRunId) {
         if (now - pending.endedAt > PENDING_LIFECYCLE_TERMINAL_TTL_MS) {

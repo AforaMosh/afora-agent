@@ -12,7 +12,19 @@ function completedBeforeOrAtTimeout(params: {
   );
 }
 
-/** Merges observations without overwriting a proven cancellation or hard timeout. */
+function completedBeforeOrAt(params: {
+  completed: AgentRunTerminalOutcome;
+  incoming: AgentRunTerminalOutcome;
+}): boolean {
+  return (
+    params.completed.reason === "completed" &&
+    typeof params.completed.endedAt === "number" &&
+    typeof params.incoming.endedAt === "number" &&
+    params.completed.endedAt <= params.incoming.endedAt
+  );
+}
+
+/** Merges observations without overwriting a proven completion, cancellation, or hard timeout. */
 export function mergeAgentRunTerminalOutcome(
   current: AgentRunTerminalOutcome | undefined,
   incoming: AgentRunTerminalOutcome,
@@ -45,6 +57,20 @@ export function mergeAgentRunTerminalOutcome(
     return completedBeforeOrAtTimeout({ completed: incoming, timeout: current })
       ? incoming
       : current;
+  }
+  if (current.reason === "completed" && incoming.reason !== "completed") {
+    // A proven completion outranks every later observation for the same run:
+    // teardown cancellations, aborts, supersessions, teardown failures, and
+    // soft timeouts that land after the run's own successful end must not
+    // reclassify the finished run. A kill or failure of live work has no
+    // earlier completion, so it is untouched here. A hard timeout keeps its
+    // own timestamp rule below.
+    if (incoming.reason === "hard_timeout") {
+      return completedBeforeOrAtTimeout({ completed: current, timeout: incoming })
+        ? current
+        : incoming;
+    }
+    return completedBeforeOrAt({ completed: current, incoming }) ? current : incoming;
   }
   if (incoming.reason === "superseded" || incoming.reason === "cancelled") {
     return incoming;
