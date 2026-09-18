@@ -34,7 +34,7 @@ export function resolveSuspendedDeliveryExpiryMs(): number {
 }
 
 /** Deterministic delay before the sweeper redrives a delivery suspended at `generation`. */
-export function resolveSuspendedDeliveryRedriveDelayMs(generation: number): number {
+function resolveSuspendedDeliveryRedriveDelayMs(generation: number): number {
   const shift = Math.min(Math.max(0, Math.floor(generation) - 1), 10);
   return Math.min(
     SUSPENDED_DELIVERY_REDRIVE_BASE_DELAY_MS * 2 ** shift,
@@ -43,9 +43,7 @@ export function resolveSuspendedDeliveryRedriveDelayMs(generation: number): numb
 }
 
 /** Instant the next automatic redrive is due, or undefined once the generation cap is reached. */
-export function resolveSuspendedDeliveryRedriveDueAt(
-  entry: SubagentRunRecord,
-): number | undefined {
+export function resolveSuspendedDeliveryRedriveDueAt(entry: SubagentRunRecord): number | undefined {
   if (!isSuspendedPendingFinalDelivery(entry)) {
     return undefined;
   }
