@@ -1499,7 +1499,11 @@ describe("subagent registry lifecycle hardening", () => {
     });
 
     await controller.completeSubagentRun(makeKilledSubagentCompletion(entry));
-    expect(entry.completion).toMatchObject({ resultText: null });
+    // Error-classified completions freeze the transcript too, so the reply is
+    // already captured before the canonical success lands.
+    expect(entry.completion?.resultText).toBe(
+      "Fixed the crash and verified the regression tests pass.",
+    );
 
     await completeRun(controller, entry, { endedAt: 4_001 });
 
@@ -1528,7 +1532,9 @@ describe("subagent registry lifecycle hardening", () => {
     });
 
     await controller.completeSubagentRun(makeKilledSubagentCompletion(entry));
-    expect(entry.completion).toMatchObject({ resultText: null });
+    // Error-classified completions freeze the transcript too, so the partial
+    // reply is already captured before the canonical timeout lands.
+    expect(entry.completion?.resultText).toBe("Partial result before timeout.");
 
     await completeRun(controller, entry, {
       endedAt: 4_001,
@@ -1567,6 +1573,44 @@ describe("subagent registry lifecycle hardening", () => {
     expectFields(taskExecutorMocks.completeTaskRunByRunId.mock.calls.at(-1)?.[0], {
       progressSummary: "Already captured final reply.",
     });
+  });
+
+  it("captures the transcript when a run completes as an error", async () => {
+    const entry = createRunEntry({ expectsCompletionMessage: true });
+    const captureSubagentCompletionReply = vi.fn(
+      async () => "Report written before the worker exited nonzero.",
+    );
+    const controller = createLifecycleController({
+      entry,
+      captureSubagentCompletionReply,
+    });
+
+    await completeRun(controller, entry, {
+      outcome: { status: "error", error: "worker exited nonzero after writing its report" },
+      reason: SUBAGENT_ENDED_REASON_ERROR,
+    });
+
+    expect(captureSubagentCompletionReply).toHaveBeenCalledOnce();
+    expect(entry.completion?.resultText).toBe("Report written before the worker exited nonzero.");
+  });
+
+  it("refreshes the frozen result for an error-classified pending completion", async () => {
+    const entry = createRunEntry({
+      expectsCompletionMessage: true,
+      endedAt: 4_000,
+      outcome: { status: "error", error: "subagent run lost active execution context" },
+    });
+    const persist = vi.fn();
+    const controller = createLifecycleController({
+      entry,
+      persist,
+      captureSubagentCompletionReply: vi.fn(async () => "recovered report"),
+    });
+
+    expect(await controller.refreshFrozenResultFromSession(entry.childSessionKey)).toBe(true);
+
+    expect(entry.completion?.resultText).toBe("recovered report");
+    expect(persist).toHaveBeenCalledWith(entry.runId);
   });
 
   it("skips frozen-result refill for a sessions_yield-paused run", async () => {
@@ -3328,9 +3372,11 @@ describe("subagent registry lifecycle hardening", () => {
     );
   });
 
-  it("does not freeze stale reply text for terminal error outcomes", async () => {
+  it("freezes the transcript reply for terminal error outcomes", async () => {
     const persistOrThrow = vi.fn();
-    const captureSubagentCompletionReply = vi.fn(async () => "stale assistant text");
+    const captureSubagentCompletionReply = vi.fn(
+      async () => "assistant text written before the error",
+    );
     const entry = createRunEntry({
       expectsCompletionMessage: true,
     });
@@ -3349,12 +3395,14 @@ describe("subagent registry lifecycle hardening", () => {
       ),
     ).resolves.toBeUndefined();
 
-    expect(captureSubagentCompletionReply).not.toHaveBeenCalled();
-    expect(entry.completion?.resultText).toBeNull();
+    // An error classification must not strand the report the worker wrote:
+    // the freeze is the only read of the transcript this run will ever get.
+    expect(captureSubagentCompletionReply).toHaveBeenCalledOnce();
+    expect(entry.completion?.resultText).toBe("assistant text written before the error");
     expectFields(firstCallArg(taskExecutorMocks.failTaskRunByRunId), {
       status: "failed",
       error: "All models failed (2): timeout",
-      progressSummary: undefined,
+      progressSummary: "assistant text written before the error",
     });
     expect(persistOrThrow).toHaveBeenCalled();
   });
@@ -3540,6 +3588,45 @@ describe("subagent registry lifecycle hardening", () => {
     expect(persistOrThrow).toHaveBeenCalled();
   });
 
+  it("keeps the transcript fallback when a final delivery is suspended", async () => {
+    const persistOrThrow = vi.fn();
+    const entry = createRunEntry({
+      endedAt: 4_000,
+      endedReason: SUBAGENT_ENDED_REASON_COMPLETE,
+      expectsCompletionMessage: true,
+      completion: {
+        required: true,
+        resultText: "final answer",
+        fallbackResultText: "preserved prior result",
+        fallbackCapturedAt: 3_000,
+      },
+      delivery: { status: "pending", lastError: "gateway request timeout for agent" },
+      outcome: { status: "ok" },
+      retainAttachmentsOnKeep: true,
+    });
+
+    const controller = createLifecycleController({
+      entry,
+      persistOrThrow,
+      captureSubagentCompletionReply: vi.fn(async () => undefined),
+    });
+
+    await controller.finalizeResumedAnnounceGiveUp({
+      runId: entry.runId,
+      entry,
+      reason: "expiry",
+    });
+
+    // Suspension opens the retention window; it must not destroy the fallback
+    // copy of the result ahead of a redrive or the terminal discard.
+    expect(entry.delivery?.status).toBe("suspended");
+    expect(entry.completion).toMatchObject({
+      resultText: "final answer",
+      fallbackResultText: "preserved prior result",
+      fallbackCapturedAt: 3_000,
+    });
+  });
+
   it.each([
     {
       name: "timeout",
@@ -3594,6 +3681,40 @@ describe("subagent registry lifecycle hardening", () => {
       expect(persistOrThrow).toHaveBeenCalled();
     },
   );
+
+  it("keeps the transcript fallback when announce gives up without suspending", async () => {
+    const persistOrThrow = vi.fn();
+    const entry = createRunEntry({
+      endedAt: 4_000,
+      endedReason: SUBAGENT_ENDED_REASON_ERROR,
+      expectsCompletionMessage: true,
+      completion: {
+        required: true,
+        resultText: null,
+        fallbackResultText: "preserved prior result",
+        fallbackCapturedAt: 3_000,
+      },
+      delivery: { status: "pending", lastError: "gateway request timeout for agent" },
+      outcome: { status: "error", error: "child failed" },
+      retainAttachmentsOnKeep: true,
+    });
+
+    const controller = createLifecycleController({
+      entry,
+      persistOrThrow,
+      captureSubagentCompletionReply: vi.fn(async () => undefined),
+    });
+
+    await controller.finalizeResumedAnnounceGiveUp({
+      runId: entry.runId,
+      entry,
+      reason: "expiry",
+    });
+
+    expect(entry.delivery?.status).toBe("failed");
+    expect(entry.completion?.fallbackResultText).toBe("preserved prior result");
+    expect(entry.completion?.fallbackCapturedAt).toBe(3_000);
+  });
 
   it("continues cleanup when delivery-status persistence throws after announce delivery", async () => {
     const persist = vi.fn();

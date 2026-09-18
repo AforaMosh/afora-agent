@@ -36,6 +36,7 @@ import type {
 } from "./subagent-registry.types.js";
 import { isStaleUnendedSubagentRun } from "./subagent-run-liveness.js";
 import { getSubagentSessionStartedAt } from "./subagent-session-metrics.js";
+import { resolveCompletionFromSessionEntry } from "./subagent-session-reconciliation.js";
 
 const MAX_RECOVERY_ATTEMPTS = 2;
 const RECOVERY_ATTEMPT_WINDOW_MS = 2 * 60_000;
@@ -369,7 +370,14 @@ export async function recoverInterruptedSubagentRow(
       }
       return { status: "terminal", error: abandonedError };
     }
-    if (!sessionEntry?.abortedLastRun) {
+    // A landed terminal status outranks the abort marker: shutdown marking can
+    // stamp abortedLastRun after the run's own completion was persisted, and
+    // replaying a finished run would repeat its side effects. Leave the row to
+    // the sweeper's session-completion adoption instead of a resume turn.
+    const persistedCompletion = resolveCompletionFromSessionEntry(sessionEntry, params.now, {
+      notBeforeMs: params.entry.execution.startedAt ?? params.entry.createdAt,
+    });
+    if (persistedCompletion || !sessionEntry?.abortedLastRun) {
       return { status: "ignored" };
     }
     const marker = `${sessionEntry.sessionId ?? ""}:${sessionEntry.updatedAt ?? ""}`;

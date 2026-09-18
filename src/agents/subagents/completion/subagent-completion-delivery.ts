@@ -17,7 +17,10 @@ import {
   publishTaskRecordAfterAtomicStore,
 } from "../../../tasks/runtime-internal.js";
 import type { TaskRecord } from "../../../tasks/task-registry.types.js";
-import { ensureDeliveryState } from "../registry/subagent-delivery-state.js";
+import {
+  ensureDeliveryState,
+  MAX_DELIVERY_GENERATION,
+} from "../registry/subagent-delivery-state.js";
 import {
   ANNOUNCE_COMPLETION_HARD_EXPIRY_MS,
   safeRemoveAttachmentsDir,
@@ -34,7 +37,6 @@ import { resolveSubagentCompletionResultText } from "./subagent-completion-resul
 
 const CLAIM_LEASE_MS = 125_000;
 const SUSPENDED_RETENTION_MS = 7 * 24 * 60 * 60_000;
-const MAX_DELIVERY_GENERATION = 10;
 const CANONICAL_RESULT_PROMPT =
   "A completed subagent task is ready for parent review. The canonical result follows.";
 type CompletionDeliveryRecoveryResult = {
@@ -259,7 +261,10 @@ export async function retrySubagentCompletionDelivery(
     await scheduleSessionDelivery(delivery.queueId);
     return { ok: true, task: getTaskById(taskId) };
   }
-  if (delivery.status !== "suspended") {
+  // Requester-settle-wake exhaustion lands deliveries in "failed" with the
+  // result still retained; that state is blocked too and may be reopened
+  // under the same generation cap as a suspended delivery.
+  if (delivery.status !== "suspended" && delivery.status !== "failed") {
     return { ok: false, reason: "completion delivery is not blocked" };
   }
   const generation = (delivery.generation ?? 1) + 1;

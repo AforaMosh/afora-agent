@@ -98,9 +98,10 @@ export const finalizeResumedAnnounceGiveUp = async (
     reason: deliveryError,
   });
   entry.wakeOnDescendantSettle = undefined;
-  const completion = ensureCompletionState(entry);
-  completion.fallbackResultText = undefined;
-  completion.fallbackCapturedAt = undefined;
+  // Keep completion.fallbackResultText here too: a give-up that could not
+  // suspend is still inside the retention window, and the fallback can be
+  // the only surviving copy of the result. Successful delivery and terminal
+  // discard remain the places that clear it.
   if ((cleanup ?? entry.cleanup) === "delete" || !entry.retainAttachmentsOnKeep) {
     await safeRemoveAttachmentsDir(entry);
   }

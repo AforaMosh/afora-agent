@@ -3,7 +3,10 @@ import { createDeferred } from "../../../../test/helpers/promise.js";
 import type { GatewayRecoveryRuntime } from "../../../gateway/server-instance-runtime.types.js";
 import { resetGatewayWorkAdmission } from "../../../process/gateway-work-admission.js";
 import { createSubagentRunRecord } from "../../subagent-test-fixtures.test-helpers.js";
-import { reconcileDurableSubagentKillIntent } from "./subagent-registry-sweep-kill.js";
+import {
+  reconcileDurableSubagentKillIntent,
+  reconcileProvisionalSubagentKill,
+} from "./subagent-registry-sweep-kill.js";
 import { retireSupersededSubagentRun } from "./subagent-registry-sweeper-retire.js";
 import { createSubagentRegistrySweeper } from "./subagent-registry-sweeper.js";
 import type { SubagentRunRecord } from "./subagent-registry.types.js";
@@ -22,7 +25,14 @@ const killRuntime = vi.hoisted(() => ({
 }));
 const killSessionEntry = vi.hoisted(() => ({
   current: undefined as
-    | { sessionId: string; lifecycleRevision?: string; updatedAt: number }
+    | {
+        sessionId: string;
+        lifecycleRevision?: string;
+        updatedAt: number;
+        status?: string;
+        startedAt?: number;
+        endedAt?: number;
+      }
     | undefined,
 }));
 vi.mock("./subagent-registry-restart-recovery.js", async (importOriginal) => {
@@ -125,6 +135,7 @@ function createHarness(runtime: { current?: GatewayRecoveryRuntime }) {
     startSubagentAnnounceCleanupFlow: vi.fn(() => true),
     completeCleanupBookkeeping,
     discardTerminalDelivery: vi.fn(),
+    resumeRun: vi.fn(),
     shouldEmitEndedHookForRun: vi.fn(() => false),
     emitSubagentEndedHookForRun,
     callGateway,
@@ -554,6 +565,77 @@ describe("subagent registry recovery scheduling", () => {
     expect(retireSupersededRun).toHaveBeenCalledWith(entry.runId, entry);
   });
 
+  it("replays a proven succeeded task of a superseded run instead of discarding it", async () => {
+    const entry = run();
+    entry.generation = 1;
+    entry.endedReason = "subagent-killed";
+    const killedAt = Date.now() - 10_000;
+    entry.killReconciliation = { killedAt };
+    const newer = createSubagentRunRecord({
+      runId: "newer-provisional-run",
+      childSessionKey: entry.childSessionKey,
+      requesterSessionKey: entry.requesterSessionKey,
+      requesterDisplayKey: entry.requesterDisplayKey,
+      task: "newer generation",
+      cleanup: "keep",
+      generation: 2,
+      createdAt: entry.createdAt + 1,
+      startedAt: entry.execution.startedAt ? entry.execution.startedAt + 1 : Date.now(),
+    });
+    const runs = new Map([
+      [entry.runId, entry],
+      [newer.runId, newer],
+    ]);
+    const completeSubagentRunWithRecovery = vi.fn(async () => {
+      // The real completion settles the row; mirror the terminal transition.
+      entry.endedReason = "subagent-complete";
+    });
+    const retireSupersededRun = vi.fn(async () => {});
+    detachedTaskRuntime.findDetachedTaskRun.mockReturnValue({
+      lookup: "available",
+      task: {
+        runId: entry.runId,
+        runtime: "subagent",
+        childSessionKey: entry.childSessionKey,
+        status: "succeeded",
+        createdAt: entry.createdAt,
+        startedAt: entry.execution.startedAt,
+        endedAt: killedAt - 5_000,
+        terminalSummary: "worker report",
+      },
+    });
+
+    await expect(
+      reconcileProvisionalSubagentKill({
+        runId: entry.runId,
+        entry,
+        now: Date.now(),
+        runs,
+        storeCache: new Map(),
+        completeSubagentRunWithRecovery,
+        retireSupersededRun,
+        startSubagentAnnounceCleanupFlow: vi.fn(() => true),
+        getRunsForChildSession: childRuns(runs),
+        warn: vi.fn(),
+      }),
+    ).resolves.toBe(true);
+
+    // A proven success is delivered with session effects suppressed, the row is
+    // retired as superseded, and the succeeded task is never re-filed cancelled.
+    expect(completeSubagentRunWithRecovery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: entry.runId,
+        outcome: { status: "ok" },
+        reason: "subagent-complete",
+        triggerCleanup: false,
+        suppressSessionEffects: true,
+      }),
+      "sweeper-provisional-kill-task-completion",
+    );
+    expect(detachedTaskRuntime.finalizeTaskRunByRunId).not.toHaveBeenCalled();
+    expect(retireSupersededRun).toHaveBeenCalledWith(entry.runId, entry);
+  });
+
   it("discards suspended retired recovery delivery without touching its child session", async () => {
     const runtime = { current: {} as GatewayRecoveryRuntime };
     const { entry, completeCleanupBookkeeping, emitSubagentEndedHookForRun, sweeper } =
@@ -709,6 +791,52 @@ describe("subagent registry recovery scheduling", () => {
 
     expect(recoverRow).toHaveBeenCalledTimes(2);
     expect(warn).toHaveBeenCalledWith("subagent run sweep failed: unexpected recovery failure");
+    sweeper.reset();
+  });
+
+  it("adopts a landed session completion before the lost-context grace elapses", async () => {
+    const runtime = { current: {} as GatewayRecoveryRuntime };
+    recoverRow.mockResolvedValue({ status: "ignored" });
+    const now = Date.now();
+    const { entry, completeSubagentRunWithRecovery, sweeper } = createHarness(runtime);
+    // The run is younger than any lost-context grace: previously nothing looked
+    // at the session entry until the grace expired.
+    entry.createdAt = now;
+    entry.execution = { status: "running", startedAt: now };
+    killSessionEntry.current = {
+      sessionId: "session-id",
+      lifecycleRevision: "session-revision",
+      updatedAt: now,
+      status: "done",
+      startedAt: now,
+      endedAt: now,
+    };
+
+    await sweeper.sweepOnce();
+
+    expect(completeSubagentRunWithRecovery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: entry.runId,
+        outcome: { status: "ok" },
+        reason: "subagent-complete",
+        triggerCleanup: true,
+      }),
+      "sweeper-session-completion",
+    );
+    sweeper.reset();
+  });
+
+  it("keeps a young context-less run instead of force-erroring it inside the grace", async () => {
+    const runtime = { current: {} as GatewayRecoveryRuntime };
+    recoverRow.mockResolvedValue({ status: "ignored" });
+    const now = Date.now();
+    const { entry, completeSubagentRunWithRecovery, sweeper } = createHarness(runtime);
+    entry.createdAt = now;
+    entry.execution = { status: "running", startedAt: now };
+
+    await sweeper.sweepOnce();
+
+    expect(completeSubagentRunWithRecovery).not.toHaveBeenCalled();
     sweeper.reset();
   });
 });

@@ -15,6 +15,12 @@ import {
   loadSessionEntryReadOnly,
 } from "../../../config/sessions/session-accessor.js";
 import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import {
+  isDefaultAgentRuntimeId,
+  normalizeOptionalAgentRuntimeId,
+  OPENCLAW_AGENT_RUNTIME_ID,
+  resolveAgentScopedRuntimeOverride,
+} from "../../agent-runtime-id.js";
 import type { SubagentRunOutcome } from "../announce/subagent-announce-output.js";
 import {
   SUBAGENT_ENDED_REASON_COMPLETE,
@@ -203,10 +209,17 @@ export function resolveCompletionFromSessionEntry(
     if (!isFreshForRun(sessionEntry, opts?.notBeforeMs)) {
       return null;
     }
+    // Carry the persisted failure reason instead of replacing it: the session
+    // entry knows why the run failed, and any output the child produced is
+    // captured from its transcript when the completion freezes.
+    const lastRunError = sessionEntry?.lastRunError?.trim();
     return {
       startedAt,
       endedAt,
-      outcome: { status: "error", error: "session completed before registry settled" },
+      outcome: {
+        status: "error",
+        error: lastRunError || "session completed before registry settled",
+      },
       reason: SUBAGENT_ENDED_REASON_ERROR,
     };
   }
@@ -269,4 +282,40 @@ export function resolveSubagentSessionStartedAt(params: {
   return isFreshForRun(sessionEntry, params.notBeforeMs)
     ? freshSessionStartedAt(sessionEntry, params.notBeforeMs)
     : undefined;
+}
+
+/**
+ * Returns whether the child session runs on an external CLI-class runtime
+ * whose child process can outlive a Gateway restart. For those runs a missing
+ * in-memory run context does not prove the work stopped, so lost-context
+ * force-errors must wait longer than for embedded runs.
+ */
+export function isExternalCliSubagentRuntime(params: {
+  childSessionKey: string;
+  sessionEntry?: SessionEntry;
+  cfg?: OpenClawConfig;
+}): boolean {
+  const isExternalRuntimeId = (runtime: string | undefined) =>
+    Boolean(
+      runtime && !isDefaultAgentRuntimeId(runtime) && runtime !== OPENCLAW_AGENT_RUNTIME_ID,
+    );
+  const entry = params.sessionEntry;
+  if (entry) {
+    if (
+      entry.claudeCliSessionId?.trim() ||
+      Object.keys(entry.cliSessionIds ?? {}).length > 0 ||
+      Object.keys(entry.cliSessionBindings ?? {}).length > 0
+    ) {
+      return true;
+    }
+    if (isExternalRuntimeId(normalizeOptionalAgentRuntimeId(entry.agentRuntimeOverride))) {
+      return true;
+    }
+  }
+  return isExternalRuntimeId(
+    resolveAgentScopedRuntimeOverride({
+      config: params.cfg ?? getRuntimeConfig(),
+      agentId: resolveAgentIdFromSessionKey(params.childSessionKey),
+    }),
+  );
 }

@@ -334,21 +334,33 @@ export async function reconcileProvisionalSubagentKill(params: {
     runs.get(runId) === entry &&
     entry.endedReason === SUBAGENT_ENDED_REASON_KILLED &&
     entry.killReconciliation === killReconciliation;
-  const taskCompletion =
-    nextRunCreatedAt === undefined ? resolveCompletionFromTerminalTask(task, entry) : undefined;
+  const taskCompletion = resolveCompletionFromTerminalTask(task, entry);
   if (taskCompletion) {
     // Replay the durable task projection before a provisional kill can age
-    // into a contradictory cancellation after an interrupted registry write.
+    // into a contradictory cancellation after an interrupted registry write. A
+    // newer generation does not erase this run's proven terminal task: deliver
+    // it with session effects suppressed, then retire the superseded row
+    // instead of discarding the finished result as superseded.
+    const hasNewerGeneration = nextRunCreatedAt !== undefined;
     await params.completeSubagentRunWithRecovery(
       {
         runId,
         ...taskCompletion,
         sendFarewell: true,
         accountId: entry.requesterOrigin?.accountId,
-        triggerCleanup: true,
+        triggerCleanup: !hasNewerGeneration,
+        suppressSessionEffects: hasNewerGeneration,
       },
       "sweeper-provisional-kill-task-completion",
     );
+    if (
+      hasNewerGeneration &&
+      runs.get(runId) === entry &&
+      entry.endedReason !== SUBAGENT_ENDED_REASON_KILLED
+    ) {
+      await params.retireSupersededRun(runId, entry);
+      return true;
+    }
     return false;
   }
   if (killedAt + PROVISIONAL_KILL_RECONCILIATION_MS > now) {

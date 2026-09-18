@@ -569,4 +569,116 @@ describe("atomic subagent completion admission store", () => {
       expect(subagentRuns.get(input.subagent.runId)?.delivery).not.toHaveProperty("payload");
     });
   });
+
+  it("reopens a settle-wake-failed delivery under the generation cap", async () => {
+    await withEnvAsync({ OPENCLAW_STATE_DIR: tempDir }, async () => {
+      closeOpenClawStateDatabaseForTest();
+      database = openOpenClawStateDatabase();
+      const input = records();
+      const now = Date.now();
+      // The state requester-settle-wake exhaustion leaves behind: failed, not
+      // suspended, with the result still retained in the completion record.
+      input.subagent.delivery = {
+        status: "failed",
+        disposition: "permanent_failure",
+        generation: 1,
+        windowStartedAt: now - 31 * 60_000,
+        deadlineAt: now - 60_000,
+        lastError: "requester settle wake failed",
+      };
+      input.task.deliveryStatus = "failed";
+      input.task.terminalOutcome = "blocked";
+      input.task.error = "requester settle wake failed";
+      input.task.terminalSummary = "Task completed, but result delivery is blocked.";
+      subagentRuns.set(input.subagent.runId, input.subagent);
+      ensureTaskRegistryReady();
+      publishTaskRecordAfterAtomicStore(input.task);
+      settleSubagentCompletionDelivery({ ...input, databaseOptions: { database } });
+      resumeSubagentRun.mockClear();
+
+      const result = await retrySubagentCompletionDelivery(input.task.taskId, { database });
+
+      expect(result).toMatchObject({ ok: true, duplicateRisk: true });
+      expect(resumeSubagentRun).toHaveBeenCalledWith(input.subagent.runId);
+      expect(subagentRuns.get(input.subagent.runId)?.delivery).toMatchObject({
+        status: "pending",
+        disposition: "retryable",
+        generation: 2,
+        attemptCount: 0,
+        lastError: undefined,
+      });
+      expect(result.task).toMatchObject({
+        deliveryStatus: "pending",
+        terminalOutcome: "succeeded",
+        progressSummary: "canonical result",
+      });
+      const persisted = database.db
+        .prepare("SELECT payload_json FROM subagent_runs WHERE run_id = ?")
+        .get(input.subagent.runId) as { payload_json: string };
+      expect(JSON.parse(persisted.payload_json).delivery).toMatchObject({
+        status: "pending",
+        generation: 2,
+      });
+
+      // The cap still binds a failed delivery: generation 10 stays terminal.
+      const cappedSubagent = structuredClone(subagentRuns.get(input.subagent.runId)!);
+      Object.assign(cappedSubagent.delivery!, {
+        status: "failed",
+        generation: 10,
+        lastError: "requester settle wake failed",
+      });
+      const cappedTask: TaskRecord = {
+        ...getTaskById(input.task.taskId)!,
+        deliveryStatus: "failed",
+        terminalOutcome: "blocked",
+      };
+      settleSubagentCompletionDelivery({
+        subagent: cappedSubagent,
+        task: cappedTask,
+        databaseOptions: { database },
+      });
+      subagentRuns.set(cappedSubagent.runId, cappedSubagent);
+      publishTaskRecordAfterAtomicStore(cappedTask);
+      resumeSubagentRun.mockClear();
+
+      await expect(
+        retrySubagentCompletionDelivery(input.task.taskId, { database }),
+      ).resolves.toEqual({
+        ok: false,
+        reason: "completion delivery redrive limit reached",
+      });
+      expect(resumeSubagentRun).not.toHaveBeenCalled();
+      expect(subagentRuns.get(input.subagent.runId)?.delivery).toMatchObject({
+        status: "failed",
+        generation: 10,
+      });
+    });
+  });
+
+  it("still refuses to reopen a delivery that is not blocked", async () => {
+    await withEnvAsync({ OPENCLAW_STATE_DIR: tempDir }, async () => {
+      closeOpenClawStateDatabaseForTest();
+      database = openOpenClawStateDatabase();
+      const input = records();
+      input.subagent.delivery = {
+        status: "delivered",
+        disposition: "delivered",
+        generation: 1,
+        deliveredAt: Date.now(),
+      };
+      input.task.deliveryStatus = "delivered";
+      subagentRuns.set(input.subagent.runId, input.subagent);
+      ensureTaskRegistryReady();
+      publishTaskRecordAfterAtomicStore(input.task);
+      resumeSubagentRun.mockClear();
+
+      await expect(
+        retrySubagentCompletionDelivery(input.task.taskId, { database }),
+      ).resolves.toEqual({
+        ok: false,
+        reason: "completion delivery is not blocked",
+      });
+      expect(resumeSubagentRun).not.toHaveBeenCalled();
+    });
+  });
 });

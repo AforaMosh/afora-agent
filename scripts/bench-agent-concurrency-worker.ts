@@ -611,6 +611,7 @@ async function runSweepSample(childCount: number): Promise<Sample> {
     runs,
     resumedRuns: new Set(),
     persist: () => {},
+    resumeRun: () => {},
     clearPendingLifecycleError: () => {},
     clearPendingLifecycleTimeout: () => {},
     sweepPendingLifecycle: () => {},

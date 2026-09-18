@@ -834,4 +834,80 @@ describe("session lifecycle state", () => {
       });
     });
   });
+
+  describe("an error or timeout that lands after the run already finished", () => {
+    async function runThenTerminal(terminalData: Record<string, unknown>, phase = "end") {
+      const started = await persistLifecycle(
+        { sessionId: "session-id", updatedAt: 900 },
+        {
+          ts: 1_000,
+          sessionId: "session-id",
+          runId: "run-a",
+          data: { phase: "start", startedAt: 1_000 },
+        },
+      );
+      const completed = await persistLifecycle(started, {
+        ts: 3_000,
+        sessionId: "session-id",
+        runId: "run-a",
+        data: { phase: "end", startedAt: 1_000, endedAt: 3_000 },
+      });
+      expect(completed).toMatchObject({ status: "done", endedAt: 3_000 });
+      return persistLifecycle(completed, {
+        ts: 3_008,
+        sessionId: "session-id",
+        runId: "run-a",
+        data: { phase, startedAt: 1_000, endedAt: 3_008, ...terminalData },
+      });
+    }
+
+    it("keeps the completion rather than downgrading it to a failure", async () => {
+      const afterError = await runThenTerminal({ error: "teardown transport failed" }, "error");
+
+      // A teardown error after the run's own end is not the run's outcome.
+      expect(afterError).toMatchObject({
+        status: "done",
+        startedAt: 1_000,
+        endedAt: 3_000,
+        abortedLastRun: false,
+      });
+      expect(afterError.lastRunError).toBeUndefined();
+    });
+
+    it("keeps the completion rather than downgrading it to a timeout", async () => {
+      const afterTimeout = await runThenTerminal({ stopReason: "timeout" });
+
+      expect(afterTimeout).toMatchObject({
+        status: "done",
+        startedAt: 1_000,
+        endedAt: 3_000,
+        abortedLastRun: false,
+      });
+      expect(afterTimeout.lastRunError).toBeUndefined();
+    });
+
+    it("still records a failure when the run had not finished", async () => {
+      const started = await persistLifecycle(
+        { sessionId: "session-id", updatedAt: 900 },
+        {
+          ts: 1_000,
+          sessionId: "session-id",
+          runId: "run-a",
+          data: { phase: "start", startedAt: 1_000 },
+        },
+      );
+      const failed = await persistLifecycle(started, {
+        ts: 2_000,
+        sessionId: "session-id",
+        runId: "run-a",
+        data: { phase: "error", startedAt: 1_000, endedAt: 2_000, error: "provider blew up" },
+      });
+
+      expect(failed).toMatchObject({
+        status: "failed",
+        endedAt: 2_000,
+        lastRunError: "provider blew up",
+      });
+    });
+  });
 });

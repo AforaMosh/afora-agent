@@ -16,6 +16,10 @@ import {
 import { createPendingLifecycleScheduler } from "./subagent-registry-pending-lifecycle.js";
 import { markSubagentRunPausedAfterYield } from "./subagent-registry-run-manager.js";
 import type { SubagentCompletionRequest, SubagentRunRecord } from "./subagent-registry.types.js";
+import {
+  resolveSubagentSessionCompletion,
+  type SubagentSessionCompletion,
+} from "./subagent-session-reconciliation.js";
 
 export function createSubagentRegistryListener(config: {
   runs: Map<string, SubagentRunRecord>;
@@ -108,23 +112,44 @@ export function createSubagentRegistryListener(config: {
         }
         if (isAbortedAgentStopReason(stopReason)) {
           pendingLifecycle.clear(evt.runId);
-          await completeSubagentRunWithRecovery(
-            {
-              runId: evt.runId,
-              endedAt,
-              outcome: {
-                status: "error",
-                error: "subagent run terminated",
+          // Cross-check the persisted session entry before committing a kill:
+          // the child's own completion may already have landed, and a proven
+          // completion outranks a teardown abort. A completion still in flight
+          // is covered by the kill grace timer below.
+          let completion: SubagentSessionCompletion | null = null;
+          try {
+            completion = resolveSubagentSessionCompletion({
+              childSessionKey: entry.childSessionKey,
+              fallbackEndedAt: endedAt,
+              notBeforeMs: startedAt ?? entry.execution.startedAt ?? entry.createdAt,
+            });
+          } catch {
+            completion = null;
+          }
+          if (completion && completion.reason !== SUBAGENT_ENDED_REASON_KILLED) {
+            await completeSubagentRunWithRecovery(
+              {
+                runId: evt.runId,
+                startedAt: completion.startedAt,
+                endedAt: completion.endedAt,
+                outcome: completion.outcome,
+                reason: completion.reason,
+                sendFarewell: true,
+                accountId: entry.requesterOrigin?.accountId,
+                triggerCleanup: true,
+                terminalReply,
               },
-              reason: SUBAGENT_ENDED_REASON_KILLED,
-              sendFarewell: true,
-              accountId: entry.requesterOrigin?.accountId,
-              triggerCleanup: true,
-              startedAt,
-              terminalReply,
-            },
-            "lifecycle-killed-event",
-          );
+              "lifecycle-killed-event-session-completion",
+            );
+            return;
+          }
+          pendingLifecycle.scheduleKill({
+            runId: evt.runId,
+            endedAt,
+            startedAt,
+            error: "subagent run terminated",
+            terminalReply,
+          });
           return;
         }
         if (phase === "error") {
